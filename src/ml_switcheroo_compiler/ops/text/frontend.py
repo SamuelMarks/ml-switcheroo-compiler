@@ -8,8 +8,8 @@ from collections.abc import Callable  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import as_tensor, as_tensor_pair
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor, ensure_tensor_pair
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,7 +43,8 @@ class AsStringConfig(pydantic.BaseModel):
             *args (TensorOrScalar): Positional field values.
             **kwargs (TensorOrScalar): Keyword field values.
         """
-        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
+        pos_kw: dict[str, TensorOrScalar] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        super().__init__(**{**pos_kw, **kwargs})
 
 
 def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
@@ -62,7 +63,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToHash",
@@ -90,7 +91,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> TensorOrS
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexReplace",
@@ -117,7 +118,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Bool, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.Bool, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexFullMatch",
@@ -144,7 +145,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, inputs[0].device),
+            TensorConfig(extract_shape(arr), DType.String, inputs[0].device),
         )
     return _emit_shape_node(
         "StringJoin",
@@ -170,7 +171,7 @@ def string_length(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLength",
@@ -198,7 +199,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringSubstr",
@@ -220,9 +221,9 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
         tuple: Result.
     """
     backend = get_active_backend()
-    tokens, lengths = as_tensor_pair(backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
-    tokens_arr = as_tensor(backend.array(tokens))
-    lengths_arr = as_tensor(backend.array(lengths))
+    tokens, lengths = ensure_tensor_pair(backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
+    tokens_arr = ensure_eager_tensor(backend.array(tokens))
+    lengths_arr = ensure_eager_tensor(backend.array(lengths))
     return (
         Tensor(
             tokens_arr,
@@ -307,7 +308,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "Lookup",
@@ -334,7 +335,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: TensorOrScalar) -> Tensor
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "TextVectorization",
@@ -361,7 +362,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), dtype, input_tensor.device),
+            TensorConfig(extract_shape(arr), dtype, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToNumber",
@@ -387,7 +388,7 @@ def string_lower(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLower",
@@ -413,7 +414,7 @@ def string_upper(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringUpper",
@@ -441,7 +442,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Float32, hypothesis.device),
+            TensorConfig(extract_shape(arr), DType.Float32, hypothesis.device),
         )
     return _emit_shape_node(
         "EditDistance",
@@ -491,7 +492,7 @@ def as_string(
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(extract_shape(arr), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "AsString",

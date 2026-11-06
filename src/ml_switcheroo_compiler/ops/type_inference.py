@@ -7,7 +7,7 @@ import typing
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import DTypeHolderProtocol, TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -23,8 +23,8 @@ def resolve_dtype(res_data: TensorOrScalar, first_tensor: Tensor | None) -> DTyp
     Returns:
         DType | str: The resolved DType.
     """
-    if _has_attr(res_data, "dtype"):
-        dtype_str = str(_get_attr(res_data, "dtype"))
+    if isinstance(res_data, DTypeHolderProtocol):
+        dtype_str = str(res_data.dtype)
         if "dtype" in dtype_str:
             m = re.search(r"dtype\('(.*?)'\)", dtype_str)
             if m:
@@ -54,12 +54,13 @@ def resolve_output_dtype_and_device(
     Returns:
         tuple[DType | str, Device | str | None]: A tuple containing the resolved dtype and device.
     """
-    out_dtype = None
+    out_dtype: DType | str
     if "dtype" in kwargs:
-        out_dtype = kwargs["dtype"]
+        raw_dt = kwargs["dtype"]
+        out_dtype = raw_dt if isinstance(raw_dt, (DType, str)) else str(raw_dt)
     elif first_tensor is not None:
         out_dtype = first_tensor.dtype
     else:
         out_dtype = DType.Float32
     device = first_tensor.device if first_tensor is not None else None
-    return _cast_val("DType | str", out_dtype), device
+    return out_dtype, device

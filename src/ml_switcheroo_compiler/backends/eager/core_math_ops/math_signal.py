@@ -6,9 +6,8 @@ import builtins  # noqa: F401
 from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @global_eager_registry.register("Correlate")
@@ -23,11 +22,11 @@ def _correlate(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "correlate", None)
+    func = get_backend_member(backend_module, "correlate", None)
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     (a, v) = (args[0], args[1])
-    mode = kwargs.get("mode", "valid") if _has_attr(kwargs, "get") else "valid"
+    mode = kwargs.get("mode", "valid") if has_backend_member(kwargs, "get") else "valid"
     mod = _resolve_eager_mod(backend_module)
     return mod.correlate(mod.asarray(a), mod.asarray(v), mode=mode)
 
@@ -44,7 +43,7 @@ def _np_windowhann(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "windowhann", _get_attr(backend_module, "windowhann", None))
+    func = get_backend_member(backend_module, "windowhann", get_backend_member(backend_module, "windowhann", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).hanning(*args, **kwargs)

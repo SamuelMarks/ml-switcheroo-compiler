@@ -8,8 +8,19 @@ import types
 import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_eager_list, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_shape,
+)
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, resolve_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import (
+    extract_dtype,
+    extract_shape,
+)
 
 da: types.ModuleType | None
 try:
@@ -18,6 +29,39 @@ try:
     da = _da
 except ImportError:
     da = None
+
+
+@typing.runtime_checkable
+class _DaskGraphHolderProtocol(typing.Protocol):
+    """Protocol for Dask arrays exposing `.dask`."""
+
+    dask: EagerValue
+
+
+@typing.runtime_checkable
+class _ChunksHolderProtocol(typing.Protocol):
+    """Protocol for Dask arrays exposing `.chunks`."""
+
+    chunks: EagerValue
+
+
+@typing.runtime_checkable
+class _NdimProtocol(typing.Protocol):
+    """Protocol for arrays exposing `.ndim`."""
+
+    ndim: int
+
+
+def _ndim_of(obj: EagerValue) -> int:
+    """Return `.ndim` of `obj`, or `0` if not present.
+
+    Args:
+        obj (EagerValue): Input array or scalar.
+
+    Returns:
+        int: Number of dimensions.
+    """
+    return int(obj.ndim) if isinstance(obj, _NdimProtocol) else 0
 
 
 def _verify_dask_task_graph(res: EagerValue) -> None:
@@ -31,8 +75,9 @@ def _verify_dask_task_graph(res: EagerValue) -> None:
     """
     if da is None:
         return
-    da_array = _get_attr(da, "Array", None)
-    if isinstance(da_array, type) and isinstance(res, da_array) and not _has_attr(res, "dask"):
+    raw_res: EagerValue = res
+    da_array = resolve_backend_member(da, "Array", None)[1]
+    if id(type(res)) == id(da_array) and not isinstance(raw_res, _DaskGraphHolderProtocol):
         msg = "Dask array is missing underlying task graph (.dask)."
         raise RuntimeError(msg)
 
@@ -47,13 +92,13 @@ def propagate_chunk_shapes(arr: EagerValue, chunks: EagerValue | None = "auto") 
     Returns:
         tuple[tuple[int, ...], ...]: Standardized chunk tuple layout.
     """
-    if _has_attr(arr, "chunks") and _get_attr(arr, "chunks") is not None:
-        raw_c = _get_attr(arr, "chunks")
-        return tuple(as_shape(c) for c in as_eager_list(raw_c))
+    raw_arr: EagerValue = arr
+    if isinstance(raw_arr, _ChunksHolderProtocol) and raw_arr.chunks is not None:
+        return tuple(ensure_shape(c) for c in ensure_eager_list(raw_arr.chunks))
     if da is not None:
         try:
-            dask_arr = as_callable(_get_attr(da, "from_array"))(arr, chunks=chunks)
-            return tuple(as_shape(c) for c in as_eager_list(_get_attr(dask_arr, "chunks")))
+            dask_arr = ensure_mod(da).from_array(arr, chunks=chunks)
+            return tuple(ensure_shape(c) for c in ensure_eager_list(dask_arr.chunks))
         except Exception:
             return ()
     return ()
@@ -73,31 +118,33 @@ def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
         EagerValue: Lazy Dask array with task graph.
     """
     del kwargs
-    if da is None or _get_attr(x, "ndim", 0) != 4 or _get_attr(w, "ndim", 0) != 4:
+    if da is None or _ndim_of(x) != 4 or _ndim_of(w) != 4:
         return x
 
-    n, _, _, _ = as_shape(_get_attr(x, "shape"))
-    out_c, _, kh, kw = as_shape(_get_attr(w, "shape"))
-    stride_seq = as_shape(stride)
+    n, _, _, _ = extract_shape(x)
+    out_c, _, kh, kw = extract_shape(w)
+    stride_seq = ensure_shape(stride)
     stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (int(stride_seq[0]), int(stride_seq[1]))
     pad_h = kh // 2 if padding == "SAME" else 0
     pad_w = kw // 2 if padding == "SAME" else 0
+    da_mod = ensure_mod(da)
     if pad_h > 0 or pad_w > 0:
-        x_pad: EagerValue = as_callable(_get_attr(da, "pad"))(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
+        x_pad: EagerValue = da_mod.pad(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
     else:
         x_pad = x
-    x_pad_shape = as_shape(_get_attr(x_pad, "shape"))
+    x_pad_shape = extract_shape(x_pad)
     out_h = (int(x_pad_shape[2]) - kh) // stride_h + 1
     out_w = (int(x_pad_shape[3]) - kw) // stride_w + 1
-    x_chunks = as_eager_list(_get_attr(x, "chunks")) if _has_attr(x, "chunks") else []
+    raw_x: EagerValue = x
+    x_chunks = ensure_eager_list(raw_x.chunks) if isinstance(raw_x, _ChunksHolderProtocol) else []
     chunks = (x_chunks[0] if len(x_chunks) > 0 else (n,), (out_c,), (out_h,), (out_w,))
-    out = as_callable(_get_attr(da, "zeros"))((n, out_c, out_h, out_w), dtype=_get_attr(x, "dtype"), chunks=chunks)
+    out = da_mod.zeros((n, out_c, out_h, out_w), dtype=extract_dtype(x), chunks=chunks)
     for i in range(kh):
         for j in range(kw):
-            patch = as_tensor(x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
-            td = as_callable(_get_attr(da, "tensordot"))(patch, as_tensor(w)[:, :, i, j], axes=([1], [1]))
-            out = out + as_callable(_get_attr(td, "transpose"))(0, 3, 1, 2)
-    return as_tensor(out)
+            patch = ensure_eager_tensor(x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
+            td = da_mod.tensordot(patch, ensure_eager_tensor(w)[:, :, i, j], axes=([1], [1]))
+            out = out + td.transpose(0, 3, 1, 2)
+    return ensure_eager_tensor(out)
 
 
 def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValue = 2, padding: EagerValue = "VALID", **kwargs: EagerValue) -> EagerValue:
@@ -114,23 +161,24 @@ def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Lazy Dask array.
     """
     del padding, kwargs
-    if da is None or _get_attr(x, "ndim", 0) != 4:
+    if da is None or _ndim_of(x) != 4:
         return x
-    k_seq = as_shape(kernel_size)
-    s_seq = as_shape(stride)
-    x_shape = as_shape(_get_attr(x, "shape"))
+    k_seq = ensure_shape(kernel_size)
+    s_seq = ensure_shape(stride)
+    x_shape = extract_shape(x)
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
     out_w = (int(x_shape[3]) - kw) // sw + 1
-    x_arr = as_tensor(x)
+    x_arr = ensure_eager_tensor(x)
     out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
+    da_mod = ensure_mod(da)
     for i in range(kh):
         for j in range(kw):
             if i == 0 and j == 0:
                 continue
             patch = x_arr[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
-            out = as_callable(_get_attr(da, "maximum"))(out, patch)
+            out = da_mod.maximum(out, patch)
     return out
 
 
@@ -148,16 +196,16 @@ def dask_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Lazy Dask array.
     """
     del padding, kwargs
-    if da is None or _get_attr(x, "ndim", 0) != 4:
+    if da is None or _ndim_of(x) != 4:
         return x
-    k_seq = as_shape(kernel_size)
-    s_seq = as_shape(stride)
-    x_shape = as_shape(_get_attr(x, "shape"))
+    k_seq = ensure_shape(kernel_size)
+    s_seq = ensure_shape(stride)
+    x_shape = extract_shape(x)
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
     out_w = (int(x_shape[3]) - kw) // sw + 1
-    x_arr = as_tensor(x)
+    x_arr = ensure_eager_tensor(x)
     out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
     for i in range(kh):
         for j in range(kw):
@@ -180,11 +228,11 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
         EagerValue: Lazy resized Dask array.
     """
     del kwargs
-    if da is None or _get_attr(x, "ndim", 0) != 4 or size is None:
+    if da is None or _ndim_of(x) != 4 or size is None:
         return x
-    size_seq = as_shape(size)
+    size_seq = ensure_shape(size)
     new_h, new_w = (int(size_seq[0]), int(size_seq[1]))
-    _, _, h, w = as_shape(_get_attr(x, "shape"))
+    _, _, h, w = extract_shape(x)
     if (new_h, new_w) == (h, w):
         return x
 
@@ -199,16 +247,17 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     x0: list[int] = [int(v) for v in x_coords]
     x1: list[int] = [min(v + 1, int(w) - 1) for v in x0]
 
-    wy = as_callable(_get_attr(da, "from_array"))([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
-    wx = as_callable(_get_attr(da, "from_array"))([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
+    da_mod = ensure_mod(da)
+    wy = da_mod.from_array([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
+    wx = da_mod.from_array([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
 
-    x_arr = as_tensor(x)
+    x_arr = ensure_eager_tensor(x)
     p00 = x_arr[:, :, y0, :][:, :, :, x0]
     p01 = x_arr[:, :, y0, :][:, :, :, x1]
     p10 = x_arr[:, :, y1, :][:, :, :, x0]
     p11 = x_arr[:, :, y1, :][:, :, :, x1]
 
-    return as_tensor(p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
+    return ensure_eager_tensor(p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
 
 
 @typing.runtime_checkable
@@ -241,14 +290,14 @@ def _attach_dask_vision_ops(backend_mod: EagerValue | None) -> None:
     """
     if not _is_dask_vision_mod(backend_mod):
         return
-    if not _has_attr(backend_mod, "conv2d"):
-        backend_mod.conv2d = as_tensor(dask_conv2d)
-    if not _has_attr(backend_mod, "maxpool2d"):
-        backend_mod.maxpool2d = as_tensor(dask_maxpool2d)
-    if not _has_attr(backend_mod, "avgpool2d"):
-        backend_mod.avgpool2d = as_tensor(dask_avgpool2d)
-    if not _has_attr(backend_mod, "resize_bilinear"):
-        backend_mod.resize_bilinear = as_tensor(dask_resize_bilinear)
+    if not resolve_backend_member(backend_mod, "conv2d")[0]:
+        backend_mod.conv2d = ensure_eager_tensor(dask_conv2d)
+    if not resolve_backend_member(backend_mod, "maxpool2d")[0]:
+        backend_mod.maxpool2d = ensure_eager_tensor(dask_maxpool2d)
+    if not resolve_backend_member(backend_mod, "avgpool2d")[0]:
+        backend_mod.avgpool2d = ensure_eager_tensor(dask_avgpool2d)
+    if not resolve_backend_member(backend_mod, "resize_bilinear")[0]:
+        backend_mod.resize_bilinear = ensure_eager_tensor(dask_resize_bilinear)
 
 
 def execute_op(
@@ -281,16 +330,17 @@ def execute_op(
     schema = mapping_loader.load_backend_mappings("dask")
     if op_type in schema.operations:
         op_spec = schema.operations[op_type]
-        is_custom = _get_attr(op_spec, "target_api", None) == "custom_op" and _get_attr(op_spec, "custom_code", None)
+        is_custom = op_spec.target_api == "custom_op" and bool(op_spec.custom_code)
 
         if not is_custom and backend_mod is None:
             raise BackendNotSupportedError("Dask is not installed or available in this environment.")
 
+        has_from_array, from_array_fn = resolve_backend_member(backend_mod, "from_array") if backend_mod is not None else (False, None)
         processed_args: list[EagerValue] = []
         for arg in args:
-            if isinstance(arg, (list, tuple)) and backend_mod is not None and _has_attr(backend_mod, "from_array"):
+            if isinstance(arg, (list, tuple)) and has_from_array:
                 try:
-                    processed_args.append(as_callable(_get_attr(backend_mod, "from_array"))(arg))
+                    processed_args.append(ensure_callable(from_array_fn)(arg))
                 except Exception:
                     processed_args.append(arg)
             else:

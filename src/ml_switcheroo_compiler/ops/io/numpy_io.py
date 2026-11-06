@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
@@ -57,8 +62,8 @@ def load(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         "Load",
         list(args),
         kwargs,
-        _get_attr(_first, "shape", ()),
-        _get_attr(_first, "dtype", "float32"),
+        extract_shape(_first),
+        extract_dtype(_first),
     )
 
 
@@ -174,7 +179,7 @@ class Load(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -202,7 +207,7 @@ class Save(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -230,7 +235,7 @@ class SaveGguf(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -258,7 +263,7 @@ class Savez(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -286,7 +291,7 @@ class SavezCompressed(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -94,5 +93,5 @@ def test_pipeline_lower() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=2, devices_per_stage=1)
     result = strategy.lower(graph)
     assert result is True
-    assert "pipeline_schedule" in as_tensor(_get_attr(graph, "attributes"))
-    assert as_tensor(_get_attr(graph, "attributes"))["num_pipeline_stages"] == 2
+    assert "pipeline_schedule" in ensure_eager_tensor(ensure_eager_tensor(graph).attributes)
+    assert ensure_eager_tensor(ensure_eager_tensor(graph).attributes)["num_pipeline_stages"] == 2

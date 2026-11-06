@@ -2,20 +2,67 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    DTypeHolderProtocol,
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.frontend import asarray
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+
+@typing.runtime_checkable
+class _NameHolderProtocol(typing.Protocol):
+    """Protocol for dtype descriptors exposing `.name`."""
+
+    name: TensorOrScalar
+
+
+@typing.runtime_checkable
+class _DunderNameProtocol(typing.Protocol):
+    """Protocol for dtype descriptors exposing `.__name__`."""
+
+    __name__: str
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for dtype descriptors exposing `.value`."""
+
+    value: TensorOrScalar
+
+
+def _resolve_stack_dtype_str(first_tensor: TensorOrScalar) -> str:
+    """Resolve stacked tensor dtype string from the first input tensor.
+
+    Args:
+        first_tensor (TensorOrScalar): First input tensor.
+
+    Returns:
+        str: Lowercase dtype name string.
+    """
+    out_dtype: TensorOrScalar = first_tensor.dtype if isinstance(first_tensor, DTypeHolderProtocol) and first_tensor.dtype is not None else "float32"
+    if isinstance(out_dtype, _NameHolderProtocol):
+        return str(out_dtype.name).lower()
+    if isinstance(out_dtype, _DunderNameProtocol):
+        return str(out_dtype.__name__)
+    val = out_dtype.value if isinstance(out_dtype, _ValueHolderProtocol) else out_dtype
+    return str(val).split(".")[-1].lower()
 
 
 def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
@@ -30,13 +77,13 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Concatenate", [_get_attr(t, "data", t) for t in tensors], axis=axis)
+        data = backend.execute_op("Concatenate", [extract_data(t) for t in tensors], axis=axis)
         return Tensor(
             data,
             TensorConfig(
-                _get_attr(data, "shape", ()),
-                _get_attr(tensors[0], "dtype", "float32"),
-                _get_attr(tensors[0], "device", None),
+                extract_shape(data),
+                extract_dtype(tensors[0], "float32"),
+                extract_device(tensors[0], None),
             ),
         )
     inputs = list(tensors)
@@ -66,23 +113,17 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     Returns:
         Tensor: Result.
     """
-    out_dtype = _get_attr(tensors[0], "dtype", "float32")
-    if _has_attr(out_dtype, "name"):
-        out_dtype_str = str(out_dtype.name).lower()
-    elif _has_attr(out_dtype, "__name__"):
-        out_dtype_str = str(out_dtype.__name__)
-    else:
-        out_dtype_str = str(_get_attr(out_dtype, "value", out_dtype)).split(".")[-1].lower()
+    out_dtype_str = _resolve_stack_dtype_str(tensors[0])
 
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Stack", [_get_attr(t, "data", t) for t in tensors], axis=axis)
+        data = backend.execute_op("Stack", [extract_data(t) for t in tensors], axis=axis)
         return Tensor(
             data,
             TensorConfig(
-                _get_attr(data, "shape", ()),
+                extract_shape(data),
                 DType(out_dtype_str),
-                _get_attr(tensors[0], "device", None),
+                extract_device(tensors[0], None),
             ),
         )
     inputs = list(tensors)
@@ -118,7 +159,7 @@ def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Vstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Vstack")().infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
@@ -136,7 +177,7 @@ def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Hstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Hstack")().infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
@@ -154,7 +195,7 @@ def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Dstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Dstack")().infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
@@ -174,10 +215,10 @@ def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None)
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Append", _get_attr(arr, "data", arr), _get_attr(values, "data", values), axis=axis)
-        arr_dtype = _get_attr(arr, "dtype", _get_attr(values, "dtype", "float32"))
-        arr_device = _get_attr(arr, "device", None)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), arr_dtype, arr_device))
+        data = backend.execute_op("Append", extract_data(arr), extract_data(values), axis=axis)
+        arr_dtype = extract_dtype(arr, extract_dtype(values, "float32"))
+        arr_device = extract_device(arr, None)
+        return Tensor(data, TensorConfig(extract_shape(data), arr_dtype, arr_device))
 
     arr_t = asarray(arr)
     values_t = asarray(values)
@@ -199,7 +240,7 @@ def column_stack(tup: TensorOrScalar) -> TensorOrScalar:
     Returns:
         Tensor: The array formed by stacking the given arrays.
     """
-    tensors = [asarray(t) for t in _get_attr(tup, "__iter__")()]
+    tensors = [asarray(t) for t in ensure_eager_list(tup)]
     arrays = []
     for a in tensors:
         if len(a.shape) < MATRIX_RANK:

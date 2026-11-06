@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list
 from ml_switcheroo_compiler.core.constants import (
     CONV_2D_TENSOR_RANK,
     CONV_3D_TENSOR_RANK,
     MIN_CONV_RANK,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.nn.conv import (
     conv1d,
@@ -77,7 +77,8 @@ def _apply_conv_lstm_gates(
         gates = add(gates, weights.bias)
 
     axis_val = -1 if data_format == "channels_last" else 1
-    i, f, c, o = _get_attr(split(gates, 4, axis=axis_val), "__iter__")()
+    parts = [ensure_tensor(t) for t in ensure_eager_list(split(gates, 4, axis=axis_val))]
+    i, f, c, o = parts[0], parts[1], parts[2], parts[3]
 
     i = _sigmoid(i)
     f = _sigmoid(f)
@@ -125,7 +126,7 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(ensure_tensor(x_conv), ensure_tensor(h_conv), state, weights, conf.data_format)
 
 
 def conv2d_lstm_cell(
@@ -163,7 +164,7 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(ensure_tensor(x_conv), ensure_tensor(h_conv), state, weights, conf.data_format)
 
 
 def conv3d_lstm_cell(
@@ -201,7 +202,7 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(ensure_tensor(x_conv), ensure_tensor(h_conv), state, weights, conf.data_format)
 
 
 def _sigmoid(x: Tensor) -> Tensor:

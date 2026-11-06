@@ -5,9 +5,8 @@ from __future__ import annotations
 import builtins  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @global_eager_registry.register("Pshuffle")
@@ -22,8 +21,8 @@ def _pshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    if _has_attr(backend_module, "lax") and _has_attr(_get_attr(backend_module, "lax"), "pshuffle"):
-        return as_tensor(_get_attr(backend_module, "lax").pshuffle(*args, **kwargs))
+    if has_backend_member(backend_module, "lax") and has_backend_member(get_backend_member(backend_module, "lax"), "pshuffle"):
+        return ensure_eager_tensor(get_backend_member(backend_module, "lax").pshuffle(*args, **kwargs))
     return args[0] if args else None
 
 
@@ -39,9 +38,9 @@ def _np_gumbel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "gumbel", _get_attr(backend_module, "gumbel", None))
+    func = get_backend_member(backend_module, "gumbel", get_backend_member(backend_module, "gumbel", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.gumbel(*args, **kwargs)
 
 
@@ -57,9 +56,9 @@ def _np_rnguniform(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "rnguniform", _get_attr(backend_module, "rnguniform", None))
+    func = get_backend_member(backend_module, "rnguniform", get_backend_member(backend_module, "rnguniform", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.uniform(*args, **kwargs)
 
 
@@ -75,7 +74,7 @@ def _np_wald(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "wald", _get_attr(backend_module, "wald", None))
+    func = get_backend_member(backend_module, "wald", get_backend_member(backend_module, "wald", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.wald(*args, **kwargs)

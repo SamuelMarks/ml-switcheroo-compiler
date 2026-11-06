@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,6 +23,6 @@ def test_frontend_utils_missing() -> None:
 
         shape = (10,)
 
-    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=5) == (5,)
+    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)

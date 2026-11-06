@@ -3,18 +3,44 @@
 from __future__ import annotations
 
 # ruff: noqa: E402
+import typing
 import uuid
 from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import as_callable, get_active_backend
+from ml_switcheroo_compiler.backends.registry import ensure_callable, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    DataHolderProtocol,
+    TensorOrScalar,
+    TracedDataProtocol,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.configs import WindowConfig
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for objects exposing `.value`."""
+
+    value: TensorOrScalar
+
+
+def _extract_input_id(inp: TensorOrScalar) -> str:
+    """Extract tracing node identifier from `inp`.
+
+    Args:
+        inp (TensorOrScalar): Input tensor or proxy.
+
+    Returns:
+        str: Node identifier string or `'mock_id'`.
+    """
+    payload: TensorOrScalar = inp.data if isinstance(inp, DataHolderProtocol) else inp
+    return str(payload.id) if isinstance(payload, TracedDataProtocol) else "mock_id"
 
 
 class ReduceWindow:
@@ -64,14 +90,15 @@ def _emit_reduction_node(
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
-        inputs=[_get_attr(_get_attr(inp, "data", inp), "id", "mock_id") for inp in inputs],
-        attributes=as_attrs(attrs),
+        inputs=[_extract_input_id(inp) for inp in inputs],
+        attributes=ensure_attrs(attrs),
         shape_metadata=clean_shape,
     )
     global_tracing_state.add_node(node)
 
-    dtype_val = _get_attr(out_dtype, "value", out_dtype)
-    proxy = as_callable(ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+    raw_dt: TensorOrScalar = out_dtype
+    dtype_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else out_dtype
+    proxy = ensure_callable(ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
@@ -101,7 +128,7 @@ def _reduce_window_eager(
         computation,
         config=window_config,
     )
-    return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), operand.dtype, operand.device))
+    return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), operand.dtype, operand.device))
 
 
 def _build_reduce_window_attributes(

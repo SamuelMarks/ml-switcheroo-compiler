@@ -2,18 +2,42 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
+
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr, invoke_callable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-from .utils import GradValue
+from .utils import GradValue, _extract_shape, _IdDataProtocol, _unwrap_data
+
+
+def _is_vjp_attr_dict(
+    val: dict[str, AttributeValue],
+) -> typing.TypeGuard[dict[str, LogicalGraph | GradValue | AttributeValue]]:
+    """Type guard narrowing custom VJP node attributes dict.
+
+    Args:
+        val (dict[str, AttributeValue]): Attributes dict.
+
+    Returns:
+        bool: True if val is a dict.
+    """
+    return isinstance(val, dict)
+
+
+@typing.runtime_checkable
+class _GraphHolderProtocol(typing.Protocol):
+    """Protocol for objects exposing a `.graph` attribute."""
+
+    graph: LogicalGraph
 
 
 class CustomVJPFunction:
@@ -41,12 +65,13 @@ class CustomVJPFunction:
         """
         self.fwd = fwd
         self.bwd = bwd
+        raw_bwd: TensorOrScalar = bwd
         if bwd_subgraph is not None:
             self.bwd_subgraph = bwd_subgraph
         elif isinstance(bwd, LogicalGraph):
             self.bwd_subgraph = bwd
-        elif _has_attr(bwd, "graph") and isinstance(_get_attr(bwd, "graph"), LogicalGraph):
-            self.bwd_subgraph = _get_attr(bwd, "graph")
+        elif isinstance(raw_bwd, _GraphHolderProtocol) and isinstance(raw_bwd.graph, LogicalGraph):
+            self.bwd_subgraph = raw_bwd.graph
         else:
             self.bwd_subgraph = None
 
@@ -101,9 +126,9 @@ class CustomVJPFunction:
         device = "cpu"
         if tensor_args:
             first_arg = tensor_args[0]
-            shape = _get_attr(first_arg, "shape", ())
-            dtype = _get_attr(_get_attr(first_arg, "dtype", None), "value", "float32")
-            device = str(_get_attr(first_arg, "device", "cpu"))
+            shape = _extract_shape(first_arg)
+            dtype = first_arg.dtype.value
+            device = str(first_arg.device)
         return (shape, dtype, device)
 
     def _emit_vjp_node(
@@ -126,19 +151,22 @@ class CustomVJPFunction:
         meta = self._resolve_output_metadata(tensor_args)
         in_ids: list[str] = []
         for a in tensor_args:
-            if _has_attr(a, "data") and _has_attr(a.data, "id"):
-                in_ids.append(_get_attr(a.data, "id"))
+            raw_data: TensorOrScalar = _unwrap_data(a)
+            if isinstance(raw_data, _IdDataProtocol):
+                in_ids.append(str(raw_data.id))
             else:
                 cid = str(uuid.uuid4())
-                arr = _get_attr(a, "data", a)
+                arr = _unwrap_data(a)
+                c_attrs: dict[str, AttributeValue] = {}
                 c_node = LogicalNode(
                     id=cid,
                     op_type="Constant",
                     inputs=[],
-                    attributes={},
-                    shape_metadata=_get_attr(arr, "shape", ()),
+                    attributes=c_attrs,
+                    shape_metadata=_extract_shape(arr),
                 )
-                _obj_set_attr(c_node, "attributes", {"value": arr})
+                assert _is_vjp_attr_dict(c_node.attributes)
+                c_node.attributes["value"] = arr
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
 
@@ -157,15 +185,18 @@ class CustomVJPFunction:
         if fwd_graph is not None:
             subgraphs["fwd"] = fwd_graph
 
+        node_attrs: dict[str, AttributeValue] = {}
         node = LogicalNode(
             id=out_id,
             op_type="CustomVJP",
             inputs=in_ids,
-            attributes={},
+            attributes=node_attrs,
             subgraphs=subgraphs,
             shape_metadata=meta[0],
         )
-        _obj_set_attr(node, "attributes", vjp_attrs)
+        assert _is_vjp_attr_dict(node.attributes)
+        for k, v in vjp_attrs.items():
+            node.attributes[k] = v
         global_tracing_state.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))

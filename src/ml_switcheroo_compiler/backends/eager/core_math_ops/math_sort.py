@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import builtins  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @global_eager_registry.register("Argsort")
@@ -22,7 +21,7 @@ def _argsort(backend_module: BackendModuleProtocol, a: EagerValue, axis: int = -
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "argsort")(a, axis=axis))
+    return ensure_eager_tensor(get_backend_member(backend_module, "argsort")(a, axis=axis))
 
 
 @global_eager_registry.register("Lexsort")
@@ -37,7 +36,7 @@ def _lexsort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "lexsort")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "lexsort")(*args, **kwargs))
 
 
 @global_eager_registry.register("Searchsorted")
@@ -52,7 +51,7 @@ def _searchsorted(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "searchsorted")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "searchsorted")(*args, **kwargs))
 
 
 @global_eager_registry.register("SortComplex")
@@ -67,4 +66,4 @@ def _sortcomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "sort_complex")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "sort_complex")(*args, **kwargs))

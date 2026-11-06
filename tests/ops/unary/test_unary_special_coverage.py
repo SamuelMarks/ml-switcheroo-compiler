@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.unary.special as unary_special
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -69,7 +69,7 @@ def test_unary_special_exhaustive() -> None:
     assert cast_op.infer_shape((2, 3)) == (2, 3)
     assert cast_op.infer_shape([4, 5]) == (4, 5)
     assert cast_op.infer_shape(_MockShapeContainer((6, 7))) == (6, 7)
-    assert as_callable(cast_op.infer_shape)(as_callable(_MockShapeMetaContainer)((8, 9))) == (8, 9)
+    assert ensure_callable(cast_op.infer_shape)(ensure_callable(_MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 2. Bitcast
     bitcast_op = unary_special.Bitcast()
@@ -89,7 +89,7 @@ def test_unary_special_exhaustive() -> None:
     assert frexp_op.infer_shape((3, 4)) == (3, 4)
     assert frexp_op.infer_shape([5, 6]) == (5, 6)
     assert frexp_op.infer_shape(_MockShapeContainer((7, 8))) == (7, 8)
-    assert as_callable(frexp_op.infer_shape)(as_callable(_MockShapeMetaContainer)((9, 10))) == (9, 10)
+    assert ensure_callable(frexp_op.infer_shape)(ensure_callable(_MockShapeMetaContainer)((9, 10))) == (9, 10)
 
     # 5. Lbeta
     lbeta_op = unary_special.Lbeta()
@@ -99,7 +99,7 @@ def test_unary_special_exhaustive() -> None:
     assert lbeta_op.infer_shape((4, 5, 6)) == (4, 5)
     assert lbeta_op.infer_shape([7, 8]) == (7,)
     assert lbeta_op.infer_shape(_MockShapeContainer((10, 20))) == (10,)
-    assert as_callable(lbeta_op.infer_shape)(99) == ()
+    assert ensure_callable(lbeta_op.infer_shape)(99) == ()
 
     # 6. All registered UnaryMathOp subclasses
     unary_math_classes = [

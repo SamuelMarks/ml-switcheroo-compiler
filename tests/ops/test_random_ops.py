@@ -8,7 +8,7 @@ from unittest.mock import patch
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_ops import binomial, categorical, choice, dirichlet, permutation, truncated_normal
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -27,12 +27,12 @@ def test_random_ops_infer_shape() -> None:
         None.
     """
     t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
-    assert as_callable(categorical)().infer_shape(t) == (2, 2)
-    assert as_callable(dirichlet)().infer_shape(t) == (2, 2)
-    assert as_callable(binomial)().infer_shape(t) == (2, 2)
-    assert as_callable(truncated_normal)().infer_shape(t) == (2, 2)
-    assert as_callable(permutation)().infer_shape(t) == (2, 2)
-    assert as_callable(choice)().infer_shape(t) == (2, 2)
+    assert ensure_callable(categorical)().infer_shape(t) == (2, 2)
+    assert ensure_callable(dirichlet)().infer_shape(t) == (2, 2)
+    assert ensure_callable(binomial)().infer_shape(t) == (2, 2)
+    assert ensure_callable(truncated_normal)().infer_shape(t) == (2, 2)
+    assert ensure_callable(permutation)().infer_shape(t) == (2, 2)
+    assert ensure_callable(choice)().infer_shape(t) == (2, 2)
 
     assert Rademacher().infer_shape(DummyShape().shape) == (2, 2)
     assert Rademacher().infer_shape() == ()

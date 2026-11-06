@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.ops.unary.sets as unary_sets
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 
 class _MockDimWithId:
@@ -77,7 +77,7 @@ def test_unary_sets_exhaustive() -> None:
 
         # 3. Shape container objects
         assert inst.infer_shape(_MockShapeContainer((5,))) == (5,)
-        assert inst.infer_shape(as_tensor(_MockShapeMetaContainer((7, 8)))) == (7, 8)
+        assert inst.infer_shape(ensure_eager_tensor(_MockShapeMetaContainer((7, 8)))) == (7, 8)
 
         # 4. Unmatched object returns empty tuple
         assert inst.infer_shape(42) == ()

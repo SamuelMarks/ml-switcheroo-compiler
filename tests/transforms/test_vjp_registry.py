@@ -7,9 +7,8 @@ import typing
 # ruff: noqa: E501
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -24,7 +23,7 @@ def test_vjp_registry_coverage() -> None:
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
-    @as_callable(register_vjp)("fake_op")
+    @ensure_callable(register_vjp)("fake_op")
     def fake_vjp() -> None:
         """Evaluate and process the fake vjp operation.
 
@@ -34,7 +33,7 @@ def test_vjp_registry_coverage() -> None:
 
     with pytest.raises(ValueError, match="already registered"):
 
-        @as_callable(register_vjp)("fake_op")
+        @ensure_callable(register_vjp)("fake_op")
         def fake_vjp2() -> None:
             """Evaluate and process the fake vjp2 operation.
 
@@ -52,7 +51,7 @@ def test_vjp_registry_coverage() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"):
-        assert as_tensor(get_vjp("fake_op_2")) == as_tensor("data_vjp")
+        assert ensure_eager_tensor(get_vjp("fake_op_2")) == ensure_eager_tensor("data_vjp")
 
     # Test get_vjp_from_data and has_vjp
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -76,12 +75,12 @@ def test_vjp_registry_lazy_load() -> None:
         Args:
             name: Test parameter `name`.
         """
-        _get_attr(_VJP_REGISTRY, "__setitem__")(name, "lazy_loaded_vjp")
+        ensure_eager_tensor(_VJP_REGISTRY)[name] = "lazy_loaded_vjp"
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
         res = get_vjp("test_lazy_op")
-        assert as_tensor(res) == as_tensor("lazy_loaded_vjp")
+        assert ensure_eager_tensor(res) == ensure_eager_tensor("lazy_loaded_vjp")
 
 
 def test_has_vjp_not_in_registry_or_data() -> None:

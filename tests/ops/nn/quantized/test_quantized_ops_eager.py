@@ -7,8 +7,8 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -51,10 +51,10 @@ def _test_quantized_ops_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
 
     # W_float = (W_quant - zeros) * scales = ([[2, 4]] - [[1, 1]]) * [[0.5, 0.5]] = [[1, 3]] * [[0.5, 0.5]] = [[0.5, 1.5]]
     qoc_math = q_ops.QuantizedOpsConfig(weight=w_quant, scales=scales, zeros=zeros, biases=None, indices=None, q_config=None)
-    _get_attr(_state, "update")({"patch": patch, "qc": qc, "qoc": qoc, "qoc_math": qoc_math})
-    _get_attr(_state, "update")({"qp": qp, "scales": scales, "t": t, "w_quant": w_quant})
-    _get_attr(_state, "update")({"zeros": zeros})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"patch": patch, "qc": qc, "qoc": qoc, "qoc_math": qoc_math}))
+    _state.update(ensure_tensor_dict({"qp": qp, "scales": scales, "t": t, "w_quant": w_quant}))
+    _state.update(ensure_tensor_dict({"zeros": zeros}))
+    _state.update(ensure_tensor_dict({"np": np, "q_ops": q_ops}))
 
 
 def _test_quantized_ops_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -93,10 +93,11 @@ def _test_quantized_ops_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
     input_2d = Tensor(input_2d_val, TensorConfig((1, 3, 3, 1), DType.Float32, Device("cpu")))
 
     w_2d_quant = Tensor(np.array([[[[2.0]], [[2.0]]], [[[2.0]], [[2.0]]]]), TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu")))
-    _get_attr(_state, "update")({"deq_none": deq_none, "deq_res": deq_res, "embed_none": embed_none, "embed_res": embed_res})
-    _get_attr(_state, "update")({"indices": indices, "inp": inp, "input_2d": input_2d, "input_2d_val": input_2d_val})
-    _get_attr(_state, "update")({"lin_none": lin_none, "lin_res": lin_res, "qoc_none": qoc_none, "w_2d_quant": w_2d_quant})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"deq_none": deq_none, "deq_res": deq_res, "embed_none": embed_none, "embed_res": embed_res}))
+    _state.update(ensure_tensor_dict({"indices": indices, "inp": inp, "input_2d": input_2d, "input_2d_val": input_2d_val}))
+    _state.update(ensure_tensor_dict({"lin_none": lin_none, "lin_res": lin_res, "qoc_none": qoc_none, "w_2d_quant": w_2d_quant}))
+    _state.update(ensure_tensor_dict({"np": np, "q_ops": q_ops, "qoc_math": qoc_math}))
+    _state.update(ensure_tensor_dict({"scales": scales, "w_quant": w_quant, "zeros": zeros}))
 
 
 def _test_quantized_ops_eager_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -129,10 +130,11 @@ def _test_quantized_ops_eager_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
     input_q_tens = Tensor(np.array([0.1, -0.1, 0.8, -0.8]), TensorConfig((4,), DType.Float32, Device("cpu")))
     fq_tens_res = q_ops.fake_quantize_per_tensor_affine(input_q_tens, scale=0.1, zero_point=0, quant_min=-128, quant_max=127)
     assert fq_tens_res is not None
-    _get_attr(_state, "update")({"conv_res": conv_res, "fq_chan_res": fq_chan_res, "fq_tens_res": fq_tens_res, "input_q_chan": input_q_chan})
-    _get_attr(_state, "update")({"input_q_tens": input_q_tens, "qoc_conv": qoc_conv, "scale_q_chan": scale_q_chan, "scales_2d": scales_2d})
-    _get_attr(_state, "update")({"zero_point_q_chan": zero_point_q_chan, "zeros_2d": zeros_2d})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"conv_res": conv_res, "fq_chan_res": fq_chan_res, "fq_tens_res": fq_tens_res, "input_q_chan": input_q_chan}))
+    _state.update(ensure_tensor_dict({"input_q_tens": input_q_tens, "qoc_conv": qoc_conv, "scale_q_chan": scale_q_chan, "scales_2d": scales_2d}))
+    _state.update(ensure_tensor_dict({"zero_point_q_chan": zero_point_q_chan, "zeros_2d": zeros_2d}))
+    _state.update(ensure_tensor_dict({"input_2d": input_2d, "np": np, "q_ops": q_ops}))
+    _state.update(ensure_tensor_dict({"w_2d_quant": w_2d_quant}))
 
 
 def test_quantized_ops_eager() -> None:
@@ -145,8 +147,8 @@ def test_quantized_ops_eager() -> None:
     config.eager_mode = True
 
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"np": np, "orig": orig, "q_ops": q_ops})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"np": np, "orig": orig, "q_ops": q_ops}))
         for _sub_fn in (
             _test_quantized_ops_eager_sub_1,
             _test_quantized_ops_eager_sub_2,

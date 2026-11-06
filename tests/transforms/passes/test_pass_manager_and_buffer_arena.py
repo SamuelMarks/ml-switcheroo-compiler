@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCr
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _discover_fusion_patterns,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -42,12 +42,12 @@ def test_pass_manager_coverage_branches() -> None:
             self.outputs = ["n1"]
 
     lg = MockListGraph()
-    snap = as_callable(_snapshot_graph)(lg)
+    snap = ensure_callable(_snapshot_graph)(lg)
     assert "n1" in snap["nodes"]
 
     # Restore onto list graph
     lg_target = MockListGraph()
-    as_callable(_restore_graph)(lg_target, snap)
+    ensure_callable(_restore_graph)(lg_target, snap)
     assert len(lg_target.nodes) == 1
 
     # 2. load_from_config with plain execution_order

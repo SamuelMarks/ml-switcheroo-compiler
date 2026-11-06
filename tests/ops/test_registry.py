@@ -6,10 +6,9 @@ import typing
 from unittest import mock
 from unittest.mock import patch
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -20,7 +19,7 @@ def test_registry_get_op() -> None:
     # Transpose should definitely exist.
     op = registry.get_op("Transpose")
     assert op is not None
-    assert as_tensor(op["description"]) == as_tensor("The Transpose operation.")
+    assert ensure_eager_tensor(op["description"]) == ensure_eager_tensor("The Transpose operation.")
 
     # Missing op
     assert registry.get_op("NonExistentOp123") is None
@@ -122,9 +121,9 @@ def test_registry_remaining() -> None:
     # hit 112
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    _get_attr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
+    ensure_eager_tensor(_YAML_REGISTRY)["DynamicTestOp123"] = {"test": 1}
     op_cls = get_op("DynamicTestOp123")
-    assert as_tensor(_get_attr(op_cls, "get_yaml_data"))() == {"test": 1}
+    assert ensure_eager_tensor(ensure_eager_tensor(op_cls).get_yaml_data)() == {"test": 1}
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
@@ -145,12 +144,12 @@ def test_registry_remaining() -> None:
                 prefix: Test parameter `prefix`.
                 op_name: Test parameter `op_name`.
             """
-            op = as_callable(as_tensor(_get_attr(self.operations, "get")))(op_name, {})
+            op = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(self.operations).get))(op_name, {})
             if not op:
                 return None
-            variants = as_tensor(_get_attr(op, "get"))("variants", {})
-            backend = as_callable(as_tensor(_get_attr(variants, "get")))(prefix, {})
-            return as_tensor(_get_attr(backend, "get"))("generator")
+            variants = ensure_eager_tensor(ensure_eager_tensor(op).get)("variants", {})
+            backend = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(variants).get))(prefix, {})
+            return ensure_eager_tensor(ensure_eager_tensor(backend).get)("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 

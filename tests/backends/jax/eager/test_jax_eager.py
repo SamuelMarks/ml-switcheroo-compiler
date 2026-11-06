@@ -24,8 +24,7 @@ from ml_switcheroo_compiler.backends.jax.eager import (
     _execute_welch,
     execute_op,
 )
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict, has_backend_member
 
 try:
     import jax
@@ -48,9 +47,9 @@ def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     except ImportError:
         pytest.skip("JAX not available")
     res = _execute_adaptive_avg_pool(jnp.ones((2, 2)), 1)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 1)
+    assert ensure_eager_tensor(res).shape == (2, 1)
     res2 = _execute_adaptive_avg_pool(jnp.ones((2, 2)), (1, 1))
-    assert as_tensor(_get_attr(res2, "shape")) == (1, 1)
+    assert ensure_eager_tensor(res2).shape == (1, 1)
     res = _execute_accumulate_n([jnp.ones((2, 2)), jnp.ones((2, 2))])
     assert jnp.all(res == 2.0)
     res = _execute_binom_cdf(1, 2, 0.5)
@@ -64,16 +63,16 @@ def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     res = _execute_bessel_jn(1, 2.0)
     assert res is not None
     res = _execute_unsorted_segment_sum(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 3
+    assert ensure_eager_tensor(res)[0] == 3
     res = _execute_unsorted_segment_max(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2
+    assert ensure_eager_tensor(res)[0] == 2
     res = _execute_unsorted_segment_min(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 1
+    assert ensure_eager_tensor(res)[0] == 1
     res = _execute_unsorted_segment_prod(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2
+    assert ensure_eager_tensor(res)[0] == 2
     res = _execute_variance(jnp.array([1.0, 2.0, 3.0]))
-    _get_attr(_state, "update")({"res": res, "res2": res2})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"res": res, "res2": res2}))
+    _state.update(ensure_tensor_dict({"jnp": jnp}))
 
 
 def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -90,9 +89,9 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "int4"
 
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), dtype=as_callable(MockDtype)())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), dtype=ensure_callable(MockDtype)())
     assert res.dtype == jnp.int8
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype)())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), ensure_callable(MockDtype)())
     assert res.dtype == jnp.int8
 
     class MockDtype2:
@@ -100,7 +99,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "bfloat16"
 
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype2)())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), ensure_callable(MockDtype2)())
     assert res.dtype == jnp.bfloat16
 
     class MockDtype3:
@@ -108,7 +107,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float16"
 
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype3)())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), ensure_callable(MockDtype3)())
     assert res.dtype == jnp.float16
 
     class MockDtype4:
@@ -116,10 +115,10 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float8"
 
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype4)())
-    _get_attr(_state, "update")({"MockDtype": MockDtype, "MockDtype2": MockDtype2, "MockDtype3": MockDtype3, "MockDtype4": MockDtype4})
-    _get_attr(_state, "update")({"res": res})
-    _state.update(_caller_locals())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), ensure_callable(MockDtype4)())
+    _state.update(ensure_tensor_dict({"MockDtype": MockDtype, "MockDtype2": MockDtype2, "MockDtype3": MockDtype3, "MockDtype4": MockDtype4}))
+    _state.update(ensure_tensor_dict({"res": res}))
+    _state.update(ensure_tensor_dict({"jnp": jnp}))
 
 
 def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -136,17 +135,17 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float32"
 
-    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype5)())
+    res = ensure_callable(_execute_cast)(ensure_callable(jnp.array)([1.0]), ensure_callable(MockDtype5)())
     assert res.dtype == jnp.float32
-    res = as_tensor(_execute_ragged_tensor_to_dense([jnp.array([1.0]), jnp.array([1.0, 2.0])]))
+    res = ensure_eager_tensor(_execute_ragged_tensor_to_dense([jnp.array([1.0]), jnp.array([1.0, 2.0])]))
     assert res.shape == (2, 2)
-    res = as_tensor(_execute_ragged_tensor_to_dense(jnp.array([1.0])))
+    res = ensure_eager_tensor(_execute_ragged_tensor_to_dense(jnp.array([1.0])))
     assert res.shape == (1,)
-    res = as_callable(execute_op)(None, "Add", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
+    res = ensure_callable(execute_op)(None, "Add", ensure_callable(jnp.array)([1.0]), ensure_callable(jnp.array)([2.0]))
     assert res[0] == 3.0
-    res = as_callable(execute_op)(None, "Variance", as_callable(jnp.array)([1.0, 2.0, 3.0]))
+    res = ensure_callable(execute_op)(None, "Variance", ensure_callable(jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
-    res = as_callable(execute_op)(None, "Cumprod", as_callable(jnp.array)([1.0, 2.0, 3.0]))
+    res = ensure_callable(execute_op)(None, "Cumprod", ensure_callable(jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -159,12 +158,12 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        return as_tensor(_get_attr(jnp_module, "array"))([42.0])
+        return ensure_eager_tensor(ensure_eager_tensor(jnp_module).array)([42.0])
 
-    res = as_callable(execute_op)(None, "DummyGlobalOp", as_callable(jnp.array)([1.0]))
+    res = ensure_callable(execute_op)(None, "DummyGlobalOp", ensure_callable(jnp.array)([1.0]))
     assert res[0] == 42.0
-    _get_attr(_state, "update")({"MockDtype5": MockDtype5, "_dummy_global_op": _dummy_global_op, "global_eager_registry": global_eager_registry, "res": res})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MockDtype5": MockDtype5, "_dummy_global_op": _dummy_global_op, "global_eager_registry": global_eager_registry, "res": res}))
+    _state.update(ensure_tensor_dict({"jnp": jnp}))
 
 
 def _test_jax_eager_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -176,8 +175,8 @@ def _test_jax_eager_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises(BackendNotSupportedError):
-        as_callable(execute_op)(None, "UnknownOp123")
-    _get_attr(_state, "update")({"BackendNotSupportedError": BackendNotSupportedError})
+        ensure_callable(execute_op)(None, "UnknownOp123")
+    _state.update(ensure_tensor_dict({"BackendNotSupportedError": BackendNotSupportedError}))
 
 
 def test_jax_eager_functions() -> None:
@@ -200,10 +199,10 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
 
     from ml_switcheroo_compiler.backends.jax.eager import _OP_DISPATCH
 
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("ActivityRegularization")))(1.0)
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AdaptiveMaxPool3D_Indices")))(as_callable(jnp.ones)((2, 2)), 1)
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AdaptiveLogSoftmaxWithLoss")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("Adjoint")))(as_callable(jnp.ones)((2, 2)))
+    ensure_eager_tensor(_OP_DISPATCH)["ActivityRegularization"](1.0)
+    ensure_eager_tensor(_OP_DISPATCH)["AdaptiveMaxPool3D_Indices"](ensure_callable(jnp.ones)((2, 2)), 1)
+    ensure_eager_tensor(_OP_DISPATCH)["AdaptiveLogSoftmaxWithLoss"](ensure_callable(jnp.ones)((2,)), ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["Adjoint"](ensure_callable(jnp.ones)((2, 2)))
     from unittest import mock
 
     with (
@@ -213,22 +212,21 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
         mock.patch("jax.lax.pmax", lambda x, **kw: x, create=True),
         mock.patch("jax.lax.reduce_scatter", lambda x, *args, **kw: x, create=True),
     ):
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AllGather")))(as_callable(jnp.ones)((2,)))
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AllToAll")))(as_callable(jnp.ones)((2,)))
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AllReduce")))(as_callable(jnp.ones)((2,)), op_type="sum")
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AllReduce")))(as_callable(jnp.ones)((2,)), op_type="max")
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(as_callable(jnp.ones)((2,)), op_type="sum")
-        as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(as_callable(jnp.ones)((2,)), op_type="max")
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AlphaDropout")))(as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AsString")))(as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("Assert")))(True, as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("Assign")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AssignAdd")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AssignSub")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AssignVariable")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
-    as_callable(as_tensor(_get_attr(_OP_DISPATCH, "__getitem__")("AssociativeScan")))(as_callable(jnp.ones)((2,)))
-    _get_attr(_state, "update")({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp, "mock": mock})
-    _state.update(_caller_locals())
+        ensure_eager_tensor(_OP_DISPATCH)["AllGather"](ensure_callable(jnp.ones)((2,)))
+        ensure_eager_tensor(_OP_DISPATCH)["AllToAll"](ensure_callable(jnp.ones)((2,)))
+        ensure_eager_tensor(_OP_DISPATCH)["AllReduce"](ensure_callable(jnp.ones)((2,)), op_type="sum")
+        ensure_eager_tensor(_OP_DISPATCH)["AllReduce"](ensure_callable(jnp.ones)((2,)), op_type="max")
+        ensure_eager_tensor(_OP_DISPATCH)["ReduceScatter"](ensure_callable(jnp.ones)((2,)), op_type="sum")
+        ensure_eager_tensor(_OP_DISPATCH)["ReduceScatter"](ensure_callable(jnp.ones)((2,)), op_type="max")
+    ensure_eager_tensor(_OP_DISPATCH)["AlphaDropout"](ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["AsString"](ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["Assert"](True, ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["Assign"](ensure_callable(jnp.ones)((2,)), ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["AssignAdd"](ensure_callable(jnp.ones)((2,)), ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["AssignSub"](ensure_callable(jnp.ones)((2,)), ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["AssignVariable"](ensure_callable(jnp.ones)((2,)), ensure_callable(jnp.ones)((2,)))
+    ensure_eager_tensor(_OP_DISPATCH)["AssociativeScan"](ensure_callable(jnp.ones)((2,)))
+    _state.update(ensure_tensor_dict({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp, "mock": mock}))
 
 
 def _test_jax_eager_execute_op_lambdas_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -247,9 +245,9 @@ def _test_jax_eager_execute_op_lambdas_part_2(_state: dict[str, EagerTensorProto
     _OP_DISPATCH["Fftshift"](jnp.ones((2, 2)))
     import jax.nn
 
-    if _has_attr(jax.nn, "hard_silu"):
+    if has_backend_member(jax.nn, "hard_silu"):
         _OP_DISPATCH["HardSilu"](jnp.ones((2,)))
-    if _has_attr(jax.nn, "hard_swish"):
+    if has_backend_member(jax.nn, "hard_swish"):
         _OP_DISPATCH["HardSwish"](jnp.ones((2,)))
     _OP_DISPATCH["Hfft"](jnp.ones((2,)))
     _OP_DISPATCH["Ifft"](jnp.ones((2,)))
@@ -259,8 +257,8 @@ def _test_jax_eager_execute_op_lambdas_part_2(_state: dict[str, EagerTensorProto
     _OP_DISPATCH["Ifftshift"](jnp.ones((2, 2)))
     _OP_DISPATCH["Ihfft"](jnp.ones((2,)))
     _OP_DISPATCH["Irfft"](jnp.ones((2,)))
-    _get_attr(_state, "update")({"jax": jax})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"jax": jax}))
+    _state.update(ensure_tensor_dict({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp}))
 
 
 def _test_jax_eager_execute_op_lambdas_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -276,9 +274,9 @@ def _test_jax_eager_execute_op_lambdas_part_3(_state: dict[str, EagerTensorProto
     with mock.patch("jax.nn.mish", create=True, new=None), mock.patch("jax.nn.squareplus", create=True, new=None):
         import jax.nn
 
-        if _has_attr(jax.nn, "mish"):
+        if has_backend_member(jax.nn, "mish"):
             del jax.nn.mish
-        if _has_attr(jax.nn, "squareplus"):
+        if has_backend_member(jax.nn, "squareplus"):
             del jax.nn.squareplus
         _OP_DISPATCH["Mish"](jnp.ones((2,)))
         _OP_DISPATCH["Squareplus"](jnp.ones((2,)))
@@ -293,8 +291,8 @@ def _test_jax_eager_execute_op_lambdas_part_3(_state: dict[str, EagerTensorProto
     _OP_DISPATCH["Rfftnd"](jnp.ones((2, 2)))
     _OP_DISPATCH["Sigmoid"](jnp.ones((2,)))
     _OP_DISPATCH["Softmax"](jnp.ones((2,)))
-    _get_attr(_state, "update")({"jax": jax})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"jax": jax}))
+    _state.update(ensure_tensor_dict({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp, "mock": mock}))
 
 
 def _test_jax_eager_execute_op_lambdas_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -328,14 +326,14 @@ def test_jax_eager_execute_op_fallback() -> None:
     with mock.patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
         with mock.patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with pytest.raises(Exception, match=".*"):
-                as_callable(execute_op)(None, "Mish", as_callable(jnp.array)([1.0]))
-    res = as_callable(execute_op)(None, "Mul", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2.0
-    res = as_callable(execute_op)(None, "Sub", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == -1.0
-    res = as_callable(execute_op)(None, "Div", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 0.5
-    res = as_callable(execute_op)(None, "Eig", as_callable(jnp.eye)(2))
+                ensure_callable(execute_op)(None, "Mish", ensure_callable(jnp.array)([1.0]))
+    res = ensure_callable(execute_op)(None, "Mul", ensure_callable(jnp.array)([1.0]), ensure_callable(jnp.array)([2.0]))
+    assert ensure_eager_tensor(res)[0] == 2.0
+    res = ensure_callable(execute_op)(None, "Sub", ensure_callable(jnp.array)([1.0]), ensure_callable(jnp.array)([2.0]))
+    assert ensure_eager_tensor(res)[0] == -1.0
+    res = ensure_callable(execute_op)(None, "Div", ensure_callable(jnp.array)([1.0]), ensure_callable(jnp.array)([2.0]))
+    assert ensure_eager_tensor(res)[0] == 0.5
+    res = ensure_callable(execute_op)(None, "Eig", ensure_callable(jnp.eye)(2))
     assert res is not None
 
 
@@ -358,4 +356,4 @@ def test_jax_adaptive_max_pool_tuple_size() -> None:
 
     operand = jnp.ones((1, 1, 4, 4))
     res = _execute_adaptive_max_pool(operand, (2, 2))
-    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 2, 2)
+    assert ensure_eager_tensor(res).shape == (1, 1, 2, 2)

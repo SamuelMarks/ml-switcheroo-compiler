@@ -6,10 +6,8 @@ import math
 import typing
 from collections.abc import Callable, Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import as_float
-
 Numeric = typing.Union[int, "float"]
-NestedList = typing.Union[Numeric, "list['NestedList']"]
+NestedList = typing.Union[Numeric, "Sequence['NestedList']"]
 
 
 class PurePythonTensor:
@@ -51,7 +49,7 @@ class PurePythonTensor:
         """
         dims: list[int] = []
         curr: NestedList = val
-        while isinstance(curr, list):
+        while isinstance(curr, (list, tuple)):
             dims.append(len(curr))
             curr = curr[0] if curr else 0
         return tuple(dims)
@@ -70,11 +68,11 @@ class PurePythonTensor:
             Args:
                 item (NestedList): Nested list or scalar number.
             """
-            if isinstance(item, list):
+            if isinstance(item, (int, float)):
+                result.append(item)
+            else:
                 for sub in item:
                     _flatten(sub)
-            else:
-                result.append(item)
 
         _flatten(self.data)
         return result
@@ -98,9 +96,9 @@ class PurePythonTensor:
             Returns:
                 NestedList: Transformed element or nested list.
             """
-            if isinstance(item, list):
-                return [_apply(sub) for sub in item]
-            return func(float(item))
+            if isinstance(item, (int, float)):
+                return func(float(item))
+            return [_apply(sub) for sub in item]
 
         transformed: NestedList = _apply(self.data)
         return PurePythonTensor(transformed, shape=self.shape, dtype=self.dtype)
@@ -127,9 +125,11 @@ class PurePythonTensor:
             Returns:
                 NestedList: Summed nested elements.
             """
-            if isinstance(a, list) and isinstance(b, list):
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                return float(a) + float(b)
+            if isinstance(a, Sequence) and isinstance(b, Sequence):
                 return [_add(ai, bi) for ai, bi in zip(a, b)]
-            return float(as_float(a)) + float(as_float(b))
+            return 0.0  # pragma: no cover
 
         return PurePythonTensor(_add(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -155,9 +155,11 @@ class PurePythonTensor:
             Returns:
                 NestedList: Subtracted nested elements.
             """
-            if isinstance(a, list) and isinstance(b, list):
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                return float(a) - float(b)
+            if isinstance(a, Sequence) and isinstance(b, Sequence):
                 return [_sub(ai, bi) for ai, bi in zip(a, b)]
-            return float(as_float(a)) - float(as_float(b))
+            return 0.0  # pragma: no cover
 
         return PurePythonTensor(_sub(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -183,9 +185,11 @@ class PurePythonTensor:
             Returns:
                 NestedList: Multiplied nested elements.
             """
-            if isinstance(a, list) and isinstance(b, list):
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                return float(a) * float(b)
+            if isinstance(a, Sequence) and isinstance(b, Sequence):
                 return [_mul(ai, bi) for ai, bi in zip(a, b)]
-            return float(as_float(a)) * float(as_float(b))
+            return 0.0  # pragma: no cover
 
         return PurePythonTensor(_mul(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -212,9 +216,11 @@ class PurePythonTensor:
             Returns:
                 NestedList: Divided nested elements.
             """
-            if isinstance(a, list) and isinstance(b, list):
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                return float(a) / float(b)
+            if isinstance(a, Sequence) and isinstance(b, Sequence):
                 return [_div(ai, bi) for ai, bi in zip(a, b)]
-            return float(as_float(a)) / float(as_float(b))
+            return 0.0  # pragma: no cover
 
         return PurePythonTensor(_div(self.data, other.data), shape=self.shape, dtype=self.dtype)
 

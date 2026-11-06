@@ -11,6 +11,7 @@ import gzip
 import json
 import logging
 import os
+import typing
 
 import yaml
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
@@ -18,7 +19,89 @@ from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
+
+@typing.runtime_checkable
+class _DiscoverTargetFilesProtocol(typing.Protocol):
+    """Protocol for grounding engines exposing `._discover_target_files(...)`."""
+
+    def _discover_target_files(self, framework: str) -> AttributeValue:
+        """Discover target snapshot files for `framework`.
+
+        Args:
+            framework (str): Target framework name.
+
+        Returns:
+            AttributeValue: Discovered target files.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _LoadTargetProtocol(typing.Protocol):
+    """Protocol for grounding engines exposing `.load_target(...)`."""
+
+    def load_target(self, framework: str) -> dict[str, ExtendedGhostRef]:
+        """Load target ghost references for `framework`.
+
+        Args:
+            framework (str): Target framework name.
+
+        Returns:
+            dict[str, ExtendedGhostRef]: Loaded ghost references.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SuggestClosestSymbolProtocol(typing.Protocol):
+    """Protocol for grounding engines exposing `.suggest_closest_symbol(...)`."""
+
+    def suggest_closest_symbol(
+        self,
+        framework: str,
+        candidate: str,
+        max_distance: int = 4,
+    ) -> str | None:
+        """Suggest closest symbol in `framework` to `candidate`.
+
+        Args:
+            framework (str): Target framework name.
+            candidate (str): Candidate symbol string.
+            max_distance (int): Maximum edit distance.
+
+        Returns:
+            str | None: Suggested symbol or `None`.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ModelDumpProtocol(typing.Protocol):
+    """Protocol for Pydantic models exposing `.model_dump()`."""
+
+    def model_dump(self) -> dict[str, AttributeValue]:
+        """Dump model fields to dictionary.
+
+        Returns:
+            dict[str, AttributeValue]: Dumped dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _OverloadParamsProtocol(typing.Protocol):
+    """Protocol for overload objects exposing `.params`."""
+
+    params: list[AttributeValue]
+
+
+@typing.runtime_checkable
+class _FailOnMissingProtocol(typing.Protocol):
+    """Protocol for engine instances exposing `._fail_on_missing`."""
+
+    _fail_on_missing: bool
 
 
 class BackendSnapshotTargetModel(BaseModel):
@@ -542,13 +625,12 @@ def _populate_from_grounding_engine(
     if engine is None or target is None:
         return
     try:
-        discover_fn = _get_attr(engine, "_discover_target_files", None)
-        if endpoints and callable(discover_fn) and not discover_fn(target.framework):
+        raw_engine: TensorOrScalar | AttributeValue = engine
+        if endpoints and isinstance(raw_engine, _DiscoverTargetFilesProtocol) and not raw_engine._discover_target_files(target.framework):
             return
-        load_fn = _get_attr(engine, "load_target", None)
-        if load_fn is None:
+        if not isinstance(raw_engine, _LoadTargetProtocol):
             return
-        target_refs: dict[str, ExtendedGhostRef] = load_fn(target.framework)
+        target_refs: dict[str, ExtendedGhostRef] = raw_engine.load_target(target.framework)
         for sym, ref in target_refs.items():
             _register_ghost_ref(sym, ref, endpoints, item_map, ref_map)
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -570,10 +652,11 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
         tree: ast.Module = ast.parse(f.read(), filename=py_path)
     collected: list[AttributeValue] = []
     for node in tree.body:
-        val_node = _get_attr(node, "value", None)
+        val_node = node.value if isinstance(node, (ast.Assign, ast.AnnAssign, ast.Expr)) else None
         list_node = val_node.args[0] if isinstance(val_node, ast.Call) and val_node.args else val_node
         if isinstance(list_node, ast.List) and "CANONICAL_" in ast.unparse(node):
-            raw_ops = _cast_val("list[AttributeValue]", ast.literal_eval(list_node))
+            raw_ops = ast.literal_eval(list_node)
+            assert isinstance(raw_ops, list)
             collected.extend(raw_ops)
     return collected
 
@@ -638,18 +721,17 @@ def _populate_from_snapshot_data(
                 ref_map[sym] = hydrated
 
 
-def _param_to_dict(p: AttributeValue) -> dict[str, AttributeValue]:
+def _param_to_dict(p: TensorOrScalar | AttributeValue) -> dict[str, AttributeValue]:
     """Convert a parameter model or mapping into a dictionary specification.
 
     Args:
-        p (AttributeValue): Parameter model or dictionary.
+        p (TensorOrScalar | AttributeValue): Parameter model or dictionary.
 
     Returns:
         dict[str, AttributeValue]: Parameter spec dictionary.
     """
-    dump_fn: AttributeValue = _get_attr(p, "model_dump", None)
-    if callable(dump_fn):
-        dumped: AttributeValue = _cast_val("TypedVariadicCallable[AttributeValue]", dump_fn)()
+    if isinstance(p, _ModelDumpProtocol):
+        dumped = p.model_dump()
         if isinstance(dumped, dict):
             return dumped
     if isinstance(p, dict):
@@ -673,7 +755,8 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
 
     if ref.overloads:
         for ov in ref.overloads:
-            ov_params: AttributeValue = _get_attr(ov, "params", ov.get("params") if isinstance(ov, dict) else None)
+            raw_ov: TensorOrScalar | AttributeValue = ov
+            ov_params: AttributeValue = raw_ov.params if isinstance(raw_ov, _OverloadParamsProtocol) else (ov.get("params") if isinstance(ov, dict) else None)
             if isinstance(ov_params, list) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
                 signatures.extend(_split_signature_params(ov_sig))
@@ -824,7 +907,7 @@ class SnapshotGroundingEngine:
 
         path: str | None = self.get_snapshot_path(backend_name)
         if path is None:
-            if not _get_attr(self, "_fail_on_missing", True):
+            if not self._fail_on_missing:
                 return {}
             raise FileNotFoundError(f"No snapshot JSON file found for backend '{backend_name}' in {self.snapshot_dir}")
 
@@ -1062,9 +1145,9 @@ class SnapshotGroundingEngine:
         target: BackendSnapshotTargetModel | None = self.config.targets.get(backend_name)
         if target is not None and self._grounding_engine is not None:
             try:
-                suggest_fn = _get_attr(self._grounding_engine, "suggest_closest_symbol", None)
-                if suggest_fn is not None:
-                    suggested: str | None = suggest_fn(target.framework, candidate, max_distance=max_distance)
+                raw_ge: TensorOrScalar | AttributeValue = self._grounding_engine
+                if isinstance(raw_ge, _SuggestClosestSymbolProtocol):
+                    suggested: str | None = raw_ge.suggest_closest_symbol(target.framework, candidate, max_distance=max_distance)
                     if suggested:
                         return suggested
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):

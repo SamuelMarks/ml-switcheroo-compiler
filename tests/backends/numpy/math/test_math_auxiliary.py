@@ -26,8 +26,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import (
     _np_unknown,
 )
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -35,78 +34,78 @@ if typing.TYPE_CHECKING:
 
 def test_constant_of_shape() -> None:
     """Test function test_constant_of_shape."""
-    res = _np_constant_of_shape(np, (2, 2), 5.0)
-    assert as_callable(np.array_equal)(res, as_callable(np.full)((2, 2), 5.0))
+    res = _np_constant_of_shape(ensure_eager_tensor(np), (2, 2), 5.0)
+    assert ensure_callable(np.array_equal)(res, ensure_callable(np.full)((2, 2), 5.0))
 
 
 def test_reduce_window() -> None:
     """Test function test_reduce_window."""
     pass
     with pytest.raises(TypeError):
-        _np_reduce_window(np, np.ones((2, 2)))
+        _np_reduce_window(ensure_eager_tensor(np), np.ones((2, 2)))
 
 
 def test_test_eager_op() -> None:
     """Test function test_test_eager_op."""
-    res = _np_test_eager_op(np)
-    assert as_callable(np.array_equal)(res, [1.0, 2.0, 3.0])
+    res = _np_test_eager_op(ensure_eager_tensor(np))
+    assert ensure_callable(np.array_equal)(res, [1.0, 2.0, 3.0])
 
 
 def test_unknown() -> None:
     """Test function test_unknown."""
-    res = _np_unknown(np)
+    res = _np_unknown(ensure_eager_tensor(np))
     assert res == 0.0
 
 
 def test_rand() -> None:
     """Test function test_rand."""
-    res = _np_rand(np, 2, 2)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
-    res2 = _np_rand(np, 2, 2, dtype="float64")
-    assert as_tensor(_get_attr(res2, "dtype")) == np.float64
-    res3 = _np_rand(np, 2, 2, dtype="bfloat16")
-    assert as_tensor(_get_attr(res3, "dtype")) == np.float32
+    res = _np_rand(ensure_eager_tensor(np), 2, 2)
+    assert ensure_eager_tensor(res).shape == (2, 2)
+    res2 = _np_rand(ensure_eager_tensor(np), 2, 2, dtype="float64")
+    assert ensure_eager_tensor(ensure_eager_tensor(res2).dtype) == np.float64
+    res3 = _np_rand(ensure_eager_tensor(np), 2, 2, dtype="bfloat16")
+    assert ensure_eager_tensor(ensure_eager_tensor(res3).dtype) == np.float32
 
 
 def test_is_non_decreasing() -> None:
     """Test function test_is_non_decreasing."""
-    assert _np_is_non_decreasing(np, np.array([1, 2, 2, 3]))
-    assert not _np_is_non_decreasing(np, np.array([1, 2, 1]))
-    assert _np_is_non_decreasing(np, np.array([1]))
+    assert _np_is_non_decreasing(ensure_eager_tensor(np), np.array([1, 2, 2, 3]))
+    assert not _np_is_non_decreasing(ensure_eager_tensor(np), np.array([1, 2, 1]))
+    assert _np_is_non_decreasing(ensure_eager_tensor(np), np.array([1]))
 
 
 def test_is_strictly_increasing() -> None:
     """Test function test_is_strictly_increasing."""
-    assert _np_is_strictly_increasing(np, np.array([1, 2, 3]))
-    assert not _np_is_strictly_increasing(np, np.array([1, 2, 2]))
-    assert _np_is_strictly_increasing(np, np.array([1]))
+    assert _np_is_strictly_increasing(ensure_eager_tensor(np), np.array([1, 2, 3]))
+    assert not _np_is_strictly_increasing(ensure_eager_tensor(np), np.array([1, 2, 2]))
+    assert _np_is_strictly_increasing(ensure_eager_tensor(np), np.array([1]))
 
 
 def test_l2_normalize() -> None:
     """Test function test_l2_normalize."""
     x = np.array([3.0, 4.0])
-    res = _np_l2_normalize(np, x)
-    as_callable(np.testing.assert_allclose)(res, [0.6, 0.8])
+    res = _np_l2_normalize(ensure_eager_tensor(np), x)
+    ensure_callable(np.testing.assert_allclose)(res, [0.6, 0.8])
 
 
 def test_reduce_euclidean_norm() -> None:
     """Test function test_reduce_euclidean_norm."""
     x = np.array([3.0, 4.0])
-    res = _np_reduce_euclidean_norm(np, x)
+    res = _np_reduce_euclidean_norm(ensure_eager_tensor(np), x)
     assert res == 5.0
 
 
 def test_clamp() -> None:
     """Test function test_clamp."""
     x = np.array([1, 2, 3, 4, 5])
-    res = _clamp(np, 2, x, 4)
-    as_callable(np.testing.assert_allclose)(res, [2, 2, 3, 4, 4])
+    res = _clamp(ensure_eager_tensor(np), 2, x, 4)
+    ensure_callable(np.testing.assert_allclose)(res, [2, 2, 3, 4, 4])
 
 
 def test_logspace() -> None:
     """Test function test_logspace."""
-    res = _logspace(np, 1, 2, num=2)
-    assert as_callable(len)(res) == 2
+    res = _logspace(ensure_eager_tensor(np), 1, 2, num=2)
+    assert ensure_callable(len)(res) == 2
 
     class SpaceConfig:
         """Test class SpaceConfig."""
@@ -119,54 +118,54 @@ def test_logspace() -> None:
             self.dtype = None
             self.axis = 0
 
-    res2 = _logspace(np, 1, 2, as_tensor(SpaceConfig()))
-    assert as_callable(len)(res2) == 2
+    res2 = _logspace(ensure_eager_tensor(np), 1, 2, ensure_eager_tensor(SpaceConfig()))
+    assert ensure_callable(len)(res2) == 2
 
 
 def test_frombuffer() -> None:
     """Test function test_frombuffer."""
     b = np.array([1.0, 2.0], dtype=np.float32).tobytes()
-    res = _np_frombuffer(np, b)
-    as_callable(np.testing.assert_allclose)(res, [1.0, 2.0])
+    res = _np_frombuffer(ensure_eager_tensor(np), b)
+    ensure_callable(np.testing.assert_allclose)(res, [1.0, 2.0])
 
 
 def test_dtype_op() -> None:
     """Test function test_dtype_op."""
-    res1 = _np_dtype_op(np, "float32")
+    res1 = _np_dtype_op(ensure_eager_tensor(np), "float32")
     assert isinstance(res1, DType)
-    res2 = _np_dtype_op(np, np.array([1.0, 2.0]))
+    res2 = _np_dtype_op(ensure_eager_tensor(np), np.array([1.0, 2.0]))
     assert isinstance(res2, DType)
-    res3 = _np_dtype_op(np, [1, 2])
+    res3 = _np_dtype_op(ensure_eager_tensor(np), [1, 2])
     assert isinstance(res3, DType)
 
 
 def test_eager_gradient() -> None:
     """Test function test_eager_gradient."""
     x = np.array([1, 2, 4, 7, 11])
-    res = _eager_Gradient(np, x)
+    res = _eager_Gradient(ensure_eager_tensor(np), x)
     expected = np.gradient(x)
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_eager_i0() -> None:
     """Test function test_eager_i0."""
     x = np.array([0.0])
-    res = _eager_I0(np, x)
+    res = _eager_I0(ensure_eager_tensor(np), x)
     expected = np.i0(x)
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_eager_broadcastediota() -> None:
     """Test function test_eager_broadcastediota."""
-    res = _eager_BroadcastedIota(np, 3, (2, 3))
+    res = _eager_BroadcastedIota(ensure_eager_tensor(np), 3, (2, 3))
     expected = np.broadcast_to(np.arange(3), (2, 3))
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_rand_int4() -> None:
     """Test function test_rand_int4."""
-    res = _np_rand(np, 2, 2, dtype="int4")
-    assert as_tensor(_get_attr(res, "dtype")) == np.int8
+    res = _np_rand(ensure_eager_tensor(np), 2, 2, dtype="int4")
+    assert ensure_eager_tensor(ensure_eager_tensor(res).dtype) == np.int8
 
 
 def test_np_rand_dt_str() -> None:
@@ -176,6 +175,6 @@ def test_np_rand_dt_str() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import _np_rand
 
     with pytest.raises(TypeError):
-        res = _np_rand(np, 2, 2, dtype="fake_dtype")
-    res = _np_rand(np, 2, 2, dtype="int4")
+        res = _np_rand(ensure_eager_tensor(np), 2, 2, dtype="fake_dtype")
+    res = _np_rand(ensure_eager_tensor(np), 2, 2, dtype="int4")
     assert res is not None

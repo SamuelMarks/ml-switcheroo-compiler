@@ -9,8 +9,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.transforms.passes.config_models as passes_cfg
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -246,11 +245,10 @@ def _test_transforms_passes_config_models_part_1(_state: dict[str, EagerTensorPr
 
     # Remat, heuristics, behavior
     remat_thresh = passes_cfg.RematerializationThresholds(min_memory_bytes=4096, max_compute_to_memory_ratio=2.5)
-    _get_attr(_state, "update")({"contract": contract, "conv": conv, "cost_model": cost_model, "costs": costs})
-    _get_attr(_state, "update")({"fusion": fusion, "node_pat": node_pat, "opt_level": opt_level, "pass_cfg": pass_cfg})
-    _get_attr(_state, "update")({"pass_cfg_model": pass_cfg_model, "pipeline": pipeline, "remat_thresh": remat_thresh, "repl": repl})
-    _get_attr(_state, "update")({"stage": stage})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"contract": contract, "conv": conv, "cost_model": cost_model, "costs": costs}))
+    _state.update(ensure_tensor_dict({"fusion": fusion, "node_pat": node_pat, "opt_level": opt_level, "pass_cfg": pass_cfg}))
+    _state.update(ensure_tensor_dict({"pass_cfg_model": pass_cfg_model, "pipeline": pipeline, "remat_thresh": remat_thresh, "repl": repl}))
+    _state.update(ensure_tensor_dict({"stage": stage}))
 
 
 def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -260,7 +258,7 @@ def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorPr
         _state: Shared test state dictionary.
     """
     remat_thresh = _state["remat_thresh"]
-    remat_rules = as_callable(passes_cfg.RematerializationRulesConfig)(
+    remat_rules = ensure_callable(passes_cfg.RematerializationRulesConfig)(
         target_ops=["Conv2D"],
         high_cost_ops=["MatMul"],
         thresholds=remat_thresh,
@@ -330,10 +328,10 @@ def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorPr
         devices=[0, 1, 2, 3, 4, 5, 6, 7],
     )
     assert mesh_grid.shape == [2, 4]
-    _get_attr(_state, "update")({"behaviors": behaviors, "default_proto_path": default_proto_path, "heuristics": heuristics, "loaded_custom_proto": loaded_custom_proto})
-    _get_attr(_state, "update")({"loaded_protocol": loaded_protocol, "mesh_grid": mesh_grid, "obs_shape": obs_shape, "packet": packet})
-    _get_attr(_state, "update")({"payload": payload, "remat_rules": remat_rules, "rt_meta": rt_meta})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"behaviors": behaviors, "default_proto_path": default_proto_path, "heuristics": heuristics, "loaded_custom_proto": loaded_custom_proto}))
+    _state.update(ensure_tensor_dict({"loaded_protocol": loaded_protocol, "mesh_grid": mesh_grid, "obs_shape": obs_shape, "packet": packet}))
+    _state.update(ensure_tensor_dict({"payload": payload, "remat_rules": remat_rules, "rt_meta": rt_meta}))
+    _state.update(ensure_tensor_dict({"remat_thresh": remat_thresh}))
 
 
 def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -351,9 +349,9 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
         tensor_model_parallel=tp_strat,
         pipeline_parallel=pp_strat,
     )
-    mesh_cfg = as_callable(passes_cfg.DeviceMeshPartitioningConfig)(default_mesh=mesh_grid, strategies=strategies)
-    root_mesh_cfg = as_callable(passes_cfg.DeviceMeshPartitioningRootConfig)(device_mesh_partitioning=mesh_cfg)
-    assert as_tensor(root_mesh_cfg.device_mesh_partitioning.default_mesh.shape) == as_tensor([2, 4])
+    mesh_cfg = ensure_callable(passes_cfg.DeviceMeshPartitioningConfig)(default_mesh=mesh_grid, strategies=strategies)
+    root_mesh_cfg = ensure_callable(passes_cfg.DeviceMeshPartitioningRootConfig)(device_mesh_partitioning=mesh_cfg)
+    assert ensure_eager_tensor(root_mesh_cfg.device_mesh_partitioning.default_mesh.shape) == ensure_eager_tensor([2, 4])
 
     # SPMD Communication matrix
     comm_cond = passes_cfg.SpmdCommunicationCondition(
@@ -375,9 +373,9 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
     default_mesh_path = os.path.join(os.path.dirname(passes_cfg.__file__), "spmd_mappings", "mesh_partitioning.yaml")
     loaded_custom_mesh = passes_cfg.load_mesh_partitioning(default_mesh_path)
     assert loaded_custom_mesh.default_mesh.shape == loaded_mesh.default_mesh.shape
-    _get_attr(_state, "update")({"comm_cond": comm_cond, "comm_rule": comm_rule, "default_mesh_path": default_mesh_path, "dp_strat": dp_strat})
-    _get_attr(_state, "update")({"loaded_custom_mesh": loaded_custom_mesh, "loaded_mesh": loaded_mesh, "matrix_cfg": matrix_cfg, "mesh_cfg": mesh_cfg})
-    _get_attr(_state, "update")({"pp_strat": pp_strat, "root_mesh_cfg": root_mesh_cfg, "strategies": strategies, "tp_strat": tp_strat})
+    _state.update(ensure_tensor_dict({"comm_cond": comm_cond, "comm_rule": comm_rule, "default_mesh_path": default_mesh_path, "dp_strat": dp_strat}))
+    _state.update(ensure_tensor_dict({"loaded_custom_mesh": loaded_custom_mesh, "loaded_mesh": loaded_mesh, "matrix_cfg": matrix_cfg, "mesh_cfg": mesh_cfg}))
+    _state.update(ensure_tensor_dict({"pp_strat": pp_strat, "root_mesh_cfg": root_mesh_cfg, "strategies": strategies, "tp_strat": tp_strat}))
 
 
 def test_transforms_passes_config_models() -> None:

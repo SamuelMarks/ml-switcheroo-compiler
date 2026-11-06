@@ -8,16 +8,15 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.utils.operation_utils import _normalize_axes, _validate_squeeze_dims, compute_shape_propagation, get_source_inputs
-from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 class MockNode:
     """Test class MockNode."""
 
-    def __init__(self, inputs: EagerValue = None) -> None:
+    def __init__(self, inputs: list[MockTensor] | None = None) -> None:
         """Test function __init__.
 
         Args:
@@ -27,7 +26,7 @@ class MockNode:
         class Op:
             """Test class Op."""
 
-            def __init__(self, ins: EagerValue) -> None:
+            def __init__(self, ins: list[MockTensor]) -> None:
                 """Test function __init__.
 
                 Args:
@@ -41,7 +40,7 @@ class MockNode:
 class MockHistory:
     """Test class MockHistory."""
 
-    def __init__(self, inputs: EagerValue = None) -> None:
+    def __init__(self, inputs: list[MockTensor] | None = None) -> None:
         """Test function __init__.
 
         Args:
@@ -53,7 +52,7 @@ class MockHistory:
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, inputs: EagerValue = None) -> None:
+    def __init__(self, inputs: list[MockTensor] | None = None) -> None:
         """Test function __init__.
 
         Args:
@@ -67,7 +66,7 @@ def test_get_source_inputs() -> None:
     """Test function test_get_source_inputs."""
     t1 = MockTensor()
     t2 = MockTensor()
-    t3 = as_callable(MockTensor)([t1, t2])
+    t3 = MockTensor([t1, t2])
     t4 = MockTensor([])
     assert get_source_inputs(t4) == [t4]
     assert get_source_inputs(t1) == [t1]

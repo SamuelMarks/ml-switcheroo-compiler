@@ -11,9 +11,8 @@ from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, 
 from ml_switcheroo_compiler.backends.keras.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 try:
     import keras.ops as kops
@@ -76,15 +75,15 @@ def test_keras_eager_coverage() -> None:
     with pytest.raises(Exception, match=".*"):
         try:
             try:
-                as_callable(execute_op)(None, "UnknownFakeOp", None)
+                ensure_callable(execute_op)(None, "UnknownFakeOp", None)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                 _caught_err = True
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
-        assert as_callable(zeros)(None, (2,)) is not None
-        assert as_callable(array)(None, [1, 2]) is not None
-        assert as_callable(asarray)(None, [3, 4]) is not None
-        assert as_callable(item)(None, as_callable(kops.array)([5])) == 5
+        assert ensure_callable(zeros)(None, (2,)) is not None
+        assert ensure_callable(array)(None, [1, 2]) is not None
+        assert ensure_callable(asarray)(None, [3, 4]) is not None
+        assert ensure_callable(item)(None, ensure_callable(kops.array)([5])) == 5
 
 
 def test_mlx_generator_coverage() -> None:
@@ -126,11 +125,11 @@ def test_numpy_generator_coverage() -> None:
         g = IRGraph()
         gen = NumpyGenerator(g)
         n_triinv = IRNode(id="n1", op_type="TriInv", inputs=["x"], attributes={}, shape_metadata=None)
-        assert "np.linalg.inv" in as_tensor(_get_attr(NumpyASTVisitor, "visit_TriInv"))(n_triinv, ["x"])
+        assert "np.linalg.inv" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TriInv)(n_triinv, ["x"])
         n_trunc_div = IRNode(id="n2", op_type="TruncateDiv", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert "np.trunc(np.divide(x, y))" in as_tensor(_get_attr(NumpyASTVisitor, "visit_TruncateDiv"))(n_trunc_div, ["x", "y"])
+        assert "np.trunc(np.divide(x, y))" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateDiv)(n_trunc_div, ["x", "y"])
         n_trunc_mod = IRNode(id="n3", op_type="TruncateMod", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert "np.fmod(x, y)" in as_tensor(_get_attr(NumpyASTVisitor, "visit_TruncateMod"))(n_trunc_mod, ["x", "y"])
+        assert "np.fmod(x, y)" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateMod)(n_trunc_mod, ["x", "y"])
         n_generic = IRNode(id="n4", op_type="UnknownOp", inputs=["x"], attributes={}, shape_metadata=None)
         assert "np.unknownop(x)" in NumpyASTVisitor.generic_visit(n_generic, ["x"])
         n_generic2 = IRNode(id="n5", op_type="UnknownOp", inputs=["x"], attributes={"dimension": 1}, shape_metadata=None)
@@ -167,4 +166,4 @@ def test_mlx_eager_scatter_nd() -> None:
     with pytest.raises(AttributeError):
         import numpy as np
 
-        _mlx_scatter_nd(as_mod(None), np.array([0]), np.array([1]), np.array((1,)))
+        _mlx_scatter_nd(ensure_mod(None), np.array([0]), np.array([1]), np.array((1,)))

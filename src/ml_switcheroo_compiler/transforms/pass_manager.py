@@ -10,13 +10,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import operator
 import typing
 from collections.abc import Callable, Iterable, Mapping, Sequence  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, NodeDict  # noqa: F401
 
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import as_node_list
 
 if typing.TYPE_CHECKING:
@@ -25,18 +24,6 @@ if typing.TYPE_CHECKING:
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
-
-
-def _is_pass_callable(fn: TensorOrScalar) -> typing.TypeGuard[Callable[[IRGraph], bool]]:
-    """Type guard narrowing a candidate pass function to `Callable[[IRGraph], bool]`.
-
-    Args:
-        fn (TensorOrScalar): Candidate pass function.
-
-    Returns:
-        bool: True if callable.
-    """
-    return callable(fn)
 
 
 @typing.runtime_checkable
@@ -167,9 +154,8 @@ def _snapshot_graph(graph: IRGraph) -> dict[str, dict[str, IRNode] | list[str]]:
         for n in as_node_list(nodes_iterable):
             nodes_copy[n.id] = clone_logical_node(n)
 
-    raw_graph: StructuralOperandProtocol = graph
-    inputs_copy: list[str] = list(raw_graph.inputs) if isinstance(raw_graph, _GraphInputsAttrProtocol) and raw_graph.inputs is not None else []
-    outputs_copy: list[str] = list(raw_graph.outputs) if isinstance(raw_graph, _GraphInputsAttrProtocol) and raw_graph.outputs is not None else []
+    inputs_copy: list[str] = list(graph.inputs or [])
+    outputs_copy: list[str] = list(graph.outputs or [])
     return {"nodes": nodes_copy, "inputs": inputs_copy, "outputs": outputs_copy}
 
 
@@ -181,8 +167,7 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
         snapshot (dict[str, dict[str, IRNode] | list[str]]): The snapshot to restore from.
     """
     nodes_data = snapshot["nodes"]
-    raw_nodes: StructuralOperandProtocol | TensorOrScalar = graph.nodes
-    raw_graph: StructuralOperandProtocol = graph
+    raw_nodes: TensorOrScalar = graph.nodes
     if isinstance(nodes_data, dict):
         if isinstance(raw_nodes, _MutableNodesMappingProtocol):
             raw_nodes.clear()
@@ -191,13 +176,12 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
             assert isinstance(raw_nodes, list)
             raw_nodes.clear()
             raw_nodes.extend(nodes_data.values())
-    if isinstance(raw_graph, _GraphInputsAttrProtocol):
-        in_snap = snapshot.get("inputs", [])
-        out_snap = snapshot.get("outputs", [])
-        assert isinstance(in_snap, list)
-        assert isinstance(out_snap, list)
-        raw_graph.inputs = list(in_snap)
-        raw_graph.outputs = list(out_snap)
+    in_snap = snapshot.get("inputs", [])
+    out_snap = snapshot.get("outputs", [])
+    assert isinstance(in_snap, list)
+    assert isinstance(out_snap, list)
+    graph.inputs = list(in_snap)
+    graph.outputs = list(out_snap)
 
 
 class PassManager:
@@ -210,7 +194,7 @@ class PassManager:
 
     def __init__(self) -> None:
         """Initialize the PassManager."""
-        self.passes: list[Callable[[IRGraph], bool]] = []
+        self.passes: list[Callable[[IRGraph], IRGraph | bool]] = []
         self.pass_names: list[str] = []
         self.convergence_criteria: ConvergenceCriteria | None = None
         self.validators: list[Callable[[IRGraph], None]] = [
@@ -218,17 +202,18 @@ class PassManager:
             IRValidator.check_shapes,
         ]
 
-    def add_pass(self, ir_pass: Callable[[IRGraph], bool], name: str | None = None) -> None:
+    def add_pass(self, ir_pass: Callable[[IRGraph], IRGraph | bool], name: str | None = None) -> None:
         """Add a pass to the manager.
 
         A pass should return True if it modified the graph.
 
         Args:
-            ir_pass (Callable[[IRGraph], bool]): The transformation pass.
+            ir_pass (Callable[[IRGraph], IRGraph | bool]): The transformation pass.
             name (str, optional): The name of the pass.
         """
         self.passes.append(ir_pass)
-        raw_pass: StructuralOperandProtocol = ir_pass
+
+        raw_pass: TensorOrScalar = ir_pass
         pass_name = name if name is not None else (str(raw_pass.__name__) if isinstance(raw_pass, _NamedPassProtocol) and raw_pass.__name__ else "unknown_pass")
         self.pass_names.append(pass_name)
 
@@ -337,15 +322,62 @@ class PassManager:
         self.pass_names = []
         execution_order = self._extract_execution_order(res, opt_level)
 
+        pass_map: dict[str, Callable[[IRGraph], IRGraph | bool]] = {
+            "axis_translation": passes_module.axis_translation_pass,
+            "axis_translation_pass": passes_module.axis_translation_pass,
+            "batch_norm_folding": passes_module.batch_norm_folding_pass,
+            "batch_norm_folding_pass": passes_module.batch_norm_folding_pass,
+            "broadcast_explicitizer": passes_module.broadcast_explicitizer_pass,
+            "broadcast_explicitizer_pass": passes_module.broadcast_explicitizer_pass,
+            "buffer_allocation": passes_module.buffer_allocation_pass,
+            "buffer_allocation_pass": passes_module.buffer_allocation_pass,
+            "common_subexpression_elimination": passes_module.common_subexpression_elimination_pass,
+            "common_subexpression_elimination_pass": passes_module.common_subexpression_elimination_pass,
+            "constant_folding": passes_module.constant_folding_pass,
+            "constant_folding_pass": passes_module.constant_folding_pass,
+            "control_flow_optimization": passes_module.control_flow_optimization_pass,
+            "control_flow_optimization_pass": passes_module.control_flow_optimization_pass,
+            "dead_code_elimination": passes_module.dead_code_elimination_pass,
+            "dead_code_elimination_pass": passes_module.dead_code_elimination_pass,
+            "dtype_inference": passes_module.dtype_inference_pass,
+            "dtype_inference_pass": passes_module.dtype_inference_pass,
+            "graph_scheduling": passes_module.graph_scheduling_pass,
+            "graph_scheduling_pass": passes_module.graph_scheduling_pass,
+            "inject_spmd_communication": passes_module.inject_spmd_communication_pass,
+            "inject_spmd_communication_pass": passes_module.inject_spmd_communication_pass,
+            "lift_state": passes_module.lift_state_pass,
+            "lift_state_pass": passes_module.lift_state_pass,
+            "loop_tiling": passes_module.loop_tiling_pass,
+            "loop_tiling_pass": passes_module.loop_tiling_pass,
+            "loop_unrolling": passes_module.loop_unrolling_pass,
+            "loop_unrolling_pass": passes_module.loop_unrolling_pass,
+            "mixed_precision": passes_module.mixed_precision_pass,
+            "mixed_precision_pass": passes_module.mixed_precision_pass,
+            "operator_fusion": passes_module.operator_fusion_pass,
+            "operator_fusion_pass": passes_module.operator_fusion_pass,
+            "parallel_scan": passes_module.parallel_scan_pass,
+            "parallel_scan_pass": passes_module.parallel_scan_pass,
+            "polyfill_lowering": passes_module.polyfill_lowering_pass,
+            "polyfill_lowering_pass": passes_module.polyfill_lowering_pass,
+            "rematerialization": passes_module.rematerialization_pass,
+            "rematerialization_pass": passes_module.rematerialization_pass,
+            "shape_inference": passes_module.shape_inference_pass,
+            "shape_inference_pass": passes_module.shape_inference_pass,
+            "spmd_partitioning": passes_module.spmd_partitioning_pass,
+            "spmd_partitioning_pass": passes_module.spmd_partitioning_pass,
+            "state_lowering": passes_module.state_lowering_pass,
+            "state_lowering_pass": passes_module.state_lowering_pass,
+            "strip_offline_diagnostic_nodes": passes_module.strip_offline_diagnostic_nodes_pass,
+            "strip_offline_diagnostic_nodes_pass": passes_module.strip_offline_diagnostic_nodes_pass,
+            "type_promotion_explicitizer": passes_module.type_promotion_explicitizer_pass,
+            "type_promotion_explicitizer_pass": passes_module.type_promotion_explicitizer_pass,
+            "vectorization": passes_module.vectorization_pass,
+            "vectorization_pass": passes_module.vectorization_pass,
+        }
+
         for pass_name in execution_order:
-            pass_func: TensorOrScalar = None
-            for cand in (f"{pass_name}_pass", pass_name):
-                try:
-                    pass_func = operator.attrgetter(cand)(passes_module)
-                    break
-                except AttributeError:
-                    pass
-            if _is_pass_callable(pass_func):
+            pass_func = pass_map.get(pass_name)
+            if pass_func is not None:
                 self.add_pass(pass_func, name=pass_name)
 
     def validate(self, graph: IRGraph) -> None:

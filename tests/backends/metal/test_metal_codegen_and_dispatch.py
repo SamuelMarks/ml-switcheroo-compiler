@@ -19,9 +19,8 @@ from ml_switcheroo_compiler.backends.metal.metal import (
     _resolve_metal_grid_sizes,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -334,13 +333,16 @@ def test_metal_runner_allocate_buffer_all_branches() -> None:
     mock_pyobjc_dev.newBufferWithLength_options_.return_value = None
     assert runner.allocate_buffer(64) is None
 
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     # Branch 1c: Device has newBufferWithLength_options_ but buffer has no contents attribute
-    mock_bad_buf = object()
+    mock_bad_buf = _BareDummy()
     mock_pyobjc_dev.newBufferWithLength_options_.return_value = mock_bad_buf
     assert runner.allocate_buffer(64) is None
 
     # Branch 2a: Device has no newBufferWithLength_options_ and objc is None (530->546)
-    runner.device = object()
+    runner.device = _BareDummy()
     assert runner.allocate_buffer(64) is None
 
     # Branch 2b: Device is an integer pointer with objc runtime
@@ -484,10 +486,9 @@ def _test_metal_runner_execute_graph_part_1(_state: dict[str, EagerTensorProtoco
     mock_lib = MagicMock()
     mock_dev.newLibraryWithSource_options_error_.return_value = (mock_lib, None)
     mock_queue = MagicMock()
-    _get_attr(_state, "update")({"add_node": add_node, "fused_node": fused_node, "graph": graph, "in_node": in_node})
-    _get_attr(_state, "update")({"mock_dev": mock_dev, "mock_lib": mock_lib, "mock_metal": mock_metal, "mock_queue": mock_queue})
-    _get_attr(_state, "update")({"runner": runner})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"add_node": add_node, "fused_node": fused_node, "graph": graph, "in_node": in_node}))
+    _state.update(ensure_tensor_dict({"mock_dev": mock_dev, "mock_lib": mock_lib, "mock_metal": mock_metal, "mock_queue": mock_queue}))
+    _state.update(ensure_tensor_dict({"runner": runner}))
 
 
 def _test_metal_runner_execute_graph_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -499,21 +500,21 @@ def _test_metal_runner_execute_graph_part_2(_state: dict[str, EagerTensorProtoco
     mock_dev, mock_lib, mock_queue = _state["mock_dev"], _state["mock_lib"], _state["mock_queue"]
     mock_cmd = MagicMock()
     mock_enc = MagicMock()
-    _set_attr(mock_dev.newCommandQueue, "return_value", mock_queue)
-    _set_attr(mock_queue.commandBuffer, "return_value", mock_cmd)
+    ensure_mutable(mock_dev.newCommandQueue).return_value = ensure_eager_tensor(mock_queue)
+    ensure_mutable(mock_queue.commandBuffer).return_value = ensure_eager_tensor(mock_cmd)
     mock_cmd.computeCommandEncoder.return_value = mock_enc
 
     # Output buffer setup
     out_data = np.array([2.0, 4.0, 6.0, 8.0], dtype=np.float32)
     mock_out_buf = MagicMock()
     mock_out_buf.contents.return_value = out_data.ctypes.data
-    _set_attr(mock_dev.newBufferWithLength_options_, "return_value", mock_out_buf)
+    ensure_mutable(mock_dev.newBufferWithLength_options_).return_value = ensure_eager_tensor(mock_out_buf)
 
     # Test library returns function for nodes
     mock_pipe = MagicMock()
     mock_func = MagicMock()
-    _set_attr(mock_lib.newFunctionWithName_, "return_value", mock_func)
-    _set_attr(mock_dev.newComputePipelineStateWithFunction_error_, "return_value", (mock_pipe, None))
+    ensure_mutable(mock_lib.newFunctionWithName_).return_value = ensure_eager_tensor(mock_func)
+    ensure_mutable(mock_dev.newComputePipelineStateWithFunction_error_).return_value = ensure_eager_tensor((mock_pipe, None))
 
     inputs = {
         "bytes_in": b"\x00\x00\x80?\x00\x00\x00@",
@@ -521,9 +522,9 @@ def _test_metal_runner_execute_graph_part_2(_state: dict[str, EagerTensorProtoco
         "list_in": [1.0, 2.0, 3.0],
         "numpy_in": np.array([1.0, 2.0], dtype=np.float32),
     }
-    _get_attr(_state, "update")({"inputs": inputs, "mock_cmd": mock_cmd, "mock_enc": mock_enc, "mock_func": mock_func})
-    _get_attr(_state, "update")({"mock_out_buf": mock_out_buf, "mock_pipe": mock_pipe, "out_data": out_data})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"inputs": inputs, "mock_cmd": mock_cmd, "mock_enc": mock_enc, "mock_func": mock_func}))
+    _state.update(ensure_tensor_dict({"mock_out_buf": mock_out_buf, "mock_pipe": mock_pipe, "out_data": out_data}))
+    _state.update(ensure_tensor_dict({"mock_dev": mock_dev, "mock_lib": mock_lib, "mock_queue": mock_queue}))
 
 
 def _test_metal_runner_execute_graph_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -544,15 +545,15 @@ def _test_metal_runner_execute_graph_part_3(_state: dict[str, EagerTensorProtoco
             assert mock_cmd.commit.called
 
             # Also verify node dispatch early exits when func is None or pipeline_state is None
-            _set_attr(mock_lib.newFunctionWithName_, "return_value", None)
+            ensure_mutable(mock_lib.newFunctionWithName_).return_value = ensure_eager_tensor(None)
             res2 = runner.execute_graph(graph, inputs)
-            assert isinstance(as_tensor(res2), dict)
+            assert isinstance(ensure_eager_tensor(res2), dict)
 
-            _set_attr(mock_lib.newFunctionWithName_, "return_value", mock_func)
-            _set_attr(mock_dev.newComputePipelineStateWithFunction_error_, "return_value", (None, None))
+            ensure_mutable(mock_lib.newFunctionWithName_).return_value = ensure_eager_tensor(mock_func)
+            ensure_mutable(mock_dev.newComputePipelineStateWithFunction_error_).return_value = ensure_eager_tensor((None, None))
             res3 = runner.execute_graph(graph, inputs)
-            assert isinstance(as_tensor(res3), dict)
-    _get_attr(_state, "update")({"res": res, "res2": res2, "res3": res3})
+            assert isinstance(ensure_eager_tensor(res3), dict)
+    _state.update(ensure_tensor_dict({"res": res, "res2": res2, "res3": res3}))
 
 
 def test_metal_runner_execute_graph() -> None:

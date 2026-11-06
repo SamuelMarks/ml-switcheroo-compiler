@@ -7,8 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -88,9 +87,8 @@ def test_init_classes_serialization() -> None:
             Args:
                 path: Test parameter `path`.
             """
-            pass
-            _typed_ret_1: SavedModel = _cast_val("SavedModel", None)
-            return _typed_ret_1
+            del path
+            return cls()
 
     assert callable(test_init_classes_serialization)
 
@@ -142,7 +140,7 @@ def test_extract_model_state_layers() -> None:
 
         weights = [FakeW("w1")]
 
-    ws = as_callable(_extract_model_weights)(as_callable(FakeModel)())
+    ws = ensure_callable(_extract_model_weights)(ensure_callable(FakeModel)())
     assert ws["w1"] == 1
 
     class FakeOpt:
@@ -156,8 +154,8 @@ def test_extract_model_state_layers() -> None:
 
         optimizer = FakeOpt()
 
-    st = as_tensor_dict({})
-    as_callable(_extract_optimizer_state)(as_callable(FakeModelOpt)(), st)
+    st = ensure_tensor_dict({})
+    ensure_callable(_extract_optimizer_state)(ensure_callable(FakeModelOpt)(), st)
     assert st["v1"] == 1
     assert st["m1"] == 1
 
@@ -167,10 +165,10 @@ def test_extract_model_state_layers() -> None:
         non_trainable_variables = [FakeW("nt1")]
 
     st = {}
-    ws = as_tensor({"nt1": 1})
-    as_callable(_extract_non_trainable_state)(as_callable(FakeModelNT)(), st, ws)
+    ws = ensure_eager_tensor({"nt1": 1})
+    ensure_callable(_extract_non_trainable_state)(ensure_callable(FakeModelNT)(), st, ws)
     assert "nt1" not in st
-    as_callable(_extract_non_trainable_state)(as_callable(FakeModelNT)(), st, {})
+    ensure_callable(_extract_non_trainable_state)(ensure_callable(FakeModelNT)(), st, {})
     assert st["nt1"] == 1
 
 
@@ -185,11 +183,11 @@ def test_extract_model_state_submodules() -> None:
             """Test function get_config."""
             return {"c": 1}
 
-    st = as_callable(_extract_model_state)(as_callable(FakeModelNT)(), {})
-    assert isinstance(as_tensor(st), dict)
-    (c, m) = as_callable(_compile_model_metadata)(as_callable(FakeModelNT)())
+    st = ensure_callable(_extract_model_state)(ensure_callable(FakeModelNT)(), {})
+    assert isinstance(ensure_eager_tensor(st), dict)
+    (c, m) = ensure_callable(_compile_model_metadata)(ensure_callable(FakeModelNT)())
     assert c == {"c": 1}
-    (c2, m2) = as_callable(_compile_model_metadata)(None)
+    (c2, m2) = ensure_callable(_compile_model_metadata)(None)
     assert c2 == {}
     import os
     import zipfile
@@ -206,15 +204,15 @@ def test_extract_model_state_submodules() -> None:
             _write_h5_to_zip(zf, "a.h5", {"a": 1})
     if os.path.exists(tf):
         os.remove(tf)
-    ctx = KerasSerializationContext(
+    ctx = ensure_callable(KerasSerializationContext)(
         filepath=tf,
         config_dict={},
         metadata={},
-        weights_store=_cast_val("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"w": 1}),
-        state_store=_cast_val("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"s": 1}),
+        weights_store={"w": 1},
+        state_store={"s": 1},
     )
     with patch.object(H5WeightFormat, "save"):
-        _write_keras_zip(ctx)
+        ensure_callable(_write_keras_zip)(ctx)
     if os.path.exists(tf):
         os.remove(tf)
 
@@ -243,8 +241,8 @@ def test_extract_model_state_parameters() -> None:
 
         ema_variables = [FakeW("ema1"), FakeW("ema2")]
 
-    st = as_tensor_dict({})
-    as_callable(_extract_ema_state)(as_callable(FakeModelEMA)(), st)
+    st = ensure_tensor_dict({})
+    ensure_callable(_extract_ema_state)(ensure_callable(FakeModelEMA)(), st)
     assert st["ema1"] == 1
     assert st["ema2"] == 1
 
@@ -266,9 +264,9 @@ def test_extract_model_state_nested_objects() -> None:
         mock_w.assert_not_called()
     if os.path.exists(tf):
         os.remove(tf)
-    ctx2 = as_callable(KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
+    ctx2 = ensure_callable(KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
     with patch.object(s, "_write_h5_to_zip") as mock_w:
-        as_callable(_write_keras_zip)(ctx2)
+        ensure_callable(_write_keras_zip)(ctx2)
         assert mock_w.call_count == 2
     if os.path.exists(tf):
         os.remove(tf)
@@ -308,7 +306,7 @@ def test_serialize_keras_object() -> None:
             return {"a": 1}
 
     assert serialize_object() == {}
-    assert serialize_object(as_tensor(MyC())) == {"a": 1}
+    assert serialize_object(ensure_eager_tensor(MyC())) == {"a": 1}
     assert serialize_object(1) == {}
 
 
@@ -378,17 +376,17 @@ def test_export_methods() -> None:
             return "{}"
 
     g = FakeGraph()
-    as_callable(export_to_onnx)(g, "test.onnx")
+    ensure_callable(export_to_onnx)(g, "test.onnx")
     assert os.path.exists("test.onnx")
     with open("test.onnx", "rb") as f:
         assert f.read() == b"ONNX"
     os.remove("test.onnx")
-    as_callable(export_to_tflite)(g, "test.tflite")
+    ensure_callable(export_to_tflite)(g, "test.tflite")
     assert os.path.exists("test.tflite")
     with open("test.tflite", "rb") as f:
         assert f.read() == b"TFLITE"
     os.remove("test.tflite")
-    as_callable(export_model_topology)(g, "test.json")
+    ensure_callable(export_model_topology)(g, "test.json")
     assert os.path.exists("test.json")
     with open("test.json") as f2:
         assert f2.read() == "{}"
@@ -403,12 +401,12 @@ def test_init_exports_mocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with (
-        as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "save"),
-        as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "save"),
-        as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(_get_attr(s, "PickleWeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(_get_attr(s, "NpzWeightFormat")), "load"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load"),
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -426,16 +424,16 @@ def test_init_exports_unmocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with pytest.raises(Exception, match=".*"):
-        as_callable(_save_as_h5)(None, None)
+        ensure_callable(_save_as_h5)(None, None)
     with pytest.raises(Exception, match=".*"):
-        as_callable(_save_as_safetensors)(None, None)
+        ensure_callable(_save_as_safetensors)(None, None)
     with pytest.raises(Exception, match=".*"):
-        as_callable(_load_h5_weights)(None)
+        ensure_callable(_load_h5_weights)(None)
     with pytest.raises(Exception, match=".*"):
-        as_callable(_load_safetensors_weights)(None)
-    assert as_callable(_load_npz_weights)(None) == {}
+        ensure_callable(_load_safetensors_weights)(None)
+    assert ensure_callable(_load_npz_weights)(None) == {}
     with pytest.raises(Exception, match=".*"):
-        as_callable(_load_pickle_weights)(None)
+        ensure_callable(_load_pickle_weights)(None)
 
 
 def test_init_module_exports() -> None:
@@ -445,17 +443,17 @@ def test_init_module_exports() -> None:
     import ml_switcheroo_compiler.serialization as s
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "save"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save"):
         _save_as_h5({}, "test.h5")
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "save"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save"):
         _save_as_safetensors({}, "test.st")
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "load"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load"):
         _load_h5_weights("test.h5")
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "load"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load"):
         _load_safetensors_weights("test.st")
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "NpzWeightFormat")), "load"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load"):
         _load_npz_weights("test.npz")
-    with as_callable(patch.object)(as_tensor(_get_attr(s, "PickleWeightFormat")), "load"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load"):
         _load_pickle_weights("test.pk")
     assert callable(test_init_module_exports)
 
@@ -473,9 +471,9 @@ def test_init_module_all_exports() -> None:
     tf_npz = "test_real_init_unmocked.npz"
     tf_pk = "test_real_init_unmocked.pk"
     _save_as_h5({"a": 1}, tf)
-    assert "a" in as_callable(_load_h5_weights)(tf)
+    assert "a" in ensure_callable(_load_h5_weights)(tf)
     _save_as_safetensors({"a": np.array([1.0], dtype=np.float32)}, tf_st)
-    assert "a" in as_callable(_load_safetensors_weights)(tf_st)
+    assert "a" in ensure_callable(_load_safetensors_weights)(tf_st)
     assert _load_npz_weights(tf_npz) == {}
     with pytest.raises(FileNotFoundError):
         _load_pickle_weights(tf_pk)
@@ -517,6 +515,6 @@ def test_extract_optimizer_state_missing_branches() -> None:
 
         optimizer = FakeOptEmpty()
 
-    st = as_tensor_dict({})
-    as_callable(_extract_optimizer_state)(as_callable(FakeModelOptEmpty)(), st)
+    st = ensure_tensor_dict({})
+    ensure_callable(_extract_optimizer_state)(ensure_callable(FakeModelOptEmpty)(), st)
     assert len(st) == 0

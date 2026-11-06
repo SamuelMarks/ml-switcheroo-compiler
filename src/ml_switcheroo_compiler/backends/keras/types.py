@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
-from ml_switcheroo_compiler.core.shape import _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 
 try:
     import keras.ops as kops
@@ -42,7 +42,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
         EagerValue: The array tensor.
     """
-    return as_tensor(as_callable(generic_array)(kops, data, dtype))
+    return ensure_eager_tensor(ensure_callable(generic_array)(kops, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -56,9 +56,9 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         EagerValue: The array tensor.
     """
     del cls
-    if _has_attr(kops, "asarray"):
-        return as_tensor(as_callable(generic_asarray)(kops, data))
-    return as_tensor(as_callable(generic_array)(kops, data))
+    if resolve_backend_member(kops, "asarray")[0]:
+        return ensure_eager_tensor(ensure_callable(generic_asarray)(kops, data))
+    return ensure_eager_tensor(ensure_callable(generic_array)(kops, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -71,4 +71,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return as_float(as_callable(generic_item)(kops, data))
+    return ensure_float(ensure_callable(generic_item)(kops, data))

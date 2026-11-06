@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
 
 try:
     import cupy as cp
@@ -40,7 +40,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
         EagerValue: The array tensor.
     """
-    return as_tensor(as_callable(generic_array)(cp, data, dtype))
+    return ensure_eager_tensor(ensure_callable(generic_array)(cp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -53,7 +53,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return as_tensor(as_callable(generic_asarray)(cp, data))
+    return ensure_eager_tensor(ensure_callable(generic_asarray)(cp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -66,4 +66,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return as_float(as_callable(generic_item)(cp, data))
+    return ensure_float(ensure_callable(generic_item)(cp, data))

@@ -10,8 +10,6 @@ import yaml
 from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field, RootModel
 
-from ml_switcheroo_compiler.ir.core import as_attr_val
-
 YamlScalar = typing.Union[typing.Union[str, int, float, "bool"], "None"]
 YamlLeaf = typing.Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], "list[dict[str, YamlScalar]]"]
 YamlNodeValue = typing.Union[YamlLeaf, list[YamlLeaf], dict[str, typing.Union[YamlLeaf, "dict[str, YamlLeaf]"]], "None"]
@@ -245,7 +243,7 @@ def load_consolidated_topology(yaml_path: str | None = None) -> DistributedTopol
         with open(pipe_path, encoding="utf-8") as f:
             pipe_raw = yaml.safe_load(f) or {}
         pipe_cfg = PipelineTopologiesConfig.model_validate(pipe_raw)
-        consolidated_dict["pipeline_topologies"] = as_attr_val(pipe_cfg.root)
+        consolidated_dict["pipeline_topologies"] = {k: v.model_dump() for k, v in pipe_cfg.root.items()}
 
     webrtc_path = os.path.join(base_dir, "webrtc_topology.yaml")
     if os.path.exists(webrtc_path):

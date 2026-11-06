@@ -8,8 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import vision_geometry as geom_mod
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -22,72 +21,72 @@ def test_vision_geometry_ops() -> None:
         None
     """
     # AffineGenerator
-    aff_gen = geom_mod._np_affine_generator(np, 2, 0.0, 0.0, 1.0)
-    assert as_tensor(_get_attr(aff_gen, "shape")) == (2, 8)
-    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("AffineGenerator")(np, 2, 0.0, 0.0, 1.0), "shape")) == (2, 8)
+    aff_gen = geom_mod._np_affine_generator(ensure_eager_tensor(np), 2, 0.0, 0.0, 1.0)
+    assert ensure_eager_tensor(aff_gen).shape == (2, 8)
+    assert ensure_eager_tensor(ensure_callable(numpy_eager_registry.get)("AffineGenerator")(np, 2, 0.0, 0.0, 1.0)).shape == (2, 8)
 
     # ElasticTransform
     # Branch 1: empty displacement
     img_2d = np.ones((4, 4))
-    assert as_callable(np.array_equal)(as_callable(geom_mod._np_elastic_transform)(np, img_2d, as_callable(np.array)([])), img_2d)
+    assert ensure_callable(np.array_equal)(ensure_callable(geom_mod._np_elastic_transform)(np, img_2d, ensure_callable(np.array)([])), img_2d)
 
     # Branch 2: 1D array
     img_1d = np.ones(4)
     disp_valid = np.ones((4, 4, 2))
-    assert as_callable(np.array_equal)(as_callable(geom_mod._np_elastic_transform)(np, img_1d, disp_valid), img_1d)
+    assert ensure_callable(np.array_equal)(ensure_callable(geom_mod._np_elastic_transform)(np, img_1d, disp_valid), img_1d)
 
     # Branch 3: 2D array with 2-channel displacement
-    el_res = geom_mod._np_elastic_transform(np, img_2d, disp_valid)
-    assert as_tensor(_get_attr(el_res, "shape")) == (4, 4)
+    el_res = geom_mod._np_elastic_transform(ensure_eager_tensor(np), img_2d, disp_valid)
+    assert ensure_eager_tensor(el_res).shape == (4, 4)
 
     # Branch 4: 2D array with 1-channel displacement
     disp_1ch = np.ones((4, 4, 1))
-    el_res_1ch = geom_mod._np_elastic_transform(np, img_2d, disp_1ch)
-    assert as_tensor(_get_attr(el_res_1ch, "shape")) == (4, 4)
-    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("ElasticTransform")(np, img_2d, disp_valid), "shape")) == (4, 4)
+    el_res_1ch = geom_mod._np_elastic_transform(ensure_eager_tensor(np), img_2d, disp_1ch)
+    assert ensure_eager_tensor(el_res_1ch).shape == (4, 4)
+    assert ensure_eager_tensor(ensure_callable(numpy_eager_registry.get)("ElasticTransform")(np, img_2d, disp_valid)).shape == (4, 4)
 
     # ExtractBoundingBoxes
     boxes = np.array([[0, 0, 1, 1]])
     box_idx = np.array([0])
-    assert as_callable(np.array_equal)(as_callable(geom_mod._np_extract_bounding_boxes)(np, img_2d, boxes, box_idx), img_2d)
-    assert as_callable(numpy_eager_registry.get)("ExtractBoundingBoxes")(np, img_2d, boxes, box_idx) is not None
+    assert ensure_callable(np.array_equal)(ensure_callable(geom_mod._np_extract_bounding_boxes)(np, img_2d, boxes, box_idx), img_2d)
+    assert ensure_callable(numpy_eager_registry.get)("ExtractBoundingBoxes")(np, img_2d, boxes, box_idx) is not None
 
     # IoU
     boxes1 = np.array([[0.0, 0.0, 1.0, 1.0]])
     boxes2 = np.array([[0.0, 0.0, 1.0, 1.0]])
-    iou = geom_mod._np_iou(np, boxes1, boxes2)
-    assert as_tensor(_get_attr(iou, "shape")) == (1,)
-    assert as_callable(numpy_eager_registry.get)("IoU")(np, boxes1, boxes2) is not None
+    iou = geom_mod._np_iou(ensure_eager_tensor(np), boxes1, boxes2)
+    assert ensure_eager_tensor(iou).shape == (1,)
+    assert ensure_callable(numpy_eager_registry.get)("IoU")(np, boxes1, boxes2) is not None
 
     # NonMaxSuppression
     scores = np.array([0.9])
-    nms_res = geom_mod._np_nms(np, boxes1, scores, 1)
-    assert as_callable(len)(nms_res) >= 1
-    assert as_callable(numpy_eager_registry.get)("NonMaxSuppression")(np, boxes1, scores, 1) is not None
+    nms_res = geom_mod._np_nms(ensure_eager_tensor(np), boxes1, scores, 1)
+    assert ensure_callable(len)(nms_res) >= 1
+    assert ensure_callable(numpy_eager_registry.get)("NonMaxSuppression")(np, boxes1, scores, 1) is not None
 
     # PerspectiveTransform
     pts1 = np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
     pts2 = np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
-    persp = geom_mod._np_perspective_transform(np, img_2d, pts1, pts2, None)
-    assert as_callable(np.array_equal)(persp, img_2d)
-    assert as_callable(numpy_eager_registry.get)("PerspectiveTransform")(np, img_2d, pts1, pts2, None) is not None
+    persp = geom_mod._np_perspective_transform(ensure_eager_tensor(np), img_2d, pts1, pts2, None)
+    assert ensure_callable(np.array_equal)(persp, img_2d)
+    assert ensure_callable(numpy_eager_registry.get)("PerspectiveTransform")(np, img_2d, pts1, pts2, None) is not None
 
     # AffineGrid
     # Array with len(size) == 4
     theta = np.zeros((1, 2, 3), dtype=np.float32)
-    grid4 = geom_mod._np_affine_grid(np, theta, (1, 3, 4, 4))
-    assert as_tensor(_get_attr(grid4, "shape")) == (1, 4, 4, 2)
+    grid4 = geom_mod._np_affine_grid(ensure_eager_tensor(np), theta, (1, 3, 4, 4))
+    assert ensure_eager_tensor(grid4).shape == (1, 4, 4, 2)
 
     # Array with len(size) != 4
-    grid3 = geom_mod._np_affine_grid(np, theta, (1, 4, 4))
-    assert as_tensor(_get_attr(grid3, "shape")) == (1, 4, 4, 2)
+    grid3 = geom_mod._np_affine_grid(ensure_eager_tensor(np), theta, (1, 4, 4))
+    assert ensure_eager_tensor(grid3).shape == (1, 4, 4, 2)
 
     # Non-array theta
-    assert geom_mod._np_affine_grid(np, 5.0, (1, 4, 4)) == 5.0
-    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("AffineGrid")(np, theta, (1, 3, 4, 4)), "shape")) == (1, 4, 4, 2)
+    assert geom_mod._np_affine_grid(ensure_eager_tensor(np), 5.0, (1, 4, 4)) == 5.0
+    assert ensure_eager_tensor(ensure_callable(numpy_eager_registry.get)("AffineGrid")(np, theta, (1, 3, 4, 4))).shape == (1, 4, 4, 2)
 
     # AffineTransform
     trans = np.eye(3)
-    aff_res = geom_mod._np_affine_transform(np, img_2d, trans)
-    assert as_callable(np.array_equal)(aff_res, img_2d)
-    assert as_callable(numpy_eager_registry.get)("AffineTransform")(np, img_2d, trans) is not None
+    aff_res = geom_mod._np_affine_transform(ensure_eager_tensor(np), img_2d, trans)
+    assert ensure_callable(np.array_equal)(aff_res, img_2d)
+    assert ensure_callable(numpy_eager_registry.get)("AffineTransform")(np, img_2d, trans) is not None

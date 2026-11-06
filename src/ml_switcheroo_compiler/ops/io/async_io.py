@@ -7,7 +7,11 @@ import typing
 from collections.abc import Generator
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    extract_data,
+    extract_shape,
+    is_traced_data,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
@@ -72,19 +76,9 @@ class AsyncIOFuture:
             Generator[AsyncResultType, None, AsyncResultType]: Awaitable generator.
         """
         if self._asyncio_future is not None:
-            _typed_ret_2: Generator[AsyncResultType, None, AsyncResultType] = _get_attr(self._asyncio_future, "__await__")()
-            return _typed_ret_2
-
-        async def _resolve() -> AsyncResultType:
-            """Resolve future result asynchronously.
-
-            Returns:
-                AsyncResultType: Evaluated result.
-            """
-            return self.result()
-
-        _typed_ret_1: Generator[AsyncResultType, None, AsyncResultType] = _get_attr(_resolve(), "__await__")()
-        return _typed_ret_1
+            res: AsyncResultType = yield from self._asyncio_future
+            return res
+        return self.result()
 
 
 @register_op("NonblockingLoad")
@@ -161,15 +155,16 @@ def nonblocking_load(
             return AsyncIOFuture(asyncio_future=fut)
         except RuntimeError:
             loaded_data = _fallback_load(file_path)
-            t_shape = _get_attr(loaded_data, "shape", shape or ())
+            t_shape = extract_shape(loaded_data, shape or ())
             t = Tensor(loaded_data, TensorConfig(t_shape, dtype, config.default_device))
             return AsyncIOFuture(tensor=t)
 
     node_shape = shape or ()
     t_out = _emit_shape_node("NonblockingLoad", [file_path], {"file_path": file_path, "dtype": dtype, **kwargs}, node_shape, dtype)
-    node_id = _get_attr(t_out.data, "id", None) if _has_attr(t_out, "data") else None
+    raw_d: OpArgValue = extract_data(t_out)
+    node_id = str(raw_d.id) if is_traced_data(raw_d) else None
     ir_node: IRNode | None = None
-    if node_id and global_tracing_state.active_graph and _has_attr(global_tracing_state.active_graph, "nodes"):
+    if node_id and global_tracing_state.active_graph is not None:
         ir_node = global_tracing_state.active_graph.nodes.get(node_id)
     return AsyncIOFuture(node=ir_node, tensor=t_out)
 
@@ -208,8 +203,9 @@ def nonblocking_save(
             return AsyncIOFuture()
 
     t_out = _emit_shape_node("NonblockingSave", [tensor], {"file_path": file_path, **kwargs}, (), "float32")
-    node_id = _get_attr(t_out.data, "id", None) if _has_attr(t_out, "data") else None
+    raw_d: OpArgValue = extract_data(t_out)
+    node_id = str(raw_d.id) if is_traced_data(raw_d) else None
     ir_node: IRNode | None = None
-    if node_id and global_tracing_state.active_graph and _has_attr(global_tracing_state.active_graph, "nodes"):
+    if node_id and global_tracing_state.active_graph is not None:
         ir_node = global_tracing_state.active_graph.nodes.get(node_id)
     return AsyncIOFuture(node=ir_node, tensor=t_out)

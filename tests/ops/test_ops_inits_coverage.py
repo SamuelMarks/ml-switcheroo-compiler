@@ -8,7 +8,7 @@ import ml_switcheroo_compiler.ops._vision_registry as vision_reg
 import ml_switcheroo_compiler.ops.audio as audio_pkg
 import ml_switcheroo_compiler.ops.image as image_mod
 import ml_switcheroo_compiler.ops.tensor as tensor_mod
-from ml_switcheroo_compiler.core.shape import _has_attr
+from tests.testing_utils import has_backend_member
 
 
 class _MockDimWithId:
@@ -62,13 +62,13 @@ class _MockGenerator:
 def test_package_and_module_inits() -> None:
     """Verify symbol exports and clean imports for packages and registration modules."""
     # 1. ops.image exports
-    assert _has_attr(image_mod, "resize")
-    assert _has_attr(image_mod, "gaussian_blur")
+    assert has_backend_member(image_mod, "resize")
+    assert has_backend_member(image_mod, "gaussian_blur")
     assert len(image_mod.__all__) > 0
 
     # 2. ops.tensor exports
-    assert _has_attr(tensor_mod, "allclose")
-    assert _has_attr(tensor_mod, "take_along_axis")
+    assert has_backend_member(tensor_mod, "allclose")
+    assert has_backend_member(tensor_mod, "take_along_axis")
     assert "allclose" in tensor_mod.__all__
 
     # 3. ops.audio, _math_registry, _nn_registry, _vision_registry
@@ -80,13 +80,13 @@ def test_package_and_module_inits() -> None:
     # 4. backends.pure_python
     import ml_switcheroo_compiler.backends.pure_python as pure_python_pkg
 
-    assert _has_attr(pure_python_pkg, "PurePythonGenerator")
-    assert _has_attr(pure_python_pkg, "PurePythonTensor")
-    assert _has_attr(pure_python_pkg, "execute_op")
+    assert has_backend_member(pure_python_pkg, "PurePythonGenerator")
+    assert has_backend_member(pure_python_pkg, "PurePythonTensor")
+    assert has_backend_member(pure_python_pkg, "execute_op")
 
     # 5. benchmarks
     import ml_switcheroo_compiler.benchmarks as benchmarks_pkg
 
-    assert _has_attr(benchmarks_pkg, "BenchmarkOrchestrator")
-    assert _has_attr(benchmarks_pkg, "BenchmarkPlan")
-    assert _has_attr(benchmarks_pkg, "BenchmarkRunResult")
+    assert has_backend_member(benchmarks_pkg, "BenchmarkOrchestrator")
+    assert has_backend_member(benchmarks_pkg, "BenchmarkPlan")
+    assert has_backend_member(benchmarks_pkg, "BenchmarkRunResult")

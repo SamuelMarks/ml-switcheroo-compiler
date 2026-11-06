@@ -8,8 +8,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 def test_np_axis_index() -> None:
     """Test function test_np_axis_index."""
-    assert _np_axis_index(np) == np.array(0)
+    assert _np_axis_index(ensure_eager_tensor(np)) == np.array(0)
 
 
 def test_tcp_context_init() -> None:
@@ -63,27 +62,27 @@ def test_tcp_context_initialize() -> None:
 def test_tcp_context_all_reduce_ring() -> None:
     """Test function test_tcp_context_all_reduce_ring."""
     ctx = TCPDistributedContext(world_size=1)
-    assert as_callable(ctx.all_reduce_ring)("tensor", backend_module=np) == "tensor"
+    assert ensure_callable(ctx.all_reduce_ring)("tensor", backend_module=np) == "tensor"
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.send_conns = [MagicMock()]
     ctx.recv_conns = [MagicMock()]
-    _set_attr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
+    ensure_mutable(ctx.recv_conns[0].recv).return_value = ensure_eager_tensor(np.array([2]))
 
     tensor = np.array([1, 1])
     # sum
-    res = ctx.all_reduce_ring(tensor, op_type="sum", backend_module=np)
+    res = ctx.all_reduce_ring(tensor, op_type="sum", backend_module=ensure_eager_tensor(np))
     assert np.array_equal(res, np.array([2, 3]))
 
     # prod
-    _set_attr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
-    res = ctx.all_reduce_ring(tensor, op_type="prod", backend_module=np)
+    ensure_mutable(ctx.recv_conns[0].recv).return_value = ensure_eager_tensor(np.array([2]))
+    res = ctx.all_reduce_ring(tensor, op_type="prod", backend_module=ensure_eager_tensor(np))
 
     # max
-    res = ctx.all_reduce_ring(tensor, op_type="max", backend_module=np)
+    res = ctx.all_reduce_ring(tensor, op_type="max", backend_module=ensure_eager_tensor(np))
 
     # min
-    res = ctx.all_reduce_ring(tensor, op_type="min", backend_module=np)
+    res = ctx.all_reduce_ring(tensor, op_type="min", backend_module=ensure_eager_tensor(np))
 
 
 def test_tcp_context_all_gather_tensors() -> None:
@@ -94,7 +93,7 @@ def test_tcp_context_all_gather_tensors() -> None:
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.send_conns = [MagicMock()]
     ctx.recv_conns = [MagicMock()]
-    _set_attr(ctx.recv_conns[0].recv, "return_value", "recv")
+    ensure_mutable(ctx.recv_conns[0].recv).return_value = ensure_eager_tensor("recv")
 
     res = ctx.all_gather_tensors("tensor")
     assert res == ["tensor", "recv"]
@@ -108,8 +107,8 @@ def test_tcp_context_shutdown() -> None:
     ctx.listener = MagicMock()
 
     ctx.shutdown()
-    as_tensor(_get_attr(ctx.recv_conns[0].close, "assert_called"))()
-    as_tensor(_get_attr(ctx.send_conns[0].close, "assert_called"))()
+    ensure_eager_tensor(ensure_eager_tensor(ctx.recv_conns[0].close).assert_called)()
+    ensure_eager_tensor(ensure_eager_tensor(ctx.send_conns[0].close).assert_called)()
     ctx.listener.close.assert_called()
 
 
@@ -126,45 +125,45 @@ def test_np_all_reduce() -> None:
     """Test function test_np_all_reduce."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_all_reduce)(np, tensor), tensor)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_all_reduce)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
         ctx.all_gather_tensors.return_value = [tensor, tensor]
         ctx.all_reduce_ring.return_value = "reduced"
-        assert _np_all_reduce(np, tensor) == "reduced"
+        assert _np_all_reduce(ensure_eager_tensor(np), tensor) == "reduced"
 
 
 def test_np_all_gather() -> None:
     """Test function test_np_all_gather."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_all_gather)(np, tensor), as_callable(np.array)([[1]]))
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_all_gather)(np, tensor), ensure_callable(np.array)([[1]]))
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
         ctx.all_gather_tensors.return_value = [np.array([1]), np.array([2])]
-        res = _np_all_gather(np, tensor, axis=0)
-        assert as_callable(np.array_equal)(res, as_callable(np.array)([1, 2]))
+        res = _np_all_gather(ensure_eager_tensor(np), tensor, axis=0)
+        assert ensure_callable(np.array_equal)(res, ensure_callable(np.array)([1, 2]))
 
 
 def test_np_broadcast() -> None:
     """Test function test_np_broadcast."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_broadcast)(np, tensor), tensor)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_broadcast)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
         ctx.all_gather_tensors.return_value = ["a", "b"]
-        assert _np_broadcast(np, tensor, root_rank=1) == "b"
+        assert _np_broadcast(ensure_eager_tensor(np), tensor, root_rank=1) == "b"
 
 
 def test_np_reduce_scatter() -> None:
     """Test function test_np_reduce_scatter."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_reduce_scatter)(np, tensor), tensor)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_reduce_scatter)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -175,27 +174,27 @@ def test_np_reduce_scatter() -> None:
         ctx.all_gather_tensors.return_value = [t1, t2]
 
         # sum
-        res = _np_reduce_scatter(np, tensor, op_type="sum")
-        assert as_callable(np.array_equal)(res, as_callable(np.array)([4]))
+        res = _np_reduce_scatter(ensure_eager_tensor(np), tensor, op_type="sum")
+        assert ensure_callable(np.array_equal)(res, ensure_callable(np.array)([4]))
 
         # prod
-        res = _np_reduce_scatter(np, tensor, op_type="prod")
+        res = _np_reduce_scatter(ensure_eager_tensor(np), tensor, op_type="prod")
 
         # max
-        res = _np_reduce_scatter(np, tensor, op_type="max")
+        res = _np_reduce_scatter(ensure_eager_tensor(np), tensor, op_type="max")
 
         # min
-        res = _np_reduce_scatter(np, tensor, op_type="min")
+        res = _np_reduce_scatter(ensure_eager_tensor(np), tensor, op_type="min")
 
         # default
-        res = _np_reduce_scatter(np, tensor, op_type="other")
+        res = _np_reduce_scatter(ensure_eager_tensor(np), tensor, op_type="other")
 
 
 def test_np_reduce() -> None:
     """Test function test_np_reduce."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_reduce)(np, tensor), tensor)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_reduce)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -206,40 +205,40 @@ def test_np_reduce() -> None:
         ctx.all_gather_tensors.return_value = [t1, t2]
 
         # sum
-        res = _np_reduce(np, tensor, root_rank=0, op_type="sum")
-        assert as_callable(np.array_equal)(res, as_callable(np.array)([4, 6]))
+        res = _np_reduce(ensure_eager_tensor(np), tensor, root_rank=0, op_type="sum")
+        assert ensure_callable(np.array_equal)(res, ensure_callable(np.array)([4, 6]))
 
         # not root rank
         ctx.rank = 1
-        res = _np_reduce(np, tensor, root_rank=0, op_type="sum")
+        res = _np_reduce(ensure_eager_tensor(np), tensor, root_rank=0, op_type="sum")
         assert res is None
         ctx.rank = 0
 
         # prod
-        res = _np_reduce(np, tensor, op_type="prod")
+        res = _np_reduce(ensure_eager_tensor(np), tensor, op_type="prod")
 
         # max
-        res = _np_reduce(np, tensor, op_type="max")
+        res = _np_reduce(ensure_eager_tensor(np), tensor, op_type="max")
 
         # min
-        res = _np_reduce(np, tensor, op_type="min")
+        res = _np_reduce(ensure_eager_tensor(np), tensor, op_type="min")
 
         # default
-        res = _np_reduce(np, tensor, op_type="other")
+        res = _np_reduce(ensure_eager_tensor(np), tensor, op_type="other")
 
 
 def test_np_all_to_all() -> None:
     """Test function test_np_all_to_all."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert as_callable(np.array_equal)(as_callable(_np_all_to_all)(np, tensor), tensor)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_all_to_all)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
         ctx.all_gather_tensors.return_value = ["a", "b"]
-        assert _np_all_to_all(np, tensor) == ["a", "b"]
+        assert _np_all_to_all(ensure_eager_tensor(np), tensor) == ["a", "b"]
 
 
 def test_np_shard_tensor() -> None:
     """Test function test_np_shard_tensor."""
-    assert as_callable(np.array_equal)(as_callable(_np_shard_tensor)(np, [1, 2]), as_callable(np.array)([1, 2]))
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_shard_tensor)(np, [1, 2]), ensure_callable(np.array)([1, 2]))

@@ -16,8 +16,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import (
     _np_topk,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -51,7 +50,7 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             """
             return math.copysign(x, y)
 
-    assert _copysign(as_mod(BackendCopysign()), -5.0, 1.0) == 5.0
+    assert _copysign(ensure_mod(BackendCopysign()), -5.0, 1.0) == 5.0
 
     # Case B: backend lacks copysign -> fallback: abs(x) * sign(y)
     class BackendAbsSign:
@@ -63,7 +62,7 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             Args:
                 val: Test parameter `val`.
             """
-            return as_tensor(as_callable(np.abs)(val))
+            return ensure_eager_tensor(ensure_callable(np.abs)(val))
 
         def sign(self, val: EagerValue) -> EagerValue:
             """Sign.
@@ -71,10 +70,10 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             Args:
                 val: Test parameter `val`.
             """
-            return as_tensor(as_callable(np.sign)(val))
+            return ensure_eager_tensor(ensure_callable(np.sign)(val))
 
-    res_cs = _copysign(as_mod(BackendAbsSign()), np.array([5.0, -3.0]), np.array([-1.0, 1.0]))
-    assert as_callable(list)(res_cs) == [-5.0, 3.0]
+    res_cs = _copysign(ensure_mod(BackendAbsSign()), np.array([5.0, -3.0]), np.array([-1.0, 1.0]))
+    assert ensure_callable(list)(res_cs) == [-5.0, 3.0]
 
     # 2. _getprintoptions
     class BackendPrintOptions:
@@ -89,9 +88,8 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             """
             return {"precision": 4}
 
-    _get_attr(_state, "update")({"BackendAbsSign": BackendAbsSign, "BackendCopysign": BackendCopysign, "BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend})
-    _get_attr(_state, "update")({"res_cs": res_cs})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"BackendAbsSign": BackendAbsSign, "BackendCopysign": BackendCopysign, "BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend}))
+    _state.update(ensure_tensor_dict({"res_cs": res_cs}))
 
 
 def _test_math_internal_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -126,9 +124,9 @@ def _test_math_internal_all_branches_part_2(_state: dict[str, EagerTensorProtoco
 
     # Case D: arr is a dict
     sample_dict = {0: "a", 1: "b"}
-    assert _np_tensorarrayread(empty_backend, as_tensor(sample_dict), 0) == "a"
+    assert _np_tensorarrayread(empty_backend, ensure_eager_tensor(sample_dict), 0) == "a"
     with pytest.raises(IndexError, match="not found in sparse handle"):
-        _np_tensorarrayread(empty_backend, as_tensor(sample_dict), 2)
+        _np_tensorarrayread(empty_backend, ensure_eager_tensor(sample_dict), 2)
 
     # Case E: arr is neither list, array, nor dict
     assert _np_tensorarrayread(empty_backend, 12345, 0) == 0
@@ -136,8 +134,8 @@ def _test_math_internal_all_branches_part_2(_state: dict[str, EagerTensorProtoco
     # 4. _np_tensorarraywrite
     # Case A: no args
     assert _np_tensorarraywrite(empty_backend) == 0
-    _get_attr(_state, "update")({"sample_arr": sample_arr, "sample_dict": sample_dict, "sample_list": sample_list})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"sample_arr": sample_arr, "sample_dict": sample_dict, "sample_list": sample_list}))
+    _state.update(ensure_tensor_dict({"BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend}))
 
 
 def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -165,15 +163,15 @@ def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtoco
     # Case F: arr is numpy.ndarray (index < shape[0])
     np_arr1 = np.array([1, 2, 3])
     w_arr1 = _np_tensorarraywrite(empty_backend, np_arr1, 1, 99)
-    assert as_callable(list)(w_arr1) == [1, 99, 3]
+    assert ensure_callable(list)(w_arr1) == [1, 99, 3]
 
     # Case G: arr is numpy.ndarray (index >= shape[0] -> padded with zeros)
     np_arr2 = np.array([1, 2])
     w_arr2 = _np_tensorarraywrite(empty_backend, np_arr2, 4, 100, index=4)
-    assert as_callable(list)(w_arr2) == [1, 2, 0, 0, 100]
+    assert ensure_callable(list)(w_arr2) == [1, 2, 0, 0, 100]
 
     # Case H: arr is dict
-    w_dict = _np_tensorarraywrite(empty_backend, as_tensor({0: "a"}), 1, "b")
+    w_dict = _np_tensorarraywrite(empty_backend, ensure_eager_tensor({0: "a"}), 1, "b")
     assert w_dict == {0: "a", 1: "b"}
 
     # Case I: arr is other type
@@ -181,17 +179,17 @@ def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtoco
 
     # 5. _np_topk
     # Case A: arr is list/ndarray
-    vals, indices = as_callable(_np_topk)(empty_backend, [10, 50, 20, 40, 30], 2)
-    assert as_callable(list)(vals) == [50, 40]
-    assert as_callable(list)(indices) == [1, 3]
+    vals, indices = ensure_callable(_np_topk)(empty_backend, [10, 50, 20, 40, 30], 2)
+    assert ensure_callable(list)(vals) == [50, 40]
+    assert ensure_callable(list)(indices) == [1, 3]
 
     # Default k=1
-    vals_def, indices_def = as_callable(_np_topk)(empty_backend, [10, 50, 20])
-    assert as_callable(list)(vals_def) == [50]
-    _get_attr(_state, "update")({"indices": indices, "indices_def": indices_def, "np_arr1": np_arr1, "np_arr2": np_arr2})
-    _get_attr(_state, "update")({"vals": vals, "vals_def": vals_def, "w_arr1": w_arr1, "w_arr2": w_arr2})
-    _get_attr(_state, "update")({"w_dict": w_dict, "w_list1": w_list1, "w_list2": w_list2, "w_list_none": w_list_none})
-    _state.update(_caller_locals())
+    vals_def, indices_def = ensure_callable(_np_topk)(empty_backend, [10, 50, 20])
+    assert ensure_callable(list)(vals_def) == [50]
+    _state.update(ensure_tensor_dict({"indices": indices, "indices_def": indices_def, "np_arr1": np_arr1, "np_arr2": np_arr2}))
+    _state.update(ensure_tensor_dict({"vals": vals, "vals_def": vals_def, "w_arr1": w_arr1, "w_arr2": w_arr2}))
+    _state.update(ensure_tensor_dict({"w_dict": w_dict, "w_list1": w_list1, "w_list2": w_list2, "w_list_none": w_list_none}))
+    _state.update(ensure_tensor_dict({"empty_backend": empty_backend}))
 
 
 def _test_math_internal_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -204,14 +202,14 @@ def _test_math_internal_all_branches_part_4(_state: dict[str, EagerTensorProtoco
     assert list(indices_def) == [1]
 
     # Case B: arr is not list or ndarray
-    v_fb, i_fb = as_callable(_np_topk)(empty_backend, "not_an_array")
+    v_fb, i_fb = ensure_callable(_np_topk)(empty_backend, "not_an_array")
     assert v_fb == [0]
     assert i_fb == [0]
 
     # Registration checks
     for op_name in ["Copysign", "GetPrintoptions", "NpTensorarrayread", "NpTensorarraywrite", "NpTopk"]:
         assert global_eager_registry.get(op_name) is not None
-    _get_attr(_state, "update")({"i_fb": i_fb, "v_fb": v_fb})
+    _state.update(ensure_tensor_dict({"i_fb": i_fb, "v_fb": v_fb}))
 
 
 def test_math_internal_all_branches() -> None:

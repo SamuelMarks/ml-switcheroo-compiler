@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 
 
@@ -48,11 +47,11 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | ShardingSpec) -> bool:
         """Check equality with another `ShardingSpec`.
 
         Args:
-            other (TensorOrScalar): Other object to compare.
+            other (TensorOrScalar | ShardingSpec): Other object to compare.
 
         Returns:
             bool: True if equal.
@@ -136,12 +135,12 @@ class LayoutMap:
         """
         specs_dict: dict[str, dict[str, str | list[str | None] | None]] = {}
         for path, spec in self._map.items():
-            raw_mesh: StructuralOperandProtocol = spec.mesh
+            raw_mesh: TensorOrScalar = spec.mesh
             specs_dict[path] = {
                 "mesh_name": (raw_mesh.name if isinstance(raw_mesh, _NamedMeshProtocol) else "default") if spec.mesh else None,
                 "mesh_mapping": list(spec.mesh_mapping),
             }
-        raw_dev_mesh: StructuralOperandProtocol = self.device_mesh
+        raw_dev_mesh: TensorOrScalar = self.device_mesh
         return {
             "version": "1.0",
             "device_mesh": (raw_dev_mesh.name if isinstance(raw_dev_mesh, _NamedMeshProtocol) else None) if self.device_mesh else None,

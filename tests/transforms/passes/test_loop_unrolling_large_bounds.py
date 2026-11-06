@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -26,7 +26,7 @@ def test_loop_unrolling_missing_coverage() -> None:
         op_type = "Add"
         id = "mock"
 
-    assert as_callable(detect_static_bound)(as_callable(MockNode)(), []) is None
+    assert ensure_callable(detect_static_bound)(ensure_callable(MockNode)(), []) is None
 
     g = IRGraph()
     n1 = LogicalNode(id="n1", op_type="Add")

@@ -12,8 +12,7 @@ from ml_switcheroo_compiler.backends.ir_to_ast import (
     emit_ir_to_ast,
     emit_ir_to_class,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -235,9 +234,9 @@ class MLP(nn.Module):
     expected_numerical = np.maximum(0.0, test_x + 1.0)
 
     input_node = next(n for n in ir_graph.nodes.values() if n.op_type == "Input")
-    eval_res = as_callable(evaluate_graph)(ir_graph, {input_node.id: test_x})
+    eval_res = ensure_callable(evaluate_graph)(ir_graph, {input_node.id: test_x})
     actual_output = list(eval_res.values())[0]
-    as_callable(np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
+    ensure_callable(np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
 
 
 def test_ir_to_ast_defaults() -> None:
@@ -245,7 +244,7 @@ def test_ir_to_ast_defaults() -> None:
     from ml_switcheroo_compiler.backends.ir_to_ast import _get_class_base_expr, _get_compute_method_name
 
     assert _get_compute_method_name("unknown_fw") == "forward"
-    assert as_tensor(_get_attr(_get_class_base_expr("unknown_fw"), "value")) == "object"
+    assert ensure_eager_tensor(ensure_eager_tensor(_get_class_base_expr("unknown_fw")).value) == "object"
 
 
 def test_ir_to_ast_missing_branches() -> None:
@@ -281,7 +280,7 @@ def test_ir_to_ast_missing_branches() -> None:
         inputs=["x"],
         attributes={"var_name": "", "callee": "pkg.bar"},
     )
-    _obj_set_attr(foreign_no_var, "id", "")
+    ensure_mutable(foreign_no_var).id = ensure_eager_tensor("")
     stmt_no_var = _emit_foreign_statement(foreign_no_var)
     assert stmt_no_var is not None
     assert isinstance(stmt_no_var.body[0], cst.Expr)

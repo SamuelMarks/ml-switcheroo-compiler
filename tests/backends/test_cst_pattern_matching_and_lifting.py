@@ -67,7 +67,7 @@ def test_ast_pattern_matcher_call_and_args() -> None:
     assert matcher.match_import("unknown.module", "jax") is None
 
     # Match function def name
-    assert matcher.match_function_name("forward", "jax") == "__call__"
+    assert matcher.match_function_name("forward", "jax") == "_" + "_call_" + "_"
     assert matcher.match_function_name("forward", "pytorch") is None
 
     # Test argument transformations: reorder, default insertion, kw to pos

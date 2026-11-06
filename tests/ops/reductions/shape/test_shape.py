@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, unfold
 from ml_switcheroo_compiler.ops.shape.frontend import (
@@ -40,7 +39,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import (
     swapaxes,
 )
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -53,20 +52,20 @@ def _test_frontend_pool_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -
         _state: Shared test state dictionary.
     """
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
-    assert as_callable(adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
-    assert as_callable(adaptive_max_pool2d)(t_2d, (2, 2)) is not None
+    assert ensure_callable(adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
+    assert ensure_callable(adaptive_max_pool2d)(t_2d, (2, 2)) is not None
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        (p, i) = as_callable(fractional_max_pool3d)(t_3d, (2, 2, 2))
+        (p, i) = ensure_callable(fractional_max_pool3d)(t_3d, (2, 2, 2))
     with pytest.raises(TypeError):
-        (p, i) = as_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2), return_indices=True)
-    assert as_callable(adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
-    assert as_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
+        (p, i) = ensure_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2), return_indices=True)
+    assert ensure_callable(adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
+    assert ensure_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"t_2d": t_2d, "t_3d": t_3d}))
 
 
 def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -81,7 +80,7 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
         """Test class DummyGraph."""
 
         name = "dummy"
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -91,7 +90,7 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             """
             pass
 
-    _set_attr(global_tracing_state, "active_graph", DummyGraph())
+    ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
     import ml_switcheroo_compiler.ops.reductions.frontend_utils as fu
 
     orig_emit = fu._emit_reduction_node
@@ -117,8 +116,8 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             """
             return ()
 
-    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "fu": fu, "orig_emit": orig_emit})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "fu": fu, "orig_emit": orig_emit}))
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
 
 
 def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -129,21 +128,22 @@ def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -
     """
     (DummyOp, fu, global_tracing_state, orig_emit) = (_state["DummyOp"], _state["fu"], _state["global_tracing_state"], _state["orig_emit"])
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
-    _set_attr(fu, "_emit_reduction_node", lambda *args, **kwargs: DummyOp())
+    ensure_mutable(fu)._emit_reduction_node = ensure_eager_tensor(lambda *args, **kwargs: DummyOp())
     try:
-        assert as_callable(fractional_max_pool2d)(t_2d, (2, 2)) is not None
-        assert as_callable(adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
-        assert as_callable(adaptive_max_pool2d)(t_2d, (2, 2)) is not None
-        assert as_callable(unfold)(t_2d, (2, 2)) is not None
-        assert as_callable(fold)(t_2d, (4, 4), (2, 2)) is not None
-        (p, i) = as_callable(fractional_max_pool3d)(t_3d, (2, 2, 2))
-        assert as_callable(adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
-        assert as_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
+        assert ensure_callable(fractional_max_pool2d)(t_2d, (2, 2)) is not None
+        assert ensure_callable(adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
+        assert ensure_callable(adaptive_max_pool2d)(t_2d, (2, 2)) is not None
+        assert ensure_callable(unfold)(t_2d, (2, 2)) is not None
+        assert ensure_callable(fold)(t_2d, (4, 4), (2, 2)) is not None
+        (p, i) = ensure_callable(fractional_max_pool3d)(t_3d, (2, 2, 2))
+        assert ensure_callable(adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
+        assert ensure_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
     finally:
-        _set_attr(fu, "_emit_reduction_node", orig_emit)
+        ensure_mutable(fu)._emit_reduction_node = ensure_eager_tensor(orig_emit)
         config.eager_mode = True
-        _set_attr(global_tracing_state, "is_tracing", False)
-    _state.update(_caller_locals())
+        ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(False)
+    _state.update(ensure_tensor_dict({"DummyOp": DummyOp, "fu": fu, "global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"orig_emit": orig_emit, "t_2d": t_2d, "t_3d": t_3d}))
 
 
 def test_frontend_pool_coverage() -> None:
@@ -155,8 +155,8 @@ def test_frontend_pool_coverage() -> None:
 
         id = "dummy"
 
-    t_2d = as_callable(Tensor)(as_callable(DummyDataId)(), as_callable(TensorConfig)(shape=(1, 1, 4, 4), dtype=as_callable(DType)("float32"), device=as_callable(Device)("cpu")))
-    t_3d = as_callable(Tensor)(as_callable(DummyDataId)(), as_callable(TensorConfig)(shape=(1, 1, 4, 4, 4), dtype=as_callable(DType)("float32"), device=as_callable(Device)("cpu")))
+    t_2d = ensure_callable(Tensor)(ensure_callable(DummyDataId)(), ensure_callable(TensorConfig)(shape=(1, 1, 4, 4), dtype=ensure_callable(DType)("float32"), device=ensure_callable(Device)("cpu")))
+    t_3d = ensure_callable(Tensor)(ensure_callable(DummyDataId)(), ensure_callable(TensorConfig)(shape=(1, 1, 4, 4, 4), dtype=ensure_callable(DType)("float32"), device=ensure_callable(Device)("cpu")))
     import ml_switcheroo_compiler.backends.registry as registry_mod
 
     class MockBackend:
@@ -172,7 +172,7 @@ def test_frontend_pool_coverage() -> None:
             """
             if op == "FractionalMaxPool3D" or (op == "AdaptiveMaxPool3D" and kwargs.get("return_indices")):
                 return (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2)))
-            if as_tensor("3D") in as_tensor(op):
+            if ensure_eager_tensor("3D") in ensure_eager_tensor(op):
                 return np.zeros((1, 1, 2, 2, 2))
             return np.zeros((1, 1, 2, 2))
 
@@ -186,11 +186,11 @@ def test_frontend_pool_coverage() -> None:
             return np.array(x)
 
     orig_backend = registry_mod.get_active_backend
-    _set_attr(registry_mod, "get_active_backend", lambda: MockBackend())
+    ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(lambda: MockBackend())
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"id": id, "orig_backend": orig_backend, "registry_mod": registry_mod, "t_2d": t_2d})
-        _get_attr(_state, "update")({"t_3d": t_3d})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"id": id, "orig_backend": orig_backend, "registry_mod": registry_mod, "t_2d": t_2d}))
+        _state.update(ensure_tensor_dict({"t_3d": t_3d}))
         for _sub_fn in (_test_frontend_pool_coverage_sub_1, _test_frontend_pool_coverage_sub_2, _test_frontend_pool_coverage_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -213,7 +213,7 @@ def _test_shape_frontend_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) 
     assert insert(t, 0, 1) is not None
     assert fill_diagonal(t, 0) is not None
     assert moveaxis(t, 0, 1) is not None
-    assert as_callable(permute)(t, [1, 0]) is not None
+    assert ensure_callable(permute)(t, [1, 0]) is not None
     assert swapaxes(t, 0, 1) is not None
     assert roll(t, 1) is not None
     assert atleast_1d(t) is not None
@@ -223,7 +223,7 @@ def _test_shape_frontend_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) 
     assert diagflat(t) is not None
     assert block([[t, t]]) is not None
     assert delete(t, 0) is not None
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"t": t}))
 
 
 def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -233,22 +233,22 @@ def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     (backend_inst, t) = (_state["backend_inst"], _state["t"])
-    _set_attr(backend_inst, "res", [np.zeros((2,)), np.zeros((2,))])
+    ensure_mutable(backend_inst).res = ensure_eager_tensor([np.zeros((2,)), np.zeros((2,))])
     assert diag_indices(2) is not None
     assert diag_indices_from(t) is not None
-    _set_attr(backend_inst, "res", np.array(4))
+    ensure_mutable(backend_inst).res = ensure_eager_tensor(np.array(4))
     assert size(t) is not None
-    _set_attr(backend_inst, "res", np.zeros((4,)))
-    assert as_callable(reshape)(t, (4,)) is not None
-    assert as_callable(flip)(t) is not None
+    ensure_mutable(backend_inst).res = ensure_eager_tensor(np.zeros((4,)))
+    assert ensure_callable(reshape)(t, (4,)) is not None
+    assert ensure_callable(flip)(t) is not None
     assert fliplr(t) is not None
     assert flipud(t) is not None
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"backend_inst": backend_inst, "t": t}))
 
 
 def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -263,7 +263,7 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
         """Test class DummyGraph."""
 
         name = "dummy"
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -273,7 +273,7 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             """
             pass
 
-    _set_attr(global_tracing_state, "active_graph", DummyGraph())
+    ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
     import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
     orig_emit = shape_utils._emit_shape_node
@@ -299,8 +299,8 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             """
             return ()
 
-    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "orig_emit": orig_emit, "shape_utils": shape_utils})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "orig_emit": orig_emit, "shape_utils": shape_utils}))
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
 
 
 def _test_shape_frontend_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -310,8 +310,8 @@ def _test_shape_frontend_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     (DummyOp, shape_utils) = (_state["DummyOp"], _state["shape_utils"])
-    _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
-    _state.update(_caller_locals())
+    ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(lambda *args, **kwargs: DummyOp())
+    _state.update(ensure_tensor_dict({"DummyOp": DummyOp, "shape_utils": shape_utils}))
 
 
 def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -331,7 +331,7 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
         assert insert(t, 0, 1) is not None
         assert fill_diagonal(t, 0) is not None
         assert moveaxis(t, 0, 1) is not None
-        assert as_callable(permute)(t, [1, 0]) is not None
+        assert ensure_callable(permute)(t, [1, 0]) is not None
         assert swapaxes(t, 0, 1) is not None
         assert roll(t, 1) is not None
         assert atleast_1d(t) is not None
@@ -341,7 +341,7 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
         assert diagflat(t) is not None
         assert block([[t, t]]) is not None
         assert delete(t, 0) is not None
-        _set_attr(shape_utils, "_emit_shape_node", orig_emit)
+        ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(orig_emit)
         with patch("ml_switcheroo_compiler.tracing.builder.TracingNodeBuilder.emit_tracing_node") as mock_emit:
 
             class DummyItemNode:
@@ -353,17 +353,18 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
             mock_emit.return_value = DummyItemNode()
             assert diag_indices(2) is not None
             assert diag_indices_from(t) is not None
-        _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
+        ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(lambda *args, **kwargs: DummyOp())
         assert size(t) is not None
-        assert as_callable(reshape)(t, (4,)) is not None
-        assert as_callable(flip)(t) is not None
+        assert ensure_callable(reshape)(t, (4,)) is not None
+        assert ensure_callable(flip)(t) is not None
         assert fliplr(t) is not None
         assert flipud(t) is not None
     finally:
-        _set_attr(shape_utils, "_emit_shape_node", orig_emit)
+        ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(orig_emit)
         config.eager_mode = True
-        _set_attr(global_tracing_state, "is_tracing", False)
-    _state.update(_caller_locals())
+        ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(False)
+    _state.update(ensure_tensor_dict({"DummyOp": DummyOp, "global_tracing_state": global_tracing_state, "orig_emit": orig_emit}))
+    _state.update(ensure_tensor_dict({"shape_utils": shape_utils, "t": t}))
 
 
 def test_shape_frontend_coverage() -> None:
@@ -410,15 +411,15 @@ def test_shape_frontend_coverage() -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return as_tensor(_get_attr(x, "item"))() if _has_attr(x, "item") else x
+            return ensure_eager_tensor(ensure_eager_tensor(x).item)() if has_backend_member(x, "item") else x
 
     backend_inst = MockShapeBackend()
     orig_backend = registry_mod.get_active_backend
-    _set_attr(registry_mod, "get_active_backend", lambda: backend_inst)
+    ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(lambda: backend_inst)
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"backend_inst": backend_inst, "id": id, "orig_backend": orig_backend, "registry_mod": registry_mod})
-        _get_attr(_state, "update")({"t": t})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"backend_inst": backend_inst, "id": id, "orig_backend": orig_backend, "registry_mod": registry_mod}))
+        _state.update(ensure_tensor_dict({"t": t}))
         for _sub_fn in (_test_shape_frontend_coverage_sub_1, _test_shape_frontend_coverage_sub_2, _test_shape_frontend_coverage_sub_3, _test_shape_frontend_coverage_sub_4, _test_shape_frontend_coverage_sub_5):
             _sub_fn(_state)
         assert len(_state) > 0

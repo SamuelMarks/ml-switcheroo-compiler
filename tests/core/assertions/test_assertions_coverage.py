@@ -7,7 +7,7 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.core.assertions as asst_mod
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -54,9 +54,9 @@ def test_core_assertions_exhaustive() -> None:
             """Test function all."""
             return False
 
-    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithNumpy)())) is True
-    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithAll)())) is True
-    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithAllFalse)())) is False
+    assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(WithNumpy)())) is True
+    assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(WithAll)())) is True
+    assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(WithAllFalse)())) is False
 
     class ValueErrorBool:
         """Test class ValueErrorBool."""
@@ -67,9 +67,9 @@ def test_core_assertions_exhaustive() -> None:
 
         def __iter__(self) -> EagerValue:
             """Test function __iter__."""
-            return as_tensor(iter([True, True]))
+            return ensure_eager_tensor(iter([True, True]))
 
-    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(ValueErrorBool)())) is True
+    assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(ValueErrorBool)())) is True
 
     # 4. Failure in evaluate_assertions raises AssertionError
     asst_mod.record_assertion(False, "Failed assertion 1")

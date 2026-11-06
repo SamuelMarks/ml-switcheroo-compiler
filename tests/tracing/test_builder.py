@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,7 +28,7 @@ def test_builder_extract_proxy() -> None:
         data = FakeData()
         shape = (2, 2)
 
-    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor)())
+    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor)())
     assert id1 == "my_id"
     assert shape1 == (2, 2)
 
@@ -49,7 +48,7 @@ def test_builder_extract_proxy() -> None:
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = as_tensor_dict({})
+        constant_cache = ensure_tensor_dict({})
         is_tracing = True
         active_graph = True
 
@@ -61,13 +60,13 @@ def test_builder_extract_proxy() -> None:
             """
             pass
 
-    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
-    _set_attr(bmod, "global_tracing_state", FakeTracingState())
-    (id2, shape2) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
+    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
+    (id2, shape2) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor2)())
     assert id2 in FakeTracingState.constant_cache.values()
-    (id3, shape3) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
+    (id3, shape3) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor2)())
     assert id2 == id3
-    _set_attr(bmod, "global_tracing_state", old_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
 
 
 def test_builder_extract_constant() -> None:
@@ -78,7 +77,7 @@ def test_builder_extract_constant() -> None:
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = as_tensor_dict({})
+        constant_cache = ensure_tensor_dict({})
         is_tracing = True
         active_graph = True
 
@@ -90,8 +89,8 @@ def test_builder_extract_constant() -> None:
             """
             pass
 
-    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
-    _set_attr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
 
     class ProxyT:
         """Test class ProxyT."""
@@ -124,13 +123,13 @@ def test_builder_extract_constant() -> None:
         @property
         def shape(self) -> EagerValue:
             """Test function shape."""
-            _typed_ret_1: EagerValue = _get_attr(self.data, "shape", ())
+            _typed_ret_1: EagerValue = ensure_eager_tensor(self.data).shape
             return _typed_ret_1
 
     val = [ProxyT("id_1", (1,)), RealTensor(123)]
-    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_constant)(val)
+    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_constant)(val)
     assert id1[0] == "id_1"
-    _set_attr(bmod, "global_tracing_state", old_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
 
 
 def test_builder_extract_proxy_inputs_proxy() -> None:
@@ -169,8 +168,8 @@ def test_builder_tensor_cache_missing() -> None:
             """
             pass
 
-    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
-    _set_attr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
 
     class FakeData:
         """Test class FakeData."""
@@ -185,9 +184,9 @@ def test_builder_tensor_cache_missing() -> None:
         device = None
         requires_grad = False
 
-    fake_t = as_callable(Tensor)(as_callable(FakeData)(), as_callable(FakeConfig)())
-    _set_attr(fake_t, "_data", FakeData())
-    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_tensor)(fake_t)
+    fake_t = ensure_callable(Tensor)(ensure_callable(FakeData)(), ensure_callable(FakeConfig)())
+    ensure_mutable(fake_t)._data = ensure_eager_tensor(FakeData())
+    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(fake_t)
     assert shape1 == (1,)
 
     # Check that extracting twice from same tensor uses cached tensor hash if data ID is None?
@@ -196,7 +195,7 @@ def test_builder_tensor_cache_missing() -> None:
     assert len(ids) == 2
     # Verify the ids are actually consistent or the same depending on implementation
 
-    _set_attr(bmod, "global_tracing_state", old_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
 
 
 def test_builder_extract_proxy_inputs_tensor_missing() -> None:
@@ -218,8 +217,8 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """
             pass
 
-    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
-    _set_attr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
 
     class DummyNotTensor:
         """Test class DummyNotTensor."""
@@ -232,10 +231,10 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """Test function tolist."""
             return [42]
 
-    (ids, shapes, first) = as_callable(TracingNodeBuilder.extract_proxy_inputs)((as_callable(DummyNotTensor)(),))
+    (ids, shapes, first) = ensure_callable(TracingNodeBuilder.extract_proxy_inputs)((ensure_callable(DummyNotTensor)(),))
     assert len(ids) == 1
     assert shapes[0] == ()
-    _set_attr(bmod, "global_tracing_state", old_state)
+    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
 
 
 def test_builder_infer_shape_none_branch() -> None:

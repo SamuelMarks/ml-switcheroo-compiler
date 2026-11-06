@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.backends.backend_utils as backend_utils
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 class _MockDimWithId:
@@ -78,15 +78,13 @@ def test_backend_utils_exhaustive() -> None:
 
     # 4. format_shape_metadata with multiple dimensions (no trailing comma) and mixed types
     node_multi_dim = IRNode("node_conv", "Conv")
-    _obj_set_attr(
-        node_multi_dim,
-        "shape_metadata",
+    ensure_mutable(node_multi_dim).shape_metadata = ensure_eager_tensor(
         (
             _MockDimWithId("batch_sym"),
             _MockDimWithId("unmapped_sym"),
             "dynamic_channel",
             64,
-        ),
+        )
     )
     var_names = {"batch_sym": "N"}
     formatted = backend_utils.format_shape_metadata(node_multi_dim, var_names)

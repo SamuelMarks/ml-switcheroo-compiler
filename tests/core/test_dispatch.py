@@ -9,10 +9,9 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
-from ml_switcheroo_compiler.core.shape import _del_attr, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -29,7 +28,7 @@ def test_dispatch_eager_unsupported(monkeypatch: EagerTensorProtocol) -> None:
     # Mock backend to simulate an unsupported function
     mock_backend = MagicMock()
     mock_backend.module = MagicMock()
-    _del_attr(mock_backend.module, "non_existent_module")
+    del ensure_mutable(mock_backend.module).non_existent_module
 
     monkeypatch.setattr("ml_switcheroo_compiler.core.dispatch.get_active_backend", lambda: mock_backend)
 
@@ -68,7 +67,7 @@ def test_dispatch_tracing() -> None:
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
-        assert as_tensor(_get_attr(out, "shape")) == ()
-        assert as_tensor(_get_attr(out, "dtype")).value == "float32"
+        assert ensure_eager_tensor(out).shape == ()
+        assert ensure_eager_tensor(ensure_eager_tensor(out).dtype).value == "float32"
     finally:
         global_tracing_state.stop_tracing()

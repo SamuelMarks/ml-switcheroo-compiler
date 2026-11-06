@@ -12,7 +12,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.inv import InvEx, inv_ex, pinv
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -31,14 +31,14 @@ def test_inv_ex() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32), np.array(0, dtype=np.int32))
         mock_backend.return_value.array = lambda x: x
-        (res_inv, res_info) = as_callable(inv_ex)(t, check_errors=True)
-        assert isinstance(as_tensor(res_inv), Tensor)
-        assert isinstance(as_tensor(res_info), Tensor)
+        (res_inv, res_info) = ensure_callable(inv_ex)(t, check_errors=True)
+        assert isinstance(ensure_eager_tensor(res_inv), Tensor)
+        assert isinstance(ensure_eager_tensor(res_info), Tensor)
     config.eager_mode = False
     inv_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.inv"]
     with patch.object(inv_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_inv", "mock_info")
-        (res_inv, res_info) = as_callable(inv_ex)(t, check_errors=False)
+        (res_inv, res_info) = ensure_callable(inv_ex)(t, check_errors=False)
         assert res_inv == "mock_inv"
         mock_emit.assert_called_once()
 

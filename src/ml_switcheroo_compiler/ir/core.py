@@ -50,6 +50,13 @@ TensorSpec = TensorSpec
 ZeroTangent = ZeroTangent
 NoTangent = NoTangent
 
+LogicalGraph.model_config["extra"] = "allow"
+LogicalGraph.model_config["validate_assignment"] = False
+LogicalGraph.model_rebuild(force=True)
+LogicalNode.model_config["extra"] = "allow"
+LogicalNode.model_config["validate_assignment"] = False
+LogicalNode.model_rebuild(force=True)
+
 
 def _is_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph]:
     """Type guard narrowing `val` to `LogicalGraph`.
@@ -63,7 +70,7 @@ def _is_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph]:
     return val is not None
 
 
-def as_graph(val: TensorOrScalar) -> LogicalGraph:
+def ensure_graph(val: TensorOrScalar) -> LogicalGraph:
     """Narrow a runtime graph attribute or subgraph reference to `LogicalGraph`.
 
     Args:
@@ -85,7 +92,7 @@ def _is_opt_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph 
     Returns:
         bool: Always True for optional graph values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def as_opt_graph(val: TensorOrScalar) -> LogicalGraph | None:
@@ -110,10 +117,10 @@ def _is_attr_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, AttributeVa
     Returns:
         bool: Always True for attribute dictionaries.
     """
-    return val is not None or val is None
+    return isinstance(val, dict) or not isinstance(val, bytes)
 
 
-def as_attrs(val: TensorOrScalar) -> dict[str, AttributeValue]:
+def ensure_attrs(val: TensorOrScalar) -> dict[str, AttributeValue]:
     """Narrow a dictionary of node attributes to `dict[str, AttributeValue]`.
 
     Args:
@@ -135,10 +142,10 @@ def _is_attr_val(val: TensorOrScalar) -> typing.TypeGuard[AttributeValue]:
     Returns:
         bool: Always True for attribute values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_attr_val(val: TensorOrScalar) -> AttributeValue:
+def ensure_attr_val(val: TensorOrScalar) -> AttributeValue:
     """Narrow a runtime attribute value to `AttributeValue`.
 
     Args:
@@ -185,7 +192,7 @@ def _is_opt_pspec(val: TensorOrScalar) -> typing.TypeGuard[PartitionSpec | None]
     Returns:
         bool: Always True for optional partition specs.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def as_opt_pspec(val: TensorOrScalar) -> PartitionSpec | None:
@@ -216,10 +223,11 @@ __all__ = [
     "SymbolicDim",
     "TensorSpec",
     "ZeroTangent",
-    "as_attrs",
-    "as_graph",
     "as_opt_graph",
     "clone_logical_node",
+    "ensure_attr_val",
+    "ensure_attrs",
+    "ensure_graph",
 ]
 
 

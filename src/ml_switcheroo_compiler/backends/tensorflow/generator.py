@@ -6,7 +6,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -31,7 +31,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return as_tensor(pickle.load(f))
+            return ensure_eager_tensor(pickle.load(f))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -102,7 +102,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         res = f"tf.{op}({{shape}})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
-            res += f", dtype='{as_tensor(kwargs)['dtype']}'"
+            res += f", dtype='{ensure_eager_tensor(kwargs)['dtype']}'"
         return res
 
     def _format_full(self, kwargs: EagerValue) -> str:
@@ -116,7 +116,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         res = "tf.full({shape}, {fill_value})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
-            res += f", dtype='{as_tensor(kwargs)['dtype']}'"
+            res += f", dtype='{ensure_eager_tensor(kwargs)['dtype']}'"
         return res
 
     def _format_transpose(self, kwargs: EagerValue) -> str:
@@ -257,18 +257,18 @@ class TensorFlowCodeGenerator(BaseGenerator):
             Returns:
                 EagerValue: Computed tensor or collection of tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if _has_attr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return as_tensor(evaluated)
+            return ensure_eager_tensor(evaluated)
 
         try:
             import tensorflow as tf
@@ -287,7 +287,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
                     EagerValue: Computed outputs.
                 """
                 tf_args = [tf.convert_to_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return as_tensor(compiled_fn(*tf_args))
+                return ensure_eager_tensor(compiled_fn(*tf_args))
 
             return aot_tf_runner
         except Exception:

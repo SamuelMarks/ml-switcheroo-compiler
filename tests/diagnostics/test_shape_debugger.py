@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -53,7 +53,7 @@ def test_shape_debugger() -> None:
         """
         return x
 
-    res = as_callable(debug_shapes)(dummy_model, (2, 2))
+    res = ensure_callable(debug_shapes)(dummy_model, (2, 2))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" in res
     assert "| output | (2, 2) |" in res
@@ -67,7 +67,7 @@ def test_shape_debugger() -> None:
         """
         raise RuntimeError("boom")
 
-    res = as_tensor(debug_shapes(error_model, (2, 2)))
+    res = ensure_eager_tensor(debug_shapes(error_model, (2, 2)))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" not in res  # because error happens and it resets
 
@@ -84,9 +84,9 @@ def test_shape_debugger() -> None:
 
             pass
 
-        return as_tensor(Dummy())
+        return ensure_eager_tensor(Dummy())
 
-    res = as_callable(debug_shapes)(unknown_model, (2, 2))
+    res = ensure_callable(debug_shapes)(unknown_model, (2, 2))
     assert "| output | unknown |" in res
 
     # Test to_graphviz

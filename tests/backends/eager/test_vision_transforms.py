@@ -29,9 +29,8 @@ from ml_switcheroo_compiler.backends.eager.vision_transforms import (
 from ml_switcheroo_compiler.backends.eager.vision_utils import (
     ResizeContext,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 if typing.TYPE_CHECKING:
     pass
@@ -65,104 +64,104 @@ def test_standardize_and_homography_helpers() -> None:
 
     # Homography inversion single and batched
     h_single = np.array([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.0]], dtype=np.float32)
-    h_inv = _invert_homography(np, h_single)
-    assert as_callable(np.allclose)(as_tensor(h_single) @ as_tensor(h_inv), as_callable(np.eye)(3), atol=1e-5)
+    h_inv = _invert_homography(ensure_eager_tensor(np), h_single)
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(h_single) @ ensure_eager_tensor(h_inv), ensure_callable(np.eye)(3), atol=1e-5)
 
     h_batch = np.stack([h_single, h_single], axis=0)
-    h_batch_inv = _invert_homography(np, h_batch)
-    assert as_tensor(_get_attr(h_batch_inv, "shape")) == (2, 3, 3)
+    h_batch_inv = _invert_homography(ensure_eager_tensor(np), h_batch)
+    assert ensure_eager_tensor(h_batch_inv).shape == (2, 3, 3)
 
 
 def test_perspective_transform_eager() -> None:
     """Test perspective transform eager execution across ranks, formats, and point correspondences."""
     # None images returns 0
-    assert as_callable(perspective_transform_eager)(None, None, None, None, None) == 0
+    assert ensure_callable(perspective_transform_eager)(None, None, None, None, None) == 0
 
     img = np.ones((8, 8, 3), dtype=np.float32)
     cfg = PerspectiveConfig(interpolation="bilinear", fill_value=0.0)
 
     # None start_points or end_points returns copy
-    out_copy = perspective_transform_eager(np, img, None, None, cfg)
-    assert as_tensor(_get_attr(out_copy, "shape")) == (8, 8, 3)
-    assert as_callable(np.allclose)(out_copy, img)
+    out_copy = perspective_transform_eager(ensure_eager_tensor(np), img, None, None, cfg)
+    assert ensure_eager_tensor(out_copy).shape == (8, 8, 3)
+    assert ensure_callable(np.allclose)(out_copy, img)
 
     # Valid points mapping
     src_pts = np.array([[0.0, 0.0], [7.0, 0.0], [7.0, 7.0], [0.0, 7.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [7.0, 0.0], [7.0, 7.0], [0.0, 7.0]], dtype=np.float32)
-    out_id = perspective_transform_eager(np, img, src_pts, dst_pts, cfg)
-    assert as_tensor(_get_attr(out_id, "shape")) == (8, 8, 3)
-    assert as_callable(np.allclose)(out_id, img)
+    out_id = perspective_transform_eager(ensure_eager_tensor(np), img, src_pts, dst_pts, cfg)
+    assert ensure_eager_tensor(out_id).shape == (8, 8, 3)
+    assert ensure_callable(np.allclose)(out_id, img)
 
     # Channels first layout
     img_cf = np.ones((2, 3, 8, 8), dtype=np.float32)
     cfg_cf = PerspectiveConfig(interpolation="nearest", fill_value=0.0, data_format="channels_first")
-    out_cf = perspective_transform_eager(np, img_cf, src_pts, dst_pts, cfg_cf)
-    assert as_tensor(_get_attr(out_cf, "shape")) == (2, 3, 8, 8)
+    out_cf = perspective_transform_eager(ensure_eager_tensor(np), img_cf, src_pts, dst_pts, cfg_cf)
+    assert ensure_eager_tensor(out_cf).shape == (2, 3, 8, 8)
 
 
 def test_elastic_transform_eager() -> None:
     """Test elastic distortion grid generation, interpolation, and eager execution."""
     # None inputs
-    assert as_callable(elastic_transform_eager)(None, None, None, None) == 0
-    assert as_callable(_apply_elastic_batch)(None, None, None) == 0
-    assert as_callable(_compute_elastic_grid)(None) == 0
+    assert ensure_callable(elastic_transform_eager)(None, None, None, None) == 0
+    assert ensure_callable(_apply_elastic_batch)(None, None, None) == 0
+    assert ensure_callable(_compute_elastic_grid)(None) == 0
 
     # Grid context with zero displacement preserves base grid
     ctx_zero = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=0)
-    y_g, x_g = as_callable(_compute_elastic_grid)(ctx_zero)
-    assert as_tensor(_get_attr(y_g, "shape")) == (6, 8)
-    assert as_tensor(_get_attr(x_g, "shape")) == (6, 8)
+    y_g, x_g = ensure_callable(_compute_elastic_grid)(ctx_zero)
+    assert ensure_eager_tensor(y_g).shape == (6, 8)
+    assert ensure_eager_tensor(x_g).shape == (6, 8)
 
     # Grid with 3D displacement (2, H, W)
     disp_3d = np.zeros((2, 6, 8), dtype=np.float32)
     ctx_disp = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=disp_3d)
-    y_d, x_d = as_callable(_compute_elastic_grid)(ctx_disp)
-    assert as_callable(np.allclose)(y_d, y_g)
+    y_d, x_d = ensure_callable(_compute_elastic_grid)(ctx_disp)
+    assert ensure_callable(np.allclose)(y_d, y_g)
 
     # Grid with 3D displacement (H, W, 2)
     disp_last = np.zeros((6, 8, 2), dtype=np.float32)
     ctx_last = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=disp_last)
-    y_l, x_l = as_callable(_compute_elastic_grid)(ctx_last)
-    assert as_callable(np.allclose)(y_l, y_g)
+    y_l, x_l = ensure_callable(_compute_elastic_grid)(ctx_last)
+    assert ensure_callable(np.allclose)(y_l, y_g)
 
     # Grid with 4D displacement (B, 2, H, W)
     disp_4d_ch = np.zeros((1, 2, 6, 8), dtype=np.float32)
     ctx_4d_ch = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=disp_4d_ch)
-    y_4ch, x_4ch = as_callable(_compute_elastic_grid)(ctx_4d_ch)
-    assert as_callable(np.allclose)(y_4ch, y_g)
+    y_4ch, x_4ch = ensure_callable(_compute_elastic_grid)(ctx_4d_ch)
+    assert ensure_callable(np.allclose)(y_4ch, y_g)
 
     # Grid with 4D displacement (B, H, W, 2)
     disp_4d = np.zeros((1, 6, 8, 2), dtype=np.float32)
     ctx_4d = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=disp_4d)
-    y_4, x_4 = as_callable(_compute_elastic_grid)(ctx_4d)
-    assert as_callable(np.allclose)(y_4, y_g)
+    y_4, x_4 = ensure_callable(_compute_elastic_grid)(ctx_4d)
+    assert ensure_callable(np.allclose)(y_4, y_g)
 
     # Grid with non-standard displacement shape triggers fallback zeros
     ctx_bad = ElasticGridContext(np_mod=np, H=6, W=8, B=1, disp=np.zeros((5,)))
-    y_bad, x_bad = as_callable(_compute_elastic_grid)(ctx_bad)
-    assert as_callable(np.allclose)(y_bad, y_g)
+    y_bad, x_bad = ensure_callable(_compute_elastic_grid)(ctx_bad)
+    assert ensure_callable(np.allclose)(y_bad, y_g)
 
     # Eager execution with None displacement preserves image
     img = np.ones((2, 6, 8, 3), dtype=np.float32)
     cfg = ElasticConfig(interpolation="bilinear", fill_value=0.0)
-    res_none = elastic_transform_eager(np, img, None, cfg)
-    assert as_callable(np.allclose)(res_none, img)
+    res_none = elastic_transform_eager(ensure_eager_tensor(np), img, None, cfg)
+    assert ensure_callable(np.allclose)(res_none, img)
 
     # Eager execution with zero displacement
-    res_zero = elastic_transform_eager(np, img, disp_4d, cfg)
-    assert as_tensor(_get_attr(res_zero, "shape")) == (2, 6, 8, 3)
-    assert as_callable(np.allclose)(res_zero, img)
+    res_zero = elastic_transform_eager(ensure_eager_tensor(np), img, disp_4d, cfg)
+    assert ensure_eager_tensor(res_zero).shape == (2, 6, 8, 3)
+    assert ensure_callable(np.allclose)(res_zero, img)
 
     # 3D image input to elastic transform returns 3D output
     img_single_3d = np.ones((6, 8, 3), dtype=np.float32)
-    res_3d = elastic_transform_eager(np, img_single_3d, disp_4d, cfg)
-    assert as_tensor(_get_attr(res_3d, "shape")) == (6, 8, 3)
+    res_3d = elastic_transform_eager(ensure_eager_tensor(np), img_single_3d, disp_4d, cfg)
+    assert ensure_eager_tensor(res_3d).shape == (6, 8, 3)
 
     # Channels first layout
     img_cf = np.ones((2, 3, 6, 8), dtype=np.float32)
     cfg_cf = ElasticConfig(interpolation="bicubic", fill_value=0.0, data_format="channels_first")
-    res_cf = elastic_transform_eager(np, img_cf, disp_4d, cfg_cf)
-    assert as_tensor(_get_attr(res_cf, "shape")) == (2, 3, 6, 8)
+    res_cf = elastic_transform_eager(ensure_eager_tensor(np), img_cf, disp_4d, cfg_cf)
+    assert ensure_eager_tensor(res_cf).shape == (2, 3, 6, 8)
 
 
 def test_resize_and_interpolation_orders() -> None:
@@ -174,36 +173,36 @@ def test_resize_and_interpolation_orders() -> None:
     assert _get_resize_interpolation_order("linear") == 1
 
     # Resize None cases
-    assert as_callable(_compute_resize_grid)(None, None) == 0
-    assert _apply_resize_batch(as_mod(None), None, None, None, 1) == 0
-    assert as_callable(resize_eager)(None, None, None, None) == 0
+    assert ensure_callable(_compute_resize_grid)(None, None) == 0
+    assert _apply_resize_batch(ensure_mod(None), None, None, None, 1) == 0
+    assert ensure_callable(resize_eager)(None, None, None, None) == 0
 
     img = np.ones((2, 8, 8, 3), dtype=np.float32)
     cfg = ResizeOptions(size=(16, 16), interpolation="bilinear", align_corners=False)
 
-    res = resize_eager(np, img, (16, 16), cfg)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 16, 16, 3)
+    res = resize_eager(ensure_eager_tensor(np), img, (16, 16), cfg)
+    assert ensure_eager_tensor(res).shape == (2, 16, 16, 3)
 
     # Resize with align_corners=True and half_pixel_centers=True
     cfg_corners = ResizeOptions(size=(4, 4), interpolation="nearest", align_corners=True)
-    res_corners = resize_eager(np, img, (4, 4), cfg_corners)
-    assert as_tensor(_get_attr(res_corners, "shape")) == (2, 4, 4, 3)
+    res_corners = resize_eager(ensure_eager_tensor(np), img, (4, 4), cfg_corners)
+    assert ensure_eager_tensor(res_corners).shape == (2, 4, 4, 3)
 
     # Resize channels_first layout
     img_cf = np.ones((2, 3, 8, 8), dtype=np.float32)
     cfg_cf = ResizeOptions(size=(12, 12), interpolation="bicubic", data_format="channels_first")
-    res_cf = resize_eager(np, img_cf, (12, 12), cfg_cf)
-    assert as_tensor(_get_attr(res_cf, "shape")) == (2, 3, 12, 12)
+    res_cf = resize_eager(ensure_eager_tensor(np), img_cf, (12, 12), cfg_cf)
+    assert ensure_eager_tensor(res_cf).shape == (2, 3, 12, 12)
 
     # 3D image input to resize_eager returns 3D output
     img_single = np.ones((8, 8, 3), dtype=np.float32)
-    res_3d_resize = resize_eager(np, img_single, (16, 16), cfg)
-    assert as_tensor(_get_attr(res_3d_resize, "shape")) == (16, 16, 3)
+    res_3d_resize = resize_eager(ensure_eager_tensor(np), img_single, (16, 16), cfg)
+    assert ensure_eager_tensor(res_3d_resize).shape == (16, 16, 3)
 
     # Test _compute_resize_grid half_pixel_centers branch
     ctx_half = ResizeContext(H=8, W=8, new_H=16, new_W=16, align_corners=False, half_pixel_centers=True)
-    grid_y, grid_x = as_callable(_compute_resize_grid)(np, ctx_half)
-    assert as_tensor(_get_attr(grid_y, "shape")) == (16, 16)
+    grid_y, grid_x = ensure_callable(_compute_resize_grid)(np, ctx_half)
+    assert ensure_eager_tensor(grid_y).shape == (16, 16)
 
 
 def test_upsampling_operations() -> None:
@@ -216,55 +215,55 @@ def test_upsampling_operations() -> None:
     assert _extract_upsample_size((10, 20), size=None, scale_factor=None) == (10, 20)
 
     # None inputs for eager upsampling
-    assert _upsample_nearest_eager(as_mod(None)) == 0
-    assert _upsample_linear_eager(as_mod(None)) == 0
-    assert _upsample_bicubic_eager(as_mod(None)) == 0
+    assert _upsample_nearest_eager(ensure_mod(None)) == 0
+    assert _upsample_linear_eager(ensure_mod(None)) == 0
+    assert _upsample_bicubic_eager(ensure_mod(None)) == 0
 
     # 1D nearest upsample
     x_1d = np.ones((2, 4, 10), dtype=np.float32)
-    up_1d_near = _upsample_nearest_eager(np, x_1d, size=(20,))
-    assert as_tensor(_get_attr(up_1d_near, "shape")) == (2, 4, 20)
+    up_1d_near = _upsample_nearest_eager(ensure_eager_tensor(np), x_1d, size=(20,))
+    assert ensure_eager_tensor(up_1d_near).shape == (2, 4, 20)
 
     # 1D linear upsample
-    up_1d_lin = _upsample_linear_eager(np, x_1d, size=(20,), align_corners=True)
-    assert as_tensor(_get_attr(up_1d_lin, "shape")) == (2, 4, 20)
+    up_1d_lin = _upsample_linear_eager(ensure_eager_tensor(np), x_1d, size=(20,), align_corners=True)
+    assert ensure_eager_tensor(up_1d_lin).shape == (2, 4, 20)
 
     up_1d_unalign = _upsample_1d_linear(x_1d, 20, align_corners=False)
-    assert as_tensor(_get_attr(up_1d_unalign, "shape")) == (2, 4, 20)
+    assert ensure_eager_tensor(up_1d_unalign).shape == (2, 4, 20)
 
     # 1D linear same length returns copy
     up_1d_same = _upsample_1d_linear(x_1d, 10, align_corners=False)
-    assert as_callable(np.allclose)(up_1d_same, x_1d)
+    assert ensure_callable(np.allclose)(up_1d_same, x_1d)
 
     # 2D nearest upsample
     x_2d = np.ones((2, 4, 8, 8), dtype=np.float32)
-    up_2d_near = _upsample_nearest_eager(np, x_2d, scale_factor=2.0)
-    assert as_tensor(_get_attr(up_2d_near, "shape")) == (2, 4, 16, 16)
+    up_2d_near = _upsample_nearest_eager(ensure_eager_tensor(np), x_2d, scale_factor=2.0)
+    assert ensure_eager_tensor(up_2d_near).shape == (2, 4, 16, 16)
 
     # 2D bilinear upsample
-    up_2d_bi = _upsample_linear_eager(np, x_2d, size=(12, 14), align_corners=False)
-    assert as_tensor(_get_attr(up_2d_bi, "shape")) == (2, 4, 12, 14)
+    up_2d_bi = _upsample_linear_eager(ensure_eager_tensor(np), x_2d, size=(12, 14), align_corners=False)
+    assert ensure_eager_tensor(up_2d_bi).shape == (2, 4, 12, 14)
 
     # 2D bicubic upsample
-    up_2d_bic = _upsample_bicubic_eager(np, x_2d, size=(16, 16), align_corners=True)
-    assert as_tensor(_get_attr(up_2d_bic, "shape")) == (2, 4, 16, 16)
+    up_2d_bic = _upsample_bicubic_eager(ensure_eager_tensor(np), x_2d, size=(16, 16), align_corners=True)
+    assert ensure_eager_tensor(up_2d_bic).shape == (2, 4, 16, 16)
 
     # 3D nearest upsample
     x_3d = np.ones((1, 2, 4, 6, 8), dtype=np.float32)
-    up_3d_near = _upsample_nearest_eager(np, x_3d, size=(8, 12, 16))
-    assert as_tensor(_get_attr(up_3d_near, "shape")) == (1, 2, 8, 12, 16)
+    up_3d_near = _upsample_nearest_eager(ensure_eager_tensor(np), x_3d, size=(8, 12, 16))
+    assert ensure_eager_tensor(up_3d_near).shape == (1, 2, 8, 12, 16)
 
     # 3D trilinear upsample
-    up_3d_tri = _upsample_linear_eager(np, x_3d, size=(8, 12, 16), align_corners=True)
-    assert as_tensor(_get_attr(up_3d_tri, "shape")) == (1, 2, 8, 12, 16)
+    up_3d_tri = _upsample_linear_eager(ensure_eager_tensor(np), x_3d, size=(8, 12, 16), align_corners=True)
+    assert ensure_eager_tensor(up_3d_tri).shape == (1, 2, 8, 12, 16)
 
     up_3d_tri_noalign = _upsample_3d_trilinear(x_3d, (8, 12, 16), align_corners=False)
-    assert as_tensor(_get_attr(up_3d_tri_noalign, "shape")) == (1, 2, 8, 12, 16)
+    assert ensure_eager_tensor(up_3d_tri_noalign).shape == (1, 2, 8, 12, 16)
 
     # 4D spatial fallback copy branch
     x_4d_sp = np.ones((1, 2, 2, 2, 2, 2), dtype=np.float32)
-    assert as_tensor(_get_attr(_upsample_nearest_eager(np, x_4d_sp), "shape")) == as_tensor(_get_attr(x_4d_sp, "shape"))
-    assert as_tensor(_get_attr(_upsample_linear_eager(np, x_4d_sp), "shape")) == as_tensor(_get_attr(x_4d_sp, "shape"))
+    assert ensure_eager_tensor(_upsample_nearest_eager(ensure_eager_tensor(np), x_4d_sp)).shape == ensure_eager_tensor(x_4d_sp).shape
+    assert ensure_eager_tensor(_upsample_linear_eager(ensure_eager_tensor(np), x_4d_sp)).shape == ensure_eager_tensor(x_4d_sp).shape
 
 
 def test_rotation_eager_preserved() -> None:

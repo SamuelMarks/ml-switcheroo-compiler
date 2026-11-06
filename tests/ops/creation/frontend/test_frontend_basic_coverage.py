@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import (
     zeros_like,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -73,7 +73,11 @@ class _DummyInput:
 
 def test_frontend_basic_dtype_object_and_unknown() -> None:
     """Cover _infer_dtype branches for Object and custom types."""
-    arr_obj = np.array([object()], dtype=object)
+
+    class _BareDummy:
+        """Empty dummy object."""
+
+    arr_obj = np.array([_BareDummy()], dtype="O")
     assert _infer_dtype(arr_obj) == DType.Object
 
     class DummyObj:
@@ -81,7 +85,7 @@ def test_frontend_basic_dtype_object_and_unknown() -> None:
 
         dtype = "int32"
 
-    assert as_callable(_infer_dtype)(as_callable(DummyObj)()) == DType.Int32
+    assert ensure_callable(_infer_dtype)(ensure_callable(DummyObj)()) == DType.Int32
 
 
 def test_frontend_basic_get_dtype_val() -> None:

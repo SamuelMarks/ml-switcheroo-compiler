@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.benchmarks.metrics import (
     compute_statistical_metrics,
     export_benchmark_results,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
+from tests.testing_utils import ensure_eager_tensor
 
 
 def test_compute_statistical_metrics_standard() -> None:
@@ -35,10 +35,10 @@ def test_compute_statistical_metrics_standard() -> None:
     assert metrics["max_latency_ms"] == 14.0
     assert metrics["peak_memory_mb"] == 64.5
     assert metrics["warmup_iterations"] == 3
-    assert _get_attr(metrics, "__getitem__")("throughput_items_per_sec") > 0.0
-    assert _get_attr(metrics, "__getitem__")("gflops") > 0.0
-    assert _get_attr(metrics, "__getitem__")("bandwidth_gb_s") > 0.0
-    assert _get_attr(metrics, "__getitem__")("std_latency_ms") > 0.0
+    assert ensure_eager_tensor(metrics)["throughput_items_per_sec"] > 0.0
+    assert ensure_eager_tensor(metrics)["gflops"] > 0.0
+    assert ensure_eager_tensor(metrics)["bandwidth_gb_s"] > 0.0
+    assert ensure_eager_tensor(metrics)["std_latency_ms"] > 0.0
 
 
 def test_compute_statistical_metrics_empty_and_single() -> None:

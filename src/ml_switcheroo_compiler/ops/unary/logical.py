@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -105,7 +111,7 @@ class Packbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -133,7 +139,7 @@ class Unpackbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -266,7 +272,7 @@ class Isin(OpDef):
             tuple[int, ...]: Result shape matching element.
         """
         element = args[0] if len(args) > 0 else kwargs.get("element")
-        return tuple(_get_attr(element, "shape", _get_attr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
+        return ensure_shape(element) if isinstance(element, (list, tuple)) else extract_shape(element)
 
 
 def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
@@ -282,11 +288,11 @@ def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
         return 0
     if isinstance(obj, (list, tuple)):
         return len(obj)
-    shape = _get_attr(obj, "shape", _get_attr(obj, "shape_metadata", ()))
-    if not shape:
+    raw_shape: Sequence[int | None] = extract_shape(obj)
+    if not raw_shape:
         return 1
     size = 1
-    for s in shape:
+    for s in raw_shape:
         if s is None:
             return None
         if isinstance(s, int):

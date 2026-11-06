@@ -20,9 +20,8 @@ from ml_switcheroo_compiler.backends.cuda.nccl_collectives import (
     NCCLDriver,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.distributed.host_collectives import HostCollectiveCommunicator
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -275,45 +274,45 @@ def test_host_collective_communicator() -> None:
     comm1 = HostCollectiveCommunicator(world_size=2, rank=1)
 
     # AllReduce SUM
-    red_sum = as_callable(comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
+    red_sum = ensure_callable(comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
 
     # AllReduce MAX
-    red_max = as_callable(comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
+    red_max = ensure_callable(comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
 
     # AllGather
-    gathered = as_callable(comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
+    gathered = ensure_callable(comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
     assert len(gathered) == 8
 
     # ReduceScatter
-    rs0 = as_callable(comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    rs1 = as_callable(comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(rs0, [6.0, 8.0])
-    as_callable(np.testing.assert_allclose)(rs1, [10.0, 12.0])
+    rs0 = ensure_callable(comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    rs1 = ensure_callable(comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(rs0, [6.0, 8.0])
+    ensure_callable(np.testing.assert_allclose)(rs1, [10.0, 12.0])
 
     # AllToAll
-    a2a0 = as_callable(comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
+    a2a0 = ensure_callable(comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
     assert len(a2a0) == 4
 
     # Broadcast
-    bc = as_callable(comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(bc, r0)
+    bc = ensure_callable(comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(bc, r0)
 
     # Additional branches: MIN, PROD, unknown op
-    red_min = as_callable(comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
-    red_prod = as_callable(comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
-    red_other = as_callable(comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
+    red_min = ensure_callable(comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
+    red_prod = ensure_callable(comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
+    red_other = ensure_callable(comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
+    ensure_callable(np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
 
     # Branches where all_ranks_data is None
-    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_reduce)(r0, all_ranks_data=None), r0)
-    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_gather)(r0, all_ranks_data=None), r0)
-    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_to_all)(r0, all_ranks_data=None), r0)
-    as_callable(np.testing.assert_allclose)(as_callable(comm0.broadcast)(r0, all_ranks_data=None), r0)
-    as_callable(np.testing.assert_allclose)(as_callable(comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(comm0.all_reduce)(r0, all_ranks_data=None), r0)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(comm0.all_gather)(r0, all_ranks_data=None), r0)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(comm0.all_to_all)(r0, all_ranks_data=None), r0)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(comm0.broadcast)(r0, all_ranks_data=None), r0)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
 
 
 def test_nccl_driver_exhaustive_branches() -> None:
@@ -395,7 +394,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
         Returns:
             int: Return status code.
         """
-        _set_attr(as_callable(ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents, "value", 0x12345678)
+        ensure_mutable(ensure_callable(ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents).value = ensure_eager_tensor(0x12345678)
         return 0
 
     mock_rt.cudaMalloc = fake_malloc_success
@@ -415,9 +414,8 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
 
     # cudaMemcpy H2D success and exception
     arr = np.array([1.0, 2.0, 3.0], dtype=np.float32)
-    _get_attr(_state, "update")({"arr": arr, "ctypes": ctypes, "dev_ptr": dev_ptr, "driver": driver})
-    _get_attr(_state, "update")({"fake_malloc_success": fake_malloc_success, "mock_nccl": mock_nccl, "mock_rt": mock_rt})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arr": arr, "ctypes": ctypes, "dev_ptr": dev_ptr, "driver": driver}))
+    _state.update(ensure_tensor_dict({"fake_malloc_success": fake_malloc_success, "mock_nccl": mock_nccl, "mock_rt": mock_rt}))
 
 
 def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -427,8 +425,8 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
         _state: Shared test state dictionary.
     """
     arr, dev_ptr, driver, mock_rt = _state["arr"], _state["dev_ptr"], _state["driver"], _state["mock_rt"]
-    _set_attr(mock_rt.cudaMemcpy, "return_value", 0)
-    _set_attr(mock_rt.cudaMemcpy, "side_effect", None)
+    ensure_mutable(mock_rt.cudaMemcpy).return_value = ensure_eager_tensor(0)
+    ensure_mutable(mock_rt.cudaMemcpy).side_effect = ensure_eager_tensor(None)
     driver.copy_host_to_device(arr, dev_ptr)
     assert mock_rt.cudaMemcpy.called
 
@@ -436,30 +434,31 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
     del mock_rt.cudaMalloc
     host_buf_ptr = driver.allocate_buffer(arr.nbytes)
     real_buf = driver._allocated_buffers.pop(host_buf_ptr)
-    _set_attr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("H2D failed"))
+    ensure_mutable(mock_rt.cudaMemcpy).side_effect = ensure_eager_tensor(RuntimeError("H2D failed"))
     driver.copy_host_to_device(arr, host_buf_ptr)
 
     # cudaMemcpy D2H success and exception
     out_arr = np.zeros_like(arr)
-    _set_attr(mock_rt.cudaMemcpy, "side_effect", None)
+    ensure_mutable(mock_rt.cudaMemcpy).side_effect = ensure_eager_tensor(None)
     driver.copy_device_to_host(dev_ptr, out_arr)
     assert mock_rt.cudaMemcpy.called
 
-    _set_attr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("D2H failed"))
+    ensure_mutable(mock_rt.cudaMemcpy).side_effect = ensure_eager_tensor(RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
-    assert as_callable(np.allclose)(out_arr, arr)
+    assert ensure_callable(np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore cudaMalloc with non-zero status branch (fails cudaMalloc, falls back to host buffer)
-    _set_attr(mock_rt, "cudaMalloc", MagicMock(return_value=1))
+    ensure_mutable(mock_rt).cudaMalloc = ensure_eager_tensor(MagicMock(return_value=1))
     fallback_buf = driver.allocate_buffer(64)
     assert fallback_buf in driver._allocated_buffers
 
     # stream_synchronize success, None, and exception
-    _set_attr(mock_rt.cudaStreamSynchronize, "side_effect", None)
-    _set_attr(mock_rt.cudaStreamSynchronize, "return_value", 0)
-    _get_attr(_state, "update")({"fallback_buf": fallback_buf, "host_buf_ptr": host_buf_ptr, "out_arr": out_arr})
-    _state.update(_caller_locals())
+    ensure_mutable(mock_rt.cudaStreamSynchronize).side_effect = ensure_eager_tensor(None)
+    ensure_mutable(mock_rt.cudaStreamSynchronize).return_value = ensure_eager_tensor(0)
+    _state.update(ensure_tensor_dict({"fallback_buf": fallback_buf, "host_buf_ptr": host_buf_ptr, "out_arr": out_arr}))
+    _state.update(ensure_tensor_dict({"arr": arr, "dev_ptr": dev_ptr, "driver": driver}))
+    _state.update(ensure_tensor_dict({"mock_rt": mock_rt}))
 
 
 def _test_nccl_driver_cuda_rt_memory_and_streams_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -472,14 +471,14 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_3(_state: dict[str, EagerT
     assert driver.stream_synchronize(None) == 0
     assert driver.stream_synchronize(999) == 0
 
-    _set_attr(mock_rt.cudaStreamSynchronize, "side_effect", RuntimeError("Sync fail"))
+    ensure_mutable(mock_rt.cudaStreamSynchronize).side_effect = ensure_eager_tensor(RuntimeError("Sync fail"))
     assert driver.stream_synchronize(999) == -1
 
     # cuda_rt without stream synchronize
     mock_no_sync = MagicMock(spec=[])
-    _set_attr(driver, "cuda_rt", mock_no_sync)
+    ensure_mutable(driver).cuda_rt = ensure_eager_tensor(mock_no_sync)
     assert driver.stream_synchronize(999) == 0
-    _get_attr(_state, "update")({"mock_no_sync": mock_no_sync})
+    _state.update(ensure_tensor_dict({"mock_no_sync": mock_no_sync}))
 
 
 def test_nccl_driver_cuda_rt_memory_and_streams() -> None:

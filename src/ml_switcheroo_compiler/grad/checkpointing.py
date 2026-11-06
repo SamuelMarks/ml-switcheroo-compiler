@@ -7,24 +7,43 @@ and wrappers for checkpointing and recomputing graph activations during backprop
 from __future__ import annotations
 
 import os
+import typing
 import uuid
 
 import yaml
+from ml_switcheroo_ir import AttributeValue as IRAttributeValue
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    VariadicCallableProtocol,
+    invoke_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_mixins import TracedDataProtocol
 from ml_switcheroo_compiler.grad.utils import GradValue
-from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode, as_attrs
+from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 AttributeValue = AttrValue
+
+
+def _is_ckpt_attr_dict(
+    val: dict[str, IRAttributeValue],
+) -> typing.TypeGuard[dict[str, LogicalGraph | GradValue | IRAttributeValue]]:
+    """Type guard narrowing checkpoint node attributes dict to accept `LogicalGraph` and `GradValue`.
+
+    Args:
+        val (dict[str, IRAttributeValue]): Attributes dict.
+
+    Returns:
+        bool: True if val is a dict.
+    """
+    return isinstance(val, dict)
 
 
 class RematerializationPolicyModel(BaseModel):
@@ -127,7 +146,10 @@ def checkpoint(
     """
     active_policy = get_rematerialization_policy(policy)
 
-    def wrapper(*args: GradValue, **kwargs: GradValue) -> GradValue:
+    def wrapper(
+        *args: GradValue,
+        **kwargs: GradValue,
+    ) -> GradValue:
         """Execute checkpointed function wrapper.
 
         Args:
@@ -159,13 +181,10 @@ def checkpoint(
             device = tensor_args[0].device
 
         out_id = str(uuid.uuid4())
-        ckpt_attrs = as_attrs(
-            {
-                "subgraph": fwd_block,
-                "evicted": active_policy.evict_activations,
-                "policy": active_policy.model_dump(),
-            }
-        )
+        ckpt_attrs: dict[str, IRAttributeValue] = {
+            "evicted": active_policy.evict_activations,
+            "policy": active_policy.model_dump(),
+        }
         node = LogicalNode(
             id=out_id,
             op_type="Checkpoint",
@@ -173,7 +192,9 @@ def checkpoint(
             attributes=ckpt_attrs,
             shape_metadata=shape,
         )
-        node.attributes["fun"] = as_attrs({"f": fun})["f"]
+        assert _is_ckpt_attr_dict(node.attributes)
+        node.attributes["subgraph"] = fwd_block
+        node.attributes["fun"] = fun
         global_tracing_state.add_node(node)
 
         proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)

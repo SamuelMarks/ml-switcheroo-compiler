@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_base64, encode_base64, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -48,9 +48,9 @@ def test_base64_ops() -> None:
     config.eager_mode = False
     global_tracing_state.start_tracing()
     if True:
-        as_callable(encode_base64)(None)
+        ensure_callable(encode_base64)(None)
     if True:
-        as_callable(decode_base64)(None)
+        ensure_callable(decode_base64)(None)
     assert callable(global_tracing_state.start_tracing)
 
 
@@ -73,7 +73,7 @@ def test_tfrecord_writer(tmp_path: Path) -> None:
     opts = TFRecordOptions("ZLIB")
     assert opts.compression_type == "ZLIB"
     with TFRecordWriter(str(tmp_path / "path"), opts) as writer:
-        as_callable(writer.write)(None)
+        ensure_callable(writer.write)(None)
 
 
 def test_base64_ops_success() -> None:

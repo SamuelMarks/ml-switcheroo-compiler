@@ -11,7 +11,7 @@ from unittest.mock import patch
 import yaml
 
 import scripts.standardize_backend_mappings as sbm
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -44,7 +44,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_translations": {"axis": "dim", "drop": None},
         "dtype_overrides": {"float64": "float32"},
     }
-    result = as_callable(sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
+    result = ensure_callable(sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
     assert result["operation"] == "Add"
     assert result["backend"] == "numpy"
     assert result["target_api"] == "np.add"
@@ -58,7 +58,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_map": ["invalid_list"],
         "dtype_overrides": ["invalid_list"],
     }
-    result_non_dict = as_callable(sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
+    result_non_dict = ensure_callable(sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
     assert result_non_dict["kwarg_map"] == {}
     assert result_non_dict["dtype_overrides"] == {}
 

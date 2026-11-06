@@ -7,10 +7,10 @@ import resource
 import sys
 import time
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, as_opt_callable
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, ensure_opt_callable
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -43,8 +43,8 @@ def _flatten_input_values(val: EagerValue) -> list[float]:
         for elem in val:
             result.extend(_flatten_input_values(elem))
         return result
-    if _has_attr(val, "tolist") and callable(_get_attr(val, "tolist")):
-        return _flatten_input_values(_get_attr(val, "tolist")())
+    if has_backend_member(val, "tolist") and callable(get_backend_member(val, "tolist")):
+        return _flatten_input_values(get_backend_member(val, "tolist")())
     return []
 
 
@@ -62,7 +62,7 @@ class CppProfiler:
         """
         generator = CppGenerator(graph=graph)
         try:
-            return as_opt_callable(generator._compile_aot_impl(graph))
+            return ensure_opt_callable(generator._compile_aot_impl(graph))
         except Exception:
             return None
 
@@ -82,15 +82,15 @@ class CppProfiler:
         """
         c_in_ptrs: list[ctypes.c_void_p] = []
         raw_in_buffers: list[EagerValue] = []
-        in_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"] if _get_attr(graph, "nodes", None) else []
+        in_nodes = [n for n in graph.nodes.values() if get_backend_member(n, "op_type", "") == "Input"] if get_backend_member(graph, "nodes", None) else []
         for inp_node in in_nodes:
             val = inputs.get(inp_node.id)
             if val is not None:
                 flat_vals = _flatten_input_values(val)
                 buf_len = max(1, len(flat_vals))
                 c_arr = (ctypes.c_float * buf_len)(*flat_vals)
-                _get_attr(raw_in_buffers, "append")(c_arr)
-                c_in_ptrs.append(ctypes.cast(ctypes.cast(c_arr, ctypes.POINTER(ctypes.c_float)), ctypes.c_void_p))
+                get_backend_member(raw_in_buffers, "append")(c_arr)
+                c_in_ptrs.append(ctypes.c_void_p(ctypes.addressof(c_arr)))
 
         c_inputs = (ctypes.c_void_p * len(c_in_ptrs))(*c_in_ptrs) if c_in_ptrs else None
         return c_inputs, raw_in_buffers
@@ -109,16 +109,18 @@ class CppProfiler:
         """
         c_out_ptrs: list[ctypes.c_void_p] = []
         raw_out_buffers: list[EagerValue] = []
-        for out_name in _get_attr(graph, "outputs", []):
-            out_node = graph.nodes.get(out_name) if _get_attr(graph, "nodes", None) else None
-            shape = _get_attr(out_node, "shape_metadata", None) or (1,)
+        raw_outs = get_backend_member(graph, "outputs", [])
+        for out_name in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
+            out_node = graph.nodes.get(str(out_name)) if get_backend_member(graph, "nodes", None) else None
+            raw_shape = get_backend_member(out_node, "shape_metadata", None)
+            shape = raw_shape if isinstance(raw_shape, (list, tuple)) and raw_shape else (1,)
             num_elem: int = 1
             for d in shape:
                 if isinstance(d, int) and d > 0:
                     num_elem *= d
             buf = (ctypes.c_float * num_elem)()
-            _get_attr(raw_out_buffers, "append")(buf)
-            c_out_ptrs.append(ctypes.cast(ctypes.cast(buf, ctypes.POINTER(ctypes.c_float)), ctypes.c_void_p))
+            get_backend_member(raw_out_buffers, "append")(buf)
+            c_out_ptrs.append(ctypes.c_void_p(ctypes.addressof(buf)))
 
         c_outputs = (ctypes.c_void_p * len(c_out_ptrs))(*c_out_ptrs) if c_out_ptrs else None
         return c_outputs, raw_out_buffers
@@ -145,7 +147,7 @@ class CppProfiler:
         """
         del device
 
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(get_backend_member(graph, "nodes", None) and any(get_backend_member(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         c_inputs, _ = self._marshal_inputs(graph, inputs)
         c_outputs, _ = self._allocate_outputs(graph)

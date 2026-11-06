@@ -5,6 +5,8 @@ from __future__ import annotations
 import typing
 from enum import Enum
 
+from ml_switcheroo_ir.types import DType as _IRDType
+
 from ml_switcheroo_compiler.core.errors import DTypeValidationError as DTypeValidationError
 
 if typing.TYPE_CHECKING:
@@ -37,7 +39,7 @@ if typing.TYPE_CHECKING:
         uint4 = "uint4"
         bool = "bool"
         string = "string"
-        object = "object"
+        object_ = "object"
 
         Float64 = "float64"
         Float32 = "float32"
@@ -64,36 +66,105 @@ if typing.TYPE_CHECKING:
         String = "string"
         Object = "object"
 
-else:
-    from ml_switcheroo_ir.types import DType as DType
 
-    # Re-export canonical DType and add backward-compatible capitalized attribute aliases
-    DType.Float64 = DType.float64
-    DType.Float32 = DType.float32
-    DType.Float16 = DType.float16
-    DType.BFloat16 = DType.bfloat16
-    DType.Float8E4M3B11FNUZ = DType.float8_e4m3b11fnuz
-    DType.Float8E4M3FN = DType.float8_e4m3fn
-    DType.float8_e4m3fnuz = DType.fp8_e4m3fnuz
-    DType.float8_e5m2fnuz = DType.fp8_e5m2fnuz
-    DType.Float8E4M3FNUZ = DType.fp8_e4m3fnuz
-    DType.Float8E5M2 = DType.float8_e5m2
-    DType.Float8E5M2FNUZ = DType.fp8_e5m2fnuz
-    DType.Complex64 = DType.complex64
-    DType.Complex128 = DType.complex128
-    DType.Int64 = DType.int64
-    DType.Int32 = DType.int32
-    DType.Int16 = DType.int16
-    DType.Int8 = DType.int8
-    DType.Int4 = DType.int4
-    DType.UInt64 = DType.uint64
-    DType.UInt32 = DType.uint32
-    DType.UInt16 = DType.uint16
-    DType.UInt8 = DType.uint8
-    DType.UInt4 = DType.uint4
-    DType.Bool = DType.bool
-    DType.String = DType.string
-    DType.Object = DType.object
+class _MutableDTypeClsProtocol(typing.Protocol):
+    """Protocol for attaching backward-compatible PascalCase aliases to `DType`."""
+
+    Float64: _IRDType
+    Float32: _IRDType
+    Float16: _IRDType
+    BFloat16: _IRDType
+    Float8E4M3B11FNUZ: _IRDType
+    Float8E4M3FN: _IRDType
+    float8_e4m3fnuz: _IRDType
+    float8_e5m2fnuz: _IRDType
+    Float8E4M3FNUZ: _IRDType
+    Float8E5M2: _IRDType
+    Float8E5M2FNUZ: _IRDType
+    Complex64: _IRDType
+    Complex128: _IRDType
+    Int64: _IRDType
+    Int32: _IRDType
+    Int16: _IRDType
+    Int8: _IRDType
+    Int4: _IRDType
+    UInt64: _IRDType
+    UInt32: _IRDType
+    UInt16: _IRDType
+    UInt8: _IRDType
+    UInt4: _IRDType
+    Bool: _IRDType
+    String: _IRDType
+    Object: _IRDType
+    object_: _IRDType
+
+
+def _is_mutable_dtype_cls(cls_obj: type[_IRDType]) -> typing.TypeGuard[_MutableDTypeClsProtocol]:
+    """Type guard narrowing `type[_IRDType]` to `_MutableDTypeClsProtocol`.
+
+    Args:
+        cls_obj (type[_IRDType]): Canonical IR DType enum class.
+
+    Returns:
+        bool: True if cls_obj is a class.
+    """
+    return isinstance(cls_obj, type)
+
+
+def _is_dtype_enum_cls(cls_obj: type[_IRDType]) -> typing.TypeGuard[type[DType]]:
+    """Type guard narrowing `type[_IRDType]` to `type[DType]`.
+
+    Args:
+        cls_obj (type[_IRDType]): Canonical IR DType enum class.
+
+    Returns:
+        bool: True if cls_obj is a class.
+    """
+    return isinstance(cls_obj, type)
+
+
+def _setup_runtime_dtype() -> type[DType]:
+    """Configure runtime PascalCase attribute aliases on the canonical IR `DType` enum.
+
+    Returns:
+        type[DType]: Configured `DType` enumeration class.
+    """
+    raw_cls = _IRDType
+    assert _is_mutable_dtype_cls(raw_cls)
+    raw_cls.Float64 = _IRDType.float64
+    raw_cls.Float32 = _IRDType.float32
+    raw_cls.Float16 = _IRDType.float16
+    raw_cls.BFloat16 = _IRDType.bfloat16
+    raw_cls.Float8E4M3B11FNUZ = _IRDType.float8_e4m3b11fnuz
+    raw_cls.Float8E4M3FN = _IRDType.float8_e4m3fn
+    raw_cls.float8_e4m3fnuz = _IRDType.fp8_e4m3fnuz
+    raw_cls.float8_e5m2fnuz = _IRDType.fp8_e5m2fnuz
+    raw_cls.Float8E4M3FNUZ = _IRDType.fp8_e4m3fnuz
+    raw_cls.Float8E5M2 = _IRDType.float8_e5m2
+    raw_cls.Float8E5M2FNUZ = _IRDType.fp8_e5m2fnuz
+    raw_cls.Complex64 = _IRDType.complex64
+    raw_cls.Complex128 = _IRDType.complex128
+    raw_cls.Int64 = _IRDType.int64
+    raw_cls.Int32 = _IRDType.int32
+    raw_cls.Int16 = _IRDType.int16
+    raw_cls.Int8 = _IRDType.int8
+    raw_cls.Int4 = _IRDType.int4
+    raw_cls.UInt64 = _IRDType.uint64
+    raw_cls.UInt32 = _IRDType.uint32
+    raw_cls.UInt16 = _IRDType.uint16
+    raw_cls.UInt8 = _IRDType.uint8
+    raw_cls.UInt4 = _IRDType.uint4
+    raw_cls.Bool = _IRDType.bool
+    raw_cls.String = _IRDType.string
+    raw_cls.Object = _IRDType["object"]
+    raw_cls.object_ = _IRDType["object"]
+    ret_cls = _IRDType
+    assert _is_dtype_enum_cls(ret_cls)
+    return ret_cls
+
+
+if not typing.TYPE_CHECKING:
+    DType = _setup_runtime_dtype()
 
 
 class QuantDType(Enum):

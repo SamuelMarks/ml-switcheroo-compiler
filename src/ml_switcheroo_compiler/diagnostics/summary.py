@@ -6,10 +6,17 @@ import os
 import typing
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
+
+
+@typing.runtime_checkable
+class _TensorDataProtocol(typing.Protocol):
+    """Protocol for tensor objects exposing a `.data` payload."""
+
+    data: TensorOrScalar
 
 
 def write_raw_pb(pb_data: bytes, logdir: str) -> None:
@@ -54,7 +61,7 @@ def encode_image(tensor: Tensor) -> bytes:
     import zlib
 
     np_mod = BackendRegistry.get("numpy").get_module()
-    raw_data = _get_attr(tensor, "data", tensor)
+    raw_data = tensor.data if isinstance(tensor, _TensorDataProtocol) else tensor
     arr = np_mod.asarray(raw_data)
     if arr.ndim == 4:
         arr = arr[0]

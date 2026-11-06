@@ -5,13 +5,17 @@ from __future__ import annotations
 import builtins
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int, ensure_shape
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    DataHolderProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -35,13 +39,14 @@ def dynamic_slice(
     if config.eager_mode:
         starts = []
         for s in start_indices:
-            if _has_attr(s, "data"):
-                starts.append(int(as_int(s.data)))
+            raw_s: TensorOrScalar = s
+            if isinstance(raw_s, DataHolderProtocol):
+                starts.append(int(ensure_int(raw_s.data)))
             else:
-                starts.append(int(s))
+                starts.append(int(ensure_int(raw_s)))
         starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data = as_tensor(input.data)[idx]
+        data = ensure_eager_tensor(input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, *start_indices]
     if len(input.shape) > 0 and len(slice_sizes) != len(input.shape):
@@ -116,7 +121,7 @@ class DynamicSlice(OpDef):
             tuple[int, ...]: Result.
         """
         slice_sizes = args[2] if len(args) > BINARY_OP_ARITY else kwargs["slice_sizes"]
-        return tuple(_get_attr(slice_sizes, "__iter__")())
+        return tuple(ensure_shape(slice_sizes))
 
 
 @register_op("DynamicUpdateSlice")
@@ -142,5 +147,5 @@ class DynamicUpdateSlice(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(x)
         return _typed_ret_1

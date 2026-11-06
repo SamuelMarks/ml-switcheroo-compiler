@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 import typing
+from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import as_int, as_shape
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
@@ -28,6 +28,94 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
 )
 
 
+@typing.runtime_checkable
+class _NamedDimProtocol(typing.Protocol):
+    """Protocol for symbolic dimension objects exposing a `name` attribute."""
+
+    name: str
+
+
+@typing.runtime_checkable
+class _StridesNodeProtocol(typing.Protocol):
+    """Protocol for nodes exposing a mutable `strides` attribute."""
+
+    strides: tuple[int, ...]
+
+
+def _is_strides_node(val: IRNode) -> typing.TypeGuard[_StridesNodeProtocol]:
+    """Type guard narrowing `val` to `_StridesNodeProtocol` for strides assignment.
+
+    Args:
+        val (IRNode): Node instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+@typing.runtime_checkable
+class _GraphAnnotationsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `annotations` attribute."""
+
+    annotations: AttributeValue
+
+
+def _is_annotations_holder(val: IRGraph) -> typing.TypeGuard[_GraphAnnotationsProtocol]:
+    """Type guard narrowing `val` to `_GraphAnnotationsProtocol` for annotations assignment.
+
+    Args:
+        val (IRGraph): Graph instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_graph_annotations(graph: IRGraph) -> dict[str, AttributeValue]:
+    """Ensure `graph.annotations` exists as a mutable dictionary and return it.
+
+    Args:
+        graph (IRGraph): Target IRGraph.
+
+    Returns:
+        dict[str, AttributeValue]: Mutable annotations dictionary.
+    """
+    if isinstance(graph, _GraphAnnotationsProtocol):
+        if isinstance(graph.annotations, dict):
+            return graph.annotations
+        del graph.annotations
+    assert _is_annotations_holder(graph)
+    new_ann: dict[str, AttributeValue] = {}
+    graph.annotations = new_ann
+    return new_ann
+
+
+def _coerce_shape_tuple(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
+
+
+def _is_normalized_shape(val: tuple[AttributeValue, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a normalized shape tuple to `tuple[int, ...]`.
+
+    Args:
+        val (tuple[AttributeValue, ...]): Normalized shape tuple.
+
+    Returns:
+        bool: True if val is a tuple.
+    """
+    return isinstance(val, tuple)
+
+
 def _infer_constant_shape(
     node: IRNode,
     shapes: dict[str, tuple[int, ...] | None],
@@ -46,8 +134,7 @@ def _infer_constant_shape(
 
     backend = get_active_backend()
     arr = backend.array(val)
-    _typed_ret_1: tuple[int, ...] | None = _get_attr(arr, "shape", ())
-    return _typed_ret_1
+    return _coerce_shape_tuple(arr.shape) if isinstance(arr, ShapeProtocol) else ()
 
 
 def _infer_output_shape(
@@ -78,7 +165,7 @@ def _prepare_op_kwargs(node: IRNode) -> dict[str, AttributeValue]:
         dict: Result.
     """
     kwargs: dict[str, AttributeValue] = {**node.attributes}
-    if _has_attr(node, "shape_metadata") and node.shape_metadata:
+    if node.shape_metadata:
         if node.op_type in ("Expand", "BroadcastTo"):
             kwargs["shape"] = node.shape_metadata
         elif node.op_type == "Reshape":
@@ -122,7 +209,18 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
         if any(isinstance(x, str) for x in raw_shape):
             return None
         try:
-            return as_shape(tuple(x if _has_attr(x, "name") else int(as_int(x)) for x in raw_shape))
+            norm_items: list[AttributeValue] = []
+            for x in raw_shape:
+                raw_x: TensorOrScalar = x
+                if isinstance(raw_x, _NamedDimProtocol):
+                    norm_items.append(x)
+                elif isinstance(x, (int, float)) and not isinstance(x, bool):
+                    norm_items.append(int(x))
+                else:
+                    raise TypeError("Non-integer dimension")
+            norm_tuple = tuple(norm_items)
+            assert _is_normalized_shape(norm_tuple)
+            return norm_tuple
         except (ValueError, TypeError):
             return None
     return None
@@ -196,8 +294,8 @@ def _propagate_subgraph_shapes(node: IRNode, shapes: dict[str, tuple[int, ...] |
         bool: True if any nested subgraph was modified, False otherwise.
     """
     modified = False
-    for sub in _get_attr(node, "subgraphs", {}).values():
-        if _has_attr(sub, "nodes") and _has_attr(sub, "inputs"):
+    for sub in node.subgraphs.values():
+        if isinstance(sub, IRGraph):
             for inp_id, parent_inp in zip(sub.inputs, node.inputs):
                 if shapes.get(parent_inp) is not None and inp_id in sub.nodes:
                     sub.nodes[inp_id].shape_metadata = shapes[parent_inp]
@@ -215,9 +313,9 @@ def _fallback_subgraph_output_shape(node: IRNode) -> tuple[int, ...] | None:
     Returns:
         tuple[int, ...] | None: Normalized output shape from the first subgraph with an output shape, or None.
     """
-    for sub in _get_attr(node, "subgraphs", {}).values():
-        if _has_attr(sub, "outputs") and sub.outputs and sub.outputs[0] in sub.nodes:
-            sub_out_shape = _normalize_shape_tuple(_get_attr(sub.nodes[sub.outputs[0]], "shape_metadata", None))
+    for sub in node.subgraphs.values():
+        if isinstance(sub, IRGraph) and sub.outputs and sub.outputs[0] in sub.nodes:
+            sub_out_shape = _normalize_shape_tuple(sub.nodes[sub.outputs[0]].shape_metadata)
             if sub_out_shape is not None:
                 return sub_out_shape
     return None
@@ -237,12 +335,13 @@ def _apply_inferred_shape(node: IRNode, out_shape: tuple[int, ...]) -> bool:
 
     modified = False
     if node.shape_metadata != out_shape:
-        _obj_set_attr(node, "shape_metadata", out_shape)
+        node.shape_metadata = out_shape
         modified = True
     strides = compute_contiguous_strides(out_shape)
     node.attributes["strides"] = strides
     try:
-        _obj_set_attr(node, "strides", strides)
+        assert _is_strides_node(node)
+        node.strides = strides
     except (AttributeError, TypeError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return modified
@@ -312,18 +411,17 @@ def record_runtime_observation(
     node: IRNode = graph.nodes[node_id]
     norm_shape: tuple[int, ...] = tuple(int(s) for s in observed_shape)
 
-    current_shape = _get_attr(node, "shape_metadata", None)
+    current_shape = node.shape_metadata
     if current_shape is not None and isinstance(current_shape, (tuple, list)):
         if len(current_shape) != len(norm_shape):
             raise ShapeMismatchError(f"Rank mismatch for node '{node_id}': expected rank {len(current_shape)}, but observed rank {len(norm_shape)} (shape: {norm_shape}).")
 
     node.shape_metadata = norm_shape
 
-    if not _has_attr(graph, "annotations") or not isinstance(_get_attr(graph, "annotations", None), dict):
-        _obj_set_attr(graph, "annotations", {})
-
-    history: list[dict[str, str | tuple[int, ...]]] = _get_attr(graph, "annotations").setdefault("learned_shapes_history", [])
-    history.append(
+    annotations = _ensure_graph_annotations(graph)
+    raw_history = annotations.setdefault("learned_shapes_history", [])
+    assert isinstance(raw_history, list)
+    raw_history.append(
         {
             "node_id": node_id,
             "shape": norm_shape,
@@ -357,15 +455,14 @@ def annotate_learned_shapes(
     modified: bool = False
     for nid, shape in shape_map.items():
         if nid in graph.nodes:
-            prev_shape = _get_attr(graph.nodes[nid], "shape_metadata", None)
+            prev_shape = graph.nodes[nid].shape_metadata
             norm_shape = tuple(int(s) for s in shape)
             if prev_shape != norm_shape:
                 record_runtime_observation(graph, nid, shape)
                 modified = True
 
-    if not _has_attr(graph, "annotations") or not isinstance(_get_attr(graph, "annotations", None), dict):
-        _obj_set_attr(graph, "annotations", {})
-    _get_attr(graph, "annotations")["convergence_converged"] = True
+    annotations = _ensure_graph_annotations(graph)
+    annotations["convergence_converged"] = True
 
     if modified:
         shape_inference_pass(graph)

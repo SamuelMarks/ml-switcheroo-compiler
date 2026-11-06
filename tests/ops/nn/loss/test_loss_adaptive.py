@@ -9,10 +9,9 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.loss import AdaptiveLogSoftmaxWithLoss, adaptive_log_softmax_with_loss, binary_crossentropy, categorical_crossentropy, sparse_categorical_crossentropy
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -28,7 +27,7 @@ def test_loss_extras() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
     try:
         t_true = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         t_pred = Tensor(np.array([0.5]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
@@ -44,7 +43,7 @@ def test_loss_extras() -> None:
 
             shape = (1, 2)
 
-        assert as_callable(AdaptiveLogSoftmaxWithLoss)().infer_shape(None, as_callable(DummyShape)()) == ((1, 2), ())
+        assert ensure_callable(AdaptiveLogSoftmaxWithLoss)().infer_shape(None, ensure_callable(DummyShape)()) == ((1, 2), ())
 
         class MockData:
             """Test class MockData."""
@@ -59,7 +58,7 @@ def test_loss_extras() -> None:
             dtype = DType("float32")
             device = Device("cpu")
 
-        as_callable(adaptive_log_softmax_with_loss)(as_callable(MockTensor)(), as_callable(MockTensor)(), [1])
+        ensure_callable(adaptive_log_softmax_with_loss)(ensure_callable(MockTensor)(), ensure_callable(MockTensor)(), [1])
 
         class LogPoissonLoss:
             """Test class LogPoissonLoss."""
@@ -70,14 +69,14 @@ def test_loss_extras() -> None:
                 Args:
                     args: Test parameter `args`.
                 """
-                return _get_attr(args[0], "shape", ()) if args else ()
+                return ensure_eager_tensor(args[0]).shape if args else ()
 
         assert LogPoissonLoss().infer_shape(DummyShape()) == (1, 2)
         assert LogPoissonLoss().infer_shape() == ()
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
 
 
 def test_loss_extra_functions() -> None:
@@ -92,7 +91,7 @@ def test_loss_extra_functions() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
     try:
         t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         t2 = Tensor(np.array([0.5]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
@@ -116,7 +115,7 @@ def test_loss_extra_functions() -> None:
                 Args:
                     args: Test parameter `args`.
                 """
-                return _get_attr(args[0], "shape", ()) if args else ()
+                return ensure_eager_tensor(args[0]).shape if args else ()
 
         assert loss.InTopK().infer_shape(type("DummyShape", (), {"shape": (1, 2)})()) == (1, 2)
         assert loss.InTopK().infer_shape() == ()
@@ -129,7 +128,7 @@ def test_loss_extra_functions() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
 
 
 def test_loss_extra_functions_2() -> None:
@@ -144,7 +143,7 @@ def test_loss_extra_functions_2() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
 
     try:
 
@@ -172,16 +171,16 @@ def test_loss_extra_functions_2() -> None:
 
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = (np.array([1.0]), np.array([0.5]))
-            as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         # Test adaptive_log_softmax_with_loss tracing exception
         config.eager_mode = False
         state.global_tracing_state.is_tracing = False
         with pytest.raises(RuntimeError, match="Must be tracing"):
-            as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         state.global_tracing_state.is_tracing = True
-        as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+        ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         # Test mathematically complete CTC loss numpy eager solver
         from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import _np_ctc_loss
@@ -194,9 +193,9 @@ def test_loss_extra_functions_2() -> None:
         label_len = np.array([2], dtype=np.int32)
         logit_len = np.array([2], dtype=np.int32)
 
-        loss_val = _np_ctc_loss(as_mod(None), labels_test, logits_test, label_len, logit_len, logits_time_major=True)
-        assert as_callable(len)(loss_val) == 1
-        assert _get_attr(loss_val, "__getitem__")(0) > 0.0
+        loss_val = _np_ctc_loss(ensure_mod(None), labels_test, logits_test, label_len, logit_len, logits_time_major=True)
+        assert ensure_callable(len)(loss_val) == 1
+        assert ensure_eager_tensor(loss_val)[0] > 0.0
 
         # Test CTC decode shape and log-probabilities
         paths, log_probs = loss.ctc_decode(t, t, top_paths=2)
@@ -207,7 +206,7 @@ def test_loss_extra_functions_2() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
 
 
 def test_loss_eager_adaptive() -> None:
@@ -247,8 +246,8 @@ def test_loss_eager_adaptive() -> None:
             from ml_switcheroo_compiler.core.dtype import DType
 
             real_t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
-            out, loss_val = as_callable(loss.adaptive_log_softmax_with_loss)(real_t, real_t, [1])
-            assert as_tensor(_get_attr(out, "data")) == "out"
-            assert as_tensor(_get_attr(loss_val, "data")) == "loss"
+            out, loss_val = ensure_callable(loss.adaptive_log_softmax_with_loss)(real_t, real_t, [1])
+            assert ensure_eager_tensor(ensure_eager_tensor(out).data) == "out"
+            assert ensure_eager_tensor(ensure_eager_tensor(loss_val).data) == "loss"
     finally:
         config.eager_mode = orig

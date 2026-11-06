@@ -2,10 +2,105 @@
 
 from __future__ import annotations
 
+import typing
+from collections.abc import Sequence
+
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_data,
+    extract_dtype,
+    extract_shape,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@typing.runtime_checkable
+class _DecodeImageBytesBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `decode_image_bytes`."""
+
+    def decode_image_bytes(self, data: TensorOrScalar, channels: int = 0) -> ShapeProtocol:
+        """Decode image bytes into an array.
+
+        Args:
+            data (TensorOrScalar): Raw image bytes.
+            channels (int): Desired channel count.
+
+        Returns:
+            ShapeProtocol: Decoded image array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DecodeJpegBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `decode_jpeg`."""
+
+    def decode_jpeg(self, contents: Tensor | bytes | str | None, channels: int = 0, ratio: int = 1) -> TensorOrScalar:
+        """Decode JPEG image.
+
+        Args:
+            contents (Tensor | bytes | str | None): JPEG data.
+            channels (int): Desired channel count.
+            ratio (int): Downscaling ratio.
+
+        Returns:
+            TensorOrScalar: Decoded JPEG tensor/array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DecodePngBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `decode_png`."""
+
+    def decode_png(self, contents: Tensor | bytes | str | None, channels: int = 0, dtype: DType | str | None = None) -> TensorOrScalar:
+        """Decode PNG image.
+
+        Args:
+            contents (Tensor | bytes | str | None): PNG data.
+            channels (int): Desired channel count.
+            dtype (DType | str | None): Output dtype.
+
+        Returns:
+            TensorOrScalar: Decoded PNG tensor/array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DecodeGifBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `decode_gif`."""
+
+    def decode_gif(self, contents: Tensor | bytes | str | None) -> TensorOrScalar:
+        """Decode GIF image.
+
+        Args:
+            contents (Tensor | bytes | str | None): GIF data.
+
+        Returns:
+            TensorOrScalar: Decoded GIF tensor/array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DecodeBmpBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `decode_bmp`."""
+
+    def decode_bmp(self, contents: Tensor | bytes | str | None, channels: int = 0) -> TensorOrScalar:
+        """Decode BMP image.
+
+        Args:
+            contents (Tensor | bytes | str | None): BMP data.
+            channels (int): Desired channel count.
+
+        Returns:
+            TensorOrScalar: Decoded BMP tensor/array.
+        """
+        ...
 
 
 def decode_image(
@@ -32,7 +127,7 @@ def decode_image(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_tensor_obj(
+        return ensure_tensor(
             get_active_backend().execute_op(
                 "DecodeImage",
                 contents,
@@ -53,8 +148,8 @@ def decode_image(
             "name": name,
             "expand_animations": expand_animations,
         },
-        _get_attr(contents, "shape", ()),
-        _get_attr(contents, "dtype", "float32"),
+        extract_shape(contents),
+        extract_dtype(contents),
     )
 
 
@@ -76,19 +171,19 @@ def _decode_image_with_pil(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    data = _get_attr(contents, "data", contents)
+    data = extract_data(contents)
     if not data:
         return Tensor(b"", TensorConfig((0,), "uint8", "cpu"))
 
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls = get_active_backend()
-    if _has_attr(backend_cls, "decode_image_bytes"):
+    backend_cls: TensorOrScalar | _DecodeImageBytesBackendProtocol = get_active_backend()
+    if isinstance(backend_cls, _DecodeImageBytesBackendProtocol):
         if isinstance(data, str):
             with open(data, "rb") as f:
                 data = f.read()
         img_np = backend_cls.decode_image_bytes(data, channels=channels)
-        return Tensor(img_np, TensorConfig(img_np.shape, "uint8", "cpu"))
+        return Tensor(img_np, TensorConfig(extract_shape(img_np), "uint8", "cpu"))
     raise NotImplementedError("PIL is decoupled from core. Active backend lacks decode_image_bytes.")
 
 
@@ -109,9 +204,9 @@ def decode_jpeg(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls = get_active_backend()
-    if _has_attr(backend_cls, "decode_jpeg"):
-        return as_tensor_obj(backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
+    backend_cls: TensorOrScalar | _DecodeJpegBackendProtocol = get_active_backend()
+    if isinstance(backend_cls, _DecodeJpegBackendProtocol):
+        return ensure_tensor(backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -132,9 +227,9 @@ def decode_png(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls = get_active_backend()
-    if _has_attr(backend_cls, "decode_png"):
-        return as_tensor_obj(backend_cls.decode_png(contents, channels=channels, dtype=dtype))
+    backend_cls: TensorOrScalar | _DecodePngBackendProtocol = get_active_backend()
+    if isinstance(backend_cls, _DecodePngBackendProtocol):
+        return ensure_tensor(backend_cls.decode_png(contents, channels=channels, dtype=dtype))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -149,9 +244,9 @@ def decode_gif(contents: Tensor | bytes | str | None) -> Tensor:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls = get_active_backend()
-    if _has_attr(backend_cls, "decode_gif"):
-        return as_tensor_obj(backend_cls.decode_gif(contents))
+    backend_cls: TensorOrScalar | _DecodeGifBackendProtocol = get_active_backend()
+    if isinstance(backend_cls, _DecodeGifBackendProtocol):
+        return ensure_tensor(backend_cls.decode_gif(contents))
     return _decode_image_with_pil(contents)
 
 
@@ -170,9 +265,9 @@ def decode_bmp(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls = get_active_backend()
-    if _has_attr(backend_cls, "decode_bmp"):
-        return as_tensor_obj(backend_cls.decode_bmp(contents, channels=channels))
+    backend_cls: TensorOrScalar | _DecodeBmpBackendProtocol = get_active_backend()
+    if isinstance(backend_cls, _DecodeBmpBackendProtocol):
+        return ensure_tensor(backend_cls.decode_bmp(contents, channels=channels))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -199,7 +294,8 @@ class DecodeImage(OpDef):
         _ = kwargs
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        raw_args: Sequence[TensorOrScalar] = args
+        shapes = [extract_shape(a) for a in raw_args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]

@@ -6,8 +6,7 @@ import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends import eager_registry as m
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -40,7 +39,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             x: Test parameter `x`.
             y: Test parameter `y`.
         """
-        return as_tensor(x) * as_tensor(y)
+        return ensure_eager_tensor(x) * ensure_eager_tensor(y)
 
     res_fun = m._eager_custom_jvp(backend, 3, 4, fun=my_fun)
     assert res_fun == 12
@@ -57,7 +56,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
         """
-        return (_get_attr(primals, "__getitem__")(0) * 2, _get_attr(tangents, "__getitem__")(0) * 2)
+        return (ensure_eager_tensor(primals)[0] * 2, ensure_eager_tensor(tangents)[0] * 2)
 
     res_rule1 = m._eager_process_custom_jvp_call(backend, 5, 1, num_primals=1, jvp_rule=rule_packed)
     assert res_rule1 == (10, 2)
@@ -70,7 +69,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             p: Test parameter `p`.
             t: Test parameter `t`.
         """
-        return (as_tensor(p) + as_tensor(1), as_tensor(t) + as_tensor(1))
+        return (ensure_eager_tensor(p) + ensure_eager_tensor(1), ensure_eager_tensor(t) + ensure_eager_tensor(1))
 
     res_rule2 = m._eager_process_custom_jvp_call(backend, 10, 2, num_primals=1, jvp_rule=rule_unpacked)
     assert res_rule2 == (11, 3)

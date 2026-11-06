@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -74,21 +74,21 @@ def test_dpnp_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = as_callable(runner)(t_in1, in2=as_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
+    res = ensure_callable(runner)(t_in1, in2=ensure_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT compile multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = as_callable(runner_multi)(t_in1, t_in2)
-    assert isinstance(as_tensor(res_multi), tuple)
+    res_multi = ensure_callable(runner_multi)(t_in1, t_in2)
+    assert isinstance(ensure_eager_tensor(res_multi), tuple)
     assert len(res_multi) == 2
 
     # AOT compile no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = as_callable(runner_no_out)(t_in1, t_in2)
-    assert isinstance(as_tensor(res_no_out), dict)
+    res_no_out = ensure_callable(runner_no_out)(t_in1, t_in2)
+    assert isinstance(ensure_eager_tensor(res_no_out), dict)
 
 
 def test_dpnp_types() -> None:
@@ -133,8 +133,8 @@ def test_dpnp_types() -> None:
             """
             return np.array(7.5)
 
-    val_no_item = as_callable(dpnp_pkg.item)(as_callable(NoItemObj)())
-    assert as_callable(np.isclose)(val_no_item, 7.5)
+    val_no_item = ensure_callable(dpnp_pkg.item)(ensure_callable(NoItemObj)())
+    assert ensure_callable(np.isclose)(val_no_item, 7.5)
 
     # When dpnp is mock-imported
     mock_dpnp = mock.MagicMock()
@@ -151,23 +151,23 @@ def test_dpnp_eager_dispatch() -> None:
     """Verify DPNP eager op dispatching, class context, aliases, and errors."""
     # Normal dispatch
     res = dpnp_pkg.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    as_callable(np.testing.assert_allclose)(res, [4.0, 6.0])
+    ensure_callable(np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Classmethod invocation: cls_or_op is class
     res_cls = dpnp_pkg.DPNPGenerator.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    as_callable(np.testing.assert_allclose)(res_cls, [4.0, 6.0])
+    ensure_callable(np.testing.assert_allclose)(res_cls, [4.0, 6.0])
 
     # Alias mapping branch: Sub -> subtract, Mul -> multiply, Div -> divide, Neg -> negative
     sub_res = dpnp_pkg.execute_op("Sub", np.array([5.0]), np.array([2.0]))
-    as_callable(np.testing.assert_allclose)(sub_res, [3.0])
+    ensure_callable(np.testing.assert_allclose)(sub_res, [3.0])
     mul_res = dpnp_pkg.execute_op("Mul", np.array([5.0]), np.array([2.0]))
-    as_callable(np.testing.assert_allclose)(mul_res, [10.0])
+    ensure_callable(np.testing.assert_allclose)(mul_res, [10.0])
     div_res = dpnp_pkg.execute_op("Div", np.array([6.0]), np.array([2.0]))
-    as_callable(np.testing.assert_allclose)(div_res, [3.0])
+    ensure_callable(np.testing.assert_allclose)(div_res, [3.0])
     neg_res = dpnp_pkg.execute_op("Neg", np.array([5.0]))
-    as_callable(np.testing.assert_allclose)(neg_res, [-5.0])
+    ensure_callable(np.testing.assert_allclose)(neg_res, [-5.0])
     truediv_res = dpnp_pkg.execute_op("TrueDivide", np.array([7.0]), np.array([2.0]))
-    as_callable(np.testing.assert_allclose)(truediv_res, [3.5])
+    ensure_callable(np.testing.assert_allclose)(truediv_res, [3.5])
 
     # Unsupported op
     with pytest.raises(BackendNotSupportedError, match="not supported"):

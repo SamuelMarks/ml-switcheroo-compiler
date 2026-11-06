@@ -16,10 +16,9 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -55,9 +54,9 @@ def test_tensor_dunders() -> None:
     _ = list(t1)
     _ = +t1
     _ = t1[0]
-    _set_attr(config, "enable_in_place", True)
+    ensure_mutable(config).enable_in_place = ensure_eager_tensor(True)
     t1[0] = 5
-    _set_attr(config, "enable_in_place", False)
+    ensure_mutable(config).enable_in_place = ensure_eager_tensor(False)
     _ = np.array(t1)
     assert callable(test_tensor_dunders)
 
@@ -93,8 +92,8 @@ def test_tensor_dunders_extra() -> None:
     assert not (t1 > t2).data
     assert (t1 <= t2).data
     assert not (t1 >= t2).data
-    assert not as_tensor(_get_attr(t1 == t2, "data"))
-    assert as_tensor(_get_attr(t1 != t2, "data"))
+    assert not ensure_eager_tensor(ensure_eager_tensor(t1 == t2).data)
+    assert ensure_eager_tensor(ensure_eager_tensor(t1 != t2).data)
 
 
 def test_tensor_errors() -> None:

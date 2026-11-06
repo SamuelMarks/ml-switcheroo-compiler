@@ -6,65 +6,64 @@ import typing
 from unittest.mock import MagicMock
 
 import ml_switcheroo_compiler.backends.registry as registry
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_vars
-from tests.testing_utils import as_callable, as_module_type, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_module_type, has_backend_member
 
 try:
     import ml_switcheroo_compiler.backends.common as mod_common
 except ImportError:
-    mod_common = as_module_type(None)
+    mod_common = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.cupy as mod_cupy
 except ImportError:
-    mod_cupy = as_module_type(None)
+    mod_cupy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask as mod_dask
 except ImportError:
-    mod_dask = as_module_type(None)
+    mod_dask = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager as mod_eager
 except ImportError:
-    mod_eager = as_module_type(None)
+    mod_eager = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.edge as mod_edge
 except ImportError:
-    mod_edge = as_module_type(None)
+    mod_edge = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.jax as mod_jax
 except ImportError:
-    mod_jax = as_module_type(None)
+    mod_jax = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras as mod_keras
 except ImportError:
-    mod_keras = as_module_type(None)
+    mod_keras = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp as mod_llvm_cpp
 except ImportError:
-    mod_llvm_cpp = as_module_type(None)
+    mod_llvm_cpp = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.mlx as mod_mlx
 except ImportError:
-    mod_mlx = as_module_type(None)
+    mod_mlx = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy as mod_numpy
 except ImportError:
-    mod_numpy = as_module_type(None)
+    mod_numpy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch as mod_pytorch
 except ImportError:
-    mod_pytorch = as_module_type(None)
+    mod_pytorch = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow as mod_tensorflow
 except ImportError:
-    mod_tensorflow = as_module_type(None)
+    mod_tensorflow = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.cupy.generator as gen_cupy
 except ImportError:
-    gen_cupy = as_module_type(None)
+    gen_cupy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask.generator as gen_dask
 except ImportError:
-    gen_dask = as_module_type(None)
+    gen_dask = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager.generator as gen_eager
 except ImportError:
@@ -76,31 +75,31 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.generator as gen_jax
 except ImportError:
-    gen_jax = as_module_type(None)
+    gen_jax = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras.generator as gen_keras
 except ImportError:
-    gen_keras = as_module_type(None)
+    gen_keras = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.generator as gen_llvm_cpp
 except ImportError:
-    gen_llvm_cpp = as_module_type(None)
+    gen_llvm_cpp = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.mlx.generator as gen_mlx
 except ImportError:
-    gen_mlx = as_module_type(None)
+    gen_mlx = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy.generator as gen_numpy
 except ImportError:
-    gen_numpy = as_module_type(None)
+    gen_numpy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.generator as gen_pytorch
 except ImportError:
-    gen_pytorch = as_module_type(None)
+    gen_pytorch = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.generator as gen_tensorflow
 except ImportError:
-    gen_tensorflow = as_module_type(None)
+    gen_tensorflow = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.common.generator as gen_common
 except ImportError:
@@ -108,11 +107,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.cupy.types as typ_cupy
 except ImportError:
-    typ_cupy = as_module_type(None)
+    typ_cupy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask.types as typ_dask
 except ImportError:
-    typ_dask = as_module_type(None)
+    typ_dask = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager.types as typ_eager
 except ImportError:
@@ -124,11 +123,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.types as typ_jax
 except ImportError:
-    typ_jax = as_module_type(None)
+    typ_jax = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras.types as typ_keras
 except ImportError:
-    typ_keras = as_module_type(None)
+    typ_keras = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.types as typ_llvm_cpp
 except ImportError:
@@ -136,19 +135,19 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.mlx.types as typ_mlx
 except ImportError:
-    typ_mlx = as_module_type(None)
+    typ_mlx = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy.types as typ_numpy
 except ImportError:
-    typ_numpy = as_module_type(None)
+    typ_numpy = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.types as typ_pytorch
 except ImportError:
-    typ_pytorch = as_module_type(None)
+    typ_pytorch = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.types as typ_tensorflow
 except ImportError:
-    typ_tensorflow = as_module_type(None)
+    typ_tensorflow = ensure_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.common.types as typ_common
 except ImportError:
@@ -165,8 +164,8 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
         generator_mod: Test parameter `generator_mod`.
         mock_b: Test parameter `mock_b`.
     """
-    if _has_attr(mod, "eager_registry"):
-        for _op, func in as_tensor(_get_attr(mod, "eager_registry"))._registry.items():
+    if has_backend_member(mod, "eager_registry"):
+        for _op, func in ensure_eager_tensor(ensure_eager_tensor(mod).eager_registry)._registry.items():
             if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
                 continue
             for call_args in ((mock_b, MagicMock()), (mock_b, MagicMock(), MagicMock())):
@@ -174,8 +173,8 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
                     func(*call_args)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
-    if generator_mod is not None and _has_attr(generator_mod, "generator_registry"):
-        for _op, func in generator_mod.generator_registry._registry.items():
+    if generator_mod is not None and has_backend_member(generator_mod, "generator_registry"):
+        for _op, func in ensure_eager_tensor(generator_mod).generator_registry._registry.items():
             try:
                 func(MagicMock(), MagicMock(), MagicMock(), MagicMock())
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -190,10 +189,12 @@ def _exercise_types_mod(types_mod: EagerValue) -> None:
     """
     if types_mod is None:
         return
-    for func_name in dir(types_mod):
+    from tests.testing_utils import get_test_members
+
+    for func_name, fn in get_test_members(types_mod).items():
         if func_name.startswith(("to_", "from_")):
             try:
-                _get_attr(types_mod, func_name)("float32")
+                ensure_callable(fn)("float32")
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                 _caught_err = True
 
@@ -218,7 +219,7 @@ def test_backends_brute_force() -> None:
     for mod, generator_mod, types_mod in modules:
         _exercise_eager_and_gen(mod, generator_mod, mock_b)
         _exercise_types_mod(types_mod)
-    for fn_call in (lambda: as_callable(registry.register_backend)("dummy", as_callable(MagicMock)()), registry.get_active_backend, lambda: as_tensor(_get_attr(registry, "set_active_backend"))("dummy")):
+    for fn_call in (lambda: ensure_callable(registry.register_backend)("dummy", ensure_callable(MagicMock)()), registry.get_active_backend, lambda: ensure_eager_tensor(ensure_eager_tensor(registry).set_active_backend)("dummy")):
         try:
             fn_call()
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -229,9 +230,11 @@ def test_backends_brute_force() -> None:
 def test_numpy_math_misc() -> None:
     """Test function test_numpy_math_misc."""
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
+    from tests.testing_utils import get_test_members
 
-    for name, func in list(_obj_vars(math_misc).items()):
-        if callable(func) and name.startswith("_"):
+    for name, raw_func in list(get_test_members(math_misc).items()):
+        if name.startswith("_"):
+            func = ensure_callable(raw_func)
             try:
                 func(MagicMock(), MagicMock(), MagicMock())
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):

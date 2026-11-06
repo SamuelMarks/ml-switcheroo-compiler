@@ -11,9 +11,8 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.reductions.frontend as rd
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from tests.testing_utils import as_tensor_dict
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -39,7 +38,7 @@ def test_reductions_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = as_tensor_dict({})
+            nodes = ensure_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -49,7 +48,7 @@ def test_reductions_coverage() -> None:
                 """
                 pass
 
-        _set_attr(global_tracing_state, "active_graph", DummyGraph())
+        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
 
         import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
@@ -76,7 +75,7 @@ def test_reductions_coverage() -> None:
                 """
                 return ()
 
-        _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
+        ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(lambda *args, **kwargs: DummyOp())
         try:
             assert rd.sum(t) is not None
             assert rd.max(t) is not None

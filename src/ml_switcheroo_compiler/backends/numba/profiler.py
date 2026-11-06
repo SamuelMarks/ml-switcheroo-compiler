@@ -9,7 +9,10 @@ from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numba import kernels
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TypedVariadicCallable,
+)
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -54,13 +57,14 @@ class NumbaProfiler:
         """
         nb_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if _has_attr(val, "shape") and not isinstance(val, (list, tuple)):
+            raw_val: EagerValue = val
+            if isinstance(raw_val, ShapeProtocol) and not isinstance(val, (list, tuple)):
                 nb_inputs_dict[k] = val
             else:
                 nb_inputs_dict[k] = kernels.asarray(val, dtype=kernels.float32)
 
-        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if graph.nodes else []
+        input_keys = [n.id for n in sorted_nodes if n.op_type == "Input"]
         if input_keys and all(k in nb_inputs_dict for k in input_keys):
             return [nb_inputs_dict[k] for k in input_keys]
         return list(nb_inputs_dict.values())
@@ -106,7 +110,7 @@ class NumbaProfiler:
         del device
 
         nb_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:

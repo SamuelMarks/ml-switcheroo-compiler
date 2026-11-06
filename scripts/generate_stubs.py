@@ -7,7 +7,6 @@ import importlib
 import inspect
 import json
 import keyword
-import operator
 import os
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
@@ -15,7 +14,6 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
     _resolve_default_snapshot_dir,
 )
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-from ml_switcheroo_compiler.core.shape import _has_attr
 
 
 def _sanitize_default(default_str: str) -> str:
@@ -339,13 +337,13 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
 
 
 def format_params_via_ecosystem(
-    params: list[dict[str, AttributeValue]],
+    params: list[dict[str, AttributeValue] | AttributeValue],
     has_varargs: bool = False,
 ) -> str:
     """Format parameter definitions utilizing ml-ecosystem-snapshots stub formatter.
 
     Args:
-        params (list[dict[str, AttributeValue]]): List of parameter dictionaries.
+        params (list[dict[str, AttributeValue] | AttributeValue]): List of parameter dictionaries.
         has_varargs (bool): Whether to append generic *args if not present. Defaults to False.
 
     Returns:
@@ -353,7 +351,7 @@ def format_params_via_ecosystem(
     """
     clean_params: list[dict[str, AttributeValue]] = []
     for p in params:
-        if _has_attr(p, "get") and p.get("name"):
+        if isinstance(p, dict) and p.get("name"):
             clean_params.append(
                 {
                     "name": p["name"],
@@ -510,7 +508,7 @@ def _format_live_attr_stub(mod: AttributeValue, attr: str) -> str | None:
         str | None: Stub line or None if not callable.
     """
     try:
-        obj = operator.attrgetter(attr)(mod)
+        obj = dict(inspect.getmembers(mod)).get(attr)
         if not callable(obj):
             return None
         sig = inspect.signature(obj)

@@ -9,11 +9,21 @@ from collections.abc import Sequence
 import numpy as np
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_shape, as_str, as_tensor, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_int_list,
+    ensure_shape,
+    ensure_str,
+    numpy_eager_registry,
+)
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import SliceType, _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import SliceType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 
@@ -59,7 +69,7 @@ def _get_transpose(spec: EagerValue, default: str) -> tuple[int, ...]:
         except (ValueError, TypeError) as e:
             logging.error(f"CRASH: spec={spec}, default={default}")
             raise e
-    return tuple(as_shape(spec))
+    return tuple(ensure_shape(spec))
 
 
 def _get_conv_defaults(spatial_dims: int) -> tuple[str, str]:
@@ -94,7 +104,7 @@ def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: in
         lhs_spec: tuple[EagerValue, ...] = (0, 1) + tuple(range(2, lhs_ndim))
         rhs_spec: tuple[EagerValue, ...] = (0, 1) + tuple(range(2, rhs_ndim))
         out_spec: tuple[EagerValue, ...] = (0, 1) + tuple(range(2, lhs_ndim))
-        return ConvDimSpecs(spatial_dims=spatial_dims, lhs_spec=as_shape(lhs_spec), rhs_spec=as_shape(rhs_spec), out_spec=as_shape(out_spec))
+        return ConvDimSpecs(spatial_dims=spatial_dims, lhs_spec=ensure_shape(lhs_spec), rhs_spec=ensure_shape(rhs_spec), out_spec=ensure_shape(out_spec))
     if isinstance(dimension_numbers, tuple) and len(dimension_numbers) == MIN_CONV_RANK:
         (lhs_spec, rhs_spec, out_spec) = dimension_numbers
         (lhs_default, rhs_default) = _get_conv_defaults(spatial_dims)
@@ -106,9 +116,9 @@ def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: in
         )
     return ConvDimSpecs(
         spatial_dims=spatial_dims,
-        lhs_spec=tuple(_get_attr(dimension_numbers, "lhs_spec")),
-        rhs_spec=tuple(_get_attr(dimension_numbers, "rhs_spec")),
-        out_spec=tuple(_get_attr(dimension_numbers, "out_spec")),
+        lhs_spec=ensure_shape(get_backend_member(dimension_numbers, "lhs_spec")),
+        rhs_spec=ensure_shape(get_backend_member(dimension_numbers, "rhs_spec")),
+        out_spec=ensure_shape(get_backend_member(dimension_numbers, "out_spec")),
     )
 
 
@@ -180,12 +190,12 @@ def _apply_conv_dilation(tensor: EagerValue, dilation: Sequence[int], spatial_di
     """
     if not any(d > 1 for d in dilation):
         return tensor
-    new_shape: list[EagerValue] = list(_get_attr(tensor, "shape"))
+    new_shape: list[EagerValue] = list(get_backend_member(tensor, "shape"))
     for i, d in enumerate(dilation):
-        new_shape[2 + i] = (_get_attr(tensor, "shape")[2 + i] - 1) * d + 1
-    dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "zeros")(new_shape, dtype=_get_attr(tensor, "dtype"))
+        new_shape[2 + i] = (get_backend_member(tensor, "shape")[2 + i] - 1) * d + 1
+    dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "zeros")(new_shape, dtype=get_backend_member(tensor, "dtype")))
     slices: list[SliceType] = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
-    dilated[tuple(slices)] = as_ndarray(tensor)
+    dilated[tuple(slices)] = ensure_ndarray(tensor)
     return dilated
 
 
@@ -215,9 +225,9 @@ def _compute_conv_patch_group(lhs_patch: EagerValue, rhs_c: EagerValue, config: 
     """
     group_in_c: int = config.group_in_c
     group_out_c: int = config.group_out_c
-    lp_g = as_tensor(lhs_patch)[:, g * group_in_c : (g + 1) * group_in_c, ...]
-    rc_g = as_tensor(rhs_c)[g * group_out_c : (g + 1) * group_out_c, :, ...]
-    return as_tensor(_get_attr(np, "tensordot")(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs)))
+    lp_g = ensure_eager_tensor(lhs_patch)[:, g * group_in_c : (g + 1) * group_in_c, ...]
+    rc_g = ensure_eager_tensor(rhs_c)[g * group_out_c : (g + 1) * group_out_c, :, ...]
+    return ensure_eager_tensor(get_backend_member(np, "tensordot")(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs)))
 
 
 def _compute_single_patch_grouped(lhs_patch: EagerValue, rhs_c: EagerValue, out: EagerValue, spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
@@ -231,9 +241,9 @@ def _compute_single_patch_grouped(lhs_patch: EagerValue, rhs_c: EagerValue, out:
         config (PatchConfig): The config parameter.
     """
     for g in range(config.feature_group_count):
-        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(_compute_conv_patch_group(lhs_patch, rhs_c, config, g))
+        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_compute_conv_patch_group(lhs_patch, rhs_c, config, g))
         s_c: SliceType = slice(g * config.group_out_c, (g + 1) * config.group_out_c)
-        as_tensor(out)[tuple([slice(None), s_c] + list(spatial_indices))] = res
+        ensure_eager_tensor(out)[tuple([slice(None), s_c] + list(spatial_indices))] = res
 
 
 def _get_patch_slices(spatial_indices: tuple[int, ...], window_strides: Sequence[int], rhs_shape: tuple[int, ...]) -> tuple[SliceType, ...]:
@@ -263,7 +273,7 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         spatial_indices (tuple): The spatial_indices parameter.
     """
     slices: tuple[EagerValue, ...] = _get_patch_slices(spatial_indices, state.config.window_strides, state.rhs_c.shape)
-    lhs_patch: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(as_tensor(state.lhs_pad)[slices])
+    lhs_patch: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(ensure_eager_tensor(state.lhs_pad)[slices])
     axes_lhs: list[int] = [1] + list(range(2, 2 + state.spatial_dims))
     axes_rhs: list[int] = [1] + list(range(2, 2 + state.spatial_dims))
     if state.config.feature_group_count > 1:
@@ -278,7 +288,7 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         )
         _compute_single_patch_grouped(lhs_patch, state.rhs_c, state.out, spatial_indices, patch_config)
     else:
-        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
+        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "tensordot")(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs)))
         state.out[tuple([slice(None), slice(None)] + list(spatial_indices))] = res
 
 
@@ -291,10 +301,16 @@ def _compute_conv_patches(lhs_pad: EagerValue, rhs_c: EagerValue, out: EagerValu
         out (EagerValue): The out parameter.
         config (ConvConfig): The config parameter.
     """
-    spatial_dims: int = len(_get_attr(lhs_pad, "shape")) - 2
-    out_spatial: tuple[EagerValue, ...] = _get_attr(out, "shape")[2:]
-    for spatial_indices in itertools.product(*[range(as_int(d)) for d in out_spatial]):
-        state: ConvExecutionState = _cast_val("TypedVariadicCallable[ConvExecutionState]", ConvExecutionState)(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
+    spatial_dims: int = len(get_backend_member(lhs_pad, "shape")) - 2
+    out_spatial = ensure_shape(get_backend_member(out, "shape"))[2:]
+    for spatial_indices in itertools.product(*[range(int(d)) for d in out_spatial]):
+        state: ConvExecutionState = ConvExecutionState(
+            lhs_pad=ensure_ndarray(lhs_pad),
+            rhs_c=ensure_ndarray(rhs_c),
+            out=ensure_ndarray(out),
+            config=config,
+            spatial_dims=spatial_dims,
+        )
         _compute_single_patch(state, spatial_indices)
 
 
@@ -309,11 +325,13 @@ def _apply_conv_padding_helper(lhs_c: EagerValue, rhs_c: EagerValue, config: Con
     Returns:
         EagerValue: Result.
     """
-    pad_list: list[tuple[int, int]] = _calculate_conv_padding(config, _get_attr(lhs_c, "shape"), _get_attr(rhs_c, "shape"))
+    lhs_sh = ensure_shape(get_backend_member(lhs_c, "shape"))
+    rhs_sh = ensure_shape(get_backend_member(rhs_c, "shape"))
+    pad_list: list[tuple[int, int]] = _calculate_conv_padding(config, lhs_sh, rhs_sh)
     pad_width: tuple[tuple[int, int], ...] = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
-    new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(_get_attr(lhs_c, "shape"), pad_width))
-    padded = np.zeros(new_shape, dtype=_get_attr(lhs_c, "dtype"))
-    slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(_get_attr(lhs_c, "shape"), pad_width))
+    new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(lhs_sh, pad_width))
+    padded = np.zeros(new_shape, dtype=get_backend_member(lhs_c, "dtype"))
+    slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(lhs_sh, pad_width))
     padded[slices] = lhs_c
     return padded
 
@@ -335,8 +353,8 @@ def _preprocess_conv_tensors(
     Returns:
         tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Result.
     """
-    lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "transpose")(lhs, specs.lhs_spec)
-    rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "transpose")(rhs, specs.rhs_spec)
+    lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "transpose")(lhs, specs.lhs_spec))
+    rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "transpose")(rhs, specs.rhs_spec))
     if config.feature_group_count > 1:
         in_channels: int = lhs_c.shape[1]
         expected_rhs_in: int = in_channels // config.feature_group_count
@@ -348,9 +366,9 @@ def _preprocess_conv_tensors(
                 rhs_c = np.reshape(rhs_c, new_shape)
     lhs_dilation: Sequence[int] = config.lhs_dilation if config.lhs_dilation is not None else [1] * specs.spatial_dims
     rhs_dilation: Sequence[int] = config.rhs_dilation if config.rhs_dilation is not None else [1] * specs.spatial_dims
-    lhs_dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(_apply_conv_dilation(lhs_c, lhs_dilation, specs.spatial_dims))
-    rhs_c = as_ndarray(_apply_conv_dilation(rhs_c, rhs_dilation, specs.spatial_dims))
-    lhs_pad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(_apply_conv_padding_helper(lhs_dilated, rhs_c, config))
+    lhs_dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_apply_conv_dilation(lhs_c, lhs_dilation, specs.spatial_dims))
+    rhs_c = ensure_ndarray(_apply_conv_dilation(rhs_c, rhs_dilation, specs.spatial_dims))
+    lhs_pad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_apply_conv_padding_helper(lhs_dilated, rhs_c, config))
     return (lhs_pad, rhs_c)
 
 
@@ -430,8 +448,8 @@ def _np_conv_general_dilated(backend_module: BackendModuleProtocol, *args: Eager
 
     if len(args) == 4:
         lhs, rhs, window_strides, padding = args
-        pad_val = padding if isinstance(padding, str) else [(int(p[0]), int(p[1])) for p in _get_attr(padding, "__iter__")()]
-        config = ConvConfig(window_strides=as_shape(window_strides), padding=pad_val)
+        pad_val = padding if isinstance(padding, str) else [(int(ensure_int(ensure_eager_tensor(p)[0])), int(ensure_int(ensure_eager_tensor(p)[1]))) for p in ensure_eager_list(padding)]
+        config = ConvConfig(window_strides=ensure_shape(window_strides), padding=pad_val)
         return _conv_general_dilated(lhs, rhs, config, **kwargs)
     return _conv_general_dilated(
         args[0],
@@ -461,7 +479,7 @@ def _np_conv2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         stride = [stride, stride]
     raw_padding = kwargs.get("padding", "SAME")
     padding: str = raw_padding if isinstance(raw_padding, str) else "SAME"
-    groups = int(as_int(kwargs.get("groups", 1)))
+    groups = int(ensure_int(kwargs.get("groups", 1)))
 
     if groups > 1:
         c_in_g = lhs.shape[1] // groups
@@ -470,11 +488,11 @@ def _np_conv2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         for g in range(groups):
             lhs_g = lhs[:, g * c_in_g : (g + 1) * c_in_g, :, :]
             rhs_g = rhs[g * c_out_g : (g + 1) * c_out_g, :, :, :]
-            cfg = ConvConfig(window_strides=as_shape(stride), padding=padding)
+            cfg = ConvConfig(window_strides=ensure_shape(stride), padding=padding)
             outs.append(_conv_general_dilated(lhs_g, rhs_g, cfg))
-        return as_tensor(_get_attr(np, "concatenate")(outs, axis=1))
+        return ensure_eager_tensor(get_backend_member(np, "concatenate")(outs, axis=1))
 
-    config = ConvConfig(window_strides=as_shape(stride), padding=padding)
+    config = ConvConfig(window_strides=ensure_shape(stride), padding=padding)
     return _conv_general_dilated(lhs, rhs, config)
 
 
@@ -512,7 +530,7 @@ def _build_conv_transpose_config(
     spatial_k: tuple[int, ...] | list[int],
     strides: tuple[int, ...] | list[int],
     pads: list[tuple[int, int]],
-) -> tuple[tuple[SliceType, ...], ConvConfig]:
+) -> tuple[tuple[slice[int | None, int | None, int | None], ...], ConvConfig]:
     """Build the configuration and reversed slices for ConvTranspose.
 
     Args:
@@ -526,7 +544,7 @@ def _build_conv_transpose_config(
     """
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
-    slices: tuple[SliceType, ...] = (slice(None), slice(None)) + tuple(slice(None, None, -1) for _ in spatial_k)
+    slices: tuple[slice[int | None, int | None, int | None], ...] = (slice(None), slice(None)) + tuple(slice(None, None, -1) for _ in spatial_k)
     spatial_rank: int = len(spatial_in)
     n_dims: int = spatial_rank + 2
     lhs_spec: tuple[int, ...] = (0, 1) + tuple(range(2, n_dims))
@@ -559,10 +577,10 @@ def _np_conv_transpose(backend_module: BackendModuleProtocol, *args: EagerValue,
     lhs: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     rhs: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
     raw_strides = args[2] if len(args) > 2 else kwargs.get("strides", kwargs.get("stride", 1))
-    padding: str = as_str(args[3] if len(args) > 3 else kwargs.get("padding", "VALID"))
+    padding: str = ensure_str(args[3] if len(args) > 3 else kwargs.get("padding", "VALID"))
     spatial_in: tuple[int, ...] = lhs.shape[2:]
     spatial_k: tuple[int, ...] = rhs.shape[2:]
-    strides: Sequence[int] = (raw_strides,) * len(spatial_in) if isinstance(raw_strides, int) else as_shape(raw_strides)
+    strides: Sequence[int] = (raw_strides,) * len(spatial_in) if isinstance(raw_strides, int) else ensure_shape(raw_strides)
     out_spatial, pads = _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding)
     slices, config_obj = _build_conv_transpose_config(spatial_in, spatial_k, list(strides), pads)
     rhs_rev: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = rhs[slices]
@@ -597,9 +615,9 @@ def _compute_conv2d_padding_values(
     out_h, out_w = out_hw
     if isinstance(padding, (list, tuple)):
         if len(padding) == 2:
-            return int(as_int(padding[0])), int(as_int(padding[0])), int(as_int(padding[1])), int(as_int(padding[1]))
+            return int(ensure_int(padding[0])), int(ensure_int(padding[0])), int(ensure_int(padding[1])), int(ensure_int(padding[1]))
         if len(padding) == 4:
-            return int(as_int(padding[0])), int(as_int(padding[1])), int(as_int(padding[2])), int(as_int(padding[3]))
+            return int(ensure_int(padding[0])), int(ensure_int(padding[1])), int(ensure_int(padding[2])), int(ensure_int(padding[3]))
     if isinstance(padding, int):
         return padding, padding, padding, padding
     if isinstance(padding, str) and padding.upper() == "SAME":
@@ -631,17 +649,17 @@ def _np_conv2d_input_grad(backend_module: BackendModuleProtocol, *args: EagerVal
     weight: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
 
     stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
-    s_h, s_w = (stride, stride) if isinstance(stride, int) else (_get_attr(stride, "__getitem__")(0), _get_attr(stride, "__getitem__")(1))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (int(ensure_int(ensure_eager_tensor(stride)[0])), int(ensure_int(ensure_eager_tensor(stride)[1])))
 
     dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
-    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (_get_attr(dilation, "__getitem__")(0), _get_attr(dilation, "__getitem__")(1))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (int(ensure_int(ensure_eager_tensor(dilation)[0])), int(ensure_int(ensure_eager_tensor(dilation)[1])))
 
-    groups = int(as_int(kwargs.get("groups", 1)))
+    groups = int(ensure_int(kwargs.get("groups", 1)))
     padding = kwargs.get("padding", "SAME")
 
     target_shape = kwargs.get("target_shape")
     if target_shape is not None:
-        n_batch, c_in, in_h, in_w = (int(s) for s in _get_attr(target_shape, "__iter__")())
+        n_batch, c_in, in_h, in_w = (int(s) for s in ensure_int_list(target_shape))
     else:
         n_batch = d_out.shape[0]
         c_in = weight.shape[1] * groups
@@ -672,7 +690,7 @@ def _np_conv2d_input_grad(backend_module: BackendModuleProtocol, *args: EagerVal
                 w_start = kw * d_w
                 w_end = w_start + out_w * s_w
                 w_sub = w_g[:, :, kh, kw]
-                term = _get_attr(np, "einsum")("n o h w, o i -> n i h w", dy_g, w_sub)
+                term = ensure_ndarray(get_backend_member(np, "einsum")("n o h w, o i -> n i h w", dy_g, w_sub))
                 dx_pad[:, g * c_in_g : (g + 1) * c_in_g, h_start:h_end:s_h, w_start:w_end:s_w] += term
 
     return dx_pad[:, :, p_top : p_top + in_h, p_left : p_left + in_w]
@@ -696,17 +714,17 @@ def _np_conv2d_weight_grad(backend_module: BackendModuleProtocol, *args: EagerVa
     d_out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
 
     stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
-    s_h, s_w = (stride, stride) if isinstance(stride, int) else (_get_attr(stride, "__getitem__")(0), _get_attr(stride, "__getitem__")(1))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (int(ensure_int(ensure_eager_tensor(stride)[0])), int(ensure_int(ensure_eager_tensor(stride)[1])))
 
     dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
-    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (_get_attr(dilation, "__getitem__")(0), _get_attr(dilation, "__getitem__")(1))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (int(ensure_int(ensure_eager_tensor(dilation)[0])), int(ensure_int(ensure_eager_tensor(dilation)[1])))
 
-    groups = int(as_int(kwargs.get("groups", 1)))
+    groups = int(ensure_int(kwargs.get("groups", 1)))
     padding = kwargs.get("padding", "SAME")
 
     target_shape = kwargs.get("target_shape")
     if target_shape is not None:
-        c_out, c_in_g, k_h, k_w = (int(s) for s in _get_attr(target_shape, "__iter__")())
+        c_out, c_in_g, k_h, k_w = (int(s) for s in ensure_int_list(target_shape))
     else:
         c_out = d_out.shape[1]
         c_in_g = x.shape[1] // groups
@@ -740,7 +758,7 @@ def _np_conv2d_weight_grad(backend_module: BackendModuleProtocol, *args: EagerVa
                 w_start = kw * d_w
                 w_end = w_start + out_w * s_w
                 x_slice = x_g[:, :, h_start:h_end:s_h, w_start:w_end:s_w]
-                dw[g * c_out_g : (g + 1) * c_out_g, :, kh, kw] = _get_attr(np, "einsum")("n o h w, n i h w -> o i", dy_g, x_slice)
+                dw[g * c_out_g : (g + 1) * c_out_g, :, kh, kw] = ensure_ndarray(get_backend_member(np, "einsum")("n o h w, n i h w -> o i", dy_g, x_slice))
 
     return dw
 
@@ -758,4 +776,4 @@ def _np_conv2d_bias_grad(backend_module: BackendModuleProtocol, *args: EagerValu
         np.ndarray: Bias gradient vector.
     """
     d_out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
-    return as_ndarray(np.sum(d_out, axis=(0, 2, 3)))
+    return ensure_ndarray(np.sum(d_out, axis=(0, 2, 3)))

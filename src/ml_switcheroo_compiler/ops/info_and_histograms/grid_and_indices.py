@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -27,7 +27,7 @@ class Indices(OpDef):
             return ()
         dimensions = args[0]
         dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
-        return (dim_len, *as_shape(dimensions)) if dim_len > 0 else ()
+        return (dim_len, *ensure_shape(dimensions)) if dim_len > 0 else ()
 
 
 @register_op("Ix")
@@ -53,8 +53,9 @@ class Ix(OpDef):
         # Actually it returns a tuple of arrays, the Op should maybe return a tuple of shapes,
         # but since we can only return one shape, let's return the shape of the first one.
         shape = [1] * nd
-        if _has_attr(args[0], "shape") and len(args[0].shape) > 0:
-            shape[0] = args[0].shape[0]
+        first_shape = extract_shape(args[0])
+        if len(first_shape) > 0:
+            shape[0] = first_shape[0]
         return tuple(shape)
 
 

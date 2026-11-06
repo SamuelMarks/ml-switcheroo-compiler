@@ -263,16 +263,15 @@ def update_readme() -> None:
             content,
         )
 
-    if doc_cov is not None:
-        doc_str: str = format_cov(doc_cov)
-        doc_color: str = get_color(doc_cov)
-        doc_re: re.Pattern[str] = re.compile(
-            r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
-        )
-        content = doc_re.sub(
-            f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
-            content,
-        )
+    doc_str: str = format_cov(doc_cov)
+    doc_color: str = get_color(doc_cov)
+    doc_re: re.Pattern[str] = re.compile(
+        r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
+    )
+    content = doc_re.sub(
+        f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
+        content,
+    )
 
     with open("README.md", "w") as f:
         f.write(content)

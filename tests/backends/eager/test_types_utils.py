@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ml_switcheroo_compiler.backends.eager as eager_pkg
 import ml_switcheroo_compiler.backends.eager.types_utils as eager_types_utils
-from ml_switcheroo_compiler.core.shape import _has_attr
+from tests.testing_utils import has_backend_member
 
 
 class _MockBackendModule:
@@ -104,10 +104,10 @@ def _sample_shape_fn(a: int, b: int) -> tuple[int, int]:
 
 def test_backends_eager_init_and_types_utils() -> None:
     """Verify eager package __init__ exports and all types_utils functions."""
-    assert _has_attr(eager_pkg, "generic_zeros")
-    assert _has_attr(eager_pkg, "generic_array")
-    assert _has_attr(eager_pkg, "generic_asarray")
-    assert _has_attr(eager_pkg, "generic_item")
+    assert has_backend_member(eager_pkg, "generic_zeros")
+    assert has_backend_member(eager_pkg, "generic_array")
+    assert has_backend_member(eager_pkg, "generic_asarray")
+    assert has_backend_member(eager_pkg, "generic_item")
     assert "elastic_transform_eager" in eager_pkg.__all__
     assert "_allclose" in eager_pkg.__all__
 

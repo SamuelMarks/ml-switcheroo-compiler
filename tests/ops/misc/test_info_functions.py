@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -121,47 +121,47 @@ def test_misc_ops_edge_cases() -> None:
 
     # Histogram edges
     h = Histogram()
-    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=as_callable(DummyArray)((4,))) == (3,)
-    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=5) == (5,)
-    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=None) == (10,)
+    assert ensure_callable(h.infer_shape)(ensure_callable(DummyArray)((5,)), bins=ensure_callable(DummyArray)((4,))) == (3,)
+    assert ensure_callable(h.infer_shape)(ensure_callable(DummyArray)((5,)), bins=5) == (5,)
+    assert ensure_callable(h.infer_shape)(ensure_callable(DummyArray)((5,)), bins=None) == (10,)
 
     h2 = Histogram2d()
-    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[as_callable(DummyArray)((4,)), as_callable(DummyArray)((6,))]) == (
+    assert ensure_callable(h2.infer_shape)(ensure_callable(DummyArray)((5,)), ensure_callable(DummyArray)((5,)), bins=[ensure_callable(DummyArray)((4,)), ensure_callable(DummyArray)((6,))]) == (
         3,
         5,
     )
-    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[5, 6]) == (5, 6)
-    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[None, None]) == (10, 10)
-    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=None) == (10, 10)
-    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[5, 6, 7]) == (10, 10)  # branch len(bins) != 2
+    assert ensure_callable(h2.infer_shape)(ensure_callable(DummyArray)((5,)), ensure_callable(DummyArray)((5,)), bins=[5, 6]) == (5, 6)
+    assert ensure_callable(h2.infer_shape)(ensure_callable(DummyArray)((5,)), ensure_callable(DummyArray)((5,)), bins=[None, None]) == (10, 10)
+    assert ensure_callable(h2.infer_shape)(ensure_callable(DummyArray)((5,)), ensure_callable(DummyArray)((5,)), bins=None) == (10, 10)
+    assert ensure_callable(h2.infer_shape)(ensure_callable(DummyArray)((5,)), ensure_callable(DummyArray)((5,)), bins=[5, 6, 7]) == (10, 10)  # branch len(bins) != 2
 
     hbe = HistogramBinEdges()
-    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=as_callable(DummyArray)((4,))) == (4,)
-    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=5) == (6,)
-    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=None) == (11,)
+    assert ensure_callable(hbe.infer_shape)(ensure_callable(DummyArray)((5,)), bins=ensure_callable(DummyArray)((4,))) == (4,)
+    assert ensure_callable(hbe.infer_shape)(ensure_callable(DummyArray)((5,)), bins=5) == (6,)
+    assert ensure_callable(hbe.infer_shape)(ensure_callable(DummyArray)((5,)), bins=None) == (11,)
 
     # Ix edges
     ix = Ix()
-    assert as_callable(ix.infer_shape)(as_callable(DummyArray)((5,))) == (5,)
-    assert as_callable(ix.infer_shape)(as_callable(DummyArray)(())) == (1,)
+    assert ensure_callable(ix.infer_shape)(ensure_callable(DummyArray)((5,))) == (5,)
+    assert ensure_callable(ix.infer_shape)(ensure_callable(DummyArray)(())) == (1,)
 
     # Median edges
     med = Median()
-    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0) == (3,)
-    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0, keepdims=True) == (1, 3)
-    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[0, 1]) == ()
-    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[0, 1], keepdims=True) == (1, 1)
-    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[5]) == (2, 3)  # branch ax >= len(shape)
+    assert ensure_callable(med.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=0) == (3,)
+    assert ensure_callable(med.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=0, keepdims=True) == (1, 3)
+    assert ensure_callable(med.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=[0, 1]) == ()
+    assert ensure_callable(med.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=[0, 1], keepdims=True) == (1, 1)
+    assert ensure_callable(med.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=[5]) == (2, 3)  # branch ax >= len(shape)
 
     # Rot90 edges
     rot = Rot90()
-    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(0, 1)) == (3, 2)
-    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(1, 0)) == (3, 2)
-    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(5, 6)) == (2, 3)  # branch axes > len(shape)
-    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(0, 1, 2)) == (2, 3)  # len(axes) != 2
+    assert ensure_callable(rot.infer_shape)(ensure_callable(DummyArray)((2, 3)), axes=(0, 1)) == (3, 2)
+    assert ensure_callable(rot.infer_shape)(ensure_callable(DummyArray)((2, 3)), axes=(1, 0)) == (3, 2)
+    assert ensure_callable(rot.infer_shape)(ensure_callable(DummyArray)((2, 3)), axes=(5, 6)) == (2, 3)  # branch axes > len(shape)
+    assert ensure_callable(rot.infer_shape)(ensure_callable(DummyArray)((2, 3)), axes=(0, 1, 2)) == (2, 3)  # len(axes) != 2
 
     # Trapezoid edges
     trap = Trapezoid()
-    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0) == (3,)
-    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=1) == (2,)
-    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=5) == (2, 3)  # branch axis > len(shape)
+    assert ensure_callable(trap.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=0) == (3,)
+    assert ensure_callable(trap.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=1) == (2,)
+    assert ensure_callable(trap.infer_shape)(ensure_callable(DummyArray)((2, 3)), axis=5) == (2, 3)  # branch axis > len(shape)

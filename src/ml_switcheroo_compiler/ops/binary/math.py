@@ -7,12 +7,38 @@ Divide) using NumPy for evaluation
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_str
+from collections import namedtuple
+from collections.abc import Sequence
 
-# Simple broadcasting
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr, broadcast_shapes
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape, ensure_str
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol,
+    ShapeProtocol,
+    TensorOrScalar,
+    broadcast_shapes,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+
+
+def _infer_poly_shape(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> TensorOrScalar:
+    """Infer shape for polynomial binary operations.
+
+    Args:
+        args (Sequence[EagerTensorProtocol | TensorOrScalar]): Input arguments.
+
+    Returns:
+        TensorOrScalar: ShapeHolder namedtuple, first argument, or empty tuple.
+    """
+    if args:
+        first: EagerTensorProtocol | TensorOrScalar = args[0]
+        if isinstance(first, ShapeProtocol):
+            return ShapeHolder(extract_shape(first))
+        return args[0]
+    return ()
 
 
 class BinaryMathOp(OpDef):
@@ -24,18 +50,20 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: EagerTensorProtocol | TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *shapes (EagerTensorProtocol): Positional args.
+            *shapes (EagerTensorProtocol | TensorOrScalar): Positional args.
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        if shapes and all(isinstance(s, tuple) for s in shapes):
-            return _bs(*_cast_val("tuple[tuple[int, ...], ...]", shapes)) if len(shapes) > 1 else shapes[0]
+        raw_shapes: Sequence[EagerTensorProtocol | TensorOrScalar] = shapes
+        if raw_shapes and all(isinstance(s, tuple) for s in raw_shapes):
+            tuple_shapes = [ensure_shape(s) for s in raw_shapes]
+            return _bs(*tuple_shapes) if len(tuple_shapes) > 1 else tuple_shapes[0]
         return shapes[0] if shapes else ()
 
 
@@ -400,9 +428,9 @@ class Digitize(OpDef):
             tuple[int, ...]: Result.
         """
         # Returns indices matching input shape
-        if args and _has_attr(args[0], "shape"):
-            _typed_ret_1: TensorOrScalar = args[0].shape
-            return _typed_ret_1
+        raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
+        if raw_args and isinstance(raw_args[0], ShapeProtocol):
+            return extract_shape(raw_args[0])
         return ()
 
 
@@ -485,9 +513,9 @@ class Betainc(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape_a = _get_attr(a, "shape", ())
-        shape_b = _get_attr(b, "shape", ())
-        shape_x = _get_attr(x, "shape", ()) if x is not None else ()
+        shape_a = extract_shape(a)
+        shape_b = extract_shape(b)
+        shape_x = extract_shape(x) if x is not None else ()
         return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)
 
 
@@ -555,14 +583,7 @@ class Polyadd(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polysub")
@@ -580,14 +601,7 @@ class Polysub(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polymul")
@@ -605,14 +619,7 @@ class Polymul(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polydiv")
@@ -630,14 +637,7 @@ class Polydiv(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polyval")
@@ -655,14 +655,7 @@ class Polyval(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Poly")
@@ -680,14 +673,7 @@ class Poly(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polyder")
@@ -705,14 +691,7 @@ class Polyder(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polyfit")
@@ -730,14 +709,7 @@ class Polyfit(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Polyint")
@@ -755,14 +727,7 @@ class Polyint(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("Roots")
@@ -780,14 +745,7 @@ class Roots(BinaryMathOp):
 
         Returns: Tensor: Computed shape.
         """
-        if args:
-            if _has_attr(args[0], "shape"):
-                from collections import namedtuple
-
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(_get_attr(args[0], "shape", ()))
-            return args[0]
-        return ()
+        return _infer_poly_shape(args)
 
 
 @register_op("IgammaGradA")
@@ -832,9 +790,9 @@ class Clip(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        if args and _has_attr(args[0], "shape"):
-            _typed_ret_2: TensorOrScalar = args[0].shape
-            return _typed_ret_2
+        raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
+        if raw_args and isinstance(raw_args[0], ShapeProtocol):
+            return extract_shape(raw_args[0])
         return ()
 
 
@@ -860,7 +818,8 @@ def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrSca
 
     kwargs["a_min"] = min_val
     kwargs["a_max"] = max_val
-    return emit_ir_node(None, "Clip", [as_str(x)], _get_attr(x, "shape_metadata", None), kwargs)
+    shape_meta = extract_shape(x) if isinstance(x, ShapeMetadataProtocol) and x.shape_metadata is not None else None
+    return emit_ir_node(None, "Clip", [ensure_str(x)], shape_meta, kwargs)
 
 
 def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

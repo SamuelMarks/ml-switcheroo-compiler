@@ -9,8 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import _np_categorical_generalized_cross_entropy, _np_circle_loss, _np_ctc_loss, _np_ctc_loss_single
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -26,7 +25,7 @@ class DummyBackend:
         Args:
             shape: Test parameter `shape`.
         """
-        return as_callable(np.zeros)(shape)
+        return ensure_callable(np.zeros)(shape)
 
 
 def test_loss_ops() -> None:
@@ -36,24 +35,24 @@ def test_loss_ops() -> None:
     label_length = np.array([2])
     logit_length = np.array([5])
     logit_length_3 = np.array([3])
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), labels, logits, label_length, logit_length), "shape")) == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), labels, logits, label_length, logit_length)).shape == (1,)
     logits2 = np.ones((5, 3))
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), labels, logits2, label_length, logit_length), "shape")) == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), labels, logits2, label_length, logit_length)).shape == (1,)
     logits1 = np.ones((3,))
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), labels, logits1, label_length, logit_length_3), "shape")) == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), labels, logits1, label_length, logit_length_3)).shape == (1,)
     logits_batch_major = np.ones((1, 5, 3))
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), labels, logits_batch_major, label_length, logit_length, logits_time_major=False), "shape")) == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), labels, logits_batch_major, label_length, logit_length, logits_time_major=False)).shape == (1,)
     labels_1d = np.array([1, 2])
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), labels_1d, logits, label_length, logit_length), "shape")) == (1,)
-    assert as_tensor(_get_attr(_np_ctc_loss(as_mod(DummyBackend()), np.array([[]], dtype=int), logits, np.array([0]), logit_length), "shape")) == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), labels_1d, logits, label_length, logit_length)).shape == (1,)
+    assert ensure_eager_tensor(_np_ctc_loss(ensure_mod(DummyBackend()), np.array([[]], dtype=int), logits, np.array([0]), logit_length)).shape == (1,)
     y_true = np.array([1, 0])
     y_pred = np.array([0.9, 0.1])
-    assert as_tensor(_get_attr(_np_circle_loss(as_mod(DummyBackend()), y_true, y_pred), "shape")) == ()
-    assert _np_circle_loss(as_mod(DummyBackend()), 1) == 0
+    assert ensure_eager_tensor(_np_circle_loss(ensure_mod(DummyBackend()), y_true, y_pred)).shape == ()
+    assert _np_circle_loss(ensure_mod(DummyBackend()), 1) == 0
     y_true_cce = np.array([[1, 0], [0, 1]])
     y_pred_cce = np.array([[0.9, 0.1], [0.2, 0.8]])
-    assert as_tensor(_get_attr(_np_categorical_generalized_cross_entropy(as_mod(DummyBackend()), y_true_cce, y_pred_cce), "shape")) == ()
-    assert _np_categorical_generalized_cross_entropy(as_mod(DummyBackend()), 1) == 0
+    assert ensure_eager_tensor(_np_categorical_generalized_cross_entropy(ensure_mod(DummyBackend()), y_true_cce, y_pred_cce)).shape == ()
+    assert _np_categorical_generalized_cross_entropy(ensure_mod(DummyBackend()), 1) == 0
 
 
 def test_ctc_loss_missing_branches() -> None:
@@ -61,7 +60,7 @@ def test_ctc_loss_missing_branches() -> None:
     probs = np.ones((2, 2))
     labels = np.array([])
     res = _np_ctc_loss_single(probs, labels, 2, 0)
-    assert isinstance(as_tensor(res), float) or isinstance(as_tensor(res), np.floating)
+    assert isinstance(ensure_eager_tensor(res), float) or isinstance(ensure_eager_tensor(res), np.floating)
     probs = np.ones((0, 2))
     labels = np.array([0, 1])
     with pytest.raises(IndexError):

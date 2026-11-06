@@ -2,14 +2,59 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_str
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+import typing
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int, ensure_str
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol,
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 
 # Base logic implementation
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_op, register_op
 from ml_switcheroo_compiler.ops.shape.joining import concatenate
+
+
+@typing.runtime_checkable
+class _MutableShapeMetaProtocol(typing.Protocol):
+    """Protocol for metadata objects with a mutable `.shape` attribute."""
+
+    shape: tuple[int, ...]
+
+
+def _extract_shape_meta(obj: TensorOrScalar) -> TensorOrScalar:
+    """Extract `.shape_metadata` from `obj` if available.
+
+    Args:
+        obj (TensorOrScalar): Input tensor or proxy.
+
+    Returns:
+        TensorOrScalar: Shape metadata or `None`.
+    """
+    return obj.shape_metadata if isinstance(obj, ShapeMetadataProtocol) else None
+
+
+def _infer_unary_activation_shape(
+    args: tuple[EagerTensorProtocol, ...],
+    kwargs: dict[str, TensorOrScalar],
+) -> tuple[int, ...]:
+    """Infer output shape for a unary activation from `args` or `kwargs`.
+
+    Args:
+        args (tuple[EagerTensorProtocol, ...]): Positional arguments.
+        kwargs (dict[str, TensorOrScalar]): Keyword arguments.
+
+    Returns:
+        tuple[int, ...]: Inferred integer shape tuple.
+    """
+    x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
+    fallback = tuple(ensure_int(d) for d in x) if isinstance(x, (list, tuple)) else ()
+    return extract_shape(x, fallback)
 
 
 def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -27,7 +72,7 @@ def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrSca
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
-    return maximum(concatenate([as_tensor_obj(features), negative(features)], axis=as_int(axis)), 0.0)
+    return maximum(concatenate([ensure_tensor(features), negative(features)], axis=ensure_int(axis)), 0.0)
 
 
 def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None, increasing: TensorOrScalar = True, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -52,8 +97,9 @@ def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     attrs = {"sample_weights": sample_weights, "increasing": increasing, "name": name}
-    out1 = _emit_shape_node("IsotonicRegression", [y], attrs, _get_attr(y, "shape", ()), _get_attr(y, "dtype", "float32"))
-    out2 = _emit_shape_node("IsotonicRegressionSegments", [y], attrs, _get_attr(y, "shape", ()), "int32")
+    y_shape = extract_shape(y)
+    out1 = _emit_shape_node("IsotonicRegression", [y], attrs, y_shape, extract_dtype(y, "float32"))
+    out2 = _emit_shape_node("IsotonicRegressionSegments", [y], attrs, y_shape, "int32")
     return out1, out2
 
 
@@ -92,7 +138,7 @@ class Softmax(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -122,7 +168,7 @@ def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: 
         return get_active_backend().execute_op("Softmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Softmax", [as_str(x)], _get_attr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "Softmax", [ensure_str(x)], _extract_shape_meta(x), {"axis": axis})
 
 
 @register_op("LogSoftmax")
@@ -143,7 +189,7 @@ class LogSoftmax(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -173,7 +219,7 @@ def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwar
         return get_active_backend().execute_op("LogSoftmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "LogSoftmax", [as_str(x)], _get_attr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "LogSoftmax", [ensure_str(x)], _extract_shape_meta(x), {"axis": axis})
 
 
 @register_op("Sigmoid")
@@ -194,7 +240,7 @@ class Sigmoid(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -220,10 +266,10 @@ def sigmoid(x: Tensor | str, *args: int | float | str | None, **kwargs: int | fl
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_tensor_obj(get_active_backend().execute_op("Sigmoid", x))
+        return ensure_tensor(get_active_backend().execute_op("Sigmoid", x))
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return as_tensor_obj(emit_ir_node(None, "Sigmoid", [str(x)], _get_attr(x, "shape_metadata", None), {}))
+    return ensure_tensor(emit_ir_node(None, "Sigmoid", [str(x)], _extract_shape_meta(x), {}))
 
 
 @register_op("OneHot")
@@ -244,14 +290,14 @@ class OneHot(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes  # noqa: F401
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         indices_shape = shapes[0] if shapes else ()
         depth = kwargs.get("depth", args[1] if len(args) > 1 else 1)
         axis = kwargs.get("axis", -1)
         if axis == -1:
             return indices_shape + (depth,)
         else:
-            return indices_shape[: int(as_int(axis))] + (depth,) + indices_shape[int(as_int(axis)) :]
+            return indices_shape[: int(ensure_int(axis))] + (depth,) + indices_shape[int(ensure_int(axis)) :]
 
 
 def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -275,13 +321,13 @@ def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     kwargs["depth"] = depth
-    shape = _get_attr(indices, "shape", ()) + (depth,)
+    shape = tuple(indices.shape) + (depth,) if isinstance(indices, ShapeProtocol) else (depth,)
     import copy
 
-    meta = copy.copy(_get_attr(indices, "shape_metadata", None))
-    if meta is not None:
+    meta = copy.copy(_extract_shape_meta(indices))
+    if isinstance(meta, _MutableShapeMetaProtocol):
         meta.shape = shape
-    return emit_ir_node(None, "OneHot", [as_str(indices)], meta, kwargs)
+    return emit_ir_node(None, "OneHot", [ensure_str(indices)], meta, kwargs)
 
 
 @register_op("Rrelu")
@@ -302,7 +348,7 @@ class Rrelu(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -331,7 +377,7 @@ def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
         return get_active_backend().execute_op("Rrelu", x, *args, **kwargs)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Rrelu", [as_str(x)], _get_attr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Rrelu", [ensure_str(x)], _extract_shape_meta(x), kwargs)
 
 
 @register_op("HardSilu")
@@ -350,8 +396,7 @@ class HardSilu(OpDef):
         Returns:
             tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
-        return tuple(_get_attr(x, "shape", _get_attr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
+        return _infer_unary_activation_shape(args, kwargs)
 
 
 @register_op("HardSwish")
@@ -370,8 +415,7 @@ class HardSwish(OpDef):
         Returns:
             tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
-        return tuple(_get_attr(x, "shape", _get_attr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
+        return _infer_unary_activation_shape(args, kwargs)
 
 
 @register_op("Squareplus")
@@ -390,8 +434,7 @@ class Squareplus(OpDef):
         Returns:
             tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
-        return tuple(_get_attr(x, "shape", _get_attr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
+        return _infer_unary_activation_shape(args, kwargs)
 
 
 def hard_silu(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

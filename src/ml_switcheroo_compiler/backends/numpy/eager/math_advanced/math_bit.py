@@ -6,10 +6,9 @@ from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
@@ -44,13 +43,13 @@ def _np_clz(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerVa
         Returns:
             int: Result.
         """
-        val_i: int = int(as_int(val))
+        val_i: int = int(ensure_int(val))
         if val_i < 0:
             val_i = val_i & (1 << int(bit_width)) - 1
         return int(bit_width) - val_i.bit_length()
 
     res = np.vectorize(_clz_scalar)(x_arr)
-    return as_tensor(res.astype(x_arr.dtype))
+    return ensure_eager_tensor(res.astype(x_arr.dtype))
 
 
 @numpy_eager_registry.register("BitcastConvertType")
@@ -66,7 +65,7 @@ def _np_bitcast_convert_type(backend_module: BackendModuleProtocol, x: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    dt = _get_attr(np, str(new_dtype).split(".")[-1], np.float32)
+    dt = get_backend_member(np, str(new_dtype).split(".")[-1], np.float32)
     _typed_ret_1: EagerValue = np.asarray(x).view(dt)
     return _typed_ret_1
 
@@ -82,7 +81,7 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(_get_attr(np, "packbits")(np.asarray(args[0]), **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "packbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("Unpackbits")
@@ -96,7 +95,7 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(_get_attr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "unpackbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("BitwiseCount")

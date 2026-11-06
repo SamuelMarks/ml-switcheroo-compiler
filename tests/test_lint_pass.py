@@ -110,17 +110,22 @@ def test_lint_any_ast_scanner(tmp_path: Path) -> None:
     pkg_dir.mkdir(parents=True)
     src_file = pkg_dir / "mod.py"
     any_name = "A" + "ny"
+    obj_name = "ob" + "ject"
     src_file.write_text(
         f"""import typing
 from typing import {any_name}, cast
 from ml_switcheroo_compiler.backends.registry import EagerValue
 AnyType = int
-x: object = 1
-def fn(a: {any_name}, *args: object, **kwargs: typing.{any_name}) -> {any_name}:
+x: {obj_name} = 1
+class Sub({obj_name}):
+    pass
+def fn(a: {any_name}, *args: {obj_name}, **kwargs: typing.{any_name}) -> {any_name}:
     y = cast("dict[str, {any_name}]", a)
     z = cast("broken[", a)
-    w = typing.cast(object, y)
+    w = typing.cast({obj_name}, y)
+    u = {obj_name}()
     return w
+# type: ignore
 """,
         encoding="utf-8",
     )
@@ -128,20 +133,23 @@ def fn(a: {any_name}, *args: object, **kwargs: typing.{any_name}) -> {any_name}:
     assert any(f"prohibited import '{any_name}'" in v for v in violations)
     assert any("prohibited import 'EagerValue' outside backends/" in v for v in violations)
     assert any("disguised Any alias 'AnyType'" in v for v in violations)
-    assert any("prohibited variable annotation 'object'" in v for v in violations)
+    assert any(f"prohibited variable annotation '{obj_name}'" in v for v in violations)
+    assert any(f"prohibited '{obj_name}' base class" in v for v in violations)
+    assert any(f"prohibited '{obj_name}()' instantiation" in v for v in violations)
+    assert any("prohibited '# type: ignore' comment" in v for v in violations)
     assert any(f"prohibited parameter annotation '{any_name}'" in v for v in violations)
-    assert any("prohibited *args annotation 'object'" in v for v in violations)
+    assert any(f"prohibited *args annotation '{obj_name}'" in v for v in violations)
     assert any(f"prohibited **kwargs annotation 'typing.{any_name}'" in v for v in violations)
     assert any(f"prohibited return annotation '{any_name}'" in v for v in violations)
     assert any(f"prohibited string-literal cast '{any_name}'" in v for v in violations)
-    assert any("prohibited cast 'object'" in v for v in violations)
+    assert any(f"prohibited cast '{obj_name}'" in v for v in violations)
 
     with pytest.raises(SystemExit) as exc_fail:
         la.main(["--target-dir", str(tmp_path), "--max-count", "0"])
     assert exc_fail.value.code == 1
 
     with pytest.raises(SystemExit) as exc_pass:
-        la.main(["--target-dir", str(tmp_path), "--max-count", "20"])
+        la.main(["--target-dir", str(tmp_path), "--max-count", "30"])
     assert exc_pass.value.code == 0
 
     # Test SyntaxError and non-.py files and __main__

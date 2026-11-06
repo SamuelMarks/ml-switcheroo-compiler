@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_eager_tensor, ensure_float
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
     COOTensor,
     CSCTensor,
     CSRTensor,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def coo_sum_duplicates(
@@ -29,7 +28,7 @@ def coo_sum_duplicates(
     Returns:
         COOTensor: Canonical COO tensor with unique sorted coordinates.
     """
-    values_arr = as_tensor(values)
+    values_arr = ensure_eager_tensor(values)
     if values_arr.size == 0:
         return COOTensor(indices=indices, values=values, shape=shape)
 
@@ -49,7 +48,7 @@ def coo_sum_duplicates(
     unique_flat, split_indices = _SP_BACKEND.unique(sorted_flat, return_index=True)
     summed_values = _SP_BACKEND.add.reduceat(sorted_values, split_indices)
 
-    non_zeros = as_tensor(as_tensor(summed_values) != 0)
+    non_zeros = ensure_eager_tensor(ensure_eager_tensor(summed_values) != 0)
     unique_flat = unique_flat[non_zeros]
     summed_values = summed_values[non_zeros]
 
@@ -89,7 +88,7 @@ def coo_fromdense(
         return mat
 
     dense_arr = _SP_BACKEND.asarray(mat)
-    nonzero_mask = as_tensor(as_tensor(dense_arr) != 0)
+    nonzero_mask = ensure_eager_tensor(ensure_eager_tensor(dense_arr) != 0)
     indices = _SP_BACKEND.vstack(_SP_BACKEND.nonzero(nonzero_mask))
     if index_dtype is not None:
         indices = indices.astype(index_dtype)
@@ -108,7 +107,7 @@ def coo_todense(mat: COOTensor | EagerValue | Sequence[float]) -> EagerTensorPro
     """
     if isinstance(mat, COOTensor):
         return mat.to_dense()
-    return as_tensor(_SP_BACKEND.asarray(mat))
+    return ensure_eager_tensor(_SP_BACKEND.asarray(mat))
 
 
 def coo_matmat(
@@ -142,7 +141,7 @@ def coo_matmat(
                 shape=out_shape,
             )
 
-        match_mask = as_tensor(as_tensor(a_coo.indices[1, :, None]) == as_tensor(B.indices[0, None, :]))
+        match_mask = ensure_eager_tensor(ensure_eager_tensor(a_coo.indices[1, :, None]) == ensure_eager_tensor(B.indices[0, None, :]))
         a_matches, b_matches = _SP_BACKEND.nonzero(match_mask)
 
         if a_matches.size == 0:
@@ -166,7 +165,7 @@ def coo_matmat(
         col_indices = a_coo.indices[1]
         contributions = a_coo.values[:, None] * b_dense[col_indices]
         _SP_BACKEND.add.at(res_dense, row_indices, contributions)
-    return as_tensor(res_dense)
+    return ensure_eager_tensor(res_dense)
 
 
 def coo_matvec(
@@ -196,7 +195,7 @@ def coo_matvec(
         col_indices = a_coo.indices[1]
         contributions = a_coo.values * v_dense[col_indices]
         _SP_BACKEND.add.at(res, row_indices, contributions)
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 def coo_transpose(
@@ -252,10 +251,10 @@ def coo_add(
         return coo_sum_duplicates(stacked_indices, stacked_values, a.shape)
 
     if isinstance(a, COOTensor):
-        return a.to_dense() + as_tensor(b)
+        return a.to_dense() + ensure_eager_tensor(b)
     if isinstance(b, COOTensor):
-        return as_tensor(a) + b.to_dense()
-    return as_tensor(_SP_BACKEND.asarray(a) + _SP_BACKEND.asarray(b))
+        return ensure_eager_tensor(a) + b.to_dense()
+    return ensure_eager_tensor(_SP_BACKEND.asarray(a) + _SP_BACKEND.asarray(b))
 
 
 def coo_neg(a: COOTensor) -> COOTensor:
@@ -285,7 +284,7 @@ def coo_sub(
     """
     if isinstance(b, COOTensor):
         return coo_add(a, coo_neg(b))
-    return coo_add(a, -as_tensor(b))
+    return coo_add(a, -ensure_eager_tensor(b))
 
 
 def _coo_mul_scalar(t: COOTensor, scalar: int | float | EagerValue) -> COOTensor:
@@ -304,7 +303,7 @@ def _coo_mul_scalar(t: COOTensor, scalar: int | float | EagerValue) -> COOTensor
             values=_SP_BACKEND.empty((0,), dtype=t.dtype),
             shape=t.shape,
         )
-    return COOTensor(indices=t.indices.copy(), values=t.values * as_tensor(scalar), shape=t.shape)
+    return COOTensor(indices=t.indices.copy(), values=t.values * ensure_eager_tensor(scalar), shape=t.shape)
 
 
 def _coo_mul_coo(a: COOTensor, b: COOTensor) -> COOTensor:
@@ -380,7 +379,7 @@ def coo_mul(
         return _coo_mul_dense(a, _SP_BACKEND.asarray(b))
     if isinstance(b, COOTensor):
         return _coo_mul_dense(b, _SP_BACKEND.asarray(a))
-    return as_tensor(_SP_BACKEND.asarray(a) * _SP_BACKEND.asarray(b))
+    return ensure_eager_tensor(_SP_BACKEND.asarray(a) * _SP_BACKEND.asarray(b))
 
 
 def coo_abs(a: COOTensor) -> COOTensor:
@@ -548,7 +547,7 @@ def coo_mean(
         sum_val: COOTensor | float | EagerValue = coo_sum(a, axis=None, keepdims=keepdims)
         if isinstance(sum_val, COOTensor):
             return COOTensor(indices=sum_val.indices.copy(), values=sum_val.values / num_elements, shape=sum_val.shape)
-        return float(as_float(sum_val)) / num_elements
+        return float(ensure_float(sum_val)) / num_elements
 
     axes_list: list[int] = [axis] if isinstance(axis, int) else [int(ax) for ax in axis]
     num_reduced: int = 1
@@ -558,7 +557,7 @@ def coo_mean(
     sum_res: COOTensor | float | EagerValue = coo_sum(a, axis=axis, keepdims=keepdims)
     if isinstance(sum_res, COOTensor):
         return COOTensor(indices=sum_res.indices.copy(), values=sum_res.values / num_reduced, shape=sum_res.shape)
-    return float(as_float(sum_res)) / num_reduced
+    return float(ensure_float(sum_res)) / num_reduced
 
 
 def coo_dot(
@@ -574,8 +573,8 @@ def coo_dot(
     Returns:
         Union[COOTensor, _SP_BACKEND.ndarray, float]: Dot product result.
     """
-    ndim_a: int = a.ndim if isinstance(a, COOTensor) else as_tensor(a).ndim
-    ndim_b: int = b.ndim if isinstance(b, COOTensor) else as_tensor(b).ndim
+    ndim_a: int = a.ndim if isinstance(a, COOTensor) else ensure_eager_tensor(a).ndim
+    ndim_b: int = b.ndim if isinstance(b, COOTensor) else ensure_eager_tensor(b).ndim
 
     if ndim_a == 2 and ndim_b == 2:
         return coo_matmat(a, b)
@@ -616,7 +615,7 @@ def spmm(
                 c = sparse_mat.indices[idx]
                 val = sparse_mat.data[idx]
                 out[r] += val * b_arr[c]
-        return as_tensor(out)
+        return ensure_eager_tensor(out)
 
     if isinstance(sparse_mat, CSCTensor):
         return spmm(sparse_mat.to_csr(), b_arr)
@@ -624,7 +623,7 @@ def spmm(
     if isinstance(sparse_mat, COOTensor):
         return spmm(sparse_mat.to_csr(), b_arr)
 
-    return as_tensor(_SP_BACKEND.matmul(sparse_mat, b_arr))
+    return ensure_eager_tensor(_SP_BACKEND.matmul(sparse_mat, b_arr))
 
 
 def spgemm(
@@ -723,11 +722,11 @@ def spgemm_grad(
 
     dense_b = csr_b.to_dense()
     dense_grad_a = _SP_BACKEND.matmul(dense_cot, dense_b.T)
-    grad_a_csr = CSRTensor.from_dense(dense_grad_a * as_tensor(as_tensor(csr_a.to_dense()) != 0))
+    grad_a_csr = CSRTensor.from_dense(dense_grad_a * ensure_eager_tensor(ensure_eager_tensor(csr_a.to_dense()) != 0))
 
     dense_a = csr_a.to_dense()
     dense_grad_b = _SP_BACKEND.matmul(dense_a.T, dense_cot)
-    grad_b_csr = CSRTensor.from_dense(dense_grad_b * as_tensor(as_tensor(csr_b.to_dense()) != 0))
+    grad_b_csr = CSRTensor.from_dense(dense_grad_b * ensure_eager_tensor(ensure_eager_tensor(csr_b.to_dense()) != 0))
 
     return grad_a_csr, grad_b_csr
 
@@ -752,7 +751,7 @@ def dense_spmm(
         d_t = d_arr.T
         res_t = spmm(s_t, d_t)
         return res_t.T
-    return as_tensor(_SP_BACKEND.matmul(d_arr, sparse_mat))
+    return ensure_eager_tensor(_SP_BACKEND.matmul(d_arr, sparse_mat))
 
 
 def csr_add(a: CSRTensor, b: CSRTensor) -> CSRTensor:
@@ -823,7 +822,7 @@ def sparse_mask(
     """
     t_dense = tensor.to_dense() if isinstance(tensor, COOTensor) else _SP_BACKEND.asarray(tensor)
     m_dense = mask.to_dense() if isinstance(mask, (COOTensor, CSRTensor, CSCTensor)) else _SP_BACKEND.asarray(mask)
-    filtered = _SP_BACKEND.where(as_tensor(m_dense) != 0, t_dense, 0)
+    filtered = _SP_BACKEND.where(ensure_eager_tensor(m_dense) != 0, t_dense, 0)
     return COOTensor.from_dense(filtered)
 
 
@@ -864,7 +863,7 @@ def _apply_sparse_mask(
         COOTensor: Filtered sparse COO tensor.
     """
     mask_coo = mask if isinstance(mask, COOTensor) else (mask.to_coo() if isinstance(mask, (CSRTensor, CSCTensor)) else COOTensor.from_dense(_SP_BACKEND.asarray(mask)))
-    mask_dense = as_tensor(as_tensor(mask_coo.to_dense()) != 0)
+    mask_dense = ensure_eager_tensor(ensure_eager_tensor(mask_coo.to_dense()) != 0)
     while mask_dense.ndim < dense_out.ndim:
         mask_dense = mask_dense[None, :]
     mask_broadcast = _SP_BACKEND.broadcast_to(mask_dense, dense_out.shape)
@@ -1055,7 +1054,7 @@ def graph_norm_adjacency(
 
     # D^{-1/2}
     deg_inv_sqrt = _SP_BACKEND.zeros(n, dtype=_SP_BACKEND.float64)
-    nonzero_mask = as_tensor(deg > 0)
+    nonzero_mask = ensure_eager_tensor(deg > 0)
     deg_inv_sqrt[nonzero_mask] = 1.0 / _SP_BACKEND.sqrt(deg[nonzero_mask])
 
     # Multiply entries: D^{-1/2}[i] * A[i, j] * D^{-1/2}[j]
@@ -1119,7 +1118,7 @@ def sparse_dropout(
         keep_prob = 1.0 - drop_rate
         scale = 1.0 / keep_prob
         rng = _SP_BACKEND.random.default_rng(seed)
-        keep_mask = as_tensor(rng.uniform(0.0, 1.0, size=coo.nnz) < keep_prob)
+        keep_mask = ensure_eager_tensor(rng.uniform(0.0, 1.0, size=coo.nnz) < keep_prob)
         if not _SP_BACKEND.any(keep_mask):
             empty_indices = _SP_BACKEND.zeros((len(coo.shape), 0), dtype=coo.indices.dtype)
             empty_values = _SP_BACKEND.zeros(0, dtype=coo.values.dtype)
@@ -1134,20 +1133,3 @@ def sparse_dropout(
     if isinstance(tensor, CSCTensor):
         return coo_res.to_csc()
     return coo_res
-
-
-def __getattr__(name: str) -> EagerValue:
-    """Fallback to numpy elementwise or array functions for sparse kernels.
-
-    Args:
-        name (str): Attribute or function name.
-
-    Returns:
-        EagerValue: Numpy function if available.
-
-    Raises:
-        AttributeError: If attribute is not found in numpy.
-    """
-    if _has_attr(_SP_BACKEND, name):
-        return as_tensor(_get_attr(_SP_BACKEND, name))
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.ops.sparse import (
     sparse_split,
     sparse_to_dense,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -32,11 +32,11 @@ def test_sparse_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = SparseConcat()
-    assert as_callable(op1.infer_shape)(None) == ()
+    assert ensure_callable(op1.infer_shape)(None) == ()
     op2 = SparseSplit()
-    assert as_callable(op2.infer_shape)(None, None) == ((),)
+    assert ensure_callable(op2.infer_shape)(None, None) == ((),)
     op3 = SparseToDense()
-    assert as_callable(op3.infer_shape)(None, None, None, None) == ()
+    assert ensure_callable(op3.infer_shape)(None, None, None, None) == ()
 
     config.eager_mode = False
     from unittest.mock import patch
@@ -56,7 +56,7 @@ def test_ragged_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = BooleanMask()
-    assert as_callable(len)(as_callable(op1.infer_shape)(None, None)) == 1
+    assert ensure_callable(len)(ensure_callable(op1.infer_shape)(None, None)) == 1
     op2 = MapFlatValues()
     assert op2.infer_shape(None) == ()
 
@@ -65,5 +65,5 @@ def test_ragged_extras() -> None:
 
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         boolean_mask(t1, t1)
-        as_callable(map_flat_values)(lambda x: x, t1)
+        ensure_callable(map_flat_values)(lambda x: x, t1)
         assert mock_emit.call_count == 2

@@ -3,17 +3,49 @@
 from __future__ import annotations
 
 import abc
-import typing  # noqa: F401
+import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import as_tensor
+from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
 EagerPayload = TensorOrScalar
+
+
+@typing.runtime_checkable
+class _EagerEvalMethodProtocol(typing.Protocol):
+    """Protocol for op classes/instances exposing `eager_eval`."""
+
+    eager_eval: TypedVariadicCallable[EagerPayload]
+
+
+@typing.runtime_checkable
+class _ForwardMethodProtocol(typing.Protocol):
+    """Protocol for op instances exposing `forward`."""
+
+    forward: TypedVariadicCallable[EagerPayload]
+
+
+@typing.runtime_checkable
+class _ExecuteOpBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `execute_op`."""
+
+    def execute_op(self, op_type: str, *args: EagerPayload, **kwargs: EagerPayload) -> EagerPayload:
+        """Execute operation on backend.
+
+        Args:
+            op_type (str): Operation name.
+            *args (EagerPayload): Positional operands.
+            **kwargs (EagerPayload): Keyword attributes.
+
+        Returns:
+            EagerPayload: Result tensor or scalar.
+        """
+        ...
 
 
 class EvaluationContext(pydantic.BaseModel):
@@ -34,7 +66,8 @@ class EvaluationContext(pydantic.BaseModel):
             *args (EagerPayload): Positional field values.
             **kwargs (EagerPayload): Keyword field values.
         """
-        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
+        pos_kw: dict[str, EagerPayload] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        super().__init__(**{**pos_kw, **kwargs})
 
 
 class EvaluationStrategy(abc.ABC):
@@ -69,13 +102,11 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
             NotImplementedError: If neither eager_eval nor forward is callable.
         """
         op_cls = ctx.op_cls
-        op_inst = op_cls() if isinstance(op_cls, type) else op_cls
-        eager_eval_fn = _get_attr(op_inst, "eager_eval", None)
-        if callable(eager_eval_fn):
-            return as_tensor(eager_eval_fn(*ctx.args, **ctx.kwargs))
-        forward_fn = _get_attr(op_inst, "forward", None)
-        if callable(forward_fn):
-            return as_tensor(forward_fn(*ctx.args, **ctx.kwargs))
+        op_inst: EagerPayload | _EagerEvalMethodProtocol | _ForwardMethodProtocol = op_cls() if isinstance(op_cls, type) else op_cls
+        if isinstance(op_inst, _EagerEvalMethodProtocol) and callable(op_inst.eager_eval):
+            return ensure_eager_tensor(op_inst.eager_eval(*ctx.args, **ctx.kwargs))
+        if isinstance(op_inst, _ForwardMethodProtocol) and callable(op_inst.forward):
+            return ensure_eager_tensor(op_inst.forward(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
@@ -91,7 +122,9 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
         """
-        return as_tensor(_get_attr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
+        raw_backend: EagerPayload | _ExecuteOpBackendProtocol = ctx.backend
+        assert isinstance(raw_backend, _ExecuteOpBackendProtocol)
+        return ensure_eager_tensor(raw_backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
 class EagerEvaluator:
@@ -109,11 +142,10 @@ class EagerEvaluator:
         """
         from ml_switcheroo_compiler.ops.base import OpDef
 
-        has_custom_eval = _has_attr(op_cls, "eager_eval") and _obj_vars(op_cls).get("eager_eval") is not _get_attr(
-            OpDef,
-            "eager_eval",
-            None,
-        )
+        raw_op_cls: type | _EagerEvalMethodProtocol = op_cls
+        raw_base: type | _EagerEvalMethodProtocol = OpDef
+        base_eval = raw_base.eager_eval if isinstance(raw_base, _EagerEvalMethodProtocol) else None
+        has_custom_eval = isinstance(raw_op_cls, _EagerEvalMethodProtocol) and raw_op_cls.eager_eval is not base_eval
         if has_custom_eval:
             return CustomEagerEvalStrategy()
         return BackendExecuteOpStrategy()
@@ -138,7 +170,7 @@ class EagerEvaluator:
                 Tensor(
                     d,
                     TensorConfig(
-                        d.shape if _has_attr(d, "shape") else (),
+                        extract_shape(d),
                         resolve_dtype(d, first_tensor),
                         device,
                     ),
@@ -147,7 +179,7 @@ class EagerEvaluator:
             )
 
         dtype = resolve_dtype(res_data, first_tensor)
-        shape = as_tensor(res_data).shape if _has_attr(res_data, "shape") else ()
+        shape = extract_shape(res_data)
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod

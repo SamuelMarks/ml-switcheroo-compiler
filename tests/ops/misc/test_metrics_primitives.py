@@ -10,10 +10,10 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.descriptive import confusion_matrix, trapezoidal_integral
 from ml_switcheroo_compiler.tracing import global_tracing_state
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -32,8 +32,8 @@ def test_metrics_primitives_eager_backends() -> None:
         preds = Tensor(backend_cls.array(preds_data), TensorConfig((3,), DType.Int32, device))
         res_trapz = trapezoidal_integral(y, dx=1.0, axis=-1)
         res_cm = confusion_matrix(labels, preds, num_classes=3)
-        trapz_data = np.asarray(_get_attr(res_trapz, "data"))
-        cm_data = np.asarray(_get_attr(res_cm, "data"))
+        trapz_data = np.asarray(ensure_eager_tensor(res_trapz).data)
+        cm_data = np.asarray(ensure_eager_tensor(res_cm).data)
         assert trapz_data.shape == (2,)
         assert cm_data.shape == (3, 3)
 

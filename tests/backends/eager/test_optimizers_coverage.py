@@ -7,11 +7,11 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.optimizers as opt_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
-from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray, ensure_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class MockCpuResult:
@@ -138,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
+        return ensure_ndarray(ensure_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -153,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return ensure_ndarray(ensure_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -183,7 +183,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -203,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -275,16 +275,14 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> EagerCallableProtocol:
-        """Delegate to numpy module.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            EagerCallableProtocol: Resolved callable attribute.
-        """
-        return as_callable(_get_attr(np, name))
+    arange = staticmethod(np.arange)
+    meshgrid = staticmethod(np.meshgrid)
+    exp = staticmethod(np.exp)
+    sum = staticmethod(np.sum)
+    zeros_like = staticmethod(np.zeros_like)
+    expand_dims = staticmethod(np.expand_dims)
+    reshape = staticmethod(np.reshape)
+    median = staticmethod(np.median)
 
     def pad(
         self,
@@ -302,6 +300,7 @@ class SignalBackendWrapper:
         Returns:
             np.ndarray: Padded array.
         """
+        _ = mode
         (b0, b1), (c0, c1), (h0, h1), (w0, w1) = pad_width
         b, c, h, w = arr.shape
         padded = np.zeros((b + b0 + b1, c + c0 + c1, h + h0 + h1, w + w0 + w1), dtype=arr.dtype)
@@ -342,23 +341,28 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-        """Dynamically return callable only on second check.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            TypedVariadicCallable[np.ndarray]: Function result.
-
-        Raises:
-            AttributeError: On first check.
-        """
+    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Return callable only on second check."""
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
         if count == 0:
             raise AttributeError(f"Initial check fails for {name}")
         return lambda *args, **kwargs: np.ones((2, 2))
+
+    @property
+    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic uniform attribute."""
+        return self._get_fn("uniform")
+
+    @property
+    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic normal attribute."""
+        return self._get_fn("normal")
+
+    @property
+    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic randint attribute."""
+        return self._get_fn("randint")
 
 
 class MockBackendWithFallback:
@@ -504,28 +508,28 @@ def test_optimizers_coverage() -> None:
     grad = np.full((2, 2), 0.1, dtype=np.float64)
 
     # 1. Adam
-    p_new, m_new, v_new = as_callable(opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
-    assert as_tensor(_get_attr(p_new, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(m_new, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(v_new, "shape")) == (2, 2)
+    p_new, m_new, v_new = ensure_callable(opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
+    assert ensure_eager_tensor(p_new).shape == (2, 2)
+    assert ensure_eager_tensor(m_new).shape == (2, 2)
+    assert ensure_eager_tensor(v_new).shape == (2, 2)
 
     # 2. Adagrad
     accum = np.zeros((2, 2), dtype=np.float64)
-    p_new_ada, accum_new_ada = as_callable(opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
-    assert as_tensor(_get_attr(p_new_ada, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(accum_new_ada, "shape")) == (2, 2)
+    p_new_ada, accum_new_ada = ensure_callable(opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
+    assert ensure_eager_tensor(p_new_ada).shape == (2, 2)
+    assert ensure_eager_tensor(accum_new_ada).shape == (2, 2)
 
     # 3. Ftrl
     linear = np.zeros((2, 2), dtype=np.float64)
-    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = as_callable(opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
-    assert as_tensor(_get_attr(p_new_ftrl, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(accum_new_ftrl, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(linear_new_ftrl, "shape")) == (2, 2)
+    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = ensure_callable(opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
+    assert ensure_eager_tensor(p_new_ftrl).shape == (2, 2)
+    assert ensure_eager_tensor(accum_new_ftrl).shape == (2, 2)
+    assert ensure_eager_tensor(linear_new_ftrl).shape == (2, 2)
 
     # 4. RMSProp
     ms = np.ones((2, 2), dtype=np.float64)
     mom = np.zeros((2, 2), dtype=np.float64)
-    p_new_rms, ms_new_rms, mom_new_rms = as_callable(opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
-    assert as_tensor(_get_attr(p_new_rms, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(ms_new_rms, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(mom_new_rms, "shape")) == (2, 2)
+    p_new_rms, ms_new_rms, mom_new_rms = ensure_callable(opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
+    assert ensure_eager_tensor(p_new_rms).shape == (2, 2)
+    assert ensure_eager_tensor(ms_new_rms).shape == (2, 2)
+    assert ensure_eager_tensor(mom_new_rms).shape == (2, 2)

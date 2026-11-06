@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, _get_attr, _has_attr, as_shape, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -45,7 +51,7 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: TensorOrScal
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fftconvolve", in1.data, in2.data, mode=mode, axes=axes)
-        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape")), in1.dtype, in1.device))
+        return Tensor(data, TensorConfig(extract_shape(data), in1.dtype, in1.device))
 
     return _emit_signal_node(
         "Fftconvolve",
@@ -65,8 +71,7 @@ def _sig_dtype(obj: TensorOrScalar) -> DType | str:
     Returns:
         DType | str: Resolved dtype.
     """
-    dt = _get_attr(obj, "dtype", "float32")
-    return dt if isinstance(dt, (DType, str)) else str(dt)
+    return extract_dtype(obj, "float32")
 
 
 @register_op("Fft")
@@ -101,7 +106,7 @@ def fft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fft", input.data, *args, **kwargs)
-        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape")), input.dtype, input.device))
+        return Tensor(data, TensorConfig(extract_shape(data), input.dtype, input.device))
     return _emit_signal_node("Fft", [input], kwargs, input.shape, input.dtype)
 
 
@@ -218,7 +223,7 @@ class Ifft(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def ifft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -238,12 +243,12 @@ def ifft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Ifft", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Ifft", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Fftn")
@@ -261,7 +266,7 @@ class Fftn(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def fftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -281,12 +286,12 @@ def fftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Fftn", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Fftn", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Ifftn")
@@ -304,7 +309,7 @@ class Ifftn(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def ifftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -324,12 +329,12 @@ def ifftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Ifftn", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Ifftn", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Rfftn")
@@ -347,7 +352,7 @@ class Rfftn(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def rfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -367,12 +372,12 @@ def rfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Rfftn", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Rfftn", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Irfftn")
@@ -390,7 +395,7 @@ class Irfftn(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def irfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -410,12 +415,12 @@ def irfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Irfftn", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Irfftn", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Ifft2")
@@ -433,7 +438,7 @@ class Ifft2(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def ifft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -453,12 +458,12 @@ def ifft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Ifft2", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Ifft2", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Rfft2")
@@ -476,7 +481,7 @@ class Rfft2(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def rfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -496,12 +501,12 @@ def rfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Rfft2", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Rfft2", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Irfft2")
@@ -519,7 +524,7 @@ class Irfft2(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def irfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -539,12 +544,12 @@ def irfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Irfft2", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Irfft2", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Fftnd")
@@ -562,7 +567,7 @@ class Fftnd(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def fftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -582,12 +587,12 @@ def fftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Fftnd", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Fftnd", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Ifftnd")
@@ -605,7 +610,7 @@ class Ifftnd(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def ifftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -625,12 +630,12 @@ def ifftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Ifftnd", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Ifftnd", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Rfftnd")
@@ -648,7 +653,7 @@ class Rfftnd(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def rfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -668,12 +673,12 @@ def rfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Rfftnd", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Rfftnd", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Irfftnd")
@@ -691,7 +696,7 @@ class Irfftnd(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def irfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -711,12 +716,12 @@ def irfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> T
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Irfftnd", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Irfftnd", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Fftshift")
@@ -734,7 +739,7 @@ class Fftshift(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def fftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -754,12 +759,12 @@ def fftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> 
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Fftshift", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Fftshift", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Ifftshift")
@@ -777,7 +782,7 @@ class Ifftshift(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def ifftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -797,12 +802,12 @@ def ifftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Ifftshift", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Ifftshift", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Hfft")
@@ -820,7 +825,7 @@ class Hfft(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def hfft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -840,12 +845,12 @@ def hfft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
-    return _emit_signal_node("Hfft", [input], kwargs, as_shape(_get_attr(input, "shape", ())), _sig_dtype(input))
+    return _emit_signal_node("Hfft", [input], kwargs, extract_shape(input), _sig_dtype(input))
 
 
 @register_op("Rfftfreq")
@@ -863,7 +868,7 @@ class Rfftfreq(OpDef):
             TensorOrScalar: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def rfftfreq(input: int | Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -879,14 +884,14 @@ def rfftfreq(input: int | Tensor, *args: TensorOrScalar, **kwargs: TensorOrScala
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Rfftfreq", _get_attr(input, "data", input), *args, **kwargs)
+        data = backend.execute_op("Rfftfreq", extract_data(input), *args, **kwargs)
         return Tensor(
             data,
             TensorConfig(
-                as_shape(_get_attr(data, "shape", _get_attr(input, "shape", ()))),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(data, extract_shape(input)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
     t_in = input if isinstance(input, Tensor) else Tensor(input, TensorConfig((), "int64", None))
-    return _emit_signal_node("Rfftfreq", [t_in], kwargs, as_shape(_get_attr(t_in, "shape", ())), _sig_dtype(t_in))
+    return _emit_signal_node("Rfftfreq", [t_in], kwargs, extract_shape(t_in), _sig_dtype(t_in))

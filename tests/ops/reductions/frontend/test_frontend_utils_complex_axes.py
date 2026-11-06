@@ -8,10 +8,9 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -38,7 +37,7 @@ def test_frontend_utils_extras() -> None:
     class MockTensor(Tensor):
         """Test class MockTensor."""
 
-        data = as_tensor(MockData())
+        data = ensure_eager_tensor(MockData())
         shape = (1, 2)
         dtype = DType("float32")
         device = Device("cpu")
@@ -53,10 +52,10 @@ def test_frontend_utils_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
     try:
-        as_callable(reduce_window)(t, 0.0, "add", as_callable(DummyConfig)())
+        ensure_callable(reduce_window)(t, 0.0, "add", ensure_callable(DummyConfig)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)

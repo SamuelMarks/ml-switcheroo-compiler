@@ -3,14 +3,22 @@
 from __future__ import annotations
 
 import os
+import typing
 from collections.abc import Set
 
 import yaml
 
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import BehaviorDescriptorsConfig
+
+
+@typing.runtime_checkable
+class _GraphOutputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `outputs` list."""
+
+    outputs: list[str]
+
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "pass_config", "behavior_descriptors.yaml")
 with open(_CONFIG_PATH) as f:
@@ -39,15 +47,17 @@ def _node_has_side_effects(node: IRNode) -> bool:
     if node.op_type in SIDE_EFFECT_OPS:
         return True
 
-    for sub in _get_attr(node, "subgraphs", {}).values():
+    for sub in node.subgraphs.values():
         if isinstance(sub, IRGraph):
             if any(_node_has_side_effects(sn) for sn in sub.nodes.values()):
                 return True
 
     for attr_name in SUBGRAPH_ATTR_KEYS:
-        sub = _cast_val("IRGraph | AttributeValue", node.attributes.get(attr_name))
-        if isinstance(sub, IRGraph):
-            if any(_node_has_side_effects(sn) for sn in sub.nodes.values()):
+        from ml_switcheroo_ir import AttributeValue
+
+        sub_attr: IRGraph | AttributeValue = node.attributes.get(attr_name)
+        if isinstance(sub_attr, IRGraph):
+            if any(_node_has_side_effects(sn) for sn in sub_attr.nodes.values()):
                 return True
     return False
 
@@ -74,15 +84,17 @@ def _prune_nested_subgraphs(node: IRNode) -> bool:
         bool: True if any nested subgraph was modified.
     """
     modified = False
-    for sub in _get_attr(node, "subgraphs", {}).values():
+    for sub in node.subgraphs.values():
         if isinstance(sub, IRGraph):
             sub_mod = dce_pass(sub)
             if sub_mod:
                 modified = True
     for attr_name in SUBGRAPH_ATTR_KEYS:
-        sub = _cast_val("IRGraph | AttributeValue", node.attributes.get(attr_name))
-        if isinstance(sub, IRGraph):
-            sub_mod = dce_pass(sub)
+        from ml_switcheroo_ir import AttributeValue
+
+        sub_attr: IRGraph | AttributeValue = node.attributes.get(attr_name)
+        if isinstance(sub_attr, IRGraph):
+            sub_mod = dce_pass(sub_attr)
             if sub_mod:
                 modified = True
     return modified
@@ -123,7 +135,8 @@ def dce_pass(graph: IRGraph) -> bool:
         if _prune_nested_subgraphs(node):
             subgraphs_modified = True
 
-    initial_reachable = set(_get_attr(graph, "outputs", ())) | _find_side_effect_nodes(graph)
+    graph_outputs: list[str] = list(graph.outputs or [])
+    initial_reachable = set(graph_outputs) | _find_side_effect_nodes(graph)
     reachable = _build_reachable_set(graph, initial_reachable)
 
     nodes_to_remove: list[str] = []
@@ -135,7 +148,7 @@ def dce_pass(graph: IRGraph) -> bool:
         del graph.nodes[nid]
 
     # Clean any dead references in graph outputs if node was pruned
-    if _has_attr(graph, "outputs"):
+    if graph.outputs:
         new_outputs = [out for out in graph.outputs if out in graph.nodes]
         if new_outputs != graph.outputs:
             graph.outputs = new_outputs

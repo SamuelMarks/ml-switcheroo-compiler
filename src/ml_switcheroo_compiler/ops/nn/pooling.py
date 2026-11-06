@@ -7,9 +7,15 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_eager_tensor,
+    ensure_shape,
+    ensure_tensor_pair,
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import divide
@@ -41,9 +47,11 @@ def _prepare_pool_config(
         WindowConfig: A configuration containing the processed dimensions, strides, and padding.
     """
     pad_dims = max(0, rank - spatial_rank - 1)
+    ws_tuple = ensure_shape(window_shape)
+    st_tuple = ensure_shape(strides)
 
-    full_window_shape = (1,) * pad_dims + tuple(_get_attr(_get_attr(window_shape, "__iter__")(), "__iter__")()) + (1,) if rank > spatial_rank else tuple(_get_attr(_get_attr(window_shape, "__iter__")(), "__iter__")())
-    full_strides = (1,) * pad_dims + tuple(_get_attr(_get_attr(strides, "__iter__")(), "__iter__")()) + (1,) if rank > spatial_rank else tuple(_get_attr(_get_attr(strides, "__iter__")(), "__iter__")())
+    full_window_shape = (1,) * pad_dims + ws_tuple + (1,) if rank > spatial_rank else ws_tuple
+    full_strides = (1,) * pad_dims + st_tuple + (1,) if rank > spatial_rank else st_tuple
 
     full_padding: str | tuple[tuple[int, int], ...]
     if isinstance(padding, str):
@@ -71,13 +79,13 @@ def _compute_pool_out_shape(in_shape: tuple[int, ...], config: WindowConfig) -> 
     """
     out_shape = []
     if isinstance(config.padding, str):
-        for d, w, s in zip(in_shape, config.window_dimensions, _get_attr(config.window_strides, "__iter__")()):
+        for d, w, s in zip(in_shape, config.window_dimensions, config.window_strides or ()):
             if config.padding == "SAME":
                 out_shape.append((d + s - 1) // s)
             else:
                 out_shape.append((d - w) // s + 1)
     else:
-        for d, w, s, p in zip(in_shape, config.window_dimensions, _get_attr(config.window_strides, "__iter__")(), _get_attr(config.padding, "__iter__")()):
+        for d, w, s, p in zip(in_shape, config.window_dimensions, config.window_strides or (), config.padding or ()):
             p_sum = p[0] + p[1] if isinstance(p, tuple) else int(p)
             out_shape.append((d + p_sum - w) // s + 1)
     return out_shape
@@ -115,8 +123,7 @@ def _max_pool_with_indices(
             strides=strides,
             padding=padding,
         )
-        data = _get_attr(raw_res, "__getitem__")(0)
-        indices = _get_attr(raw_res, "__getitem__")(1)
+        data, indices = ensure_tensor_pair(raw_res)
         return (
             Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)),
             Tensor(backend.array(indices), TensorConfig(tuple(out_shape), DType.Int64, operand.device)),
@@ -390,9 +397,9 @@ def _extract_window_args(
     Returns:
         tuple[tuple[int, ...], tuple[int, ...] | None, str | tuple[tuple[int, int], ...]]: Extracted parameters.
     """
-    from ml_switcheroo_compiler.backends.registry import as_shape, as_str
+    from ml_switcheroo_compiler.backends.registry import ensure_shape, ensure_str
 
-    return as_shape(config.window.ksize), as_shape(config.window.strides), as_str(config.window.padding)
+    return ensure_shape(config.window.ksize), ensure_shape(config.window.strides), ensure_str(config.window.padding)
 
 
 def _as_tensor(val: TensorOrScalar) -> Tensor:
@@ -404,9 +411,9 @@ def _as_tensor(val: TensorOrScalar) -> Tensor:
     Returns:
         Tensor: Wrapped or existing Tensor.
     """
-    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
+    from ml_switcheroo_compiler.core.tensor import ensure_tensor
 
-    return as_tensor_obj(val)
+    return ensure_tensor(val)
 
 
 def avg_pool1d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -528,12 +535,12 @@ def fractional_avg_pool(
     if _config.eager_mode:
         data = get_active_backend().execute_op("FractionalAvgPool", value.data, pooling_ratio=config.behavior.pooling_ratio)
         return (
-            Tensor(data, TensorConfig(tuple(_get_attr(data, "shape")), value.dtype, value.device)),
+            Tensor(data, TensorConfig(extract_shape(data), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
         )
 
-    out_shape = _get_attr(FractionalAvgPool(), "infer_shape")(value, config.behavior.pooling_ratio)
+    out_shape = ensure_shape(FractionalAvgPool().infer_shape(ensure_eager_tensor(value), ensure_eager_tensor(config.behavior.pooling_ratio)))
     from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
     res = _emit_linalg_node(
@@ -564,12 +571,12 @@ def fractional_max_pool(
     if _config.eager_mode:
         data = get_active_backend().execute_op("FractionalMaxPool", value.data, pooling_ratio=config.behavior.pooling_ratio)
         return (
-            Tensor(data, TensorConfig(tuple(_get_attr(data, "shape")), value.dtype, value.device)),
+            Tensor(data, TensorConfig(extract_shape(data), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
         )
 
-    out_shape = _get_attr(FractionalMaxPool(), "infer_shape")(value, config.behavior.pooling_ratio)
+    out_shape = ensure_shape(FractionalMaxPool().infer_shape(ensure_eager_tensor(value), ensure_eager_tensor(config.behavior.pooling_ratio)))
     from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
     res = _emit_linalg_node(

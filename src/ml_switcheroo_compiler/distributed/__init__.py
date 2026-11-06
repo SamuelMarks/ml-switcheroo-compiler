@@ -7,18 +7,39 @@ import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 
-from ml_switcheroo_compiler.backends.eager_registry import (
-    StructuralOperandProtocol,
-    as_callable,
-    as_tensor,
-)
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import _backend_name
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _has_attr
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
+
+
+def _is_dist_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_dist_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_dist_tensor(val)
+    return val
 
 
 @typing.runtime_checkable
@@ -148,8 +169,8 @@ def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend: StructuralOperandProtocol = registry.get_active_backend()
-    if _has_attr(backend, "initialize_distributed"):
+    backend: TensorOrScalar = registry.get_active_backend()
+    if isinstance(backend, _InitializeDistributedBackendProtocol):
         backend.initialize_distributed(*args, **kwargs)
     else:
         raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support initialize_distributed()")
@@ -168,7 +189,7 @@ def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     _ = (args, kwargs)
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return as_tensor(get_physical_devices())
+    return _ensure_dist_tensor(get_physical_devices())
 
 
 _dist: Distribution | None = None
@@ -217,7 +238,7 @@ def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrSca
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return as_tensor(as_callable(distributed_ops.shard_tensor)(*args, **kwargs))
+    return _ensure_dist_tensor(invoke_callable(distributed_ops.shard_tensor, *args, **kwargs))
 
 
 __all__ = [

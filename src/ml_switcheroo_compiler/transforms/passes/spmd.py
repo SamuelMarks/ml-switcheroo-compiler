@@ -5,17 +5,54 @@ from __future__ import annotations
 import builtins  # noqa: F401
 import os
 import typing
+from collections.abc import Sequence
 from pathlib import Path
 
 import pydantic
 import yaml
 from ml_switcheroo_ir import AttributeValue, PartitionSpec
 
-from ml_switcheroo_compiler.backends.registry import as_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_pspec
 
 ShardingValue = typing.Union["SPMDShardingAnnotation", PartitionSpec, TensorOrScalar]
+
+
+def _spmd_axis_to_int(val: AttributeValue) -> int:
+    """Coerce an axis attribute value to int.
+
+    Args:
+        val (AttributeValue): Raw axis value.
+
+    Returns:
+        int: Coerced integer axis.
+    """
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str) and val.lstrip("-").isdigit():
+        return int(val)
+    return 0
+
+
+@typing.runtime_checkable
+class _MeshMappingProtocol(typing.Protocol):
+    """Protocol for sharding specifications exposing `mesh_mapping`."""
+
+    mesh_mapping: Sequence[str | None]
+
+
+@typing.runtime_checkable
+class _MeshHolderProtocol(typing.Protocol):
+    """Protocol for sharding specifications exposing `mesh`."""
+
+    mesh: AttributeValue
+
+
+@typing.runtime_checkable
+class _GraphOutputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `outputs` list."""
+
+    outputs: list[str]
 
 
 def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
@@ -27,9 +64,9 @@ def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
     Returns:
         list[str]: Active sharding axis names.
     """
-    if not sharding or not _has_attr(sharding, "mesh_mapping"):
+    if not isinstance(sharding, _MeshMappingProtocol):
         return []
-    return [str(m) for m in _get_attr(sharding, "mesh_mapping") if m is not None]
+    return [str(m) for m in sharding.mesh_mapping if m is not None]
 
 
 def _is_boundary_transition(inp_sharding: ShardingValue, node_sharding: ShardingValue) -> tuple[bool, bool]:
@@ -250,8 +287,8 @@ def _determine_spmd_communication(
     state = [bool(inp_axes), bool(node_axes)]
     raw_reds = rules.get("reductions", [])
     reductions: list[str] = [str(r) for r in raw_reds] if isinstance(raw_reds, (list, tuple)) else []
-    is_reduction = _get_attr(node, "op_type", "") in reductions
-    node_id_str = _get_attr(node, "id", "")
+    is_reduction = node.op_type in reductions
+    node_id_str = node.id if node.id else ""
     is_grad = "grad" in node_id_str or "adjoint" in node_id_str
 
     injected_op = "none"
@@ -294,7 +331,7 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
         return None
 
     inp_node = graph.nodes[inp_id]
-    inp_sharding = _get_attr(inp_node, "sharding", None)
+    inp_sharding = inp_node.sharding
 
     if not inp_sharding:
         return None
@@ -325,7 +362,7 @@ def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]
     modified = False
     injected_nodes = []
 
-    node_sharding = _get_attr(node, "sharding", None)
+    node_sharding = node.sharding
     if not node_sharding:
         return False, []
 
@@ -439,7 +476,7 @@ def _propagate_elementwise_sharding(node: IRNode, graph: IRGraph) -> bool:
     """
     for inp_id in node.inputs:
         inp_node = graph.nodes.get(inp_id)
-        if inp_node and _get_attr(inp_node, "sharding", None) is not None:
+        if inp_node and inp_node.sharding is not None:
             node.sharding = inp_node.sharding
             return True
     return False
@@ -457,15 +494,17 @@ def _propagate_matmul_sharding(node: IRNode, graph: IRGraph) -> bool:
     """
     lhs = graph.nodes.get(node.inputs[0])
     rhs = graph.nodes.get(node.inputs[1])
-    lhs_sharding = _get_attr(lhs, "sharding", None) if lhs else None
-    rhs_sharding = _get_attr(rhs, "sharding", None) if rhs else None
+    lhs_sharding: ShardingValue = lhs.sharding if lhs else None
+    rhs_sharding: ShardingValue = rhs.sharding if rhs else None
 
-    lhs_map: list[str | None] = list(_get_attr(lhs_sharding, "mesh_mapping", []))
-    rhs_map: list[str | None] = list(_get_attr(rhs_sharding, "mesh_mapping", []))
+    lhs_map: list[str | None] = list(lhs_sharding.mesh_mapping) if isinstance(lhs_sharding, _MeshMappingProtocol) else []
+    rhs_map: list[str | None] = list(rhs_sharding.mesh_mapping) if isinstance(rhs_sharding, _MeshMappingProtocol) else []
     if not lhs_map and not rhs_map:
         return False
 
-    mesh = _get_attr(lhs_sharding, "mesh", None) or _get_attr(rhs_sharding, "mesh", None)
+    lhs_mesh = lhs_sharding.mesh if isinstance(lhs_sharding, _MeshHolderProtocol) else None
+    rhs_mesh = rhs_sharding.mesh if isinstance(rhs_sharding, _MeshHolderProtocol) else None
+    mesh = lhs_mesh or rhs_mesh
     while len(lhs_map) < 2:
         lhs_map.insert(0, None)
     while len(rhs_map) < 2:
@@ -482,7 +521,7 @@ def _propagate_matmul_sharding(node: IRNode, graph: IRGraph) -> bool:
     elif (lhs_map[-2] is not None and rhs_contracting is None) or (rhs_map[-1] is not None and lhs_contracting is None):
         node.sharding = SPMDShardingAnnotation(mesh, out_mapping)
     else:
-        node.sharding = lhs_sharding or rhs_sharding
+        node.sharding = as_opt_pspec(lhs_sharding or rhs_sharding)
     return True
 
 
@@ -497,14 +536,14 @@ def _propagate_reduction_sharding(node: IRNode, graph: IRGraph) -> bool:
         bool: True if sharding was propagated, False otherwise.
     """
     inp = graph.nodes.get(node.inputs[0])
-    inp_sharding = _get_attr(inp, "sharding", None) if inp else None
+    inp_sharding: ShardingValue = inp.sharding if inp else None
     if inp_sharding is None:
         return False
 
-    inp_map: list[str | None] = list(_get_attr(inp_sharding, "mesh_mapping", []))
-    mesh = _get_attr(inp_sharding, "mesh", None)
+    inp_map: list[str | None] = list(inp_sharding.mesh_mapping) if isinstance(inp_sharding, _MeshMappingProtocol) else []
+    mesh = inp_sharding.mesh if isinstance(inp_sharding, _MeshHolderProtocol) else None
     reduce_axis = node.attributes.get("axis", node.attributes.get("axes", 0))
-    raw_axes = [int(as_int(a)) for a in reduce_axis] if isinstance(reduce_axis, (list, tuple)) else [int(as_int(reduce_axis))]
+    raw_axes = [_spmd_axis_to_int(a) for a in reduce_axis] if isinstance(reduce_axis, (list, tuple)) else [_spmd_axis_to_int(reduce_axis)]
     norm_reduce_axes = {a if a >= 0 else a + len(inp_map) for a in raw_axes}
 
     is_reduced_dim_sharded = False
@@ -522,6 +561,22 @@ def _propagate_reduction_sharding(node: IRNode, graph: IRGraph) -> bool:
     return True
 
 
+def _extract_rule_ops(prop_rules: dict[str, AttributeValue], key: str, default: list[str]) -> set[str]:
+    """Extract set of operation names for a propagation rule category.
+
+    Args:
+        prop_rules (dict[str, AttributeValue]): Propagation rules dictionary.
+        key (str): Category key.
+        default (list[str]): Default list of operation names.
+
+    Returns:
+        set[str]: Set of operation names.
+    """
+    entry = prop_rules.get(key)
+    ops = entry.get("ops", default) if isinstance(entry, dict) else default
+    return {str(o) for o in ops} if isinstance(ops, list) else set(default)
+
+
 def propagate_sharding(graph: IRGraph) -> bool:
     """Propagate sharding annotations across matmul, reduction, and elementwise nodes.
 
@@ -532,18 +587,22 @@ def propagate_sharding(graph: IRGraph) -> bool:
         bool: True if any node sharding was updated.
     """
     rules = _get_spmd_rules()
-    prop_rules = rules.get("propagation_rules", {})
-    elementwise_ops = set(_get_attr(_get_attr(prop_rules, "get")("elementwise", {}), "get")("ops", [])) | {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "GELU", "Sigmoid", "Tanh"}
-    matmul_ops = set(_get_attr(_get_attr(prop_rules, "get")("matmul", {}), "get")("ops", ["MatMul", "BatchMatMul"])) | {"MatMul", "BatchMatMul", "Dot", "Linear"}
-    reduction_ops = set(_get_attr(_get_attr(prop_rules, "get")("reductions", {}), "get")("ops", [])) | set(_get_attr(rules, "get")("reductions", [])) | {"Sum"}
-    conv_ops = set(_get_attr(_get_attr(prop_rules, "get")("spatial_conv", {}), "get")("ops", ["Conv1D", "Conv2D", "Conv3D"]))
+    raw_prop = rules.get("propagation_rules", {})
+    prop_rules = raw_prop if isinstance(raw_prop, dict) else {}
+    raw_reds = rules.get("reductions", [])
+    top_reductions = {str(r) for r in raw_reds} if isinstance(raw_reds, list) else set()
+
+    elementwise_ops = _extract_rule_ops(prop_rules, "elementwise", []) | {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "GELU", "Sigmoid", "Tanh"}
+    matmul_ops = _extract_rule_ops(prop_rules, "matmul", ["MatMul", "BatchMatMul"]) | {"MatMul", "BatchMatMul", "Dot", "Linear"}
+    reduction_ops = _extract_rule_ops(prop_rules, "reductions", []) | top_reductions | {"Sum"}
+    conv_ops = _extract_rule_ops(prop_rules, "spatial_conv", ["Conv1D", "Conv2D", "Conv3D"])
 
     modified = False
     for node in graph.nodes.values():
-        if _get_attr(node, "sharding", None) is not None:
+        if node.sharding is not None:
             continue
 
-        op_type = _get_attr(node, "op_type", "")
+        op_type = node.op_type
         if op_type in elementwise_ops:
             modified = _propagate_elementwise_sharding(node, graph) or modified
         elif op_type in matmul_ops and len(node.inputs) >= 2:
@@ -576,17 +635,17 @@ def spmd_partitioning_pass(graph: IRGraph) -> bool:
             coll_id = f"{node_id}_all_reduce" if coll_type == "AllReduce" else f"{node_id}_{str(coll_type).lower()}"
             if coll_id not in graph.nodes:
                 if coll_type == "AllReduce":
-                    coll_node = _create_all_reduce_node(node_id, _get_attr(node, "sharding", None))
+                    coll_node = _create_all_reduce_node(node_id, node.sharding)
                 elif coll_type == "ReduceScatter":
-                    coll_node = _create_reduce_scatter_node(node_id, _get_attr(node, "sharding", None))
+                    coll_node = _create_reduce_scatter_node(node_id, node.sharding)
                 elif coll_type == "AllGather":
-                    coll_node = _create_all_gather_node(node_id, _get_attr(node, "sharding", None))
+                    coll_node = _create_all_gather_node(node_id, node.sharding)
                 else:
-                    coll_node = _create_all_to_all_node(node_id, _get_attr(node, "sharding", None))
+                    coll_node = _create_all_to_all_node(node_id, node.sharding)
                 for other_node in graph.nodes.values():
                     if other_node.id != coll_id and node_id in other_node.inputs:
                         other_node.inputs = [coll_id if inp == node_id else inp for inp in other_node.inputs]
-                if _has_attr(graph, "outputs") and node_id in graph.outputs:
+                if node_id in graph.outputs:
                     graph.outputs = [coll_id if out == node_id else out for out in graph.outputs]
                 graph.nodes[coll_id] = coll_node
                 collective_injected = True

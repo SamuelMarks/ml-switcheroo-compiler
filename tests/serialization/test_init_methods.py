@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _has_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -33,9 +32,9 @@ def test_keras_np_serialization() -> None:
             """Test function __init__."""
             self.layers = [FakeLayer()]
 
-    as_callable(save_model)(as_callable(FakeModel)(), test_file)
+    ensure_callable(save_model)(ensure_callable(FakeModel)(), test_file)
     model = load_model(test_file)
-    assert _has_attr(model, "config")
+    assert ensure_eager_tensor(model).config is not None
     if os.path.exists(test_file):
         os.remove(test_file)
     import pytest

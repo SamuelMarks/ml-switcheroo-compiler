@@ -8,7 +8,7 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -50,7 +50,7 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __init__."""
             self.value = "int32"
 
-    as_callable(_emit_shape_node)("Op", [t], {}, (2, 3), as_callable(FakeDtype1)())
+    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype1)())
 
     class FakeDtype2:
         """Test class FakeDtype2."""
@@ -63,14 +63,14 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __str__."""
             return "int64"
 
-    as_callable(_emit_shape_node)("Op", [t], {}, (2, 3), as_callable(FakeDtype2)())
+    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype2)())
 
     class FakeDtype3:
         """Test class FakeDtype3."""
 
         pass
 
-    as_callable(_emit_shape_node)("Op", [t], {}, (2, 3), as_callable(FakeDtype3)())
+    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype3)())
 
     class FakeNumpyDtype:
         """Test class FakeNumpyDtype."""
@@ -88,7 +88,7 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __init__."""
             self.name = "float64"
 
-    res = as_callable(_emit_shape_node)("Op", [t], {}, (2, 3), as_callable(dtype)())
+    res = ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(dtype)())
     assert res is not None
 
 

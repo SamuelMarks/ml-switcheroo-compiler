@@ -11,10 +11,9 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     numpy_eager_registry,
 )
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _get_np_arg
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.linalg.linear_operator import (
@@ -42,7 +41,7 @@ def _np_tri(
     Returns:
         np.ndarray: Triangular array with ones at and below diagonal.
     """
-    return as_ndarray(_get_attr(np, "tri")(*args, **kwargs))
+    return ensure_ndarray(get_backend_member(np, "tri")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TrilIndices")
@@ -61,8 +60,8 @@ def _np_trilindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    res = _get_attr(np, "tril_indices")(*args, **kwargs)
-    return (as_ndarray(res[0]), as_ndarray(res[1]))
+    res = get_backend_member(np, "tril_indices")(*args, **kwargs)
+    return (ensure_ndarray(res[0]), ensure_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TrilIndicesFrom")
@@ -81,8 +80,8 @@ def _np_trilindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for lower triangle of input array.
     """
-    res = _get_attr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
-    return (as_ndarray(res[0]), as_ndarray(res[1]))
+    res = get_backend_member(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    return (ensure_ndarray(res[0]), ensure_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TrimZeros")
@@ -101,7 +100,7 @@ def _np_trimzeros(
     Returns:
         np.ndarray: Trimmed array without leading/trailing zeros.
     """
-    return as_ndarray(_get_attr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
+    return ensure_ndarray(get_backend_member(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("TriuIndices")
@@ -120,8 +119,8 @@ def _np_triuindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    res = _get_attr(np, "triu_indices")(*args, **kwargs)
-    return (as_ndarray(res[0]), as_ndarray(res[1]))
+    res = get_backend_member(np, "triu_indices")(*args, **kwargs)
+    return (ensure_ndarray(res[0]), ensure_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TriuIndicesFrom")
@@ -140,8 +139,8 @@ def _np_triuindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for upper triangle of input array.
     """
-    res = _get_attr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
-    return (as_ndarray(res[0]), as_ndarray(res[1]))
+    res = get_backend_member(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    return (ensure_ndarray(res[0]), ensure_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("Fromstring")
@@ -160,7 +159,7 @@ def _np_fromstring_(
     Returns:
         np.ndarray: 1-D array created from string.
     """
-    return as_ndarray(_get_attr(backend_module, "frombuffer" if "sep" not in kwargs and _has_attr(backend_module, "frombuffer") else "fromstring")(*args, **kwargs))
+    return ensure_ndarray(get_backend_member(backend_module, "frombuffer" if "sep" not in kwargs and has_backend_member(backend_module, "frombuffer") else "fromstring")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MatrixPower")
@@ -179,7 +178,7 @@ def _np_linalg_matrix_power_(
     Returns:
         np.ndarray: Matrix raised to integer power n.
     """
-    return as_ndarray(backend_module.linalg.matrix_power(*args, **kwargs))
+    return ensure_ndarray(backend_module.linalg.matrix_power(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AsStringConfig")
@@ -310,7 +309,7 @@ def _np_confusion_matrix(
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
         num_classes = max(int(np.max(y_true).item()), int(np.max(y_pred).item())) + 1
-    return as_ndarray(np.bincount(np.add(np.multiply(y_true, num_classes), y_pred), minlength=num_classes**2).reshape((num_classes, num_classes)))
+    return ensure_ndarray(np.bincount(np.add(np.multiply(y_true, num_classes), y_pred), minlength=num_classes**2).reshape((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Distributions")
@@ -333,7 +332,7 @@ def _np_distributions(
     if a is None:
         return None
     counts, bins = np.histogram(a, bins="auto")
-    return {"counts": as_ndarray(counts), "bins": as_ndarray(bins)}
+    return {"counts": ensure_ndarray(counts), "bins": ensure_ndarray(bins)}
 
 
 @numpy_eager_registry.register("StridedSlice")

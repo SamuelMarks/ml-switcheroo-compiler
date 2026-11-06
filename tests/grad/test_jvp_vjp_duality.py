@@ -9,7 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.grad.testing import check_jvp_vjp_duality
 from ml_switcheroo_compiler.ops import linalg
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -33,7 +33,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 EagerValue: Product matrix.
             """
-            return as_callable(linalg.matmul)(x, y)
+            return ensure_callable(linalg.matmul)(x, y)
 
         x_val = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)
@@ -48,7 +48,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 EagerValue: Scaled matrix.
             """
-            return as_tensor(as_tensor(x) * as_tensor(2.5))
+            return ensure_eager_tensor(ensure_eager_tensor(x) * ensure_eager_tensor(2.5))
 
         check_jvp_vjp_duality(scale_fn, (x_val,))
     assert callable(test_jvp_vjp_duality_linear_ops)
@@ -71,7 +71,7 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
             Returns:
                 EagerValue: Evaluated array.
             """
-            return (((as_tensor(x) * as_tensor(x)) * as_tensor(x)) - ((as_tensor(x) * as_tensor(x)) * as_tensor(2.0))) + (as_tensor(x) * as_tensor(0.5))
+            return (((ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)) - ((ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(2.0))) + (ensure_eager_tensor(x) * ensure_eager_tensor(0.5))
 
         arr = np.array([0.2, -0.5, 0.8, -1.2], dtype=np.float32)
         check_jvp_vjp_duality(poly_fn, (arr,))
@@ -95,7 +95,7 @@ def test_jvp_vjp_duality_reductions() -> None:
             Returns:
                 EagerValue: Linear combination.
             """
-            return (as_tensor(x) * as_tensor(1.5)) + (as_tensor(x) * as_tensor(0.75))
+            return (ensure_eager_tensor(x) * ensure_eager_tensor(1.5)) + (ensure_eager_tensor(x) * ensure_eager_tensor(0.75))
 
         arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         check_jvp_vjp_duality(linear_comb_fn, (arr,))
@@ -119,7 +119,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
             Returns:
                 EagerValue: Scaled array.
             """
-            return as_tensor(as_tensor(x) * as_tensor(2.0))
+            return ensure_eager_tensor(ensure_eager_tensor(x) * ensure_eager_tensor(2.0))
 
         arr = np.array([1.0, 2.0], dtype=np.float32)
         tan = np.array([0.5, 0.5], dtype=np.float32)

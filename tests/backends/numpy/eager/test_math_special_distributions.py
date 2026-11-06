@@ -13,8 +13,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_rem,
     _np_tensorarraywrite,
 )
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -24,16 +23,16 @@ def test_np_rawmatmul() -> None:
     """Test function test_np_rawmatmul."""
     a = np.ones((2, 2))
     b = np.ones((2, 2))
-    res = _np_rawmatmul(np, a, b)
-    assert as_callable(np.array_equal)(res, as_callable(np.matmul)(a, b))
+    res = _np_rawmatmul(ensure_eager_tensor(np), a, b)
+    assert ensure_callable(np.array_equal)(res, ensure_callable(np.matmul)(a, b))
 
 
 def test_np_rawmerge() -> None:
     """Test function test_np_rawmerge."""
     a = np.ones((2, 2))
-    res, status = as_callable(_np_rawmerge)(np, [a, a])
+    res, status = ensure_callable(_np_rawmerge)(np, [a, a])
     assert res is not None
-    res_empty, status_empty = as_callable(_np_rawmerge)(np, [])
+    res_empty, status_empty = ensure_callable(_np_rawmerge)(np, [])
     assert res_empty is None
 
 
@@ -41,7 +40,7 @@ def test_np_tensorarraywrite() -> None:
     """Test function test_np_tensorarraywrite."""
     handle = [1, 2]
     # In bounds
-    res = _np_tensorarraywrite(np, handle, 1, 3)
+    res = _np_tensorarraywrite(ensure_eager_tensor(np), handle, 1, 3)
     assert res == [1, 3]
 
 
@@ -50,7 +49,7 @@ def test_np_rem() -> None:
     a = np.array([5])
     b = np.array([3])
     res = _np_rem(np, a, b)
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2
+    assert ensure_eager_tensor(res)[0] == 2
 
 
 def test_np_confusion_matrix_fallback() -> None:
@@ -58,24 +57,24 @@ def test_np_confusion_matrix_fallback() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("confusion_matrix")
-    res = as_callable(fn)(np, a, b)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = ensure_callable(fn)(np, a, b)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_np_descriptive() -> None:
     """Test function test_np_descriptive."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("descriptive")
-    res = as_callable(fn)(np, a)
-    assert as_callable(len)(res) == 3
+    res = ensure_callable(fn)(np, a)
+    assert ensure_callable(len)(res) == 3
 
 
 def test_np_distributions() -> None:
     """Test function test_np_distributions."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("distributions")
-    res = as_callable(fn)(np, a)
-    assert as_callable(len)(res) == 2
+    res = ensure_callable(fn)(np, a)
+    assert ensure_callable(len)(res) == 2
 
 
 def test_np_confusion_matrix_camel() -> None:
@@ -83,16 +82,16 @@ def test_np_confusion_matrix_camel() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("ConfusionMatrix")
-    res = as_callable(fn)(np, a, b, num_classes=3)
-    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
+    res = ensure_callable(fn)(np, a, b, num_classes=3)
+    assert ensure_eager_tensor(res).shape == (3, 3)
 
 
 def test_np_decode_csv_empty() -> None:
     """Test function test_np_decode_csv_empty."""
     fn = numpy_eager_registry.get("DecodeCsv")
-    res = as_callable(fn)(np, "", record_defaults=[1.0, 2.0])
-    assert as_callable(len)(res) == 2
-    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 1.0
+    res = ensure_callable(fn)(np, "", record_defaults=[1.0, 2.0])
+    assert ensure_callable(len)(res) == 2
+    assert ensure_eager_tensor(res)[0] == 1.0
 
 
 def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
@@ -107,6 +106,8 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
     class FakeOp(OpDef):
         """Test class FakeOp."""
 
+        hit: bool = False
+
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeOp:
             """Test function __new__.
 
@@ -114,10 +115,9 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            obj = super().__new__(cls)
-            _set_attr(obj, "hit", True)
-            _typed_ret_1: FakeOp = _cast_val("FakeOp", as_tensor(obj))
-            return _typed_ret_1
+            inst = super().__new__(cls)
+            inst.hit = True
+            return inst
 
     # Mocking standard snippet ops to hit the cls_or_func() path
     monkeypatch.setattr(ops, "RawMatMul", FakeOp, raising=False)
@@ -127,28 +127,28 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
     monkeypatch.setattr(ops, "descriptive", FakeOp, raising=False)
     monkeypatch.setattr(ops, "distributions", FakeOp, raising=False)
 
-    res1 = as_callable(numpy_eager_registry.get)("RawMatMul")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
-    if isinstance(as_tensor(res1), FakeOp):
+    res1 = ensure_callable(numpy_eager_registry.get)("RawMatMul")(np, ensure_callable(np.ones)((2, 2)), ensure_callable(np.ones)((2, 2)))
+    if isinstance(ensure_eager_tensor(res1), FakeOp):
         assert res1.hit
 
-    res2 = as_callable(numpy_eager_registry.get)("SparseDenseMatMul")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
-    if isinstance(as_tensor(res2), FakeOp):
+    res2 = ensure_callable(numpy_eager_registry.get)("SparseDenseMatMul")(np, ensure_callable(np.ones)((2, 2)), ensure_callable(np.ones)((2, 2)))
+    if isinstance(ensure_eager_tensor(res2), FakeOp):
         assert res2.hit
 
-    res3 = as_callable(numpy_eager_registry.get)("rem")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
-    if isinstance(as_tensor(res3), FakeOp):
+    res3 = ensure_callable(numpy_eager_registry.get)("rem")(np, ensure_callable(np.ones)((2, 2)), ensure_callable(np.ones)((2, 2)))
+    if isinstance(ensure_eager_tensor(res3), FakeOp):
         assert res3.hit
 
-    res4 = as_callable(numpy_eager_registry.get)("confusion_matrix")(np, as_callable(np.array)([1], dtype=np.int32), as_callable(np.array)([1], dtype=np.int32))
-    if isinstance(as_tensor(res4), FakeOp):
+    res4 = ensure_callable(numpy_eager_registry.get)("confusion_matrix")(np, ensure_callable(np.array)([1], dtype=np.int32), ensure_callable(np.array)([1], dtype=np.int32))
+    if isinstance(ensure_eager_tensor(res4), FakeOp):
         assert res4.hit
 
-    res5 = as_callable(numpy_eager_registry.get)("descriptive")(np, as_callable(np.ones)((2, 2)))
-    if isinstance(as_tensor(res5), FakeOp):
+    res5 = ensure_callable(numpy_eager_registry.get)("descriptive")(np, ensure_callable(np.ones)((2, 2)))
+    if isinstance(ensure_eager_tensor(res5), FakeOp):
         assert res5.hit
 
-    res6 = as_callable(numpy_eager_registry.get)("distributions")(np, as_callable(np.ones)((2, 2)))
-    if isinstance(as_tensor(res6), FakeOp):
+    res6 = ensure_callable(numpy_eager_registry.get)("distributions")(np, ensure_callable(np.ones)((2, 2)))
+    if isinstance(ensure_eager_tensor(res6), FakeOp):
         assert res6.hit
 
 
@@ -168,7 +168,7 @@ def test_custom_root_coverage() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customroot
 
     # solve is None
-    res = _np_customroot(np, lambda x: x, 42.0)
+    res = _np_customroot(ensure_eager_tensor(np), lambda x: x, 42.0)
     assert res == 42.0
 
 
@@ -179,5 +179,5 @@ def test_custom_root_coverage_solve() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customroot
 
     # solve is provided
-    res = _np_customroot(np, lambda x: x, 42.0, solve=lambda f, x: f(x) + 1.0)
+    res = _np_customroot(ensure_eager_tensor(np), lambda x: x, 42.0, solve=lambda f, x: f(x) + 1.0)
     assert res == 43.0

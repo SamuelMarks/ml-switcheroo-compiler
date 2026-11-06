@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ir.core import ensure_graph
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
@@ -18,33 +19,34 @@ class _DotGraphVisitor:
         Args:
             graph (TensorOrScalar): The IR graph.
         """
-        self.graph = graph
+        self.graph = ensure_graph(graph)
         self.visited: set[str] = set()
         self.lines = ["digraph G {"]
 
-    def visit(self, node_id: str) -> None:
+    def visit(self, node_id: str | None) -> None:
         """Visit a node.
 
         Args:
-        node_id (str): The node_id parameter.
+        node_id (str | None): The node_id parameter.
 
         Returns:
         NoneType: Result.
         """
-        if not node_id or node_id not in _get_attr(self.graph, "nodes") or node_id in self.visited:
+        if not node_id or node_id not in self.graph.nodes or node_id in self.visited:
             return
 
         self.visited.add(node_id)
-        node = _get_attr(self.graph, "nodes")[node_id]
+        node = self.graph.nodes[node_id]
 
         # Format the node
-        op_type = _get_attr(node, "op_type", "Unknown")
+        op_type = node.op_type if node.op_type else "Unknown"
         label = f"{op_type}\\n{node_id[:8]}"
         self.lines.append(f'  "{node_id}" [label="{label}"];')
 
         # Format the edges and recurse
-        for inp in _get_attr(node, "inputs", []):
-            inp_id = _get_attr(inp, "id", str(inp))
+        for inp in node.inputs:
+            raw_inp: TensorOrScalar = inp
+            inp_id = str(raw_inp.id) if is_traced_data(raw_inp) else str(inp)
             self.lines.append(f'  "{inp_id}" -> "{node_id}";')
             self.visit(inp_id)
 
@@ -67,8 +69,9 @@ def export_to_dot(file: str | typing.IO[str], *arrays: Tensor, **kwargs: TensorO
     visitor = _DotGraphVisitor(graph)
 
     for arr in arrays:
-        node_id = _get_attr(_get_attr(arr, "data", None), "id", None)
-        _get_attr(visitor, "visit")(node_id)
+        arr_data: TensorOrScalar = extract_data(arr)
+        node_id = str(arr_data.id) if is_traced_data(arr_data) else None
+        visitor.visit(node_id)
 
     visitor.lines.append("}")
     dot_content = "\n".join(visitor.lines)

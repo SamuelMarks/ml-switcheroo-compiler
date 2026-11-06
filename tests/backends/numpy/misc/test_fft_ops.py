@@ -24,8 +24,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.fft_ops import (
     _np_window_hamming,
     _np_window_hann,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -34,105 +33,105 @@ if typing.TYPE_CHECKING:
 def test_fft3d() -> None:
     """Test fft3d."""
     a = np.ones((2, 2, 2))
-    res = _np_fft3d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2, 2)
+    res = _np_fft3d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2, 2)
     # config branch
-    res_cfg = _np_fft3d(np, a, config=FFTConfig())
-    assert as_tensor(_get_attr(res_cfg, "shape")) == (2, 2, 2)
+    res_cfg = _np_fft3d(ensure_eager_tensor(np), a, config=FFTConfig())
+    assert ensure_eager_tensor(res_cfg).shape == (2, 2, 2)
 
 
 def test_ifft3d() -> None:
     """Test ifft3d."""
     a = np.ones((2, 2, 2), dtype=np.complex128)
-    res = _np_ifft3d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2, 2)
+    res = _np_ifft3d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2, 2)
 
 
 def test_rfft2d() -> None:
     """Test rfft2d."""
     a = np.ones((2, 2))
-    res = _np_rfft2d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
-    res_cfg = _np_rfft2d(np, a, config=FFTConfig())
-    assert as_tensor(_get_attr(res_cfg, "shape")) == (2, 2)
+    res = _np_rfft2d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
+    res_cfg = _np_rfft2d(ensure_eager_tensor(np), a, config=FFTConfig())
+    assert ensure_eager_tensor(res_cfg).shape == (2, 2)
 
 
 def test_rfft3d() -> None:
     """Test rfft3d."""
     a = np.ones((2, 2, 2))
-    res = _np_rfft3d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2, 2)
+    res = _np_rfft3d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2, 2)
 
 
 def test_irfft2d() -> None:
     """Test irfft2d."""
     a = np.ones((2, 2), dtype=np.complex128)
-    res = _np_irfft2d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = _np_irfft2d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_irfft3d() -> None:
     """Test irfft3d."""
     a = np.ones((2, 2, 2), dtype=np.complex128)
-    res = _np_irfft3d(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2, 2)
+    res = _np_irfft3d(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2, 2)
 
 
 def test_fftnd() -> None:
     """Test fftnd."""
     a = np.ones((2, 2))
-    res = _np_fftnd(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = _np_fftnd(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_ifftnd() -> None:
     """Test ifftnd."""
     a = np.ones((2, 2), dtype=np.complex128)
-    res = _np_ifftnd(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = _np_ifftnd(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_rfftnd() -> None:
     """Test rfftnd."""
     a = np.ones((2, 2))
-    res = _np_rfftnd(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = _np_rfftnd(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_irfftnd() -> None:
     """Test irfftnd."""
     a = np.ones((2, 2), dtype=np.complex128)
-    res = _np_irfftnd(np, a)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = _np_irfftnd(ensure_eager_tensor(np), a)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_window_hann() -> None:
     """Test window_hann."""
-    res = _np_window_hann(np, 10)
-    assert as_tensor(_get_attr(res, "shape")) == (10,)
+    res = _np_window_hann(ensure_eager_tensor(np), 10)
+    assert ensure_eager_tensor(res).shape == (10,)
 
 
 def test_window_hamming() -> None:
     """Test window_hamming."""
-    res = _np_window_hamming(np, 10)
-    assert as_tensor(_get_attr(res, "shape")) == (10,)
+    res = _np_window_hamming(ensure_eager_tensor(np), 10)
+    assert ensure_eager_tensor(res).shape == (10,)
 
 
 def test_stft() -> None:
     """Test stft."""
     x = np.ones((10,))
-    res = _np_stft(np, x, 4, 2)
-    assert as_tensor(_get_attr(res, "shape")) == (3, 4)
+    res = _np_stft(ensure_eager_tensor(np), x, 4, 2)
+    assert ensure_eager_tensor(res).shape == (3, 4)
 
     with pytest.raises(ValueError, match="noverlap must be less than nfft"):
-        _np_stft(np, x, 4, 4)
+        _np_stft(ensure_eager_tensor(np), x, 4, 4)
 
 
 def test_istft() -> None:
     """Test istft."""
     x = np.ones((3, 4), dtype=np.complex128)
-    res = _np_istft(np, x, 4, 2)
-    assert as_tensor(_get_attr(res, "shape")) == (10,)
+    res = _np_istft(ensure_eager_tensor(np), x, 4, 2)
+    assert ensure_eager_tensor(res).shape == (10,)
 
     with pytest.raises(ValueError, match="noverlap must be less than nfft"):
-        _np_istft(np, x, 4, 4)
+        _np_istft(ensure_eager_tensor(np), x, 4, 4)

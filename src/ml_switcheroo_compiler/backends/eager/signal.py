@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float_list, as_shape, as_tensor
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float_list, ensure_shape
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
@@ -20,11 +21,11 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
     """
     kx, ky = kernel_size
     sx, sy = sigma
-    ax = _get_attr(np_mod, "arange")(-kx // 2 + 1.0, kx // 2 + 1.0)
-    ay = _get_attr(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
-    xx, yy = _get_attr(np_mod, "meshgrid")(ax, ay)
-    kernel = _get_attr(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
-    return as_tensor(kernel / _get_attr(np_mod, "sum")(kernel))
+    ax = get_backend_member(np_mod, "arange")(-kx // 2 + 1.0, kx // 2 + 1.0)
+    ay = get_backend_member(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
+    xx, yy = get_backend_member(np_mod, "meshgrid")(ax, ay)
+    kernel = get_backend_member(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
+    return ensure_eager_tensor(kernel / get_backend_member(np_mod, "sum")(kernel))
 
 
 def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
@@ -43,20 +44,20 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
         ValueError: If the input images tensor is not 4-dimensional.
     """
     del mode
-    if _get_attr(imgs, "ndim") != 4:
+    if get_backend_member(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    _b, _c, H, W = as_shape(_get_attr(imgs, "shape"))
-    kH, kW = as_shape(_get_attr(kernel, "shape"))
+    _b, _c, H, W = ensure_shape(get_backend_member(imgs, "shape"))
+    kH, kW = ensure_shape(get_backend_member(kernel, "shape"))
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = _get_attr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
-    out = _get_attr(np_mod, "zeros_like")(imgs)
+    padded = get_backend_member(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
+    out = get_backend_member(np_mod, "zeros_like")(imgs)
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            expanded_kernel = _get_attr(np_mod, "expand_dims")(_get_attr(np_mod, "expand_dims")(kernel, 0), 0)
-            out[:, :, y, x] = _get_attr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
-    return as_tensor(out)
+            expanded_kernel = get_backend_member(np_mod, "expand_dims")(get_backend_member(np_mod, "expand_dims")(kernel, 0), 0)
+            out[:, :, y, x] = get_backend_member(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
+    return ensure_eager_tensor(out)
 
 
 def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: BlurConfig | None) -> BlurConfig:
@@ -70,12 +71,12 @@ def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: BlurConfig | Non
         BlurConfig: Resolved Gaussian blur configuration.
     """
     if config_obj is None:
-        ks = kwargs.get("kernel_size", (3, 3)) if _has_attr(kwargs, "get") else (3, 3)
-        sg = kwargs.get("sigma", (1.0, 1.0)) if _has_attr(kwargs, "get") else (1.0, 1.0)
-        df = str(kwargs.get("data_format", None)) if _has_attr(kwargs, "get") else None
-        ks_seq = as_shape(ks)
+        ks = kwargs.get("kernel_size", (3, 3)) if has_backend_member(kwargs, "get") else (3, 3)
+        sg = kwargs.get("sigma", (1.0, 1.0)) if has_backend_member(kwargs, "get") else (1.0, 1.0)
+        df = str(kwargs.get("data_format", None)) if has_backend_member(kwargs, "get") else None
+        ks_seq = ensure_shape(ks)
         ks_pair: tuple[int, int] = (ks_seq[0], ks_seq[1]) if len(ks_seq) >= 2 else (3, 3)
-        sg_seq = as_float_list(sg)
+        sg_seq = ensure_float_list(sg)
         sg_pair: tuple[float, float] = (sg_seq[0], sg_seq[1]) if len(sg_seq) >= 2 else (1.0, 1.0)
         return BlurConfig(
             kernel_size=ks_pair,
@@ -98,9 +99,9 @@ def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_o
         EagerValue: Blurred 4D image batch tensor.
     """
     config = _get_blur_config(kwargs, config_obj)
-    ks_seq = as_shape(config.kernel_size)
+    ks_seq = ensure_shape(config.kernel_size)
     ks_pair: tuple[int, int] = (ks_seq[0], ks_seq[1]) if len(ks_seq) >= 2 else (3, 3)
-    sg_seq = as_float_list(config.sigma)
+    sg_seq = ensure_float_list(config.sigma)
     sg_pair: tuple[float, float] = (sg_seq[0], sg_seq[1]) if len(sg_seq) >= 2 else (1.0, 1.0)
     kernel = _generate_gaussian_kernel(backend_module, ks_pair, sg_pair)
     return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
@@ -121,20 +122,20 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
     Raises:
         ValueError: If the input images tensor is not 4-dimensional.
     """
-    if _get_attr(imgs, "ndim") != 4:
+    if get_backend_member(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = as_shape(_get_attr(imgs, "shape"))
+    B, C, H, W = ensure_shape(get_backend_member(imgs, "shape"))
     kH, kW = kernel_size
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = _get_attr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
-    out = _get_attr(np_mod, "zeros_like")(imgs)
+    padded = get_backend_member(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
+    out = get_backend_member(np_mod, "zeros_like")(imgs)
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            flat_region = _get_attr(np_mod, "reshape")(region, (B, C, kH * kW))
-            out[:, :, y, x] = _get_attr(np_mod, "median")(flat_region, axis=-1)
-    return as_tensor(out)
+            flat_region = get_backend_member(np_mod, "reshape")(region, (B, C, kH * kW))
+            out[:, :, y, x] = get_backend_member(np_mod, "median")(flat_region, axis=-1)
+    return ensure_eager_tensor(out)
 
 
 def median_filter_eager(

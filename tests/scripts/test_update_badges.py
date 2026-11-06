@@ -8,7 +8,6 @@ import subprocess
 import typing
 from unittest.mock import mock_open, patch
 
-from ml_switcheroo_compiler.core.shape import _cast_val
 from scripts.update_badges import (
     _extract_expected_arg_names,
     _has_non_none_return,
@@ -19,7 +18,7 @@ from scripts.update_badges import (
     get_test_coverage,
     update_readme,
 )
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -97,7 +96,8 @@ def f_missing_specific_arg(x: int, y: int) -> None:
     pass
 '''
     )
-    f1 = _cast_val(ast.FunctionDef, tree.body[0])
+    f1 = tree.body[0]
+    assert isinstance(f1, ast.FunctionDef)
     assert _extract_expected_arg_names(f1.args) == ["x", "args", "y", "kwargs"]
     assert _has_non_none_return(f1.returns) is True
     assert _has_non_none_return(None) is False
@@ -105,19 +105,24 @@ def f_missing_specific_arg(x: int, y: int) -> None:
     assert _has_non_none_return(ast.Name(id="None")) is False
     assert _is_function_doc_complete(f1) is True
 
-    f_bad_any = _cast_val(ast.FunctionDef, tree.body[1])
+    f_bad_any = tree.body[1]
+    assert isinstance(f_bad_any, ast.FunctionDef)
     assert _is_function_doc_complete(f_bad_any) is False
 
-    f_missing_arg = _cast_val(ast.FunctionDef, tree.body[2])
+    f_missing_arg = tree.body[2]
+    assert isinstance(f_missing_arg, ast.FunctionDef)
     assert _is_function_doc_complete(f_missing_arg) is False
 
-    f_missing_return = _cast_val(ast.FunctionDef, tree.body[3])
+    f_missing_return = tree.body[3]
+    assert isinstance(f_missing_return, ast.FunctionDef)
     assert _is_function_doc_complete(f_missing_return) is False
 
-    f_none_name = _cast_val(ast.FunctionDef, tree.body[4])
+    f_none_name = tree.body[4]
+    assert isinstance(f_none_name, ast.FunctionDef)
     assert _is_function_doc_complete(f_none_name) is True
 
-    f_missing_specific_arg = _cast_val(ast.FunctionDef, tree.body[5])
+    f_missing_specific_arg = tree.body[5]
+    assert isinstance(f_missing_specific_arg, ast.FunctionDef)
     assert _is_function_doc_complete(f_missing_specific_arg) is False
 
 
@@ -169,7 +174,7 @@ def test_get_doc_coverage_no_files() -> None:
 
 def test_get_doc_coverage_success() -> None:
     """Verify `get_doc_coverage` across documented and undocumented modules/classes/functions."""
-    mock_walk = as_tensor([("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
+    mock_walk = ensure_eager_tensor([("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
 
     core_content = '''"""Module doc."""
 class MyClass:
@@ -210,10 +215,10 @@ def no_doc_func():
             FileNotFoundError: If an unexpected path is opened.
         """
         _ = (args, kwargs)
-        if as_tensor("core.py") in as_tensor(path):
-            return as_tensor(mock_open(read_data=core_content)())
-        if as_tensor("bad.py") in as_tensor(path):
-            return as_tensor(mock_open(read_data=bad_content)())
+        if ensure_eager_tensor("core.py") in ensure_eager_tensor(path):
+            return ensure_eager_tensor(mock_open(read_data=core_content)())
+        if ensure_eager_tensor("bad.py") in ensure_eager_tensor(path):
+            return ensure_eager_tensor(mock_open(read_data=bad_content)())
         raise FileNotFoundError("File not found")
 
     with (
@@ -228,7 +233,7 @@ def no_doc_func():
 
 def test_get_doc_coverage_exception_in_file() -> None:
     """Verify `get_doc_coverage` gracefully handles syntax errors in inspected files."""
-    mock_walk = as_tensor([("src/ml_switcheroo_compiler", [], ["fail.py"])])
+    mock_walk = ensure_eager_tensor([("src/ml_switcheroo_compiler", [], ["fail.py"])])
     with (
         patch("os.path.exists", return_value=True),
         patch("os.walk", return_value=mock_walk),

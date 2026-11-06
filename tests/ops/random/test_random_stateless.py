@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_parameterized_truncated_normal,
     stateless_split,
 )
-from tests.testing_utils import as_tensor_obj
+from tests.testing_utils import ensure_tensor_obj
 
 
 def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
@@ -59,7 +59,7 @@ def test_random_stateless_eager_philox() -> None:
     config.eager_mode = True
     try:
         seed_tensor = Tensor(np.array([10, 20], dtype=np.int64), TensorConfig((2,), DType.Int64, Device("cpu")))
-        trunc = as_tensor_obj(stateless_parameterized_truncated_normal((2, 2), seed_tensor))
+        trunc = ensure_tensor_obj(stateless_parameterized_truncated_normal((2, 2), seed_tensor))
         assert trunc.shape == (2, 2)
         assert np.all(np.asarray(trunc.data) >= -2.0)
         assert np.all(np.asarray(trunc.data) <= 2.0)
@@ -73,10 +73,10 @@ def test_random_stateless_eager_philox() -> None:
 
         idx_tensor = Tensor(np.array([0, 1, 2], dtype=np.int32), TensorConfig((3,), DType.Int32, Device("cpu")))
         max_tensor = Tensor(np.array([5], dtype=np.int32), TensorConfig((1,), DType.Int32, Device("cpu")))
-        idx_res = as_tensor_obj(index_shuffle(idx_tensor, [1, 2], max_tensor))
+        idx_res = ensure_tensor_obj(index_shuffle(idx_tensor, [1, 2], max_tensor))
         assert idx_res.shape == (3,)
 
-        folded_tensor = as_tensor_obj(stateless_fold_in(seed_tensor, 7))
+        folded_tensor = ensure_tensor_obj(stateless_fold_in(seed_tensor, 7))
         assert folded_tensor.shape == (2,)
         assert not np.array_equal(np.asarray(folded_tensor.data), np.array([10, 20]))
 

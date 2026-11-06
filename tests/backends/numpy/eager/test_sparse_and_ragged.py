@@ -9,8 +9,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -18,7 +17,9 @@ if typing.TYPE_CHECKING:
 
 def test_sparse_and_ragged_coverage() -> None:
     """Test function test_sparse_and_ragged_coverage."""
-    ops = [_get_attr(sr, name) for name in dir(sr) if name.startswith("_") and callable(_get_attr(sr, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(sr).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -27,9 +28,9 @@ def test_sparse_and_ragged_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t", "sp_input"):
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:

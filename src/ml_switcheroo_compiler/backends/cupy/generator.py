@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 try:
@@ -85,14 +85,14 @@ class CupyGenerator(PythonStringGenerator):
             Returns:
                 EagerValue: Output tensor or collection of tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if _has_attr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
@@ -102,7 +102,7 @@ class CupyGenerator(PythonStringGenerator):
             import cupy as cp
 
             sample_inputs = kwargs.get("sample_inputs")
-            if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)) and _has_attr(cp.cuda, "Graph"):
+            if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)) and resolve_backend_member(cp.cuda, "Graph")[0]:
                 cp_samples = [cp.asarray(x) for x in sample_inputs]
                 forward_fn(*cp_samples)
                 stream = cp.cuda.Stream()

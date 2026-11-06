@@ -6,7 +6,7 @@ import importlib
 import typing
 
 import ml_switcheroo_compiler.grad as grad_pkg
-from ml_switcheroo_compiler.core.shape import _has_attr
+from tests.testing_utils import has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -105,11 +105,11 @@ def test_grad_init_and_jit() -> None:
     jit_mod = importlib.import_module("ml_switcheroo_compiler.grad.jit")
 
     # grad __init__ re-exports
-    assert _has_attr(grad_pkg, "grad")
-    assert _has_attr(grad_pkg, "value_and_grad")
-    assert _has_attr(grad_pkg, "jit")
-    assert _has_attr(grad_pkg, "disable_jit")
-    assert _has_attr(grad_pkg, "eval_shape")
+    assert has_backend_member(grad_pkg, "grad")
+    assert has_backend_member(grad_pkg, "value_and_grad")
+    assert has_backend_member(grad_pkg, "jit")
+    assert has_backend_member(grad_pkg, "disable_jit")
+    assert has_backend_member(grad_pkg, "eval_shape")
     assert "grad" in grad_pkg.__all__
     assert "jit" in grad_pkg.__all__
 

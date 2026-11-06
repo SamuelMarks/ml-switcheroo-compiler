@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import importlib
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
-from ml_switcheroo_compiler.backends.pyarrow_compute.types import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # Comprehensive mapping of standard IR operations to pyarrow.compute functions
@@ -215,8 +215,8 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped raw data.
     """
-    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
-        return _get_attr(arg, "data")
+    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
+        return get_backend_member(arg, "data")
     return arg
 
 
@@ -240,12 +240,12 @@ def _dispatch_groupby(
     """
     if fn_name in ("group_by", "groupby") and actual_args:
         table_obj = actual_args[0]
-        if _has_attr(table_obj, "group_by"):
+        if has_backend_member(table_obj, "group_by"):
             keys = kwargs.get("keys", actual_args[1] if len(actual_args) > 1 else [])
             aggregations = kwargs.get("aggregations", actual_args[2] if len(actual_args) > 2 else [])
             try:
-                grouped = as_callable(_get_attr(table_obj, "group_by"))(keys)
-                return True, as_callable(_get_attr(grouped, "aggregate"))(aggregations)
+                grouped = ensure_callable(get_backend_member(table_obj, "group_by"))(keys)
+                return True, ensure_callable(get_backend_member(grouped, "aggregate"))(aggregations)
             except Exception as exc:
                 msg = f"Failed executing group_by: {exc}"
                 raise BackendNotSupportedError(msg) from exc
@@ -255,10 +255,10 @@ def _dispatch_groupby(
         keys = actual_args[1]
         agg_col = actual_args[2]
         agg_name = fn_name[5:]
-        if _has_attr(table_obj, "group_by"):
+        if has_backend_member(table_obj, "group_by"):
             try:
-                grouped = as_callable(_get_attr(table_obj, "group_by"))(keys)
-                return True, as_callable(_get_attr(grouped, "aggregate"))([(agg_col, agg_name)])
+                grouped = ensure_callable(get_backend_member(table_obj, "group_by"))(keys)
+                return True, ensure_callable(get_backend_member(grouped, "aggregate"))([(agg_col, agg_name)])
             except Exception as exc:
                 msg = f"Failed executing {fn_name}: {exc}"
                 raise BackendNotSupportedError(msg) from exc
@@ -286,7 +286,7 @@ def _dispatch_cbrt(
     """
     if fn_name == "cbrt" and actual_args:
         try:
-            return True, as_callable(_get_attr(pc_mod, "power"))(actual_args[0], 1.0 / 3.0)
+            return True, ensure_callable(get_backend_member(pc_mod, "power"))(actual_args[0], 1.0 / 3.0)
         except Exception as exc:
             msg = f"Failed executing cbrt: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -331,20 +331,20 @@ def execute_op(
         return res_cbrt
 
     # 3. Direct function lookup on pyarrow.compute
-    if _has_attr(pc_mod, fn_name):
-        compute_fn = as_callable(_get_attr(pc_mod, fn_name))
+    if has_backend_member(pc_mod, fn_name):
+        compute_fn = ensure_callable(get_backend_member(pc_mod, fn_name))
         try:
-            return as_tensor(compute_fn(*actual_args, **kwargs))
+            return ensure_eager_tensor(compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
 
     # 4. Lookup in standard operation mapping
     target_name = ARROW_COMPUTE_OP_MAP.get(fn_name)
-    if target_name and _has_attr(pc_mod, target_name):
-        compute_fn = as_callable(_get_attr(pc_mod, target_name))
+    if target_name and has_backend_member(pc_mod, target_name):
+        compute_fn = ensure_callable(get_backend_member(pc_mod, target_name))
         try:
-            return as_tensor(compute_fn(*actual_args, **kwargs))
+            return ensure_eager_tensor(compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{target_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc

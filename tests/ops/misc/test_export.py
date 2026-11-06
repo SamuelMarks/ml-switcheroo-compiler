@@ -6,10 +6,9 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -46,18 +45,18 @@ def test_export() -> None:
 
         id = "n2"
 
-    t = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
+    t = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
 
     state.global_tracing_state.active_graph = None
     with pytest.raises(RuntimeError):
-        as_callable(export_to_dot)("test.dot", t)
+        ensure_callable(export_to_dot)("test.dot", t)
 
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
 
     import io
 
     f = io.StringIO()
-    as_callable(export_to_dot)(f, t)
+    ensure_callable(export_to_dot)(f, t)
 
     lines = f.getvalue().split("\n")
     assert "digraph G {" in lines
@@ -68,7 +67,7 @@ def test_export() -> None:
     # Test string file path
     import os
 
-    as_callable(export_to_dot)("test_export.dot", t)
+    ensure_callable(export_to_dot)("test_export.dot", t)
     assert os.path.exists("test_export.dot")
     os.remove("test_export.dot")
 
@@ -78,8 +77,8 @@ def test_export() -> None:
 
         id = "n3"
 
-    t_inv = as_callable(Tensor)(as_callable(DummyDataInvalid)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_inv = ensure_callable(Tensor)(ensure_callable(DummyDataInvalid)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
 
     f2 = io.StringIO()
-    as_callable(export_to_dot)(f2, t_inv)
+    ensure_callable(export_to_dot)(f2, t_inv)
     assert "n3" not in f2.getvalue()

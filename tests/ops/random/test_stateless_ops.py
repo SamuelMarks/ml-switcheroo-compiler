@@ -9,7 +9,6 @@ import numpy as np
 import ml_switcheroo_compiler.ops.random as ops_random
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_stateless import (
     Algorithm,
@@ -31,7 +30,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_split,
     stateless_truncated_normal,
 )
-from tests.testing_utils import as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_eager_tensor, ensure_tensor_obj, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -39,12 +38,12 @@ if typing.TYPE_CHECKING:
 
 def test_ops_random_unified_package() -> None:
     """Verify `ml_switcheroo_compiler.ops.random` exports all unified stateless PRNG functions."""
-    assert _has_attr(ops_random, "stateless_random_uniform")
-    assert _has_attr(ops_random, "stateless_split")
-    assert _has_attr(ops_random, "sobol_sample")
-    assert _has_attr(ops_random, "rademacher")
-    assert _has_attr(ops_random, "uniform")
-    assert _has_attr(ops_random, "normal")
+    assert has_backend_member(ops_random, "stateless_random_uniform")
+    assert has_backend_member(ops_random, "stateless_split")
+    assert has_backend_member(ops_random, "sobol_sample")
+    assert has_backend_member(ops_random, "rademacher")
+    assert has_backend_member(ops_random, "uniform")
+    assert has_backend_member(ops_random, "normal")
 
 
 def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
@@ -189,12 +188,12 @@ def test_stateless_parameterized_truncated_normal() -> None:
     try:
         seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
         cfg = RandomGenerationConfig(means=1.0, stddevs=0.5, minvals=-1.0, maxvals=1.0)
-        res = as_tensor_obj(stateless_parameterized_truncated_normal((2,), seed, cfg))
+        res = ensure_tensor_obj(stateless_parameterized_truncated_normal((2,), seed, cfg))
         assert res.config.shape == (2,)
         arr = np.asarray(res.data)
         assert np.all(arr >= 0.5)
         assert np.all(arr <= 1.5)
-        res_empty = as_tensor_obj(stateless_parameterized_truncated_normal((), seed, cfg))
+        res_empty = ensure_tensor_obj(stateless_parameterized_truncated_normal((), seed, cfg))
         assert res_empty.config.shape == ()
     finally:
         config.eager_mode = orig
@@ -232,13 +231,13 @@ def test_index_shuffle_and_fold_in() -> None:
         assert isinstance(res, int) and 0 <= res <= 10
 
         scalar_arr = Tensor(np.array(2, dtype=np.int32), TensorConfig((), "int32", "cpu"))
-        res_scalar = as_tensor_obj(index_shuffle(scalar_arr, 123, np.array(5)))
+        res_scalar = ensure_tensor_obj(index_shuffle(scalar_arr, 123, np.array(5)))
         assert res_scalar.shape == ()
 
         vec_arr = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
-        res_vec = as_tensor_obj(index_shuffle(vec_arr, 123, [5]))
+        res_vec = ensure_tensor_obj(index_shuffle(vec_arr, 123, [5]))
         assert res_vec.shape == (2,)
-        res_list = as_tensor_obj(index_shuffle([1, 2], 123, 5))
+        res_list = ensure_tensor_obj(index_shuffle([1, 2], 123, 5))
         assert res_list.shape == ()
         res_empty_max = index_shuffle(vec_arr, 123, [])
         assert res_empty_max is vec_arr
@@ -258,7 +257,7 @@ def test_stateless_split() -> None:
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert as_tensor(_get_attr(res, "shape")) == (3, 2)
+        assert ensure_eager_tensor(res).shape == (3, 2)
     finally:
         config.eager_mode = orig
 

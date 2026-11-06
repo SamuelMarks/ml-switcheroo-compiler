@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .frontend import sobol_sample
@@ -669,8 +669,7 @@ class categorical(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_1
+        return extract_shape(inputs)
 
 
 @register_op("dirichlet")
@@ -690,8 +689,7 @@ class dirichlet(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_2
+        return extract_shape(inputs)
 
 
 @register_op("binomial")
@@ -711,8 +709,7 @@ class binomial(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_3
+        return extract_shape(inputs)
 
 
 @register_op("truncated_normal")
@@ -732,8 +729,7 @@ class truncated_normal(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_4
+        return extract_shape(inputs)
 
 
 @register_op("permutation")
@@ -753,8 +749,7 @@ class permutation(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_5: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_5
+        return extract_shape(inputs)
 
 
 @register_op("choice")
@@ -774,5 +769,4 @@ class choice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_6: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_6
+        return extract_shape(inputs)

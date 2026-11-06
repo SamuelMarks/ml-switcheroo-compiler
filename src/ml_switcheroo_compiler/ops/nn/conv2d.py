@@ -7,12 +7,13 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
 from ml_switcheroo_compiler.ops.registry import get_op
 
+from .conv1d import _ConvHyperparamsProtocol
 from .conv_utils import _build_conv_config, _prepare_depthwise_conv
 
 
@@ -25,7 +26,7 @@ class ConvHyperparams(pydantic.BaseModel):
     padding: str | Sequence[tuple[int, int]] = "VALID"
 
 
-def conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def conv2d(lhs: Tensor, rhs: Tensor, config_obj: ConvConfig | TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """2D Convolution.
 
     Args:
@@ -39,8 +40,9 @@ def conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs
     """
     if config_obj is None:
         config_obj = _build_conv_config(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)))
+    assert isinstance(config_obj, ConvConfig)
 
-    return conv_general_dilated(lhs, rhs, _cast_val(ConvConfig, config_obj))
+    return conv_general_dilated(lhs, rhs, config_obj)
 
 
 def conv2d_transpose(
@@ -65,7 +67,7 @@ def conv2d_transpose(
     return conv_transpose(lhs, rhs, strides, padding)
 
 
-def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: ConvConfig | TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """2D Depthwise Convolution.
 
     Args:
@@ -78,15 +80,16 @@ def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None
         Tensor: Result.
     """
     dimension_numbers = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
-    rhs_reshaped, config_obj = _get_attr(_prepare_depthwise_conv(lhs, rhs, 2, dimension_numbers, config_obj, **kwargs), "__iter__")()
-    return conv_general_dilated(lhs, rhs_reshaped, _cast_val(ConvConfig, config_obj))
+    rhs_reshaped, config_obj = _prepare_depthwise_conv(lhs, rhs, 2, dimension_numbers, config_obj, **kwargs)
+    assert isinstance(config_obj, ConvConfig)
+    return conv_general_dilated(lhs, ensure_tensor(rhs_reshaped), config_obj)
 
 
 def separable_conv2d(
     lhs: Tensor,
     depthwise_filter: Tensor,
     pointwise_filter: Tensor,
-    config: TensorOrScalar = None,
+    config: ConvHyperparams | TensorOrScalar = None,
     **kwargs: TensorOrScalar,
 ) -> TensorOrScalar:
     """2D Separable Convolution.
@@ -101,9 +104,8 @@ def separable_conv2d(
     Returns:
         Tensor: Result.
     """
-    config = config or ConvHyperparams()
-    strides, padding = _get_attr(config, "strides"), _get_attr(config, "padding")
-    kwargs["strides"] = strides
-    kwargs["padding"] = padding
+    cfg = config if isinstance(config, (ConvHyperparams, _ConvHyperparamsProtocol)) else ConvHyperparams()
+    kwargs["strides"] = cfg.strides
+    kwargs["padding"] = cfg.padding
     depthwise_out = depthwise_conv2d(lhs, depthwise_filter, None, **kwargs)
-    return conv2d(as_tensor_obj(depthwise_out), pointwise_filter, None, strides=1, padding="VALID")
+    return conv2d(ensure_tensor(depthwise_out), pointwise_filter, None, strides=1, padding="VALID")

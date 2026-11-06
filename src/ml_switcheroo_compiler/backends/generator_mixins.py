@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -153,7 +153,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
-        return as_tensor(as_callable(generic_array)(mod, data, dtype))
+        return ensure_eager_tensor(ensure_callable(generic_array)(mod, data, dtype))
 
     @classmethod
     def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -169,7 +169,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
-        return as_tensor(as_callable(generic_asarray)(mod, data))
+        return ensure_eager_tensor(ensure_callable(generic_asarray)(mod, data))
 
     @classmethod
     def item(cls: type, data: EagerValue) -> float:
@@ -185,4 +185,4 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
-        return as_float(as_callable(generic_item)(mod, data))
+        return ensure_float(ensure_callable(generic_item)(mod, data))

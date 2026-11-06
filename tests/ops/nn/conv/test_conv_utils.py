@@ -11,7 +11,6 @@ import ml_switcheroo_compiler.tracing.state as state
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_utils import (
     _build_conv_config,
@@ -29,7 +28,7 @@ from ml_switcheroo_compiler.ops.nn.conv_utils import (
     dilation2d,
     erosion2d,
 )
-from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -53,10 +52,10 @@ def test_prepare_depthwise_conv_extra() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_utils.reshape") as mock_reshape:
             mock_reshape.return_value = "reshaped"
-            rhs_reshaped, conf = as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1, 2), (0, 1, 2), (0, 1, 2)), strides=1, lhs_dilation=1, rhs_dilation=1)
+            rhs_reshaped, conf = ensure_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1, 2), (0, 1, 2), (0, 1, 2)), strides=1, lhs_dilation=1, rhs_dilation=1)
             assert rhs_reshaped == "reshaped"
-            assert as_tensor(_get_attr(conf, "lhs_dilation")) == (1,)
-            assert as_tensor(_get_attr(conf, "rhs_dilation")) == (1,)
+            assert ensure_eager_tensor(ensure_eager_tensor(conf).lhs_dilation) == (1,)
+            assert ensure_eager_tensor(ensure_eager_tensor(conf).rhs_dilation) == (1,)
 
 
 def create_eager_tensor(data: EagerValue) -> EagerValue:
@@ -65,12 +64,12 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
     Args:
         data: Test parameter `data`.
     """
-    return as_callable(Tensor)(
+    return ensure_callable(Tensor)(
         data,
-        as_callable(TensorConfig)(
-            as_tensor(_get_attr(data, "shape")),
+        ensure_callable(TensorConfig)(
+            ensure_eager_tensor(data).shape,
             DType.Float32,
-            as_callable(Device)("cpu"),
+            ensure_callable(Device)("cpu"),
         ),
     )
 
@@ -80,24 +79,24 @@ def test_conv_utils_missing_branches() -> None:
     dim_nums = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
 
     cfg = _build_conv_config({"strides": (1, 1), "lhs_dilation": (1, 1), "rhs_dilation": (1, 1)}, dim_nums)
-    assert _get_attr(cfg, "window_strides", None) == (1, 1)
+    assert ensure_eager_tensor(cfg).window_strides == (1, 1)
 
     cfg_ints = _build_conv_config({"strides": 1, "lhs_dilation": 1, "rhs_dilation": 1}, dim_nums)
-    assert _get_attr(cfg_ints, "window_strides", None) == (1, 1)
-    assert _get_attr(cfg_ints, "lhs_dilation", None) == (1, 1)
-    assert _get_attr(cfg_ints, "rhs_dilation", None) == (1, 1)
+    assert ensure_eager_tensor(cfg_ints).window_strides == (1, 1)
+    assert ensure_eager_tensor(cfg_ints).lhs_dilation == (1, 1)
+    assert ensure_eager_tensor(cfg_ints).rhs_dilation == (1, 1)
 
     with ConfigContext(eager_mode=True):
         lhs = create_eager_tensor(np.ones((1, 2, 2, 3)))
         rhs = create_eager_tensor(np.ones((2, 2, 3, 1)))
 
-        r, c = as_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, config_obj="mock_config")
-        assert as_tensor(_get_attr(r, "shape")) == (2, 2, 1, 3)
+        r, c = ensure_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, config_obj="mock_config")
+        assert ensure_eager_tensor(r).shape == (2, 2, 1, 3)
         assert c == "mock_config"
 
-        r2, c2 = as_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, strides=(1, 1), lhs_dilation=(1, 1), rhs_dilation=(1, 1))
-        assert as_tensor(_get_attr(r2, "shape")) == (2, 2, 1, 3)
-        assert _get_attr(c2, "window_strides", None) == (1, 1)
+        r2, c2 = ensure_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, strides=(1, 1), lhs_dilation=(1, 1), rhs_dilation=(1, 1))
+        assert ensure_eager_tensor(r2).shape == (2, 2, 1, 3)
+        assert ensure_eager_tensor(c2).window_strides == (1, 1)
 
 
 def test_conv_utils_eager_and_trace_coverage() -> None:
@@ -120,7 +119,7 @@ def test_conv_utils_eager_and_trace_coverage() -> None:
     t = Tensor(np.array([1]), TensorConfig((1,), "int32", "cpu"))
 
     config.eager_mode = True
-    res_bias = as_tensor_obj(bias_add(t, t))
+    res_bias = ensure_tensor_obj(bias_add(t, t))
     np.testing.assert_allclose(np.asarray(res_bias.data), np.array([2]))
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend()):
@@ -129,35 +128,35 @@ def test_conv_utils_eager_and_trace_coverage() -> None:
         assert erosion2d(1, 2) == "dummy"
         assert conv_transpose(1, 2, (1, 2)) == "dummy"
 
-        res_filt_eager = as_tensor_obj(depthwise_conv2d_backprop_filter(t, (3, 3, 1, 1), t))
+        res_filt_eager = ensure_tensor_obj(depthwise_conv2d_backprop_filter(t, (3, 3, 1, 1), t))
         assert res_filt_eager.shape == (3, 3, 1, 1)
-        res_filt_int = as_tensor_obj(depthwise_conv2d_backprop_filter(t, 4, t))
+        res_filt_int = ensure_tensor_obj(depthwise_conv2d_backprop_filter(t, 4, t))
         assert res_filt_int.shape == (4,)
-        res_filt_t = as_tensor_obj(depthwise_conv2d_backprop_filter(t, t, t))
+        res_filt_t = ensure_tensor_obj(depthwise_conv2d_backprop_filter(t, t, t))
         assert res_filt_t.shape == (1,)
 
-        res_inp_eager = as_tensor_obj(depthwise_conv2d_backprop_input((1, 4, 4, 1), t, t))
+        res_inp_eager = ensure_tensor_obj(depthwise_conv2d_backprop_input((1, 4, 4, 1), t, t))
         assert res_inp_eager.shape == (1, 4, 4, 1)
-        res_inp_int = as_tensor_obj(depthwise_conv2d_backprop_input(4, t, t))
+        res_inp_int = ensure_tensor_obj(depthwise_conv2d_backprop_input(4, t, t))
         assert res_inp_int.shape == (4,)
-        res_inp_t = as_tensor_obj(depthwise_conv2d_backprop_input(t, t, t))
+        res_inp_t = ensure_tensor_obj(depthwise_conv2d_backprop_input(t, t, t))
         assert res_inp_t.shape == (1,)
 
     config.eager_mode = False
     state.global_tracing_state.start_tracing("test_conv_utils_trace")
     try:
-        res_col, res_seq = _cast_val("tuple[Tensor, Tensor]", collapse_repeated(t, t))
-        assert res_col.shape == (1,)
-        assert res_seq.shape == (1,)
-        res_ct = as_tensor_obj(conv_transpose(t, t, (1, 2)))
+        res_col, res_seq = ensure_eager_tensor(collapse_repeated(t, t))
+        assert ensure_eager_tensor(res_col).shape == (1,)
+        assert ensure_eager_tensor(res_seq).shape == (1,)
+        res_ct = ensure_tensor_obj(conv_transpose(t, t, (1, 2)))
         assert res_ct.shape == (1, 2)
-        res_dil = as_tensor_obj(dilation2d(t, t))
+        res_dil = ensure_tensor_obj(dilation2d(t, t))
         assert res_dil.shape == (1,)
-        res_ero = as_tensor_obj(erosion2d(t, t))
+        res_ero = ensure_tensor_obj(erosion2d(t, t))
         assert res_ero.shape == (1,)
-        res_filt_trace = as_tensor_obj(depthwise_conv2d_backprop_filter(t, (3, 3, 1, 1), t))
+        res_filt_trace = ensure_tensor_obj(depthwise_conv2d_backprop_filter(t, (3, 3, 1, 1), t))
         assert res_filt_trace.shape == (3, 3, 1, 1)
-        res_inp_trace = as_tensor_obj(depthwise_conv2d_backprop_input((1, 4, 4, 1), t, t))
+        res_inp_trace = ensure_tensor_obj(depthwise_conv2d_backprop_input((1, 4, 4, 1), t, t))
         assert res_inp_trace.shape == (1, 4, 4, 1)
     finally:
         state.global_tracing_state.stop_tracing()
@@ -173,9 +172,9 @@ def test_conv_utils_missing_others() -> None:
     try:
         t_loss = Tensor(np.array([2.0, 4.0], dtype=np.float32), TensorConfig((2,), "float32", "cpu"))
         t_weight = Tensor(np.array([0.5, 0.5], dtype=np.float32), TensorConfig((2,), "float32", "cpu"))
-        avg1 = as_tensor_obj(compute_average_loss(t_loss))
+        avg1 = ensure_tensor_obj(compute_average_loss(t_loss))
         np.testing.assert_allclose(np.asarray(avg1.data), 3.0)
-        avg2 = as_tensor_obj(compute_average_loss(t_loss, sample_weight=t_weight, global_batch_size=4))
+        avg2 = ensure_tensor_obj(compute_average_loss(t_loss, sample_weight=t_weight, global_batch_size=4))
         np.testing.assert_allclose(np.asarray(avg2.data), 1.5)
 
         t_4d = Tensor(np.ones((1, 2, 2, 1), dtype=np.float32), TensorConfig((1, 2, 2, 1), "float32", "cpu"))

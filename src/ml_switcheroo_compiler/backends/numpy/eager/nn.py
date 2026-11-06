@@ -6,16 +6,15 @@ import math
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import as_float, as_int, as_shape, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_float, ensure_int, ensure_shape, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _gelu(
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     *args: float | int | None,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -31,13 +30,13 @@ def _gelu(
     """
     erf_vec = np.vectorize(math.erf)
     x_f = np.asarray(x, dtype=float)
-    return as_ndarray(0.5 * x_f * (1.0 + erf_vec(x_f / np.sqrt(2.0))))
+    return ensure_ndarray(0.5 * x_f * (1.0 + erf_vec(x_f / np.sqrt(2.0))))
 
 
 @numpy_eager_registry.register("Relu")
 def _np_relu(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     *args: float | int | None,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -52,13 +51,13 @@ def _np_relu(
     Returns:
         np.ndarray: ReLU activated tensor.
     """
-    return as_ndarray(backend_module.maximum(x, 0.0))
+    return ensure_ndarray(backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("AlphaDropout")
 def _np_alpha_dropout(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     **kwargs: float | bool | int | tuple[int, ...] | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Alpha Dropout for self-normalizing neural networks.
@@ -72,28 +71,29 @@ def _np_alpha_dropout(
     Returns:
         np.ndarray: Output tensor with alpha dropout applied.
     """
+    x_arr = ensure_ndarray(x)
     rate_val = kwargs.get("rate", 0.5)
-    rate = float(as_float(rate_val)) if rate_val is not None else 0.5
+    rate = float(ensure_float(rate_val)) if rate_val is not None else 0.5
     training = bool(kwargs.get("training", False))
     if not training or rate == 0.0:
-        return x
+        return x_arr
     alpha = 1.6732632423543772
     scale = 1.0507009873554805
     alpha_p = -alpha * scale
     seed_val = kwargs.get("seed", None)
-    rng = np.random.default_rng(int(as_int(seed_val)) if seed_val is not None else None)
+    rng = np.random.default_rng(int(ensure_int(seed_val)) if seed_val is not None else None)
     noise_shape_val = kwargs.get("noise_shape", None)
-    noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x.shape
+    noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x_arr.shape
     mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
     a = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
     b = -a * alpha_p * rate
-    return as_ndarray(a * (np.multiply(x, mask) + alpha_p * (1.0 - mask)) + b)
+    return ensure_ndarray(a * (np.multiply(x_arr, mask) + alpha_p * (1.0 - mask)) + b)
 
 
 @numpy_eager_registry.register("ActivityRegularization")
 def _np_activity_regularization(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     **kwargs: float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate activity regularization passthrough.
@@ -106,13 +106,13 @@ def _np_activity_regularization(
     Returns:
         np.ndarray: Unmodified input tensor.
     """
-    return x
+    return ensure_ndarray(x)
 
 
 @numpy_eager_registry.register("Dropout")
 def _np_dropout(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     rate: float = 0.5,
     **kwargs: float | bool | int | tuple[int, ...] | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -128,23 +128,24 @@ def _np_dropout(
     Returns:
         np.ndarray: Dropout applied tensor.
     """
+    x_arr = ensure_ndarray(x)
     rate_val = kwargs.get("rate", rate)
-    rate_f = float(as_float(rate_val)) if rate_val is not None else rate
+    rate_f = float(ensure_float(rate_val)) if rate_val is not None else rate
     training = bool(kwargs.get("training", False))
     if not training or rate_f == 0.0:
-        return x
+        return x_arr
     seed_val = kwargs.get("seed", None)
-    rng = np.random.default_rng(int(as_int(seed_val)) if seed_val is not None else None)
+    rng = np.random.default_rng(int(ensure_int(seed_val)) if seed_val is not None else None)
     noise_shape_val = kwargs.get("noise_shape", None)
-    noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x.shape
+    noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x_arr.shape
     mask = rng.binomial(1, 1.0 - rate_f, size=noise_shape)
-    return as_ndarray(np.divide(np.multiply(x, mask), 1.0 - rate_f))
+    return ensure_ndarray(np.divide(np.multiply(x_arr, mask), 1.0 - rate_f))
 
 
 @numpy_eager_registry.register("TimeDistributed")
 def _np_time_distributed(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     **kwargs: str | float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply an operation over time steps of a sequential tensor.
@@ -157,20 +158,21 @@ def _np_time_distributed(
     Returns:
         np.ndarray: Time distributed transformed tensor.
     """
+    x_arr = ensure_ndarray(x)
     wrapped_op_name = str(kwargs.pop("wrapped_op_name"))
-    shape = x.shape
+    shape = x_arr.shape
     if len(shape) < MIN_CONV_RANK:
-        return np.asarray(get_active_backend().execute_op(wrapped_op_name, x, **kwargs))
-    flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
+        return np.asarray(get_active_backend().execute_op(wrapped_op_name, x_arr, **kwargs))
+    flat_x = np.reshape(x_arr, (shape[0] * shape[1], *shape[2:]))
     out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
-    out_shape = (shape[0], shape[1], *as_shape(_get_attr(out, "shape"))[1:])
-    return as_ndarray(_get_attr(np, "reshape")(out, out_shape))
+    out_shape = (shape[0], shape[1], *ensure_shape(get_backend_member(out, "shape"))[1:])
+    return ensure_ndarray(get_backend_member(np, "reshape")(out, out_shape))
 
 
 @numpy_eager_registry.register("Rope")
 def _np_rope(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     **kwargs: int | float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply Rotary Positional Encoding (RoPE) to embeddings.
@@ -196,7 +198,7 @@ def _np_rope(
     freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(base) / half_dim))
     angles = position[:, None] * freqs[None, :]
 
-    return as_ndarray(
+    return ensure_ndarray(
         backend_module.concatenate(
             [
                 x_np[..., :half_dim] * backend_module.cos(angles) - x_np[..., half_dim:] * backend_module.sin(angles),
@@ -210,7 +212,7 @@ def _np_rope(
 @numpy_eager_registry.register("Rrelu")
 def _np_rrelu(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    x: EagerValue,
     *args: float | int | None,
     **kwargs: float | bool | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -231,10 +233,10 @@ def _np_rrelu(
     upper = float(upper_val) if upper_val is not None else 1.0 / 3.0
     training = bool(kwargs.get("training", False))
 
-    x_data = backend_module.asarray(_get_attr(x, "data", x))
+    x_data = backend_module.asarray(get_backend_member(x, "data", x))
     if not training:
         alpha = (lower + upper) / 2.0
-        return as_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha))
+        return ensure_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha))
 
     alpha_arr = backend_module.random.uniform(lower, upper, size=x_data.shape)
-    return as_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha_arr))
+    return ensure_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha_arr))

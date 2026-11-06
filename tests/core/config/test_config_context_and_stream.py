@@ -7,8 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.config import config, disable_compile, enable_compile, enable_op_determinism, enable_tensor_float_32_execution, tensor_float_32_execution_enabled
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_module_type, as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_module_type
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
 def test_config_extras() -> None:
     """Test function test_config_extras."""
     config.seed = 42
-    assert as_tensor(config.seed) == 42
+    assert ensure_eager_tensor(config.seed) == 42
 
     config.op_determinism = False
     enable_op_determinism()
@@ -46,7 +45,7 @@ def test_config_extras() -> None:
         global_tracing_state = MockTracingState()
 
     orig_state = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    sys.modules["ml_switcheroo_compiler.tracing.state"] = as_module_type(MockStateMod())
+    sys.modules["ml_switcheroo_compiler.tracing.state"] = ensure_module_type(MockStateMod())
     config.eager_mode = True  # Even if true, is_tracing forces false
     assert not bool(config.eager_mode)
 
@@ -117,9 +116,9 @@ def test_eager_mode_stream_context() -> None:
     """Test function test_eager_mode_stream_context."""
     from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
 
-    with as_tensor(EagerMode()):
+    with ensure_eager_tensor(EagerMode()):
         assert config.eager_mode is True
-    with as_tensor(StreamContext("test")):
+    with ensure_eager_tensor(StreamContext("test")):
         assert config.current_stream == "test"
 
 
@@ -148,7 +147,7 @@ def test_config_eager_mode_branch() -> None:
         global_tracing_state = FakeTracingState()
 
     old = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    _get_attr(sys.modules, "__setitem__")("ml_switcheroo_compiler.tracing.state", FakeMod())
+    sys.modules["ml_switcheroo_compiler.tracing.state"] = ensure_module_type(FakeMod())
 
     config.eager_mode = True
     assert config.eager_mode is True

@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.core.config import (
     tensor_float_32_execution_enabled,
 )
 from ml_switcheroo_compiler.core.device import Device, DeviceType, Stream, StreamContext, exporter, get_logical_devices, get_memory_info, get_physical_devices
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -90,32 +90,32 @@ def test_stream_context_extra() -> None:
 def test_config_methods_extra() -> None:
     """Test."""
     config.seed = 42
-    assert as_tensor(config.seed) == 42
+    assert ensure_eager_tensor(config.seed) == 42
 
     config.backend = "numpy"
-    assert as_tensor(config.backend) == "numpy"
+    assert ensure_eager_tensor(config.backend) == "numpy"
 
     config.current_stream = "main"
-    assert as_tensor(config.current_stream) == "main"
+    assert ensure_eager_tensor(config.current_stream) == "main"
 
     config.layout_map = "layout"
-    assert as_tensor(config.layout_map) == "layout"
+    assert ensure_eager_tensor(config.layout_map) == "layout"
 
     config.jax_enable_x64 = True
-    assert as_tensor(config.jax_enable_x64)
+    assert ensure_eager_tensor(config.jax_enable_x64)
     config.jax_enable_x64 = False
 
     config.op_determinism = True
-    assert as_tensor(config.op_determinism)
+    assert ensure_eager_tensor(config.op_determinism)
 
     config.tensor_float_32_execution = True
-    assert as_tensor(config.tensor_float_32_execution)
+    assert ensure_eager_tensor(config.tensor_float_32_execution)
 
     disable_compile()
-    assert as_tensor(config.eager_mode)
+    assert ensure_eager_tensor(config.eager_mode)
 
     enable_compile()
-    assert not as_tensor(config.eager_mode)
+    assert not ensure_eager_tensor(config.eager_mode)
 
     enable_op_determinism()
     assert config.op_determinism
@@ -132,10 +132,10 @@ def test_eager_mode_with_tracing_state_extra() -> None:
 
     orig = global_tracing_state.is_tracing
     global_tracing_state.is_tracing = True
-    assert not as_tensor(config.eager_mode)
+    assert not ensure_eager_tensor(config.eager_mode)
 
     global_tracing_state.is_tracing = False
-    assert as_tensor(config.eager_mode)
+    assert ensure_eager_tensor(config.eager_mode)
     global_tracing_state.is_tracing = orig
 
 
@@ -147,9 +147,9 @@ def test_config_context_exceptions_extra() -> None:
     with pytest.raises(ValueError):
         with ConfigContext(unknown_key="val"):
             pass
-    with as_tensor(EagerMode()):
+    with ensure_eager_tensor(EagerMode()):
         pass
-    with as_tensor(ConfigStreamContext("stream_name")):
+    with ensure_eager_tensor(ConfigStreamContext("stream_name")):
         pass
 
 

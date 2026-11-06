@@ -8,13 +8,12 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ops.io.tf_io import (
     TFRecordOptions,
     TFRecordWriter,
     read_tfrecords,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -35,7 +34,7 @@ def test_tfrecord_writer_uncompressed() -> None:
 
         with TFRecordWriter(rec_path) as writer:
             for rec in records_to_write:
-                as_callable(writer.write)(rec)
+                ensure_callable(writer.write)(rec)
 
         # Read back and verify exact byte equality
         loaded = read_tfrecords(rec_path)
@@ -142,7 +141,7 @@ def test_tfrecord_writer_edge_cases() -> None:
         # Write None record
         none_path = os.path.join(tmpdir, "none.tfrecord")
         with TFRecordWriter(none_path) as writer:
-            as_callable(writer.write)(None)
+            ensure_callable(writer.write)(None)
         records = read_tfrecords(none_path)
         assert records == [b""]
 
@@ -163,6 +162,6 @@ def test_tfrecord_writer_edge_cases() -> None:
 
         zlib_empty_path = os.path.join(tmpdir, "zlib_empty.tfrecord")
         writer_zlib = TFRecordWriter(zlib_empty_path, TFRecordOptions("ZLIB"))
-        _set_attr(writer_zlib, "_compressor", DummyCompressor())
+        ensure_mutable(writer_zlib)._compressor = ensure_eager_tensor(DummyCompressor())
         writer_zlib.close()
         assert writer_zlib._closed

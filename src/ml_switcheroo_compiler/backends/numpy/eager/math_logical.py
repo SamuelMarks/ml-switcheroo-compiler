@@ -5,8 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("NotEqual")
@@ -174,7 +173,7 @@ def _np_assert(backend_module: BackendModuleProtocol, condition: EagerValue, **k
     Raises:
         AssertionError: An exception.
     """
-    if not _get_attr(np, "all")(condition):
+    if not get_backend_member(np, "all")(condition):
         data = kwargs.get("data", ["Assertion failed."])
         raise AssertionError(data)
     return backend_module.array(0)

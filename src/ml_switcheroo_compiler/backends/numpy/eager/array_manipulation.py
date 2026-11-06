@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_opt_int, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_int,
+    ensure_opt_int,
+    numpy_eager_registry,
+)
 from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @numpy_eager_registry.register("Resize")
@@ -42,7 +48,7 @@ def _np_band_part(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(_band_part)(*args, **kwargs)
+    return ensure_callable(_band_part)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diag")
@@ -75,7 +81,7 @@ def _np_unstack(backend_module: BackendModuleProtocol, x: EagerValue, axis: int 
     Returns:
             tuple[int, ...]: Result.
     """
-    return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, _get_attr(x, "shape")[axis], axis=axis)]
+    return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, get_backend_member(x, "shape")[axis], axis=axis)]
 
 
 @numpy_eager_registry.register("Reshape")
@@ -108,7 +114,7 @@ def _np_squeeze(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: int | None = as_opt_int(kwargs.get("axis", args[0] if len(args) > 0 else None))
+    axis: int | None = ensure_opt_int(kwargs.get("axis", args[0] if len(args) > 0 else None))
     return backend_module.squeeze(x, axis=axis)
 
 
@@ -157,12 +163,12 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
             tuple[int, ...]: Result.
     """
     t = args[0]
-    axis: int | None = as_opt_int(args[1] if len(args) > 1 else kwargs.get("axis"))
+    axis: int | None = ensure_opt_int(args[1] if len(args) > 1 else kwargs.get("axis"))
     index = args[2] if len(args) > 2 else kwargs.get("index")
-    if _has_attr(t, "numpy"):
-        t = _get_attr(t, "numpy")()
-    if _has_attr(index, "numpy"):
-        index = _get_attr(index, "numpy")()
+    if has_backend_member(t, "numpy"):
+        t = get_backend_member(t, "numpy")()
+    if has_backend_member(index, "numpy"):
+        index = get_backend_member(index, "numpy")()
     return np_mod.take_along_axis(t, index, axis=axis)
 
 
@@ -179,9 +185,9 @@ def stack_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
             tuple[int, ...]: Result.
     """
     raw_tensors = args[0] if len(args) > 0 else (kwargs.get("tensors") or [])
-    tensors = list(_get_attr(raw_tensors, "__iter__")()) if _has_attr(raw_tensors, "__iter__") else []
-    axis: int = as_int(args[1] if len(args) > 1 else kwargs.get("axis", 0))
-    arrays: list[EagerValue] = [_get_attr(t, "numpy")() if _has_attr(t, "numpy") else t for t in tensors]
+    tensors = ensure_eager_list(raw_tensors) if isinstance(raw_tensors, (list, tuple)) or has_backend_member(raw_tensors, "shape") else []
+    axis: int = ensure_int(args[1] if len(args) > 1 else kwargs.get("axis", 0))
+    arrays: list[EagerValue] = [get_backend_member(t, "numpy")() if has_backend_member(t, "numpy") else t for t in tensors]
     return np_mod.stack(arrays, axis=axis)
 
 
@@ -264,7 +270,7 @@ def _np_expand_dims(backend_module: BackendModuleProtocol, x: EagerValue, *args:
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: int | None = as_opt_int(args[0] if len(args) > 0 else kwargs.get("axis"))
+    axis: int | None = ensure_opt_int(args[0] if len(args) > 0 else kwargs.get("axis"))
     return backend_module.expand_dims(x, axis=axis)
 
 

@@ -7,8 +7,8 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data, extract_shape
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 from .conv1d import conv1d, depthwise_conv1d, separable_conv1d
@@ -40,12 +40,12 @@ def conv_transpose(
         backend = get_active_backend()
         data = backend.execute_op(
             op_name,
-            _get_attr(lhs, "data", lhs),
-            _get_attr(rhs, "data", rhs),
+            extract_data(lhs),
+            extract_data(rhs),
             strides=strides,
             padding=padding,
         )
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), lhs.dtype, lhs.device))
+        return Tensor(data, TensorConfig(extract_shape(data), lhs.dtype, lhs.device))
 
     return _emit_linalg_node(op_name, [lhs, rhs], {"strides": strides, "padding": padding}, [()], [lhs.dtype])
 
@@ -71,7 +71,7 @@ def conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return as_tensor_obj(
+        return ensure_tensor(
             conv1d(
                 inputs,
                 kernel,
@@ -82,7 +82,7 @@ def conv(
             )
         )
     elif spatial_rank == MATRIX_RANK:
-        return as_tensor_obj(
+        return ensure_tensor(
             conv2d(
                 inputs,
                 kernel,
@@ -93,7 +93,7 @@ def conv(
             )
         )
     elif spatial_rank == MIN_CONV_RANK:
-        return as_tensor_obj(
+        return ensure_tensor(
             conv3d(
                 inputs,
                 kernel,
@@ -128,7 +128,7 @@ def depthwise_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return as_tensor_obj(
+        return ensure_tensor(
             depthwise_conv1d(
                 inputs,
                 kernel,
@@ -139,7 +139,7 @@ def depthwise_conv(
             )
         )
     elif spatial_rank == MATRIX_RANK:
-        return as_tensor_obj(
+        return ensure_tensor(
             depthwise_conv2d(
                 inputs,
                 kernel,
@@ -177,7 +177,7 @@ def separable_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return as_tensor_obj(
+        return ensure_tensor(
             separable_conv1d(
                 inputs,
                 depthwise_kernel,
@@ -189,7 +189,7 @@ def separable_conv(
             )
         )
     elif spatial_rank == MATRIX_RANK:
-        return as_tensor_obj(
+        return ensure_tensor(
             separable_conv2d(
                 inputs,
                 depthwise_kernel,

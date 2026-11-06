@@ -11,9 +11,8 @@ import pytest
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_int, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -29,15 +28,15 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
     assert len(metal_gen.config.templates) >= 20
     core_ops = ["add", "sub", "mul", "div", "relu", "exp", "log", "tanh", "maximum", "silu", "gelu"]
     for op in core_ops:
-        assert as_tensor(op) in cuda_gen.config.templates
-        assert as_tensor(op) in rocm_gen.config.templates
-        assert as_tensor(op) in metal_gen.config.templates
-        cuda_wg = as_tensor(_get_attr(as_tensor(_get_attr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        metal_wg = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        rocm_wg = as_tensor(_get_attr(as_tensor(_get_attr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        assert as_tensor(isinstance(as_tensor(cuda_wg), list) and as_callable(len)(cuda_wg) == 3 and (as_tensor(_get_attr(cuda_wg, "__getitem__")(0)) > 0))
-        assert as_tensor(isinstance(as_tensor(metal_wg), list) and len(metal_wg) == 3 and (as_int(metal_wg[0]) > 0))
-        assert isinstance(as_tensor(rocm_wg), list) and len(rocm_wg) == 3 and (as_int(rocm_wg[0]) > 0)
+        assert ensure_eager_tensor(op) in cuda_gen.config.templates
+        assert ensure_eager_tensor(op) in rocm_gen.config.templates
+        assert ensure_eager_tensor(op) in metal_gen.config.templates
+        cuda_wg = ensure_eager_tensor(ensure_eager_tensor(cuda_gen.config.templates)[op].get)("workgroup_size")
+        metal_wg = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)[op].get)("workgroup_size")
+        rocm_wg = ensure_eager_tensor(ensure_eager_tensor(rocm_gen.config.templates)[op].get)("workgroup_size")
+        assert ensure_eager_tensor(isinstance(ensure_eager_tensor(cuda_wg), list) and ensure_callable(len)(cuda_wg) == 3 and (ensure_eager_tensor(cuda_wg)[0] > 0))
+        assert ensure_eager_tensor(isinstance(ensure_eager_tensor(metal_wg), list) and len(metal_wg) == 3 and (ensure_int(metal_wg[0]) > 0))
+        assert isinstance(ensure_eager_tensor(rocm_wg), list) and len(rocm_wg) == 3 and (ensure_int(rocm_wg[0]) > 0)
 
 
 def test_dynamic_buffer_allocation_and_launch() -> None:
@@ -77,18 +76,18 @@ def test_metal_native_execution_parity() -> None:
         pytest.skip("Apple Silicon Metal device/driver not available on host system")
     runner = MetalRunner()
     metal_gen = MetalCodeGenerator(IRGraph())
-    relu_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
+    relu_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["relu"].get)("body", "")
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
-    relu_res = as_callable(runner.execute_kernel)(relu_tpl, "relu", x)
-    as_callable(np.testing.assert_allclose)(relu_res, as_callable(np.maximum)(0.0, x))
-    add_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
+    relu_res = ensure_callable(runner.execute_kernel)(relu_tpl, "relu", x)
+    ensure_callable(np.testing.assert_allclose)(relu_res, ensure_callable(np.maximum)(0.0, x))
+    add_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["add"].get)("body", "")
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
-    add_res = as_callable(runner.execute_kernel)(add_tpl, "add", x, y)
-    as_callable(np.testing.assert_allclose)(add_res, x + y)
-    exp_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
+    add_res = ensure_callable(runner.execute_kernel)(add_tpl, "add", x, y)
+    ensure_callable(np.testing.assert_allclose)(add_res, x + y)
+    exp_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["exp"].get)("body", "")
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
-    exp_res = as_callable(runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
-    as_callable(np.testing.assert_allclose)(exp_res, as_callable(np.exp)(x_small), rtol=1e-05, atol=1e-05)
+    exp_res = ensure_callable(runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
+    ensure_callable(np.testing.assert_allclose)(exp_res, ensure_callable(np.exp)(x_small), rtol=1e-05, atol=1e-05)
 
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
@@ -172,38 +171,38 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
     ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
-    as_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
+    ensure_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("torch") is not None:
         import torch
 
         from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
         torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-        as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(torch_res).detach))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("jax") is not None:
         import jax.numpy as jnp
 
         from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
         jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-        as_callable(np.testing.assert_allclose)(as_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(ensure_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("mlx") is not None:
         import mlx.core as mx
 
         from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 
         mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-        as_callable(np.testing.assert_allclose)(as_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(ensure_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
     x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
-    ref_mean = as_callable(np.mean)(x_np, axis=-1, keepdims=True)
-    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
-    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
+    ref_mean = ensure_callable(np.mean)(x_np, axis=-1, keepdims=True)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
     x_act: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
     ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = 1.0 / (1.0 + np.exp(-x_act))
     ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.tanh(x_act)
-    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
-    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
 
 
 def test_unsupported_backend_eager_dispatch_raises_error() -> None:
@@ -296,14 +295,14 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
         assert op in rocm_gen.config.templates, f"Missing {op} in ROCm"
         assert op in metal_gen.config.templates, f"Missing {op} in Metal"
         c_tpl = cuda_gen.config.templates[op]
-        assert "float32" in _get_attr(c_tpl, "get")("type_mappings", {})
-        assert as_tensor(_get_attr(c_tpl, "get"))("grid_calc") is not None
+        assert "float32" in ensure_eager_tensor(c_tpl).get("type_mappings", {})
+        assert ensure_eager_tensor(ensure_eager_tensor(c_tpl).get)("grid_calc") is not None
         r_tpl = rocm_gen.config.templates[op]
-        assert "float32" in _get_attr(r_tpl, "get")("type_mappings", {})
-        assert as_tensor(_get_attr(r_tpl, "get"))("grid_calc") is not None
+        assert "float32" in ensure_eager_tensor(r_tpl).get("type_mappings", {})
+        assert ensure_eager_tensor(ensure_eager_tensor(r_tpl).get)("grid_calc") is not None
         m_tpl = metal_gen.config.templates[op]
-        assert "float32" in _get_attr(m_tpl, "get")("type_mappings", {})
-        assert as_tensor(_get_attr(m_tpl, "get"))("grid_calc") is not None
+        assert "float32" in ensure_eager_tensor(m_tpl).get("type_mappings", {})
+        assert ensure_eager_tensor(ensure_eager_tensor(m_tpl).get)("grid_calc") is not None
     g = IRGraph()
     n_in = IRNode("in0", "Input", shape_metadata=(10, 10), attributes={"dtype": "float32"})
     n_elu = IRNode("elu_op", "Elu", inputs=["in0"], shape_metadata=(10, 10), attributes={"dtype": "float32"})
@@ -351,8 +350,7 @@ def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, E
         assert np.allclose(out_jax, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    _get_attr(_state, "update")({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"x_np": x_np, "y_np": y_np, "z_ref": z_ref}))
 
 
 def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -369,34 +367,34 @@ def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, E
         y_tf = tf.constant(y_np)
         out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
         if out_tf.shape == z_ref.shape:
-            assert as_callable(np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
+            assert ensure_callable(np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
     try:
         import keras.ops as kops
 
         out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
-        assert as_callable(np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
+        assert ensure_callable(np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
     except (ImportError, ValueError):
         assert z_ref.shape == (8, 8)
     try:
         import dask.array as da
 
-        x_d = as_callable(as_tensor(_get_attr(da, "from_array")))(x_np)
-        y_d = as_callable(as_tensor(_get_attr(da, "from_array")))(y_np)
-        out_d = as_callable(
+        x_d = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).from_array))(x_np)
+        y_d = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).from_array))(y_np)
+        out_d = ensure_callable(
             (
-                as_callable(as_tensor(_get_attr(da, "matmul")))(
-                    as_callable(as_tensor(_get_attr(da, "maximum")))(0.0, x_d + y_d),
-                    as_callable(as_tensor(_get_attr(da, "sin")))(x_d),
+                ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).matmul))(
+                    ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).maximum))(0.0, x_d + y_d),
+                    ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).sin))(x_d),
                 )
-                - as_callable(as_tensor(_get_attr(da, "exp")))(-as_callable(as_tensor(_get_attr(da, "abs")))(y_d))
+                - ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).exp))(-ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).abs))(y_d))
             ).compute
         )()
-        assert as_callable(np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
+        assert ensure_callable(np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"x_np": x_np, "y_np": y_np, "z_ref": z_ref}))
 
 
 def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -409,10 +407,10 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
     try:
         import mlx.core as mx
 
-        x_m = as_callable(mx.array)(x_np)
-        y_m = as_callable(mx.array)(y_np)
-        out_m = as_callable(np.array)(as_callable(mx.matmul)(as_callable(mx.maximum)(0.0, x_m + y_m), as_callable(mx.sin)(x_m)) - as_callable(mx.exp)(-as_callable(mx.abs)(y_m)))
-        assert as_callable(np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
+        x_m = ensure_callable(mx.array)(x_np)
+        y_m = ensure_callable(mx.array)(y_np)
+        out_m = ensure_callable(np.array)(ensure_callable(mx.matmul)(ensure_callable(mx.maximum)(0.0, x_m + y_m), ensure_callable(mx.sin)(x_m)) - ensure_callable(mx.exp)(-ensure_callable(mx.abs)(y_m)))
+        assert ensure_callable(np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
     try:
@@ -421,7 +419,7 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
         x_cp = cp.asarray(x_np)
         y_cp = cp.asarray(y_np)
         out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
-        assert as_callable(np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
+        assert ensure_callable(np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
     except Exception:
         assert z_ref.shape == (8, 8)
 

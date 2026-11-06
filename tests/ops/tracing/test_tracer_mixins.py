@@ -7,11 +7,10 @@ import typing
 # ruff: noqa: E501
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -28,9 +27,9 @@ class MockProxyTensor(ProxyMathOverloadsMixin):
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
         """
-        _set_attr(self, "id", id)
-        _set_attr(self, "shape", shape)
-        _set_attr(self, "dtype", dtype)
+        ensure_mutable(self).id = ensure_eager_tensor(id)
+        ensure_mutable(self).shape = ensure_eager_tensor(shape)
+        ensure_mutable(self).dtype = ensure_eager_tensor(dtype)
 
 
 def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
@@ -52,7 +51,7 @@ def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
     with pytest.raises(TracingError):
         proxy @ proxy
     with pytest.raises(TracingError):
-        as_callable(proxy.assign)(proxy)
+        ensure_callable(proxy.assign)(proxy)
     global_tracing_state.is_tracing = True
     global_tracing_state.active_graph = LogicalGraph("Test")
     mocker.patch("ml_switcheroo_compiler.ir.shape_system.broadcast_shapes", return_value=(2, 3))
@@ -72,20 +71,20 @@ def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRNode
 
     node = IRNode("1", "ReadVariable", inputs=[], attributes={"variable_name": "var1"}, shape_metadata=(2, 3))
-    as_callable(global_tracing_state.add_node)(node)
-    res6 = as_callable(proxy.assign)(42)
+    ensure_callable(global_tracing_state.add_node)(node)
+    res6 = ensure_callable(proxy.assign)(42)
     assert res6.shape == ()
-    res7 = as_callable(proxy.assign)(proxy)
+    res7 = ensure_callable(proxy.assign)(proxy)
     assert res7.shape == (2, 3)
-    _set_attr(MockProxyTensor, "__add__", lambda self, other: as_callable(self._binary_op)(other, "Add"))
-    _set_attr(MockProxyTensor, "__sub__", lambda self, other: as_callable(self._binary_op)(other, "Sub"))
-    res8 = as_callable(proxy.assign_add)(proxy)
+    ensure_mutable(MockProxyTensor).__add__ = ensure_eager_tensor(lambda self, other: ensure_callable(self._binary_op)(other, "Add"))
+    ensure_mutable(MockProxyTensor).__sub__ = ensure_eager_tensor(lambda self, other: ensure_callable(self._binary_op)(other, "Sub"))
+    res8 = ensure_callable(proxy.assign_add)(proxy)
     assert res8.shape == (2, 3)
-    res9 = as_callable(proxy.assign_sub)(proxy)
+    res9 = ensure_callable(proxy.assign_sub)(proxy)
     assert res9.shape == (2, 3)
     proxy2 = MockProxyTensor("2", (2, 3), "float32")
     node2 = IRNode("2", "Add", inputs=["1", "1"], shape_metadata=(2, 3))
-    as_callable(global_tracing_state.add_node)(node2)
+    ensure_callable(global_tracing_state.add_node)(node2)
     with pytest.raises(ValueError):
-        as_callable(proxy2.assign)(proxy)
+        ensure_callable(proxy2.assign)(proxy)
     global_tracing_state.is_tracing = False

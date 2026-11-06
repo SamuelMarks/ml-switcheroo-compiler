@@ -6,7 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.random.distributions_discrete import binomial, categorical, geometric, multinomial, poisson, rademacher
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -32,12 +32,12 @@ def test_distributions_discrete_extra(mocker: EagerTensorProtocol) -> None:
     """
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete._emit_random_node", return_value="node")
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete._dispatch_random", return_value="dispatch")
-    assert as_callable(binomial)("key", "n", "p") == "node"
-    assert as_tensor(geometric("args")) == as_tensor("dispatch")
-    assert as_callable(poisson)("key", "lam") == "node"
-    assert as_tensor(rademacher("args")) == as_tensor("dispatch")
-    assert as_callable(multinomial)("key", 10, "pvals") == "node"
-    assert as_tensor(categorical("key", [1.0, 2.0])) == as_tensor("node")
+    assert ensure_callable(binomial)("key", "n", "p") == "node"
+    assert ensure_eager_tensor(geometric("args")) == ensure_eager_tensor("dispatch")
+    assert ensure_callable(poisson)("key", "lam") == "node"
+    assert ensure_eager_tensor(rademacher("args")) == ensure_eager_tensor("dispatch")
+    assert ensure_callable(multinomial)("key", 10, "pvals") == "node"
+    assert ensure_eager_tensor(categorical("key", [1.0, 2.0])) == ensure_eager_tensor("node")
 
 
 def test_distributions_discrete_more(mocker: EagerTensorProtocol) -> None:
@@ -49,8 +49,8 @@ def test_distributions_discrete_more(mocker: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.random.distributions_discrete import bernoulli, choice, permutation, randint
 
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete._emit_random_node", return_value="node")
-    assert as_tensor(randint("key", (), 0, 1)) == as_tensor("node")
-    assert as_tensor(bernoulli("key")) == as_tensor("node")
+    assert ensure_eager_tensor(randint("key", (), 0, 1)) == ensure_eager_tensor("node")
+    assert ensure_eager_tensor(bernoulli("key")) == ensure_eager_tensor("node")
 
     class MockTensorWithDtype:
         """Test class MockTensorWithDtype."""
@@ -64,8 +64,8 @@ def test_distributions_discrete_more(mocker: EagerTensorProtocol) -> None:
             self.shape = shape
             self.dtype = "float32"
 
-    assert as_callable(permutation)("key", as_callable(MockTensorWithDtype)((2, 3))) == "node"
-    assert as_callable(choice)("key", as_callable(MockTensorWithDtype)((2, 3))) == "node"
+    assert ensure_callable(permutation)("key", ensure_callable(MockTensorWithDtype)((2, 3))) == "node"
+    assert ensure_callable(choice)("key", ensure_callable(MockTensorWithDtype)((2, 3))) == "node"
 
 
 def test_distributions_discrete_none_shapes(mocker: EagerTensorProtocol) -> None:
@@ -77,10 +77,10 @@ def test_distributions_discrete_none_shapes(mocker: EagerTensorProtocol) -> None
     from ml_switcheroo_compiler.random.distributions_discrete import binomial, categorical, multinomial, poisson
 
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete._emit_random_node", return_value="node")
-    assert as_tensor(categorical("key", [1], shape=(1,))) == as_tensor("node")
-    assert as_tensor(binomial("key", 10, 0.5, shape=(1,))) == as_tensor("node")
-    assert as_tensor(poisson("key", 1.0, shape=(1,))) == as_tensor("node")
-    assert as_callable(multinomial)("key", 10, [0.5, 0.5], shape=(1,)) == "node"
+    assert ensure_eager_tensor(categorical("key", [1], shape=(1,))) == ensure_eager_tensor("node")
+    assert ensure_eager_tensor(binomial("key", 10, 0.5, shape=(1,))) == ensure_eager_tensor("node")
+    assert ensure_eager_tensor(poisson("key", 1.0, shape=(1,))) == ensure_eager_tensor("node")
+    assert ensure_callable(multinomial)("key", 10, [0.5, 0.5], shape=(1,)) == "node"
 
 
 def test_distributions_discrete_more2(mocker: EagerTensorProtocol) -> None:
@@ -92,7 +92,7 @@ def test_distributions_discrete_more2(mocker: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.random.distributions_discrete import bernoulli, categorical
 
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete._emit_random_node", return_value="node")
-    assert as_tensor(bernoulli("key", shape=(1,))) == as_tensor("node")
+    assert ensure_eager_tensor(bernoulli("key", shape=(1,))) == ensure_eager_tensor("node")
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     class M:
@@ -106,7 +106,7 @@ def test_distributions_discrete_more2(mocker: EagerTensorProtocol) -> None:
             self.device = "cpu"
 
     t = Tensor(M().data, TensorConfig((2, 3), "float32", "cpu"))
-    assert as_tensor(categorical("key", t)) == as_tensor("node")
+    assert ensure_eager_tensor(categorical("key", t)) == ensure_eager_tensor("node")
 
 
 def test_distributions_discrete_more3(mocker: EagerTensorProtocol) -> None:
@@ -131,4 +131,4 @@ def test_distributions_discrete_more3(mocker: EagerTensorProtocol) -> None:
             self.device = "cpu"
 
     t = Tensor(M().data, TensorConfig((2, 3), "float32", "cpu"))
-    assert as_tensor(choice("key", t, p=t)) == as_tensor("node")
+    assert ensure_eager_tensor(choice("key", t, p=t)) == ensure_eager_tensor("node")

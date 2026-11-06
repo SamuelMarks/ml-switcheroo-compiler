@@ -6,10 +6,10 @@ from collections.abc import Callable, Sequence  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
+from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_list, ensure_eager_tensor
 from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, invoke_callable
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
 from ml_switcheroo_compiler.ops.nn.dropout import dropout
@@ -20,6 +20,19 @@ from ml_switcheroo_compiler.ops.shape import (
     unstack,
 )
 from ml_switcheroo_compiler.ops.shape import flip as cf_reverse
+
+
+def _unpack_pair(val: TensorOrScalar) -> tuple[TensorOrScalar, TensorOrScalar]:
+    """Unpack a 2-element sequence result into a pair.
+
+    Args:
+        val (TensorOrScalar): 2-element sequence result.
+
+    Returns:
+        tuple[TensorOrScalar, TensorOrScalar]: Unpacked `(first, second)` pair.
+    """
+    assert isinstance(val, (tuple, list))
+    return val[0], val[1]
 
 
 class _PositionalRNNModel(pydantic.BaseModel):
@@ -34,7 +47,9 @@ class _PositionalRNNModel(pydantic.BaseModel):
             *args (TensorOrScalar): Positional field values.
             **kwargs (TensorOrScalar): Keyword field values.
         """
-        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
+        field_names = tuple(type(self).model_fields.keys())
+        pos_map = {field_names[i]: args[i] for i in range(min(len(field_names), len(args)))}
+        ensure_callable(super().__init__)(**{**pos_map, **kwargs})
 
 
 class RNNConfig(_PositionalRNNModel):
@@ -92,7 +107,7 @@ def scan(
     init: tuple[Tensor, ...],
     xs: Tensor,
     config: ScanConfig | None = None,
-) -> tuple[tuple[Tensor, ...], Tensor]:
+) -> tuple[tuple[Tensor, ...] | TensorOrScalar, Tensor]:
     """Scan loop construct.
 
     Args:
@@ -111,17 +126,17 @@ def scan(
         xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
-            xs_unstacked = list(as_callable(reversed)(xs_unstacked))
+            xs_unstacked = list(ensure_callable(reversed)(xs_unstacked))
 
-        carry = init
-        ys = []
+        carry: TensorOrScalar = init
+        ys: list[Tensor] = []
 
-        for x in _get_attr(xs_unstacked, "__iter__")():
-            carry, y = _get_attr(invoke_callable(fn_callable, carry, x), "__iter__")()
-            ys.append(y)
+        for x in ensure_eager_list(xs_unstacked):
+            carry, y = _unpack_pair(invoke_callable(fn_callable, carry, x))
+            ys.append(ensure_tensor(y))
 
-        carry_tup: tuple[Tensor, ...] = tuple(carry)
-        return (carry_tup, as_tensor_obj(stack(ys, axis=0)))
+        carry_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in ensure_eager_list(carry))
+        return (carry_tup, ensure_tensor(stack(ys, axis=0)))
     else:
         if conf.reverse:
             xs = cf_reverse(xs, (0,))
@@ -137,13 +152,13 @@ def scan(
                 tuple[tuple[Tensor, ...], Tensor]: Updated carry and step output.
             """
             res_step = invoke_callable(fn_callable, c, x_elem)
-            c_next, y_next = _get_attr(res_step, "__iter__")()
-            c_tup: tuple[Tensor, ...] = tuple(c_next) if isinstance(c_next, (list, tuple)) else (as_tensor_obj(c_next),)
-            return c_tup, as_tensor_obj(y_next)
+            c_next, y_next = _unpack_pair(res_step)
+            c_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in c_next) if isinstance(c_next, (list, tuple)) else (ensure_tensor(c_next),)
+            return c_tup, ensure_tensor(y_next)
 
         scan_res = cf_scan(_step_fn, init, xs, conf.length)
-        s_carry, s_y = _get_attr(scan_res, "__iter__")()
-        return s_carry, as_tensor_obj(s_y)
+        s_carry, s_y = _unpack_pair(scan_res)
+        return s_carry, ensure_tensor(s_y)
 
 
 def bidirectional(
@@ -181,7 +196,7 @@ def bidirectional(
     conf = config if config is not None else BidirectionalConfig()
     merged_out: Tensor | tuple[Tensor, Tensor]
     if conf.merge_mode == "concat":
-        merged_out = as_tensor_obj(concatenate([forward_out, backward_out], axis=-1))
+        merged_out = ensure_tensor(concatenate([forward_out, backward_out], axis=-1))
     elif conf.merge_mode == "sum":
         merged_out = add(forward_out, backward_out)
     elif conf.merge_mode == "mul":
@@ -227,9 +242,9 @@ def rnn(
         tuple: Result.
     """
     conf = config if config is not None else RNNConfig()
-    cell_callable = as_callable(cell_fn)
+    cell_callable = ensure_callable(cell_fn)
     if not conf.time_major:
-        inputs = as_tensor_obj(_permute_time_major(inputs))
+        inputs = ensure_tensor(_permute_time_major(inputs))
 
     def scan_fn(carry: Tensor, x: Tensor) -> TensorOrScalar:
         """Compute the scan fn tensor operation.
@@ -241,7 +256,7 @@ def rnn(
         Returns:
             tuple: Result.
         """
-        out, new_carry = _get_attr(cell_callable(x, carry), "__iter__")()
+        out, new_carry = _unpack_pair(cell_callable(x, carry))
         return new_carry, out
 
     final_state, outputs = scan(
@@ -254,9 +269,10 @@ def rnn(
         outputs = outputs[-1] if conf.time_major else outputs[:, -1]
 
     if not conf.time_major:
-        outputs = as_tensor_obj(_permute_time_major(outputs))
+        outputs = ensure_tensor(_permute_time_major(outputs))
 
-    return outputs, final_state
+    final_state_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in final_state) if isinstance(final_state, (tuple, list)) else (ensure_tensor(final_state),)
+    return outputs, final_state_tup
 
 
 class RNNCellDeviceWrapper:
@@ -284,7 +300,7 @@ class RNNCellDeviceWrapper:
         Returns:
         tuple: Result.
         """
-        return as_tensor(as_callable(self._cell)(inputs, state, **kwargs))
+        return ensure_eager_tensor(ensure_callable(self._cell)(inputs, state, **kwargs))
 
 
 class DropoutWrapperConfig(pydantic.BaseModel):
@@ -321,7 +337,7 @@ class RNNCellDropoutWrapper:
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: TensorOrScalar) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Run the cell with dropout.
 
         Args:
@@ -333,10 +349,10 @@ class RNNCellDropoutWrapper:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
         if self._config.input_keep_prob < 1.0:
-            inputs = as_tensor_obj(dropout(inputs, rate=1.0 - self._config.input_keep_prob))
-        out, new_state = _get_attr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
+            inputs = ensure_tensor(dropout(inputs, rate=1.0 - self._config.input_keep_prob))
+        out, new_state = _unpack_pair(ensure_callable(self._cell)(inputs, state, **kwargs))
         if self._config.output_keep_prob < 1.0:
-            out = dropout(out, rate=1.0 - self._config.output_keep_prob)
+            out = dropout(ensure_tensor(out), rate=1.0 - self._config.output_keep_prob)
         return out, new_state
 
 
@@ -365,9 +381,9 @@ class RNNCellResidualWrapper:
         Returns:
             tuple: Result.
         """
-        out, new_state = _get_attr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = _unpack_pair(ensure_callable(self._cell)(inputs, state, **kwargs))
         if self._residual_fn is not None:
-            out = as_callable(self._residual_fn)(inputs, out)
+            out = ensure_callable(self._residual_fn)(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

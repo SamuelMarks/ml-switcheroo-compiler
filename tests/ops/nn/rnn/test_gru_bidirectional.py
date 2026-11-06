@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.nn.gru import _compute_gru_gates, _sigmoid
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -27,7 +26,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(self)
+            return ensure_eager_tensor(self)
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -35,7 +34,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(self)
+            return ensure_eager_tensor(self)
 
         def __sub__(self, other: EagerValue) -> EagerValue:
             """Test function __sub__.
@@ -43,7 +42,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(self)
+            return ensure_eager_tensor(self)
 
         def __rsub__(self, other: EagerValue) -> EagerValue:
             """Test function __rsub__.
@@ -51,7 +50,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(self)
+            return ensure_eager_tensor(self)
 
     from ml_switcheroo_compiler.core.config import config
 
@@ -62,16 +61,16 @@ def test_gru_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
     try:
-        as_callable(_compute_gru_gates)(
-            [as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()],
-            [as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()],
-            as_callable(DummyTensor)(),
+        ensure_callable(_compute_gru_gates)(
+            [ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()],
+            [ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()],
+            ensure_callable(DummyTensor)(),
         )
-        as_callable(_sigmoid)(as_callable(DummyTensor)())
+        ensure_callable(_sigmoid)(ensure_callable(DummyTensor)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
-    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+    assert ensure_eager_tensor(state.global_tracing_state).add_node == orig_add_node

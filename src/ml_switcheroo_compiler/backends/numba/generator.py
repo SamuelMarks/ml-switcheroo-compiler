@@ -3,20 +3,55 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.generator_utils import _node_attrs
+from ml_switcheroo_compiler.backends.numba.eager import execute_op as _numba_execute_op
+from ml_switcheroo_compiler.backends.numba.types import (
+    array as _numba_array,
+)
+from ml_switcheroo_compiler.backends.numba.types import (
+    asarray as _numba_asarray,
+)
+from ml_switcheroo_compiler.backends.numba.types import (
+    item as _numba_item,
+)
+from ml_switcheroo_compiler.backends.numba.types import (
+    zeros as _numba_zeros,
+)
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_data
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _is_numba_compiled_fn(
+    fn: EagerValue,
+) -> typing.TypeGuard[TypedVariadicCallable[tuple[EagerValue, ...]]]:
+    """Type guard narrowing `fn` to a compiled Numba callable.
+
+    Args:
+        fn (EagerValue): Candidate callable.
+
+    Returns:
+        bool: True if callable.
+    """
+    return callable(fn)
 
 
 @register_backend("numba")
 class NumbaGenerator(PythonStringGenerator):
     """Generate JIT-accelerated Python/Numba code from IR."""
+
+    zeros = staticmethod(_numba_zeros)
+    array = staticmethod(_numba_array)
+    asarray = staticmethod(_numba_asarray)
+    item = staticmethod(_numba_item)
+    execute_op = staticmethod(_numba_execute_op)
 
     def __init__(
         self,
@@ -109,11 +144,10 @@ class NumbaGenerator(PythonStringGenerator):
         namespace: dict[str, EagerValue] = {}
         exec(source, namespace)
         func: EagerValue | None = namespace.get(self._func_name)
-        if not callable(func):
+        if not _is_numba_compiled_fn(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        _typed_ret_1: TypedVariadicCallable[tuple[EagerValue, ...]] = _cast_val(TypedVariadicCallable[tuple[EagerValue, ...]], func)
-        return _typed_ret_1
+        return func
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes emitting operations compiled by Numba.
@@ -139,7 +173,7 @@ class NumbaGenerator(PythonStringGenerator):
         Returns:
             str: Output variable name.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = _node_attrs(node)
         max_iters = attrs.get("max_iters", 100)
         init_val = input_vars[0] if input_vars else "0"
         res_var = f"v_{node.id.replace('-', '_')}"
@@ -164,7 +198,7 @@ class NumbaGenerator(PythonStringGenerator):
         Returns:
             str: Output variable name.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = _node_attrs(node)
         lower = attrs.get("lower", 0)
         upper = attrs.get("upper", 10)
         step = attrs.get("step", 1)
@@ -622,8 +656,8 @@ class NumbaGenerator(PythonStringGenerator):
             del runner_kwargs
             if compiled_fn is not None:
                 try:
-                    args_tuple = tuple(_get_attr(a, "data", a) for a in args)
-                    return as_callable(compiled_fn)(args_tuple)
+                    args_tuple = tuple(extract_data(a) for a in args)
+                    return ensure_callable(compiled_fn)(args_tuple)
                 except Exception:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -632,10 +666,10 @@ class NumbaGenerator(PythonStringGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = extract_data(arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=NumbaGenerator)
             if not graph.outputs:
-                return as_tensor(res_dict)
+                return ensure_eager_tensor(res_dict)
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

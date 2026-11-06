@@ -7,12 +7,12 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.mixins import TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-from tests.testing_utils import as_tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-    from ml_switcheroo_compiler.ops.base import OpDef
 
 
 class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
@@ -24,51 +24,60 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
         Args:
             name: Test parameter `name`.
         """
-        _typed_ret_1: OpDef = _cast_val("OpDef", lambda *args, **kwargs: (name, args))
-        return _typed_ret_1
+
+        class _MockOp(OpDef):
+            """Mock OpDef returning Tensor wrapping (name, args)."""
+
+            op_name = str(name)
+
+            def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> Tensor:
+                """Return Tensor wrapping (name, args) tuple."""
+                return Tensor((name, args), TensorConfig())
+
+        return _MockOp()
 
 
 def test_mixins() -> None:
     """Test function test_mixins."""
     t = DummyTensor()
 
-    assert as_tensor((t + 1)[0]) == as_tensor("Add")
-    assert as_tensor((1 + t)[0]) == as_tensor("Add")
-    assert as_tensor((t - 1)[0]) == as_tensor("Subtract")
-    assert as_tensor((1 - t)[0]) == as_tensor("Subtract")
-    assert as_tensor((t * 1)[0]) == as_tensor("Multiply")
-    assert as_tensor((1 * t)[0]) == as_tensor("Multiply")
-    assert as_tensor((t / 1)[0]) == as_tensor("TrueDivide")
-    assert as_tensor((1 / t)[0]) == as_tensor("TrueDivide")
-    assert as_tensor((t**1)[0]) == as_tensor("Power")
-    assert as_tensor((1**t)[0]) == as_tensor("Power")
-    assert as_tensor((t // 1)[0]) == as_tensor("FloorDivide")
-    assert as_tensor((1 // t)[0]) == as_tensor("FloorDivide")
-    assert as_tensor((t % 1)[0]) == as_tensor("Mod")
-    assert as_tensor((1 % t)[0]) == as_tensor("Mod")
+    assert ensure_eager_tensor((t + 1).data)[0] == ensure_eager_tensor("Add")
+    assert ensure_eager_tensor((1 + t).data)[0] == ensure_eager_tensor("Add")
+    assert ensure_eager_tensor((t - 1).data)[0] == ensure_eager_tensor("Subtract")
+    assert ensure_eager_tensor((1 - t).data)[0] == ensure_eager_tensor("Subtract")
+    assert ensure_eager_tensor((t * 1).data)[0] == ensure_eager_tensor("Multiply")
+    assert ensure_eager_tensor((1 * t).data)[0] == ensure_eager_tensor("Multiply")
+    assert ensure_eager_tensor((t / 1).data)[0] == ensure_eager_tensor("TrueDivide")
+    assert ensure_eager_tensor((1 / t).data)[0] == ensure_eager_tensor("TrueDivide")
+    assert ensure_eager_tensor((t**1).data)[0] == ensure_eager_tensor("Power")
+    assert ensure_eager_tensor((1**t).data)[0] == ensure_eager_tensor("Power")
+    assert ensure_eager_tensor((t // 1).data)[0] == ensure_eager_tensor("FloorDivide")
+    assert ensure_eager_tensor((1 // t).data)[0] == ensure_eager_tensor("FloorDivide")
+    assert ensure_eager_tensor((t % 1).data)[0] == ensure_eager_tensor("Mod")
+    assert ensure_eager_tensor((1 % t).data)[0] == ensure_eager_tensor("Mod")
 
-    assert as_tensor((t & 1)[0]) == as_tensor("BitwiseAnd")
-    assert as_tensor((1 & t)[0]) == as_tensor("BitwiseAnd")
-    assert as_tensor((t | 1)[0]) == as_tensor("BitwiseOr")
-    assert as_tensor((1 | t)[0]) == as_tensor("BitwiseOr")
-    assert as_tensor((t ^ 1)[0]) == as_tensor("BitwiseXor")
-    assert as_tensor((1 ^ t)[0]) == as_tensor("BitwiseXor")
-    assert as_tensor((t << 1)[0]) == as_tensor("LeftShift")
-    assert as_tensor((1 << t)[0]) == as_tensor("LeftShift")
-    assert as_tensor((t >> 1)[0]) == as_tensor("RightShift")
-    assert as_tensor((1 >> t)[0]) == as_tensor("RightShift")
+    assert ensure_eager_tensor((t & 1).data)[0] == ensure_eager_tensor("BitwiseAnd")
+    assert ensure_eager_tensor((1 & t).data)[0] == ensure_eager_tensor("BitwiseAnd")
+    assert ensure_eager_tensor((t | 1).data)[0] == ensure_eager_tensor("BitwiseOr")
+    assert ensure_eager_tensor((1 | t).data)[0] == ensure_eager_tensor("BitwiseOr")
+    assert ensure_eager_tensor((t ^ 1).data)[0] == ensure_eager_tensor("BitwiseXor")
+    assert ensure_eager_tensor((1 ^ t).data)[0] == ensure_eager_tensor("BitwiseXor")
+    assert ensure_eager_tensor((t << 1).data)[0] == ensure_eager_tensor("LeftShift")
+    assert ensure_eager_tensor((1 << t).data)[0] == ensure_eager_tensor("LeftShift")
+    assert ensure_eager_tensor((t >> 1).data)[0] == ensure_eager_tensor("RightShift")
+    assert ensure_eager_tensor((1 >> t).data)[0] == ensure_eager_tensor("RightShift")
 
-    assert as_tensor((-t)[0]) == as_tensor("Negative")
-    assert as_tensor((+t)[0]) == as_tensor("Positive")
-    assert as_tensor(abs(t)[0]) == as_tensor("Abs")
-    assert as_tensor((~t)[0]) == as_tensor("BitwiseNot")
+    assert ensure_eager_tensor((-t).data)[0] == ensure_eager_tensor("Negative")
+    assert ensure_eager_tensor((+t).data)[0] == ensure_eager_tensor("Positive")
+    assert ensure_eager_tensor(abs(t).data)[0] == ensure_eager_tensor("Abs")
+    assert ensure_eager_tensor((~t).data)[0] == ensure_eager_tensor("BitwiseNot")
 
-    assert as_tensor((t < 1)[0]) == "Less"
-    assert as_tensor((t > 1)[0]) == "Greater"
-    assert as_tensor((t <= 1)[0]) == "LessEqual"
-    assert as_tensor((t >= 1)[0]) == "GreaterEqual"
-    assert as_tensor(_get_attr((as_tensor(t) == as_tensor(1)), "__getitem__")(0)) == as_tensor("Equal")
-    assert as_tensor(_get_attr((as_tensor(t) != as_tensor(1)), "__getitem__")(0)) == as_tensor("NotEqual")
+    assert ensure_eager_tensor((t < 1).data)[0] == "Less"
+    assert ensure_eager_tensor((t > 1).data)[0] == "Greater"
+    assert ensure_eager_tensor((t <= 1).data)[0] == "LessEqual"
+    assert ensure_eager_tensor((t >= 1).data)[0] == "GreaterEqual"
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(t) == ensure_eager_tensor(1)).data)[0] == ensure_eager_tensor("Equal")
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(t) != ensure_eager_tensor(1)).data)[0] == ensure_eager_tensor("NotEqual")
 
     assert hash(t) == id(t)
 

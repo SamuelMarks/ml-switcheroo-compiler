@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_eager_list, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_list, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -17,6 +19,13 @@ try:
     da = _da
 except ImportError:
     da = None
+
+
+@typing.runtime_checkable
+class _OptionsConfigProtocol(typing.Protocol):
+    """Protocol for backend configs exposing `.options`."""
+
+    options: EagerValue
 
 
 @register_backend("dask")
@@ -48,9 +57,9 @@ class DaskGenerator(PythonStringGenerator):
         """
         import dask.distributed as dask_dist
 
-        client_cls = as_callable(_get_attr(dask_dist, "Client"))
-        backend_config = kwargs.get("backend_config")
-        opts = _get_attr(backend_config, "options") if backend_config is not None and _has_attr(backend_config, "options") else None
+        client_cls = ensure_callable(ensure_mod(dask_dist).Client)
+        backend_config: EagerValue = kwargs.get("backend_config")
+        opts = backend_config.options if isinstance(backend_config, _OptionsConfigProtocol) else None
         if isinstance(opts, dict) and opts and "scheduler_address" in opts:
             client_cls(opts["scheduler_address"])
         else:
@@ -120,24 +129,24 @@ class DaskGenerator(PythonStringGenerator):
             Returns:
                 EagerValue: Output tensor or collection of tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if _has_attr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return as_tensor(evaluated)
+            return ensure_eager_tensor(evaluated)
 
         try:
             import dask
             import dask.array as da
 
-            delayed_fn = as_callable(as_callable(_get_attr(dask, "delayed"))(forward_fn))
+            delayed_fn = ensure_callable(ensure_mod(dask).delayed(forward_fn))
 
             def dask_aot_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute optimized Dask task graph.
@@ -149,9 +158,9 @@ class DaskGenerator(PythonStringGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                da_args = [as_callable(_get_attr(da, "from_array"))(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                da_args = [ensure_mod(da).from_array(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 task = delayed_fn(*da_args)
-                return as_tensor(as_eager_list(as_callable(_get_attr(dask, "compute"))(task))[0])
+                return ensure_eager_tensor(ensure_eager_list(ensure_mod(dask).compute(task))[0])
 
             return dask_aot_runner
         except Exception:

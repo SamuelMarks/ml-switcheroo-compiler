@@ -12,7 +12,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.cholesky import CholeskyEx, cholesky_ex
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -31,14 +31,14 @@ def test_cholesky_ex() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.array([[1.0, 0.0], [0.0, 1.0]]), np.array(0))
         mock_backend.return_value.array = lambda x: x
-        (res1, res2) = as_callable(cholesky_ex)(t, check_errors=True)
-        assert isinstance(as_tensor(res1), Tensor)
-        assert isinstance(as_tensor(res2), Tensor)
+        (res1, res2) = ensure_callable(cholesky_ex)(t, check_errors=True)
+        assert isinstance(ensure_eager_tensor(res1), Tensor)
+        assert isinstance(ensure_eager_tensor(res2), Tensor)
     config.eager_mode = False
     cholesky_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.cholesky"]
     with patch.object(cholesky_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_L", "mock_info")
-        (res1, res2) = as_callable(cholesky_ex)(t, check_errors=False)
+        (res1, res2) = ensure_callable(cholesky_ex)(t, check_errors=False)
         assert res1 == "mock_L"
         mock_emit.assert_called_once()
 

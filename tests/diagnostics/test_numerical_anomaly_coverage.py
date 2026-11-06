@@ -9,7 +9,7 @@ import pytest
 
 import ml_switcheroo_compiler.diagnostics.numerical_anomaly as num_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -72,7 +72,7 @@ def test_numerical_anomaly_exhaustive() -> None:
         class _NonArray:
             """Non-array dummy class for testing exception handling."""
 
-        bad_t = as_callable(Tensor)(as_callable(_NonArray)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
-        as_callable(num_mod.check_numerical_anomaly)(bad_t)
+        bad_t = ensure_callable(Tensor)(ensure_callable(_NonArray)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+        ensure_callable(num_mod.check_numerical_anomaly)(bad_t)
     finally:
         config.eager_mode = prev_eager

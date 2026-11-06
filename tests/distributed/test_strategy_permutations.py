@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -30,11 +30,11 @@ def test_strategy_exhaustive_extra() -> None:
     with patch("os.path.exists", return_value=True):
         with patch("builtins.open", mock_open(read_data=yaml.dump({"strategies": {"test": "val"}}))):
             res = _load_strategy_config()
-            assert as_tensor(res) == as_tensor({"test": "val"})
+            assert ensure_eager_tensor(res) == ensure_eager_tensor({"test": "val"})
 
         with patch("builtins.open", mock_open(read_data=yaml.dump({"test2": "val2"}))):
-            res2 = as_tensor(_load_webrtc_topology())
-            assert res2 == as_tensor({"test2": "val2"})
+            res2 = ensure_eager_tensor(_load_webrtc_topology())
+            assert res2 == ensure_eager_tensor({"test2": "val2"})
 
     # Test PS Hooks
     ps = ParameterServerStrategy()

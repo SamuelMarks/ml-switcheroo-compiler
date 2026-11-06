@@ -6,7 +6,6 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.utils import (
     _dtype_to_descr,
     _extract_arr_bytes,
@@ -24,7 +23,7 @@ from ml_switcheroo_compiler.serialization.utils import (
     save_ir_graph,
     to_numpy,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -77,7 +76,7 @@ class MockBadTensor:
 def test_extract_numpy_weights() -> None:
     """Test function test_extract_numpy_weights."""
     w = {"a": MockTensor("a_data"), "b": MockTensorWithData("b_data"), "c": MockListTensor(), "d": MockBadTensor()}
-    res = as_callable(_extract_numpy_weights)(w)
+    res = ensure_callable(_extract_numpy_weights)(w)
     assert res["a"] == "a_data"
     assert res["b"] == "b_data"
     assert res["c"] == [1, 2]
@@ -85,10 +84,10 @@ def test_extract_numpy_weights() -> None:
 
 def test_to_numpy() -> None:
     """Test function test_to_numpy."""
-    assert as_callable(to_numpy)(as_callable(MockTensor)("a_data")) == "a_data"
-    assert as_callable(to_numpy)(as_callable(MockTensorWithData)("b_data")) == "b_data"
-    assert as_callable(to_numpy)(as_callable(MockListTensor)()) == [1, 2]
-    assert isinstance(as_callable(to_numpy)(as_callable(MockBadTensor)()), MockBadTensor)
+    assert ensure_callable(to_numpy)(ensure_callable(MockTensor)("a_data")) == "a_data"
+    assert ensure_callable(to_numpy)(ensure_callable(MockTensorWithData)("b_data")) == "b_data"
+    assert ensure_callable(to_numpy)(ensure_callable(MockListTensor)()) == [1, 2]
+    assert isinstance(ensure_callable(to_numpy)(ensure_callable(MockBadTensor)()), MockBadTensor)
 
 
 def test_concatenate_arrays(mocker: EagerTensorProtocol) -> None:
@@ -98,7 +97,7 @@ def test_concatenate_arrays(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mocker.patch("ml_switcheroo_compiler.ops.concatenate", return_value="concat")
-    assert as_callable(concatenate_arrays)([1, 2]) == "concat"
+    assert ensure_callable(concatenate_arrays)([1, 2]) == "concat"
 
 
 def test_is_numpy_array() -> None:
@@ -106,7 +105,7 @@ def test_is_numpy_array() -> None:
     import numpy as np
 
     assert is_numpy_array(np.array([1]))
-    assert as_callable(is_numpy_array)(as_callable(MockTensor)())
+    assert ensure_callable(is_numpy_array)(ensure_callable(MockTensor)())
 
     class Arr:
         """Test class Arr."""
@@ -115,7 +114,7 @@ def test_is_numpy_array() -> None:
             """Test function __array__."""
             return np.array([1])
 
-    assert as_callable(is_numpy_array)(as_callable(Arr)())
+    assert ensure_callable(is_numpy_array)(ensure_callable(Arr)())
     assert not is_numpy_array(1)
 
 
@@ -128,7 +127,7 @@ def test_dtype_to_descr() -> None:
 
         value = "unknown"
 
-    assert as_callable(_dtype_to_descr)(as_callable(FakeDtype)()) == "<f4"
+    assert ensure_callable(_dtype_to_descr)(ensure_callable(FakeDtype)()) == "<f4"
     assert _dtype_to_descr(DType.Int64) == "<i8"
     assert _dtype_to_descr("float32") == "<f4"
     assert _dtype_to_descr("unknown") == "<f4"
@@ -143,14 +142,14 @@ def test_extract_arr_shape_dtype() -> None:
         shape = (2, 3)
         dtype = type("D", (), {"name": "float32"})()
 
-    assert as_callable(_extract_arr_shape_dtype)(as_callable(Arr)()) == ((2, 3), "float32")
+    assert ensure_callable(_extract_arr_shape_dtype)(ensure_callable(Arr)()) == ((2, 3), "float32")
 
     class Arr2:
         """Test class Arr2."""
 
         pass
 
-    assert as_callable(_extract_arr_shape_dtype)(as_callable(Arr2)()) == ((), "<f4")
+    assert ensure_callable(_extract_arr_shape_dtype)(ensure_callable(Arr2)()) == ((), "<f4")
 
 
 def test_get_shape_and_dtype() -> None:
@@ -170,7 +169,7 @@ def test_get_shape_and_dtype() -> None:
 
             return Arr()
 
-    assert as_callable(_get_shape_and_dtype)(as_callable(EvalTensor)()) == ((2,), "float32")
+    assert ensure_callable(_get_shape_and_dtype)(ensure_callable(EvalTensor)()) == ((2,), "float32")
 
     class NpyTensor:
         """Test class NpyTensor."""
@@ -186,14 +185,14 @@ def test_get_shape_and_dtype() -> None:
 
             return Arr()
 
-    assert as_callable(_get_shape_and_dtype)(as_callable(NpyTensor)()) == ((3,), "int32")
+    assert ensure_callable(_get_shape_and_dtype)(ensure_callable(NpyTensor)()) == ((3,), "int32")
 
     class DataNpyTensor:
         """Test class DataNpyTensor."""
 
         data = NpyTensor()
 
-    assert as_callable(_get_shape_and_dtype)(as_callable(DataNpyTensor)()) == ((3,), "int32")
+    assert ensure_callable(_get_shape_and_dtype)(ensure_callable(DataNpyTensor)()) == ((3,), "int32")
 
     class SimpleTensor:
         """Test class SimpleTensor."""
@@ -201,7 +200,7 @@ def test_get_shape_and_dtype() -> None:
         shape = (4,)
         dtype = "float32"
 
-    assert as_callable(_get_shape_and_dtype)(as_callable(SimpleTensor)()) == ((4,), "float32")
+    assert ensure_callable(_get_shape_and_dtype)(ensure_callable(SimpleTensor)()) == ((4,), "float32")
 
 
 def test_extract_arr_bytes() -> None:
@@ -214,15 +213,18 @@ def test_extract_arr_bytes() -> None:
             """Test function tobytes."""
             return b"t1"
 
-    assert as_callable(_extract_arr_bytes)(as_callable(T1)()) == b"t1"
+    assert ensure_callable(_extract_arr_bytes)(ensure_callable(T1)()) == b"t1"
 
     class T2:
         """Test class T2."""
 
         data = T1()
 
-    assert as_callable(_extract_arr_bytes)(as_callable(T2)()) == b"t1"
-    assert as_callable(_extract_arr_bytes)(as_callable(object)()) == b""
+    class _BareDummy:
+        """Empty dummy class."""
+
+    assert ensure_callable(_extract_arr_bytes)(ensure_callable(T2)()) == b"t1"
+    assert ensure_callable(_extract_arr_bytes)(ensure_callable(_BareDummy)()) == b""
 
 
 def test_get_data_bytes() -> None:
@@ -241,9 +243,9 @@ def test_get_data_bytes() -> None:
                     """Test function tobytes."""
                     return b"eval"
 
-            return as_tensor(Arr())
+            return ensure_eager_tensor(Arr())
 
-    assert as_callable(_get_data_bytes)(as_callable(EvalT)()) == b"eval"
+    assert ensure_callable(_get_data_bytes)(ensure_callable(EvalT)()) == b"eval"
 
     class NumpyT:
         """Test class NumpyT."""
@@ -258,17 +260,20 @@ def test_get_data_bytes() -> None:
                     """Test function tobytes."""
                     return b"npy"
 
-            return as_tensor(Arr())
+            return ensure_eager_tensor(Arr())
 
-    assert as_callable(_get_data_bytes)(as_callable(NumpyT)()) == b"npy"
+    assert ensure_callable(_get_data_bytes)(ensure_callable(NumpyT)()) == b"npy"
 
     class DataNpyT:
         """Test class DataNpyT."""
 
         data = NumpyT()
 
-    assert as_callable(_get_data_bytes)(as_callable(DataNpyT)()) == b"npy"
-    assert as_callable(_get_data_bytes)(as_callable(object)()) == b""
+    class _BareDummy:
+        """Empty dummy class."""
+
+    assert ensure_callable(_get_data_bytes)(ensure_callable(DataNpyT)()) == b"npy"
+    assert ensure_callable(_get_data_bytes)(ensure_callable(_BareDummy)()) == b""
 
 
 def test_tensor_to_npy_bytes() -> None:
@@ -291,7 +296,7 @@ def test_tensor_to_npy_bytes() -> None:
             """Test function numpy."""
             return MockArr()
 
-    b = as_callable(_tensor_to_npy_bytes)(as_callable(MockT)())
+    b = ensure_callable(_tensor_to_npy_bytes)(ensure_callable(MockT)())
     assert b.startswith(b"\x93NUMPY")
 
 
@@ -302,7 +307,7 @@ def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    _set_attr(mock_backend.get_npz_bytes, "return_value", b"npz_bytes")
+    ensure_mutable(mock_backend.get_npz_bytes).return_value = ensure_eager_tensor(b"npz_bytes")
     assert get_npz_bytes({}) == b"npz_bytes"
     del mock_backend.get_npz_bytes
 
@@ -323,7 +328,7 @@ def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
             """Test function numpy."""
             return MockArr()
 
-    b = as_callable(get_npz_bytes)({"a": as_callable(MockT)(), "b.npy": as_callable(MockT)()})
+    b = ensure_callable(get_npz_bytes)({"a": ensure_callable(MockT)(), "b.npy": ensure_callable(MockT)()})
     assert len(b) > 0
 
 
@@ -334,11 +339,11 @@ def test_load_npz(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    _set_attr(mock_backend.load_npz, "return_value", [1, 2])
-    assert as_tensor(load_npz("file")) == as_tensor([1, 2])
-    _set_attr(mock_backend.load_npz, "side_effect", NotImplementedError)
+    ensure_mutable(mock_backend.load_npz).return_value = ensure_eager_tensor([1, 2])
+    assert ensure_eager_tensor(load_npz("file")) == ensure_eager_tensor([1, 2])
+    ensure_mutable(mock_backend.load_npz).side_effect = ensure_eager_tensor(NotImplementedError)
     mocker.patch("ml_switcheroo_compiler.serialization.utils.parse_npz", return_value={"a": 1})
-    assert as_tensor(load_npz("file")) == as_tensor([1])
+    assert ensure_eager_tensor(load_npz("file")) == ensure_eager_tensor([1])
 
 
 def test_save_load_ir_graph(mocker: EagerTensorProtocol) -> None:
@@ -352,8 +357,8 @@ def test_save_load_ir_graph(mocker: EagerTensorProtocol) -> None:
     import tempfile
 
     with tempfile.NamedTemporaryFile() as f:
-        as_callable(save_ir_graph)("graph", f.name)
-        assert as_tensor(load_ir_graph(f.name)) == as_tensor("graph_obj")
+        ensure_callable(save_ir_graph)("graph", f.name)
+        assert ensure_eager_tensor(load_ir_graph(f.name)) == ensure_eager_tensor("graph_obj")
 
 
 def test_load_npz_extra(mocker: EagerTensorProtocol) -> None:
@@ -377,7 +382,7 @@ def test_dtype_to_descr_extra() -> None:
 
         value = "unknown"
 
-    assert as_callable(_dtype_to_descr)(as_callable(FakeDtype)()) == "<f4"
+    assert ensure_callable(_dtype_to_descr)(ensure_callable(FakeDtype)()) == "<f4"
     assert _dtype_to_descr("int8") == "|i1"
 
     class FakeDtype2:

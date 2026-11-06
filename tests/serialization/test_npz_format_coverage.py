@@ -11,7 +11,7 @@ import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -199,7 +199,7 @@ def test_npz_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fmt.save(data, filepath)
     loaded = fmt.load(filepath)
     assert "w1" in loaded
-    as_callable(np.testing.assert_array_equal)(loaded["w1"], data["w1"])
+    ensure_callable(np.testing.assert_array_equal)(loaded["w1"], data["w1"])
 
     # Backend with save_npz and load_npz
     mock_b = _MockBackendNPZ()

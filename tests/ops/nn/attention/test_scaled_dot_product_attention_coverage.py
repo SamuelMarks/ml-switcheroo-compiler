@@ -10,7 +10,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.attention as attention_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -39,8 +39,8 @@ class DummyWithoutShape:
 def test_attention_scaled_dot_product_coverage() -> None:
     """Test full coverage for attention module functions and classes."""
     op = attention_mod.ScaledDotProductAttention()
-    assert as_callable(op.infer_shape)(as_callable(DummyWithShape)((4, 8, 16)), None, None, None) == (4, 8, 16)
-    assert as_callable(op.infer_shape)(as_callable(DummyWithoutShape)(), None, None, None) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithShape)((4, 8, 16)), None, None, None) == (4, 8, 16)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithoutShape)(), None, None, None) == ()
 
     q = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
     k = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
@@ -59,8 +59,8 @@ def test_attention_scaled_dot_product_coverage() -> None:
             assert isinstance(res_t, Tensor)
 
             raw_arr = np.ones((2, 4, 8), dtype=np.float32)
-            res_mixed = as_callable(attention_mod.scaled_dot_product_attention)(q, raw_arr, raw_arr, 0.25)
-            assert isinstance(as_tensor(res_mixed), Tensor)
+            res_mixed = ensure_callable(attention_mod.scaled_dot_product_attention)(q, raw_arr, raw_arr, 0.25)
+            assert isinstance(ensure_eager_tensor(res_mixed), Tensor)
 
             class _NoShapeData:
                 """Mock data without shape attribute."""

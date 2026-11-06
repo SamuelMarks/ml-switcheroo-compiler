@@ -4,17 +4,30 @@ from __future__ import annotations
 
 import logging
 import os
+import typing
 
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_int
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor  # noqa: F401
+
+
+def _is_logical_node(val: EagerValue) -> typing.TypeGuard[LogicalNode]:
+    """Type guard narrowing `val` to `LogicalNode`.
+
+    Args:
+        val (EagerValue): Candidate node value.
+
+    Returns:
+        bool: True for runtime IR/logical nodes.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 @register_backend("pytorch")
@@ -37,9 +50,10 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         if torch.cuda.is_available() and (device is None or "cuda" in str(device)):
             dev = device if device is not None else "cuda"
+            cuda_mod = ensure_mod(torch.cuda)
             return {
-                "current": int(_get_attr(torch.cuda, "memory_allocated")(dev)),
-                "peak": int(_get_attr(torch.cuda, "max_memory_allocated")(dev)),
+                "current": int(ensure_int(cuda_mod.memory_allocated(dev))),
+                "peak": int(ensure_int(cuda_mod.max_memory_allocated(dev))),
             }
         rss: int = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         return {"current": rss, "peak": rss}
@@ -56,7 +70,12 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         backend_config = kwargs.get("backend_config")
         if not torch.distributed.is_initialized() and backend_config:
-            torch.distributed.init_process_group(backend=_get_attr(backend_config, "backend"), init_method=_get_attr(backend_config, "init_method"), world_size=_get_attr(backend_config, "world_size"), rank=_get_attr(backend_config, "rank"))
+            torch.distributed.init_process_group(
+                backend=get_backend_member(backend_config, "backend"),
+                init_method=get_backend_member(backend_config, "init_method"),
+                world_size=get_backend_member(backend_config, "world_size"),
+                rank=get_backend_member(backend_config, "rank"),
+            )
 
     _base_class_name: str = "nn.Module"
 
@@ -80,7 +99,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code string.
         """
-        return super().visit(_cast_val("LogicalNode", node), input_vars, **kwargs)
+        assert _is_logical_node(node)
+        return super().visit(node, input_vars, **kwargs)
 
     def visit_PowerIteration(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for a power iteration operation.
@@ -243,7 +263,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        return as_tensor(torch.load(filepath, weights_only=not allow_pickle))
+        return ensure_eager_tensor(torch.load(filepath, weights_only=not allow_pickle))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -315,18 +335,18 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                     EagerValue: Computed outputs.
                 """
                 del fn_kwargs
-                input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+                input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
                 inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
                 evaluated = evaluate_graph(graph, inputs=inputs)
-                if _has_attr(graph, "outputs") and graph.outputs:
+                if graph.outputs:
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return as_tensor(evaluated)
+                return ensure_eager_tensor(evaluated)
 
         return GraphModule()
 
@@ -353,8 +373,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                 EagerValue: Output tensor data.
             """
             del w_kwargs
-            pt_args = [_get_attr(torch_mod, "as_tensor")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return as_callable(compiled_fn)(*pt_args)
+            torch = ensure_mod(torch_mod)
+            pt_args = [torch.as_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            return ensure_callable(compiled_fn)(*pt_args)
 
         return runner
 
@@ -377,16 +398,16 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             mode = str(kwargs.get("mode", "default"))
             sample_inputs = kwargs.get("sample_inputs")
 
-            if _has_attr(torch, "compile"):
+            if has_backend_member(torch, "compile"):
                 try:
-                    compiled_fn = _get_attr(torch, "compile")(mod, backend=backend, mode=mode)
+                    compiled_fn = ensure_mod(torch).compile(mod, backend=backend, mode=mode)
                     return self._wrap_pytorch_runner(compiled_fn, torch)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
             if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
                 pt_samples = [torch.as_tensor(x) for x in sample_inputs]
-                traced = as_callable(_get_attr(torch.jit, "trace"))(mod, pt_samples)
+                traced = ensure_mod(torch.jit).trace(mod, pt_samples)
                 return self._wrap_pytorch_runner(traced, torch)
 
             return mod

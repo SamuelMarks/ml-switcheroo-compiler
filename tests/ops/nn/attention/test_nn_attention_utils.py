@@ -9,12 +9,11 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -29,8 +28,8 @@ def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtoc
     config.eager_mode = True
     t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert as_callable(RopeOp)().infer_shape(t) == (1, 1, 2)
-    assert as_callable(ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
+    assert ensure_callable(RopeOp)().infer_shape(t) == (1, 1, 2)
+    assert ensure_callable(ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
 
     assert rope(t, axis=2) is not None
 
@@ -39,8 +38,7 @@ def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtoc
 
     import ml_switcheroo_compiler.backends.registry as registry_mod
 
-    _get_attr(_state, "update")({"registry_mod": registry_mod, "t": t})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"registry_mod": registry_mod, "t": t}))
 
 
 class _MockAttentionBackend:
@@ -57,7 +55,7 @@ class _MockAttentionBackend:
         if op_name == "Concatenate":
             tensors = args[0]
             axis = kwargs.get("axis", -1)
-            return as_callable(np.concatenate)([as_callable(np.atleast_1d)(arr) if as_callable(np.ndim)(arr) == 0 else arr for arr in as_tensor(tensors)], axis=axis)
+            return ensure_callable(np.concatenate)([ensure_callable(np.atleast_1d)(arr) if ensure_callable(np.ndim)(arr) == 0 else arr for arr in ensure_eager_tensor(tensors)], axis=axis)
         return np.array([1.0])
 
     def asarray(self, x: EagerValue) -> EagerValue:
@@ -83,7 +81,7 @@ class _MockAttentionBackend:
             x: Test parameter `x`.
             axis: Test parameter `axis`.
         """
-        return as_callable(np.expand_dims)(x, axis=axis)
+        return ensure_callable(np.expand_dims)(x, axis=axis)
 
     def multiply(self, x: EagerValue, y: EagerValue) -> EagerValue:
         """Test function multiply.
@@ -93,7 +91,7 @@ class _MockAttentionBackend:
             y: Test parameter `y`.
         """
         try:
-            return as_tensor(as_callable(np.multiply)(x, y))
+            return ensure_eager_tensor(ensure_callable(np.multiply)(x, y))
         except Exception:
             return x
 
@@ -105,7 +103,7 @@ class _MockAttentionBackend:
             y: Test parameter `y`.
         """
         try:
-            return as_tensor(as_callable(np.subtract)(x, y))
+            return ensure_eager_tensor(ensure_callable(np.subtract)(x, y))
         except Exception:
             return x
 
@@ -116,7 +114,7 @@ class _MockAttentionBackend:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        return as_callable(np.arange)(*args, **kwargs)
+        return ensure_callable(np.arange)(*args, **kwargs)
 
     def exp(self, x: EagerValue) -> EagerValue:
         """Test function exp.
@@ -124,7 +122,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor(as_callable(np.exp)(x))
+        return ensure_eager_tensor(ensure_callable(np.exp)(x))
 
     def sin(self, x: EagerValue) -> EagerValue:
         """Test function sin.
@@ -132,7 +130,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor(as_callable(np.sin)(x))
+        return ensure_eager_tensor(ensure_callable(np.sin)(x))
 
     def cos(self, x: EagerValue) -> EagerValue:
         """Test function cos.
@@ -140,7 +138,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor(as_callable(np.cos)(x))
+        return ensure_eager_tensor(ensure_callable(np.cos)(x))
 
     def concatenate(self, x: EagerValue, axis: EagerValue) -> EagerValue:
         """Test function concatenate.
@@ -150,7 +148,7 @@ class _MockAttentionBackend:
             axis: Test parameter `axis`.
         """
         try:
-            return as_callable(np.concatenate)([as_callable(np.atleast_1d)(arr) for arr in as_tensor(x)], axis=axis)
+            return ensure_callable(np.concatenate)([ensure_callable(np.atleast_1d)(arr) for arr in ensure_eager_tensor(x)], axis=axis)
         except Exception:
             return x
 
@@ -161,8 +159,7 @@ def __test_nn_attention_utils_coverage_part_2_sub_1(_state: dict[str, EagerTenso
     Args:
         _state: Shared test state dictionary.
     """
-    _get_attr(_state, "update")({"MockAttentionBackend": _MockAttentionBackend})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MockAttentionBackend": _MockAttentionBackend}))
 
 
 def __test_nn_attention_utils_coverage_part_2_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -172,9 +169,7 @@ def __test_nn_attention_utils_coverage_part_2_sub_2(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     MockAttentionBackend = _state["MockAttentionBackend"]
-    _get_attr(_state, "update")({"MockAttentionBackend": MockAttentionBackend})
-    _state.update(_caller_locals())
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MockAttentionBackend": MockAttentionBackend}))
 
 
 def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -183,7 +178,7 @@ def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtoc
     Args:
         _state: Shared test state dictionary.
     """
-    _get_attr(_state, "__setitem__")("_state", _state)
+    ensure_eager_tensor(_state)["_state"] = _state
     for _sub_fn in (__test_nn_attention_utils_coverage_part_2_sub_1, __test_nn_attention_utils_coverage_part_2_sub_2):
         _sub_fn(_state)
     assert len(_state) > 0
@@ -198,9 +193,9 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
     MockAttentionBackend, registry_mod, t = _state["MockAttentionBackend"], _state["registry_mod"], _state["t"]
     orig_backend = registry_mod.get_active_backend
     try:
-        _set_attr(registry_mod, "get_active_backend", lambda: MockAttentionBackend())
+        ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(lambda: MockAttentionBackend())
 
-        as_callable(rope)(t, axis=2)
+        ensure_callable(rope)(t, axis=2)
 
         config.eager_mode = False
         global_tracing_state.is_tracing = True
@@ -211,7 +206,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
             def __init__(self) -> None:
                 """Test function __init__."""
                 self.name = "dummy"
-                self.nodes = as_tensor_dict({})
+                self.nodes = ensure_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -221,14 +216,14 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
                 """
                 pass
 
-        _set_attr(global_tracing_state, "active_graph", DummyGraph())
+        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
 
-        as_callable(rope)(t, axis=2)
+        ensure_callable(rope)(t, axis=2)
     finally:
         config.eager_mode = False
         global_tracing_state.is_tracing = False
-        _set_attr(registry_mod, "get_active_backend", orig_backend)
-    _get_attr(_state, "update")({"orig_backend": orig_backend})
+        ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(orig_backend)
+    _state.update(ensure_tensor_dict({"orig_backend": orig_backend}))
 
 
 def test_nn_attention_utils_coverage() -> None:

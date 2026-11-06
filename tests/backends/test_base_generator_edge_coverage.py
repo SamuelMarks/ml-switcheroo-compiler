@@ -11,9 +11,8 @@ from ml_switcheroo_compiler.backends.base_generator import (
     CompiledArtifact,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -52,13 +51,13 @@ def test_compiled_artifact_edge_cases() -> None:
             self.cleaned = True
 
     mock_dir = MockTempDir()
-    art_with_dir = as_callable(CompiledArtifact)(
+    art_with_dir = ensure_callable(CompiledArtifact)(
         callable_fn=lambda: None,
         temp_dir=mock_dir,
     )
     art_with_dir.cleanup()
     assert mock_dir.cleaned is True
-    assert as_tensor(art_with_dir.temp_dir) is None
+    assert ensure_eager_tensor(art_with_dir.temp_dir) is None
 
     # 2. __getitem__ accessing attribute
     assert artifact["binary_bytes"] == b"123"
@@ -89,7 +88,7 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
 
     g = IRGraph()
     res = ConcreteAotGen.compile_aot(g)
-    assert as_tensor(res) == as_tensor("compiled_output")
+    assert ensure_eager_tensor(res) == ensure_eager_tensor("compiled_output")
 
     # 1b. compile_aot caching behavior on generator instance
     gen_inst = ConcreteAotGen(g)
@@ -103,7 +102,7 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
 
         def __init__(self) -> None:
             """Initialize with None graph."""
-            _set_attr(self, "graph", None)
+            ensure_mutable(self).graph = ensure_eager_tensor(None)
 
     with pytest.raises(NotImplementedError):
         EmptyGen().compile_aot(None)

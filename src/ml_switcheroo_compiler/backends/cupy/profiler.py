@@ -7,15 +7,14 @@ import resource
 import sys
 import time
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 
 try:
     import cupy as cp
 except ImportError:
     cp = None
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -43,10 +42,10 @@ def _is_cupy_available() -> bool:
     if type(cp).__name__ == "MagicMock":
         return True
     try:
-        if _has_attr(cp, "cuda"):
-            if _has_attr(cp.cuda, "is_available") and not cp.cuda.is_available():
+        if resolve_backend_member(cp, "cuda")[0]:
+            if resolve_backend_member(cp.cuda, "is_available")[0] and not cp.cuda.is_available():
                 return False
-            if _has_attr(cp.cuda, "runtime") and _has_attr(cp.cuda.runtime, "getDeviceCount"):
+            if resolve_backend_member(cp.cuda, "runtime")[0] and resolve_backend_member(cp.cuda.runtime, "getDeviceCount")[0]:
                 return bool(cp.cuda.runtime.getDeviceCount() > 0)
     except Exception:
         return False
@@ -62,7 +61,7 @@ def _get_cupy_peak_memory_mb() -> float:
     if cp is None or not _is_cupy_available():
         return _get_process_memory_mb()
     peak_mem: float = 0.0
-    if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Device"):
+    if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Device")[0]:
         try:
             mem_info = cp.cuda.Device().mem_info
             if isinstance(mem_info, (tuple, list)) and len(mem_info) == 2:
@@ -73,7 +72,7 @@ def _get_cupy_peak_memory_mb() -> float:
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if peak_mem <= 0.0:
-        if _has_attr(cp, "get_default_memory_pool"):
+        if resolve_backend_member(cp, "get_default_memory_pool")[0]:
             try:
                 peak_mem = float(cp.get_default_memory_pool().used_bytes() / (1024.0 * 1024.0))
             except Exception:
@@ -90,12 +89,12 @@ class CupyProfiler:
         """Synchronize execution using CUDA stream synchronization."""
         if cp is None or not _is_cupy_available():
             return
-        if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Stream") and _has_attr(cp.cuda.Stream, "null"):
+        if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Stream")[0] and resolve_backend_member(cp.cuda.Stream, "null")[0]:
             try:
                 cp.cuda.Stream.null.synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Device"):
+        if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Device")[0]:
             try:
                 cp.cuda.Device().synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -140,7 +139,7 @@ class CupyProfiler:
                 start_event = cp.cuda.Event()
                 end_event = cp.cuda.Event()
                 start_event.record()
-                _ = as_callable(step_fn)()
+                _ = ensure_callable(step_fn)()
                 end_event.record()
                 end_event.synchronize()
                 return float(cp.cuda.get_elapsed_time(start_event, end_event))
@@ -148,7 +147,7 @@ class CupyProfiler:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         self._sync()
         start = time.perf_counter()
-        _ = as_callable(step_fn)()
+        _ = ensure_callable(step_fn)()
         self._sync()
         end = time.perf_counter()
         return (end - start) * 1000.0
@@ -216,7 +215,7 @@ class CupyProfiler:
                 "peak_memory_mb": _get_process_memory_mb(),
             }
 
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
         cp_inputs_dict, cp_input_list = self._prepare_cupy_inputs(inputs)
 
         def _execute_step() -> cp.ndarray | dict[str, cp.ndarray]:
@@ -241,6 +240,6 @@ class CupyProfiler:
             _ = _execute_step()
             self._sync()
 
-        has_cuda_events: bool = bool(_has_attr(cp, "cuda") and _has_attr(cp.cuda, "Event") and _has_attr(cp.cuda, "get_elapsed_time"))
+        has_cuda_events: bool = bool(resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Event")[0] and resolve_backend_member(cp.cuda, "get_elapsed_time")[0])
         latencies: list[float] = [self._measure_single_step_ms(_execute_step, has_cuda_events) for _ in range(max(1, num_iters))]
         return self._summarize_latencies(latencies, warmup_iters)

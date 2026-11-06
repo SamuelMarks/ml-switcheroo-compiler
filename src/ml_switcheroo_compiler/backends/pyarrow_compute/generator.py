@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.pyarrow_compute.eager import execute_op as _execute_op
 from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
     array as _array,
@@ -310,7 +310,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
                         return to_arrow(res, target_type="tensor")
                     return res
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return as_tensor(evaluated)
+            return ensure_eager_tensor(evaluated)
 
         return aot_arrow_runner
 

@@ -7,9 +7,8 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_utils import _emit_creation_node
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -24,7 +23,7 @@ def test_frontend_utils() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -35,8 +34,8 @@ def test_frontend_utils() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -58,7 +57,7 @@ def test_frontend_utils_constant() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -69,8 +68,8 @@ def test_frontend_utils_constant() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -96,7 +95,7 @@ def test_frontend_utils_constant() -> None:
 
             return T()
 
-    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -118,7 +117,7 @@ def test_frontend_utils_constant_scalar() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -129,8 +128,8 @@ def test_frontend_utils_constant_scalar() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -156,7 +155,7 @@ def test_frontend_utils_constant_scalar() -> None:
 
             return T()
 
-    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -175,7 +174,7 @@ def test_frontend_utils_missing_3() -> None:
 
         shape = (10,)
 
-    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=5) == (5,)
+    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)
 

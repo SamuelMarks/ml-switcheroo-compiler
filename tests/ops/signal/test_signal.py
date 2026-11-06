@@ -7,7 +7,7 @@ import typing
 import numpy as np
 import pytest
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,7 +23,7 @@ def test_signal_missing() -> None:
         shape = None
 
     with pytest.raises(ValueError):
-        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape)(), as_callable(FakeShape)())
+        ensure_callable(sig._validate_conv2d_args)(ensure_callable(FakeShape)(), ensure_callable(FakeShape)())
 
     class FakeShape2:
         """Test class FakeShape2."""
@@ -31,10 +31,10 @@ def test_signal_missing() -> None:
         shape = (1, 1)
 
     with pytest.raises(ValueError):
-        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape2)(), as_callable(FakeShape)())
+        ensure_callable(sig._validate_conv2d_args)(ensure_callable(FakeShape2)(), ensure_callable(FakeShape)())
 
     with pytest.raises(ValueError):
-        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape)(), as_callable(FakeShape2)())
+        ensure_callable(sig._validate_conv2d_args)(ensure_callable(FakeShape)(), ensure_callable(FakeShape2)())
 
 
 def test_signal_classes_infer_shape() -> None:
@@ -46,12 +46,12 @@ def test_signal_classes_infer_shape() -> None:
 
         shape = (1, 1)
 
-    assert as_callable(sig.Rfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
-    assert as_callable(sig.Fft2)().infer_shape(as_callable(DummyData)()) == (1, 1)
-    assert as_callable(sig.Fftfreq)().infer_shape(5) == (5,)
-    assert as_callable(sig.Fftfreq)().infer_shape(as_callable(DummyData)()) == ()
-    assert as_callable(sig.Irfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
-    assert as_callable(sig.Ihfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
+    assert ensure_callable(sig.Rfft)().infer_shape(ensure_callable(DummyData)()) == (1, 1)
+    assert ensure_callable(sig.Fft2)().infer_shape(ensure_callable(DummyData)()) == (1, 1)
+    assert ensure_callable(sig.Fftfreq)().infer_shape(5) == (5,)
+    assert ensure_callable(sig.Fftfreq)().infer_shape(ensure_callable(DummyData)()) == ()
+    assert ensure_callable(sig.Irfft)().infer_shape(ensure_callable(DummyData)()) == (1, 1)
+    assert ensure_callable(sig.Ihfft)().infer_shape(ensure_callable(DummyData)()) == (1, 1)
 
 
 def test_signal_real_dsp_validation() -> None:

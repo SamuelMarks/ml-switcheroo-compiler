@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib
-import operator
+import inspect
 import os
 import re
 import subprocess
@@ -12,9 +12,58 @@ import sys
 import tempfile
 import types
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+
+from ml_switcheroo_ir import AttributeValue
+
+
+def _has_nonempty_all(mod: AttributeValue | types.ModuleType) -> bool:
+    """Return True if `mod` defines a non-empty `__all__` member.
+
+    Args:
+        mod (AttributeValue | types.ModuleType): Target module or object.
+
+    Returns:
+        bool: True if `__all__` exists and is truthy.
+    """
+    for k, v in inspect.getmembers(mod):
+        if k == "__all__":
+            return bool(v)
+    return False
+
+
+def _lookup_all_exports(mod: AttributeValue | types.ModuleType) -> list[str] | None:
+    """Look up `__all__` on `mod` via `inspect.getmembers` if it is a sequence or set.
+
+    Args:
+        mod (AttributeValue | types.ModuleType): Target module or object.
+
+    Returns:
+        list[str] | None: Sorted list of exported names if `__all__` is a sequence/set, `[]` if defined as another type, or `None` if absent.
+    """
+    for k, v in inspect.getmembers(mod):
+        if k == "__all__":
+            if isinstance(v, (list, tuple, set)):
+                return sorted({str(x) for x in v})
+            return [] if v is not None else None
+    return None
+
+
+def _is_submodule_member(mod: AttributeValue | types.ModuleType, name: str) -> bool:
+    """Return True if member `name` on `mod` is a `types.ModuleType`.
+
+    Args:
+        mod (AttributeValue | types.ModuleType): Target module or object.
+        name (str): Member name to inspect.
+
+    Returns:
+        bool: True if the member is a module.
+    """
+    for k, v in inspect.getmembers(mod):
+        if k == name:
+            return isinstance(v, types.ModuleType)
+    return False
 
 
 def _get_exports_from_submodule(modname: str) -> list[str]:
@@ -32,12 +81,10 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
         print(f"Failed to import {modname}: {e}")
         return []
 
-    try:
-        all_attr = operator.attrgetter("__all__")(mod)
-        return sorted(list(set(all_attr)))
-    except AttributeError:
-        pass
-    return sorted(list(set([n for n in dir(mod) if not n.startswith("_") and not isinstance(operator.attrgetter(n)(mod), types.ModuleType)])))
+    all_exports = _lookup_all_exports(mod)
+    if all_exports is not None and all_exports:
+        return all_exports
+    return sorted({n for n in dir(mod) if not n.startswith("_") and not _is_submodule_member(mod, n)})
 
 
 def _append_import_lines(
@@ -187,17 +234,12 @@ def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> lis
             raw_exports.extend(_get_exports_from_submodule(sm))
         return sorted({e for e in raw_exports if e not in exclude_set})
     if magic_auto:
-        return sorted({n for n in dir(mod) if not n.startswith("_") and not isinstance(operator.attrgetter(n)(mod), types.ModuleType) and n not in exclude_set})
+        return sorted({n for n in dir(mod) if not n.startswith("_") and not _is_submodule_member(mod, n) and n not in exclude_set})
 
-    try:
-        exports_attr = operator.attrgetter("__all__")(mod)
-    except AttributeError:
-        exports_attr = None
+    exports_attr = _lookup_all_exports(mod)
     if exports_attr is None:
         return sorted({n for n in dir(mod) if not n.startswith("_")})
-    if isinstance(exports_attr, (list, tuple, set)):
-        return sorted({str(x) for x in exports_attr})
-    return []
+    return exports_attr
 
 
 def _find_all_lines_to_remove(tree: ast.Module) -> set[int]:
@@ -262,7 +304,7 @@ def process_file(filepath: str) -> None:
         return
 
     lines_to_remove = _find_all_lines_to_remove(tree)
-    if not lines_to_remove and not _get_attr(mod, "__all__", None):
+    if not lines_to_remove and not _has_nonempty_all(mod):
         return
 
     new_lines: list[str] = [line for i, line in enumerate(source.split("\n"), 1) if i not in lines_to_remove]

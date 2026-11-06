@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import ConvConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -55,7 +55,7 @@ def test_conv2d_full_coverage() -> None:
             TensorConfig((1, 1, 8, 4), DType("float32"), Device("cpu")),
         )
 
-        cfg = as_callable(ConvConfig)(
+        cfg = ensure_callable(ConvConfig)(
             window_strides=(1, 1),
             padding="VALID",
             dimension_numbers=((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)),

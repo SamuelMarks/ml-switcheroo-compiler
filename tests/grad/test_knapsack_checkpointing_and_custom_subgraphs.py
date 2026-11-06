@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.grad.checkpointing import (
     RematerializationPolicyModel,
@@ -24,7 +23,7 @@ from ml_switcheroo_compiler.grad.checkpointing import (
 )
 from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
 from ml_switcheroo_compiler.grad.jvp_vjp import custom_jvp
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -101,8 +100,8 @@ def test_custom_vjp_declarative_subgraph() -> None:
     bwd_g.nodes["scaled"] = LogicalNode(id="scaled", op_type="Mul", inputs=["cot", "x"])
     bwd_g.outputs = ["scaled"]
 
-    as_tensor(_get_attr(dummy_fn, "defvjp_subgraph"))(bwd_g)
-    assert as_tensor(_get_attr(dummy_fn, "bwd_subgraph")) == bwd_g
+    ensure_eager_tensor(ensure_eager_tensor(dummy_fn).defvjp_subgraph)(bwd_g)
+    assert ensure_eager_tensor(ensure_eager_tensor(dummy_fn).bwd_subgraph) == bwd_g
 
 
 def test_custom_jvp_declarative_subgraph() -> None:
@@ -162,7 +161,7 @@ def test_evaluate_node_costs_edge_cases() -> None:
         shape_metadata=(-1, "str_dim", 4),
         attributes={"dtype": "float64"},
     )
-    footprint, flop = as_callable(_evaluate_node_costs)(
+    footprint, flop = ensure_callable(_evaluate_node_costs)(
         node=node,
         memory_sizes=None,
         heavy_ops={"Conv"},

@@ -7,8 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -33,7 +32,7 @@ def test_binary_math_extra_coverage() -> None:
             """
             return op
 
-    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
     type("T", (), {"shape": (2, 2)})()
     type("T", (), {"shape": (2,)})()
     assert Clip().infer_shape() == ()
@@ -47,7 +46,7 @@ def test_eager_eval_branches() -> None:
     from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, Betainc, Diff, Digitize, Poly, Polyadd, Polyder, Polydiv, Polyfit, Polyint, Polymul, Polysub, Polyval, Roots
 
     for cls in [Diff, Digitize, ArrayEquiv, Betainc, Polyadd, Polysub, Polymul, Polydiv, Polyval, Poly, Polyder, Polyfit, Polyint, Roots]:
-        assert as_tensor(_get_attr(cls(), "op_name")) is not None
+        assert ensure_eager_tensor(ensure_eager_tensor(cls()).op_name) is not None
 
 
 def test_binary_math_shapes_again() -> None:
@@ -58,15 +57,15 @@ def test_binary_math_shapes_again() -> None:
         """Test class DummyTensor."""
 
         shape = (1,)
-        attributes = as_tensor_dict({})
+        attributes = ensure_tensor_dict({})
         shape_metadata = (1,)
 
     assert Diff().infer_shape() == ()
-    assert as_callable(Digitize)().infer_shape(as_callable(DummyTensor)()) == (1,)
+    assert ensure_callable(Digitize)().infer_shape(ensure_callable(DummyTensor)()) == (1,)
     assert Digitize().infer_shape() == ()
     assert ArrayEquiv().infer_shape() == ()
-    assert as_callable(Betainc)().infer_shape(as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()) == (1,)
-    assert as_callable(Clip)().infer_shape(as_callable(DummyTensor)()) == (1,)
+    assert ensure_callable(Betainc)().infer_shape(ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()) == (1,)
+    assert ensure_callable(Clip)().infer_shape(ensure_callable(DummyTensor)()) == (1,)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -81,7 +80,7 @@ def test_binary_math_shapes_again() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -92,8 +91,8 @@ def test_binary_math_shapes_again() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):
         pass
         pass
@@ -118,7 +117,7 @@ def test_binary_math_clip_emit() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -129,8 +128,8 @@ def test_binary_math_clip_emit() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):

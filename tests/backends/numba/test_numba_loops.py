@@ -8,9 +8,8 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -57,7 +56,7 @@ def _test_numba_parallel_loop_emission_part_1(_state: dict[str, EagerTensorProto
     a_mat = np.ones((4, 4), dtype=np.float32)
     b_mat = np.ones((4, 4), dtype=np.float32)
     res_mm = fn_mm([a_mat, b_mat])
-    as_callable(np.testing.assert_allclose)(res_mm, a_mat @ b_mat)
+    ensure_callable(np.testing.assert_allclose)(res_mm, a_mat @ b_mat)
 
     # BatchMatMul
     g_bmm = IRGraph()
@@ -65,10 +64,9 @@ def _test_numba_parallel_loop_emission_part_1(_state: dict[str, EagerTensorProto
     g_bmm.nodes["b"] = IRNode(id="b", op_type="Input", inputs=[])
     g_bmm.nodes["bmm"] = IRNode(id="bmm", op_type="BatchMatMul", inputs=["a", "b"])
     g_bmm.inputs = ["a", "b"]
-    _get_attr(_state, "update")({"a_mat": a_mat, "b_mat": b_mat, "code_mm": code_mm, "fn_mm": fn_mm})
-    _get_attr(_state, "update")({"g_bmm": g_bmm, "g_matmul": g_matmul, "gen_mm": gen_mm, "gen_mm_strict": gen_mm_strict})
-    _get_attr(_state, "update")({"res_mm": res_mm})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"a_mat": a_mat, "b_mat": b_mat, "code_mm": code_mm, "fn_mm": fn_mm}))
+    _state.update(ensure_tensor_dict({"g_bmm": g_bmm, "g_matmul": g_matmul, "gen_mm": gen_mm, "gen_mm_strict": gen_mm_strict}))
+    _state.update(ensure_tensor_dict({"res_mm": res_mm}))
 
 
 def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -78,9 +76,9 @@ def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProto
         _state: Shared test state dictionary.
     """
     g_bmm = _state["g_bmm"]
-    _set_attr(g_bmm, "outputs", ["bmm"])
+    ensure_mutable(g_bmm).outputs = ensure_eager_tensor(["bmm"])
 
-    gen_bmm = as_callable(NumbaGenerator)(g_bmm, fastmath=True, parallel=True)
+    gen_bmm = ensure_callable(NumbaGenerator)(g_bmm, fastmath=True, parallel=True)
     code_bmm = gen_bmm.generate()
     assert "for _b in nb.prange(" in code_bmm
 
@@ -88,7 +86,7 @@ def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProto
     a_batch = np.ones((2, 3, 4), dtype=np.float32)
     b_batch = np.ones((2, 4, 5), dtype=np.float32)
     res_bmm = fn_bmm([a_batch, b_batch])
-    as_callable(np.testing.assert_allclose)(res_bmm, a_batch @ b_batch)
+    ensure_callable(np.testing.assert_allclose)(res_bmm, a_batch @ b_batch)
 
     # Conv2D
     g_conv = IRGraph()
@@ -106,10 +104,10 @@ def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProto
     fn_conv = gen_conv.compile_fn()
     x_conv = np.ones((2, 1, 4, 4), dtype=np.float32)
     w_conv = np.ones((1, 1, 3, 3), dtype=np.float32)
-    _get_attr(_state, "update")({"a_batch": a_batch, "b_batch": b_batch, "code_bmm": code_bmm, "code_conv": code_conv})
-    _get_attr(_state, "update")({"fn_bmm": fn_bmm, "fn_conv": fn_conv, "g_conv": g_conv, "gen_bmm": gen_bmm})
-    _get_attr(_state, "update")({"gen_conv": gen_conv, "res_bmm": res_bmm, "w_conv": w_conv, "x_conv": x_conv})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"a_batch": a_batch, "b_batch": b_batch, "code_bmm": code_bmm, "code_conv": code_conv}))
+    _state.update(ensure_tensor_dict({"fn_bmm": fn_bmm, "fn_conv": fn_conv, "g_conv": g_conv, "gen_bmm": gen_bmm}))
+    _state.update(ensure_tensor_dict({"gen_conv": gen_conv, "res_bmm": res_bmm, "w_conv": w_conv, "x_conv": x_conv}))
+    _state.update(ensure_tensor_dict({"g_bmm": g_bmm}))
 
 
 def _test_numba_parallel_loop_emission_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -121,7 +119,7 @@ def _test_numba_parallel_loop_emission_part_3(_state: dict[str, EagerTensorProto
     fn_conv, g_matmul, w_conv, x_conv = _state["fn_conv"], _state["g_matmul"], _state["w_conv"], _state["x_conv"]
     res_conv = fn_conv([x_conv, w_conv])
     assert res_conv.shape == (2, 1, 2, 2)
-    as_callable(np.testing.assert_allclose)(res_conv, 9.0)
+    ensure_callable(np.testing.assert_allclose)(res_conv, 9.0)
 
     # MaxPool2D and AvgPool2D
     g_pool = IRGraph()
@@ -139,19 +137,20 @@ def _test_numba_parallel_loop_emission_part_3(_state: dict[str, EagerTensorProto
     fn_pool = gen_pool.compile_fn()
     x_pool = np.arange(32, dtype=np.float32).reshape(2, 1, 4, 4)
     res_maxp, res_avgp = fn_pool([x_pool])
-    assert as_tensor(_get_attr(res_maxp, "shape")) == (2, 1, 2, 2)
-    assert as_tensor(_get_attr(res_avgp, "shape")) == (2, 1, 2, 2)
+    assert ensure_eager_tensor(res_maxp).shape == (2, 1, 2, 2)
+    assert ensure_eager_tensor(res_avgp).shape == (2, 1, 2, 2)
 
     # Non-parallel fallback branch coverage
-    gen_nopar = as_callable(NumbaGenerator)(g_matmul, fastmath=False, parallel=False)
+    gen_nopar = ensure_callable(NumbaGenerator)(g_matmul, fastmath=False, parallel=False)
     code_nopar = gen_nopar.generate()
     assert "np.matmul" in code_nopar
 
     gen_nopar.visit_Prod(IRNode(id="p", op_type="Prod", inputs=["a"]), ["a"])
-    _get_attr(_state, "update")({"code_nopar": code_nopar, "code_pool": code_pool, "fn_pool": fn_pool, "g_pool": g_pool})
-    _get_attr(_state, "update")({"gen_nopar": gen_nopar, "gen_pool": gen_pool, "res_avgp": res_avgp, "res_conv": res_conv})
-    _get_attr(_state, "update")({"res_maxp": res_maxp, "x_pool": x_pool})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"code_nopar": code_nopar, "code_pool": code_pool, "fn_pool": fn_pool, "g_pool": g_pool}))
+    _state.update(ensure_tensor_dict({"gen_nopar": gen_nopar, "gen_pool": gen_pool, "res_avgp": res_avgp, "res_conv": res_conv}))
+    _state.update(ensure_tensor_dict({"res_maxp": res_maxp, "x_pool": x_pool}))
+    _state.update(ensure_tensor_dict({"fn_conv": fn_conv, "g_matmul": g_matmul, "w_conv": w_conv}))
+    _state.update(ensure_tensor_dict({"x_conv": x_conv}))
 
 
 def _test_numba_parallel_loop_emission_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -171,7 +170,7 @@ def _test_numba_parallel_loop_emission_part_4(_state: dict[str, EagerTensorProto
     gen_nopar.visit_BatchMatMul(IRNode(id="bmm", op_type="BatchMatMul", inputs=["a", "b"]), ["a", "b"])
     assert any("np.matmul" in line for line in gen_nopar.code)
     gen_nopar.visit_Conv2D(IRNode(id="cv", op_type="Conv2D", inputs=["x", "w"]), ["x", "w"])
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"gen_nopar": gen_nopar}))
 
 
 def _test_numba_parallel_loop_emission_part_5(_state: dict[str, EagerTensorProtocol]) -> None:

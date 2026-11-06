@@ -7,7 +7,7 @@ import ml_switcheroo_compiler.interpreter as interpreter_pkg
 import ml_switcheroo_compiler.nn as nn_pkg
 import ml_switcheroo_compiler.transforms as transforms_pkg
 import ml_switcheroo_compiler.transforms.autodiff_rules as autodiff_rules_pkg
-from ml_switcheroo_compiler.core.shape import _has_attr
+from tests.testing_utils import has_backend_member
 
 
 class _DummyBadShape:
@@ -32,16 +32,16 @@ class _DummyBadShape:
 
 def test_package_facades_exhaustive() -> None:
     """Verify exports and facades for export, interpreter, nn, transforms, and autodiff packages."""
-    assert _has_attr(export_pkg, "ExportArchive")
+    assert has_backend_member(export_pkg, "ExportArchive")
 
-    assert _has_attr(interpreter_pkg, "Environment")
-    assert _has_attr(interpreter_pkg, "evaluate_graph")
+    assert has_backend_member(interpreter_pkg, "Environment")
+    assert has_backend_member(interpreter_pkg, "evaluate_graph")
 
     assert "glorot_uniform" in nn_pkg.__all__
-    assert _has_attr(nn_pkg, "glorot_uniform")
+    assert has_backend_member(nn_pkg, "glorot_uniform")
 
-    assert _has_attr(transforms_pkg, "PassManager")
-    assert _has_attr(transforms_pkg, "constant_folding_pass")
-    assert _has_attr(transforms_pkg, "grad")
+    assert has_backend_member(transforms_pkg, "PassManager")
+    assert has_backend_member(transforms_pkg, "constant_folding_pass")
+    assert has_backend_member(transforms_pkg, "grad")
 
-    assert _has_attr(autodiff_rules_pkg, "custom_rules")
+    assert has_backend_member(autodiff_rules_pkg, "custom_rules")

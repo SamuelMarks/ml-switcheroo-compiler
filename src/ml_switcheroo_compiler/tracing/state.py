@@ -15,8 +15,8 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import AttributeValue
     from ml_switcheroo_ir.types import TensorSpec
 
-    from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
-    from ml_switcheroo_compiler.tracing.autograph import LoopOptions
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.tracing.autograph import LoopOptions, ShapeInvariantType
 
 
 @typing.runtime_checkable
@@ -33,8 +33,8 @@ class _GraphInputSpecsProtocol(typing.Protocol):
     input_specs: dict[str, TensorSpec]
 
 
-def _is_attr_dict(val: Mapping[str, AttributeValue]) -> typing.TypeGuard[dict[str, StructuralOperandProtocol | TensorOrScalar]]:
-    """Type guard narrowing node attributes dict to accept `StructuralOperandProtocol`.
+def _is_attr_dict(val: Mapping[str, AttributeValue]) -> typing.TypeGuard[dict[str, LoopOptions | TensorOrScalar | AttributeValue]]:
+    """Type guard narrowing node attributes dict to accept `LoopOptions`.
 
     Args:
         val (Mapping[str, AttributeValue]): Node attributes dictionary.
@@ -107,12 +107,11 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to enrich.
         """
-        raw_node: StructuralOperandProtocol = node
-        if isinstance(raw_node, _NodeAstRefProtocol) and raw_node.source_ast_ref is None:
-            raw_node.source_ast_ref = get_source_ast_ref()
-        active_g: StructuralOperandProtocol | None = self.active_graph
-        if active_g is not None and self.active_graph is not None and isinstance(active_g, _GraphNameProtocol) and active_g.name is not None and isinstance(raw_node, _NodeDomainProtocol) and raw_node.domain in (None, ""):
-            raw_node.domain = self.active_graph.name
+        if node.source_ast_ref is None:
+            node.source_ast_ref = get_source_ast_ref()
+        active_g = self.active_graph
+        if active_g is not None and active_g.name and node.domain in (None, ""):
+            node.domain = active_g.name
 
     def _enrich_stream(self, node: LogicalNode) -> None:
         """Enrich a node with current stream information.
@@ -122,10 +121,10 @@ class TracingState:
         """
         if "ml_switcheroo_compiler.core.config" not in sys.modules:
             return
-        config = sys.modules["ml_switcheroo_compiler.core.config"].config
-        raw_node: StructuralOperandProtocol = node
-        if isinstance(raw_node, _NodeStreamProtocol) and raw_node.stream is None and config.current_stream != "default":
-            raw_node.stream = config.current_stream
+        from ml_switcheroo_compiler.core.config import config as active_config
+
+        if node.stream is None and active_config.current_stream != "default":
+            node.stream = active_config.current_stream
 
     def _enrich_node(self, node: LogicalNode) -> None:
         """Enrich a newly created node with implicit context metadata (AST, domain, stream).
@@ -150,15 +149,12 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to populate with loop options.
         """
-        from ml_switcheroo_compiler.ir.core import as_attrs
-
-        raw_node: StructuralOperandProtocol = node
-        if self.current_loop_options is None or not isinstance(raw_node, _NodeLoopAttrsProtocol) or raw_node.op_type not in ("Loop", "WhileLoop") or not isinstance(raw_node.attributes, dict):
+        if self.current_loop_options is None or node.op_type not in ("Loop", "WhileLoop") or not isinstance(node.attributes, dict):
             return
-        attrs = raw_node.attributes
+        attrs = node.attributes
+        assert _is_attr_dict(attrs)
         opts = self.current_loop_options
-        raw_attrs: dict[str, TensorOrScalar] = {}
-        opt_items: tuple[tuple[str, TensorOrScalar], ...] = (
+        opt_items: tuple[tuple[str, int | bool | ShapeInvariantType | None], ...] = (
             ("parallel_iterations", opts.parallel_iterations),
             ("swap_memory", opts.swap_memory),
             ("maximum_iterations", opts.maximum_iterations),
@@ -166,12 +162,9 @@ class TracingState:
         )
         for key, val in opt_items:
             if key not in attrs and val is not None:
-                raw_attrs[key] = val
-        attrs.update(as_attrs(raw_attrs))
+                attrs[key] = val
         if "loop_options" not in attrs:
-            opts_ref: StructuralOperandProtocol | TensorOrScalar = opts
-            assert _is_attr_dict(attrs)
-            attrs["loop_options"] = opts_ref
+            attrs["loop_options"] = opts
 
     def add_node(self, node: LogicalNode) -> None:
         """Register a node into the currently active trace graph.
@@ -186,8 +179,7 @@ class TracingState:
         self._apply_loop_options_to_node(node)
 
         self.active_graph.nodes[node.id] = node
-        raw_node: StructuralOperandProtocol = node
-        if isinstance(raw_node, _NodeOpTypeProtocol) and raw_node.op_type != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
+        if node.op_type != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
             if node.id in self.active_graph.inputs:
                 self.active_graph.inputs.remove(node.id)
                 if isinstance(self.active_graph, _GraphInputSpecsProtocol):

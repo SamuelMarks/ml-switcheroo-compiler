@@ -6,9 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, BinaryMathOp, Digitize, Lcm, Polyadd, Polyder, Polydiv, Polyint, Polymul, Polysub, Roots, Xlog1py, Xlogy
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -18,7 +17,7 @@ def test_binary_math_op_infer_shape() -> None:
     """Test function test_binary_math_op_infer_shape."""
     op = BinaryMathOp()
     assert op.infer_shape() == ()
-    assert as_callable(op.infer_shape)((2, 2)) == (2, 2)
+    assert ensure_callable(op.infer_shape)((2, 2)) == (2, 2)
 
 
 def test_digitize_infer_shape() -> None:
@@ -31,7 +30,7 @@ def test_digitize_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_callable(op.infer_shape)(as_callable(Dummy)()) == (2, 2)
+    assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)()) == (2, 2)
 
 
 def test_polyder_infer_shape() -> None:
@@ -44,8 +43,8 @@ def test_polyder_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polyint_infer_shape() -> None:
@@ -58,8 +57,8 @@ def test_polyint_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polysub_infer_shape() -> None:
@@ -72,8 +71,8 @@ def test_polysub_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polyadd_infer_shape() -> None:
@@ -86,8 +85,8 @@ def test_polyadd_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polymul_infer_shape() -> None:
@@ -100,8 +99,8 @@ def test_polymul_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polydiv_infer_shape() -> None:
@@ -114,8 +113,8 @@ def test_polydiv_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_poly_infer_shape() -> None:
@@ -130,8 +129,8 @@ def test_poly_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polyval_infer_shape() -> None:
@@ -146,8 +145,8 @@ def test_polyval_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_polyfit_infer_shape() -> None:
@@ -162,8 +161,8 @@ def test_polyfit_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_roots_infer_shape() -> None:
@@ -176,8 +175,8 @@ def test_roots_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_lcm_infer_shape() -> None:
@@ -190,8 +189,8 @@ def test_lcm_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
-    assert as_callable(op.infer_shape)(1) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert ensure_callable(op.infer_shape)(1) == 1
 
 
 def test_array_equiv_infer_shape() -> None:
@@ -210,7 +209,7 @@ def test_xlogy_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
 
 
 def test_xlog1py_infer_shape() -> None:
@@ -223,7 +222,7 @@ def test_xlog1py_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert as_tensor(_get_attr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
 
 
 def test_clip_eager() -> None:
@@ -239,7 +238,7 @@ def test_clip_eager() -> None:
 
         shape = (2, 2)
 
-    assert as_callable(op.infer_shape)(as_callable(Dummy)()) == (2, 2)
+    assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)()) == (2, 2)
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -263,14 +262,13 @@ def test_clip_eager() -> None:
 
         orig_backend = config.backend
         config.backend = "mock_clip"
-        as_callable(BackendRegistry.register)("mock_clip", MockBackend)
+        ensure_callable(BackendRegistry.register)("mock_clip", MockBackend)
         assert clip(np.array([1.0]), 0.0, 2.0) == "eager_clip"
         config.eager_mode = False
         clip(np.array([1.0]), 0.0, 2.0)
     finally:
         config.eager_mode = orig_eager
-        if "orig_backend" in _caller_locals():
-            config.backend = orig_backend
+        config.backend = orig_backend
 
 
 def test_rem_op() -> None:

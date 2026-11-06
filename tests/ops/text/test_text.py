@@ -11,12 +11,11 @@ import pytest
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.text import as_string, edit_distance, lookup, regex_full_match, regex_replace, string_join, string_length, string_split, string_substr, string_to_hash
 from ml_switcheroo_compiler.tracing import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -50,42 +49,42 @@ def test_text_ops_eager(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
     mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
-    _set_attr(mock_backend_front.execute_op, "return_value", ("res1", "res2"))
-    _set_attr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
-    _set_attr(mock_backend.execute_op, "return_value", "res")
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend_front.execute_op).return_value = ensure_eager_tensor(("res1", "res2"))
+    ensure_mutable(mock_backend_front.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
     assert string_to_hash(t).config.shape == (2, 3)
     assert lookup(t).config.shape == (2, 3)
     assert text_vectorization(t).config.shape == (2, 3)
     op = RegexReplace()
-    assert as_callable(op.infer_shape)(1) == ()
+    assert ensure_callable(op.infer_shape)(1) == ()
 
 
 def test_text_ops_misc() -> None:
     """Test function test_text_ops_misc."""
     from ml_switcheroo_compiler.ops.text.ops import ArrayRepr, ArrayStr
 
-    assert as_callable(ArrayRepr)().infer_shape(()) == ()
-    assert as_callable(ArrayStr)().infer_shape(()) == ()
+    assert ensure_callable(ArrayRepr)().infer_shape(()) == ()
+    assert ensure_callable(ArrayStr)().infer_shape(()) == ()
 
 
 def test_text_classes_infer_shape() -> None:
     """Test function test_text_classes_infer_shape."""
     from ml_switcheroo_compiler.ops.text.ops import EditDistance, Hashing, RegexFullMatch, StringJoin, StringLength, StringLookup, StringLower, StringSplit, StringSubstr, StringToHash, StringToNumber, StringUpper, TextVectorization
 
-    assert as_callable(StringToHash)().infer_shape(()) == ()
-    assert as_callable(StringLookup)().infer_shape(()) == ()
-    assert as_callable(TextVectorization)().infer_shape(()) == ()
-    assert as_callable(EditDistance)().infer_shape(None, None) == ()
-    assert as_callable(Hashing)().infer_shape(()) == ()
-    assert as_callable(RegexFullMatch)().infer_shape(()) == ()
-    assert as_callable(StringJoin)().infer_shape(()) == ()
-    assert as_callable(StringLength)().infer_shape(()) == ()
-    assert as_callable(StringLower)().infer_shape(()) == ()
-    assert as_callable(StringSplit)().infer_shape(()) == ()
-    assert as_callable(StringSubstr)().infer_shape(()) == ()
-    assert as_callable(StringToNumber)().infer_shape(()) == ()
-    assert as_callable(StringUpper)().infer_shape(()) == ()
+    assert ensure_callable(StringToHash)().infer_shape(()) == ()
+    assert ensure_callable(StringLookup)().infer_shape(()) == ()
+    assert ensure_callable(TextVectorization)().infer_shape(()) == ()
+    assert ensure_callable(EditDistance)().infer_shape(None, None) == ()
+    assert ensure_callable(Hashing)().infer_shape(()) == ()
+    assert ensure_callable(RegexFullMatch)().infer_shape(()) == ()
+    assert ensure_callable(StringJoin)().infer_shape(()) == ()
+    assert ensure_callable(StringLength)().infer_shape(()) == ()
+    assert ensure_callable(StringLower)().infer_shape(()) == ()
+    assert ensure_callable(StringSplit)().infer_shape(()) == ()
+    assert ensure_callable(StringSubstr)().infer_shape(()) == ()
+    assert ensure_callable(StringToNumber)().infer_shape(()) == ()
+    assert ensure_callable(StringUpper)().infer_shape(()) == ()
 
 
 def test_text_eager_mode_exceptions() -> None:
@@ -207,17 +206,17 @@ def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
     mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
-    _set_attr(mock_backend_front.execute_op, "return_value", ("res1", "res2"))
-    _set_attr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
-    _set_attr(mock_backend.execute_op, "return_value", "res")
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(_get_attr(string_to_number(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_lower(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_upper(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_length(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_substr(t, 0, 1), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(regex_full_match(t, "pattern"), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_join([t, t], separator=","), "config")).shape == (2, 3)
+    ensure_mutable(mock_backend_front.execute_op).return_value = ensure_eager_tensor(("res1", "res2"))
+    ensure_mutable(mock_backend_front.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    assert ensure_eager_tensor(ensure_eager_tensor(string_to_number(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_lower(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_upper(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_length(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_substr(t, 0, 1)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(regex_full_match(t, "pattern")).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_join([t, t], separator=",")).config).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
@@ -248,17 +247,17 @@ def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
     mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
-    _set_attr(mock_backend_front.execute_op, "return_value", ("res1", "res2"))
-    _set_attr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
-    _set_attr(mock_backend.execute_op, "return_value", ("res1", "res2"))
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend_front.execute_op).return_value = ensure_eager_tensor(("res1", "res2"))
+    ensure_mutable(mock_backend_front.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(("res1", "res2"))
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
     assert _string_split_eager(t, " ") is not None
     from ml_switcheroo_compiler.ops.text.frontend import string_split
 
     assert string_split(t, " ") is not None
-    _set_attr(mock_backend.execute_op, "return_value", "res")
-    assert as_tensor(_get_attr(regex_replace(t, "pattern", "rewrite"), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(as_string(t), "config")).shape == (2, 3)
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
+    assert ensure_eager_tensor(ensure_eager_tensor(regex_replace(t, "pattern", "rewrite")).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(as_string(t)).config).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
@@ -289,13 +288,13 @@ def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
     mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
-    _set_attr(mock_backend_front.execute_op, "return_value", ("res1", "res2"))
-    _set_attr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
-    _set_attr(mock_backend.execute_op, "return_value", "res")
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(_get_attr(lookup(t, t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(text_vectorization(t, some_arg=1), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(edit_distance(t, t), "config")).shape == (2, 3)
+    ensure_mutable(mock_backend_front.execute_op).return_value = ensure_eager_tensor(("res1", "res2"))
+    ensure_mutable(mock_backend_front.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    assert ensure_eager_tensor(ensure_eager_tensor(lookup(t, t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(text_vectorization(t, some_arg=1)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(edit_distance(t, t)).config).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_coverage(mocker: EagerTensorProtocol) -> None:
@@ -386,9 +385,9 @@ def test_text_ops_eager_additional_coverage_3(mocker: EagerTensorProtocol) -> No
     import ml_switcheroo_compiler.tracing.state as state
 
     state.global_tracing_state.start_tracing()
-    assert as_tensor(_get_attr(string_to_number(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_lower(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(string_upper(t), "config")).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_to_number(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_lower(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(string_upper(t)).config).shape == (2, 3)
     state.global_tracing_state.stop_tracing()
 
 
@@ -421,7 +420,7 @@ def test_text_ops_eager_additional_coverage_4(mocker: EagerTensorProtocol) -> No
     import ml_switcheroo_compiler.tracing.state as state
 
     state.global_tracing_state.start_tracing()
-    assert as_tensor(_get_attr(text_vectorization(t), "config")).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(text_vectorization(t)).config).shape == (2, 3)
     state.global_tracing_state.stop_tracing()
     with pytest.raises(RuntimeError):
         _string_split_trace(t, " ")

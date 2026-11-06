@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.linalg.linear_operator as linop_mod
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -36,10 +36,10 @@ def test_linear_operators_coverage() -> None:
     base_op = linop_mod.BaseLinearOperator()
 
     assert base_op.infer_shape(DummyWithShape((3, 3))) == (3, 3)
-    assert as_callable(base_op.infer_shape)(as_callable(DummyWithShape)([3, 3])) == (3, 3)
+    assert ensure_callable(base_op.infer_shape)(ensure_callable(DummyWithShape)([3, 3])) == (3, 3)
     assert base_op.infer_shape(operand=DummyWithShape((4, 4))) == (4, 4)
     assert base_op.infer_shape(operator=DummyWithShape((5, 5))) == (5, 5)
-    assert as_callable(base_op.infer_shape)(as_callable(DummyWithoutShape)()) == ()
+    assert ensure_callable(base_op.infer_shape)(ensure_callable(DummyWithoutShape)()) == ()
     assert base_op.infer_shape() == ()
 
     derived_classes: list[type[linop_mod.BaseLinearOperator]] = [

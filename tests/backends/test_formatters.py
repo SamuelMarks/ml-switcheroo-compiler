@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FallbackHandler, FormatterContext, OpFormatter
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -33,7 +33,7 @@ def test_fallback_handler() -> None:
 
         op_type = "Mean"
 
-    assert as_callable(FallbackHandler.generate_fallback_code)(as_callable(DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
+    assert ensure_callable(FallbackHandler.generate_fallback_code)(ensure_callable(DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
 
 
 def test_code_formatter() -> None:
@@ -81,7 +81,7 @@ def test_fallback_handler_missing_op_type() -> None:
 
         pass
 
-    assert as_callable(FallbackHandler.generate_fallback_code)(as_callable(DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
+    assert ensure_callable(FallbackHandler.generate_fallback_code)(ensure_callable(DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
 
 
 def test_op_formatter_edge_cases_continue() -> None:

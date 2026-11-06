@@ -9,7 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager.core_math_ops import _pmean, _psum
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, set_np_distributed_context
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_psum
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,18 +21,18 @@ def test_math_misc_distributed() -> None:
 
     t = np.array([1, 2])
 
-    res = _np_all_gather(np, t, axis=0)
+    res = _np_all_gather(ensure_eager_tensor(np), t, axis=0)
 
-    _np_all_reduce(np, t, op_type="sum")
+    _np_all_reduce(ensure_eager_tensor(np), t, op_type="sum")
 
-    _np_psum(np, t)
+    _np_psum(ensure_eager_tensor(np), t)
 
-    _np_all_to_all(np, t)
+    _np_all_to_all(ensure_eager_tensor(np), t)
     assert res is not None
 
 
 def test_core_math_ops_distributed() -> None:
     """Test function test_core_math_ops_distributed."""
     t = np.array([1, 2])
-    assert as_callable(np.array_equal)(as_callable(_psum)(np, t), t)
-    assert as_callable(np.array_equal)(as_callable(_pmean)(np, t), t)
+    assert ensure_callable(np.array_equal)(ensure_callable(_psum)(np, t), t)
+    assert ensure_callable(np.array_equal)(ensure_callable(_pmean)(np, t), t)

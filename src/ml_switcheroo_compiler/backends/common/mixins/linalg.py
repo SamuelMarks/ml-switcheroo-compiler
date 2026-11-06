@@ -2,11 +2,41 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
-from ml_switcheroo_compiler.core.shape import _has_attr
+import typing
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_int
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRNode
 
-from .common import CommonASTVisitor
+from .common import CommonASTVisitor, FallbackPrefixProtocol
+
+
+@typing.runtime_checkable
+class _CholeskyVjpImportedProtocol(typing.Protocol):
+    """Protocol for generators tracking `_cholesky_vjp_imported`."""
+
+    _cholesky_vjp_imported: bool
+
+
+@typing.runtime_checkable
+class _LuVjpImportedProtocol(typing.Protocol):
+    """Protocol for generators tracking `_lu_vjp_imported`."""
+
+    _lu_vjp_imported: bool
+
+
+@typing.runtime_checkable
+class _QrVjpImportedProtocol(typing.Protocol):
+    """Protocol for generators tracking `_qr_vjp_imported`."""
+
+    _qr_vjp_imported: bool
+
+
+@typing.runtime_checkable
+class _SvdVjpImportedProtocol(typing.Protocol):
+    """Protocol for generators tracking `_svd_vjp_imported`."""
+
+    _svd_vjp_imported: bool
 
 
 class LinearAlgebraASTVisitor(CommonASTVisitor):
@@ -23,7 +53,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not _has_attr(self.generator, "_cholesky_vjp_imported"):
+        raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
+        if not (isinstance(raw_gen, _CholeskyVjpImportedProtocol) and raw_gen._cholesky_vjp_imported):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager")
             self.generator._cholesky_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -41,7 +72,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not _has_attr(self.generator, "_lu_vjp_imported"):
+        raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
+        if not (isinstance(raw_gen, _LuVjpImportedProtocol) and raw_gen._lu_vjp_imported):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager")
             self.generator._lu_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -93,9 +125,9 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """
         args_str: str = f"{input_vars[0]}, {input_vars[1]}"
         if "lhs_indices" in node.attributes:
-            args_str += f", lhs_indices={input_vars[int(as_int(node.attributes['lhs_indices']))]}"
+            args_str += f", lhs_indices={input_vars[int(ensure_int(node.attributes['lhs_indices']))]}"
         if "rhs_indices" in node.attributes:
-            args_str += f", rhs_indices={input_vars[int(as_int(node.attributes['rhs_indices']))]}"
+            args_str += f", rhs_indices={input_vars[int(ensure_int(node.attributes['rhs_indices']))]}"
         return f"{self.generator.get_fallback_prefix()}.gather_mm({args_str})"
 
     def visit_SegmentedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -109,7 +141,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(as_int(node.attributes.get('segments', 2)))]})"
+        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(ensure_int(node.attributes.get('segments', 2)))]})"
 
     def visit_BlockMaskedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit target backend code or IR transformation for the BlockMaskedMm operation.
@@ -138,9 +170,9 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
-        bits: int = int(as_int(node.attributes.get("bits", 4)))
-        idx: int = int(as_int(node.attributes.get("return_idx", 0)))
+        group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
+        bits: int = int(ensure_int(node.attributes.get("bits", 4)))
+        idx: int = int(ensure_int(node.attributes.get("return_idx", 0)))
         pfx: str = self.generator.get_fallback_prefix()
 
         if pfx in ("mlx", "mx"):
@@ -159,8 +191,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
-        bits: int = int(as_int(node.attributes.get("bits", 4)))
+        group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
+        bits: int = int(ensure_int(node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]
@@ -183,8 +215,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
-        bits: int = int(as_int(node.attributes.get("bits", 4)))
+        group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
+        bits: int = int(ensure_int(node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]
@@ -207,7 +239,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not _has_attr(self.generator, "_qr_vjp_imported"):
+        raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
+        if not (isinstance(raw_gen, _QrVjpImportedProtocol) and raw_gen._qr_vjp_imported):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _qr_vjp_eager")
             self.generator._qr_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -224,7 +257,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not _has_attr(self.generator, "_svd_vjp_imported"):
+        raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
+        if not (isinstance(raw_gen, _SvdVjpImportedProtocol) and raw_gen._svd_vjp_imported):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _svd_vjp_eager")
             self.generator._svd_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()

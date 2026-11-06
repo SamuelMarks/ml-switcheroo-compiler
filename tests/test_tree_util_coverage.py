@@ -9,10 +9,9 @@ import pytest
 
 import ml_switcheroo_compiler.tree_util as tree_util_mod
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, emit_ir_node
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -45,33 +44,32 @@ def _test_tree_util_and_ops_base_confirmation_part_1(_state: dict[str, EagerTens
         _state: Shared test state dictionary.
     """
     tree = {"a": [1, 2, (3, 4)], "b": 5}
-    leaves, structure = as_callable(tree_util_mod.tree_flatten)(tree)
+    leaves, structure = ensure_callable(tree_util_mod.tree_flatten)(tree)
     assert leaves == [1, 2, 3, 4, 5]
-    reconstructed = as_callable(tree_util_mod.tree_unflatten)(structure, leaves)
+    reconstructed = ensure_callable(tree_util_mod.tree_unflatten)(structure, leaves)
     assert reconstructed == tree
 
-    mapped = as_callable(tree_util_mod.tree_map)(lambda x: x * 2, tree)
+    mapped = ensure_callable(tree_util_mod.tree_map)(lambda x: x * 2, tree)
     assert mapped == {"a": [2, 4, (6, 8)], "b": 10}
 
     assert tree_util_mod.tree_leaves({"a": 1, "b": 2}) == [1, 2]
     assert tree_util_mod.tree_structure({"a": 1, "b": 2}) is not None
     assert tree_util_mod.tree_all([True, True])
     assert not tree_util_mod.tree_all([True, False])
-    assert as_callable(tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert as_callable(tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert ensure_callable(tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
+    assert ensure_callable(tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
 
     td1 = tree_util_mod.TreeDef(list, [tree_util_mod.TreeDef(type(None))])
     td2 = tree_util_mod.TreeDef(list, [tree_util_mod.TreeDef(type(None))])
     assert td1 == td2
-    assert as_tensor(td1) != as_tensor("not_a_treedef")
+    assert ensure_eager_tensor(td1) != ensure_eager_tensor("not_a_treedef")
     assert hash(td1) == hash(td2)
     assert repr(td1) == "TreeDef(list, [TreeDef(NoneType, [])])"
 
     with pytest.raises(ValueError, match="All trees must have the same structure"):
         tree_util_mod.tree_map(lambda x, y: x + y, [1, 2], [1, 2, 3])
-    _get_attr(_state, "update")({"leaves": leaves, "mapped": mapped, "reconstructed": reconstructed, "structure": structure})
-    _get_attr(_state, "update")({"td1": td1, "td2": td2, "tree": tree})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"leaves": leaves, "mapped": mapped, "reconstructed": reconstructed, "structure": structure}))
+    _state.update(ensure_tensor_dict({"td1": td1, "td2": td2, "tree": tree}))
 
 
 def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -82,10 +80,10 @@ def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTens
     """
     td1 = _state["td1"]
     with pytest.raises(ValueError, match="Too few leaves"):
-        as_callable(tree_util_mod.tree_unflatten)(td1, [])
+        ensure_callable(tree_util_mod.tree_unflatten)(td1, [])
 
     with pytest.raises(ValueError, match="Too many leaves"):
-        as_callable(tree_util_mod.tree_unflatten)(td1, [1, 2])
+        ensure_callable(tree_util_mod.tree_unflatten)(td1, [1, 2])
     with pytest.raises(ValueError, match="Unsupported treedef node_type"):
         tree_util_mod._unflatten_node(tree_util_mod.TreeDef(int), iter([]))
 
@@ -99,8 +97,8 @@ def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTens
 
     dummy_op = OpDef()
     assert dummy_op.infer_shape() == ()
-    _get_attr(_state, "update")({"dummy_op": dummy_op, "inner": inner, "outer": outer})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dummy_op": dummy_op, "inner": inner, "outer": outer}))
+    _state.update(ensure_tensor_dict({"td1": td1}))
 
 
 def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -124,7 +122,7 @@ def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTens
             self.nodes: dict[str, IRNode] = {}
 
     graph = DummyGraph()
-    nid = as_callable(emit_ir_node)(graph, "CustomTestOp", ["input_0"])
+    nid = ensure_callable(emit_ir_node)(graph, "CustomTestOp", ["input_0"])
     assert nid in graph.nodes
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.add_node") as mock_add_node:
         nid_none = emit_ir_node(None, "CustomTestOpNoGraph", ["input_1"])
@@ -144,10 +142,10 @@ def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTens
         return x
 
     original_eager = config.eager_mode
-    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "backend": backend, "dummy_func": dummy_func, "graph": graph})
-    _get_attr(_state, "update")({"mock_add_node": mock_add_node, "mock_be": mock_be, "nid": nid, "nid_none": nid_none})
-    _get_attr(_state, "update")({"original_eager": original_eager})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyGraph": DummyGraph, "backend": backend, "dummy_func": dummy_func, "graph": graph}))
+    _state.update(ensure_tensor_dict({"mock_add_node": mock_add_node, "mock_be": mock_be, "nid": nid, "nid_none": nid_none}))
+    _state.update(ensure_tensor_dict({"original_eager": original_eager}))
+    _state.update(ensure_tensor_dict({"dummy_op": dummy_op}))
 
 
 def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -161,7 +159,7 @@ def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTens
         config.eager_mode = False
         assert dummy_func(42) == 42
     finally:
-        _set_attr(config, "eager_mode", original_eager)
+        ensure_mutable(config).eager_mode = ensure_eager_tensor(original_eager)
 
 
 def test_tree_util_and_ops_base_confirmation() -> None:

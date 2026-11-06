@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import logging
 import typing
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import (
-    StructuralOperandProtocol,
-    as_shape,
-)
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -28,6 +24,18 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 
 _COMPILATION_CACHE: dict[str, VariadicCallableProtocol] = {}
+
+
+def _extract_aot_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 @typing.runtime_checkable
@@ -170,12 +178,12 @@ def _build_signature_key(fn: TensorOrScalar, backend: str, args: TensorOrScalar)
     sig_parts = []
     args_iter: Iterable[TensorOrScalar] = args if isinstance(args, Iterable) else ()
     for a in args_iter:
-        raw_a: StructuralOperandProtocol = a
+        raw_a: TensorOrScalar = a
         if isinstance(raw_a, _TensorArgProtocol):
             sig_parts.append(f"T({raw_a.shape},{raw_a.dtype})")
         else:
             sig_parts.append(f"S({type(a).__name__})")
-    raw_fn: StructuralOperandProtocol = fn
+    raw_fn: TensorOrScalar = fn
     code_sig = raw_fn.__code__ if isinstance(raw_fn, _CodeCallableProtocol) else None
     fn_name = str(raw_fn.__name__) if isinstance(raw_fn, _CodeCallableProtocol) else ""
     return f"{fn_name}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
@@ -192,10 +200,10 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
     """
     proxy_args: list[TensorOrScalar] = []
     for i, a in enumerate(args):
-        raw_a: StructuralOperandProtocol = a
+        raw_a: TensorOrScalar = a
         if isinstance(raw_a, _TensorArgProtocol):
             arg_id = f"arg_{i}"
-            shape = as_shape(raw_a.shape)
+            shape = _extract_aot_shape(raw_a.shape)
             raw_dt = raw_a.dtype
             if isinstance(raw_dt, DType):
                 dtype = raw_dt
@@ -260,7 +268,7 @@ def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, Ten
         dict[str, TensorOrScalar]: Namespace dictionary mapping the backend module.
     """
     namespace: dict[str, TensorOrScalar] = {}
-    raw_gen_cls: StructuralOperandProtocol = generator_cls
+    raw_gen_cls: TensorOrScalar = generator_cls
     if isinstance(raw_gen_cls, _GetModuleProtocol):
         namespace[backend] = raw_gen_cls.get_module()
     elif backend == "numpy":
@@ -347,12 +355,12 @@ def _try_static_compile_aot(
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    raw_gen_cls: StructuralOperandProtocol = generator_cls
+    raw_gen_cls: TensorOrScalar = generator_cls
     if not isinstance(raw_gen_cls, _CompileAotProtocol):
         return None
     try:
-        static_compile = inspect.getattr_static(generator_cls, "compile_aot")
-        if isinstance(static_compile, (staticmethod, classmethod)) or not (isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)):
+        is_base_gen_sub = isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)
+        if not is_base_gen_sub or inspect.ismethod(raw_gen_cls.compile_aot):
             compiled_fn = raw_gen_cls.compile_aot(graph, **kwargs)
             if callable(compiled_fn):
                 res_fn: VariadicCallableProtocol = compiled_fn
@@ -385,7 +393,10 @@ def _build_generated_entrypoint(
     exec(code, namespace)
     if "apply_model" in namespace:
 
-        def apply_wrapper(*w_args: TensorOrScalar, **w_kw: TensorOrScalar) -> TensorOrScalar:
+        def apply_wrapper(
+            *w_args: TensorOrScalar,
+            **w_kw: TensorOrScalar,
+        ) -> TensorOrScalar:
             """Invoke the generated `apply_model` entrypoint.
 
             Args:
@@ -402,7 +413,10 @@ def _build_generated_entrypoint(
 
     if "evaluate" in namespace:
 
-        def eval_wrapper(*w_args: TensorOrScalar, **w_kw: TensorOrScalar) -> TensorOrScalar:
+        def eval_wrapper(
+            *w_args: TensorOrScalar,
+            **w_kw: TensorOrScalar,
+        ) -> TensorOrScalar:
             """Invoke the generated `evaluate` entrypoint.
 
             Args:
@@ -512,7 +526,7 @@ def _compile_with_generator_instance(
             raise CompilationError(f"Failed to instantiate generator '{backend}': {e}") from e
         return _fallback_eager(fn, args, kw)
 
-    raw_gen: StructuralOperandProtocol = generator
+    raw_gen: TensorOrScalar = generator
     if isinstance(raw_gen, _CompileAotProtocol):
         try:
             res_aot = raw_gen.compile_aot(graph, **kwargs)

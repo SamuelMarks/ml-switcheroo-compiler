@@ -7,7 +7,7 @@ import tempfile
 import typing
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -18,4 +18,4 @@ def test_pickle_load_save() -> None:
     fmt = PickleWeightFormat()
     with tempfile.NamedTemporaryFile() as f:
         fmt.save({"a": 1}, f.name)
-        assert as_tensor(fmt.load(f.name)) == as_tensor({"a": 1})
+        assert ensure_eager_tensor(fmt.load(f.name)) == ensure_eager_tensor({"a": 1})

@@ -8,13 +8,12 @@ import typing  # noqa: F401
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
-    as_float,
-    as_int,
-    as_tensor,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import as_mod
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 
 
 def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
@@ -45,17 +44,17 @@ def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: Eag
     Raises:
         ValueError: An exception.
     """
-    mod = as_mod(backend_module)
+    mod = ensure_mod(backend_module)
     if op_name == "mean":
         try:
-            return as_tensor(mod.mean(reshaped_x, axis=reduction_axes, keepdims=True))
+            return ensure_eager_tensor(mod.mean(reshaped_x, axis=reduction_axes, keepdims=True))
         except TypeError:
-            return as_tensor(mod.mean(reshaped_x, dim=reduction_axes, keepdim=True))
+            return ensure_eager_tensor(mod.mean(reshaped_x, dim=reduction_axes, keepdim=True))
     if op_name == "variance":
         try:
-            return as_tensor(mod.var(reshaped_x, axis=reduction_axes, keepdims=True))
+            return ensure_eager_tensor(mod.var(reshaped_x, axis=reduction_axes, keepdims=True))
         except TypeError:
-            return as_tensor(mod.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False))
+            return ensure_eager_tensor(mod.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False))
     msg: str = f"Unknown grouped reduction op: {op_name}"
     raise ValueError(msg)
 
@@ -72,10 +71,10 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
     Returns:
             EagerValue: Result.
     """
-    mod = as_mod(backend_module)
+    mod = ensure_mod(backend_module)
     groups: int = kwargs["groups"]
     axis: int = kwargs["axis"]
-    shape: list[int] = list(as_tensor(x).shape)
+    shape: list[int] = list(ensure_eager_tensor(x).shape)
     ndims: int = len(shape)
     if axis < 0:
         axis += ndims
@@ -101,8 +100,8 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
             EagerValue: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
-    axis: int = int(as_int(kwargs.get("axis", -1)))
+    groups: int = int(ensure_int(kwargs.get("groups") if "groups" in kwargs else args[1]))
+    axis: int = int(ensure_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
 
@@ -119,8 +118,8 @@ def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
             EagerValue: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
-    axis: int = int(as_int(kwargs.get("axis", -1)))
+    groups: int = int(ensure_int(kwargs.get("groups") if "groups" in kwargs else args[1]))
+    axis: int = int(ensure_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
@@ -136,10 +135,10 @@ def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: i
     Returns:
             EagerValue: Result.
     """
-    mod = as_mod(backend_module)
+    mod = ensure_mod(backend_module)
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")
-    out_t = as_tensor(out)
+    out_t = ensure_eager_tensor(out)
     shape: list[int] = list(out_t.shape)
     ndims: int = len(shape)
     if weight is not None:
@@ -166,11 +165,11 @@ def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, Eager
         tuple[object, int, Optional[object], Optional[object], int, float]: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
+    groups: int = int(ensure_int(kwargs.get("groups") if "groups" in kwargs else args[1]))
     weight = kwargs.get("weight", None)
     bias = kwargs.get("bias", None)
-    axis: int = int(as_int(kwargs.get("axis", -1)))
-    epsilon: float = float(as_float(kwargs.get("epsilon", 1e-05)))
+    axis: int = int(ensure_int(kwargs.get("axis", -1)))
+    epsilon: float = float(ensure_float(kwargs.get("epsilon", 1e-05)))
     return (x, groups, weight, bias, axis, epsilon)
 
 
@@ -187,15 +186,15 @@ def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[i
     Returns:
             EagerValue: Result.
     """
-    mod = as_mod(backend_module)
+    mod = ensure_mod(backend_module)
     axis, groups = group_params
     mean, var, epsilon = stats
     C_per_group: int = shape[axis] // groups
     reshaped_dims: list[int] = shape.copy()
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
     reshaped_x: EagerTensorProtocol = mod.reshape(x, reshaped_dims)
-    normalized = (reshaped_x - as_tensor(mean)) / mod.sqrt(as_tensor(var) + as_tensor(epsilon))
-    return as_tensor(mod.reshape(normalized, shape))
+    normalized = (reshaped_x - ensure_eager_tensor(mean)) / mod.sqrt(ensure_eager_tensor(var) + ensure_eager_tensor(epsilon))
+    return ensure_eager_tensor(mod.reshape(normalized, shape))
 
 
 @global_eager_registry.register("GroupNorm")
@@ -211,7 +210,7 @@ def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
             EagerValue: Result.
     """
     x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
-    shape: list[int] = list(as_tensor(x).shape)
+    shape: list[int] = list(ensure_eager_tensor(x).shape)
     ndims: int = len(shape)
     if axis < 0:
         axis += ndims

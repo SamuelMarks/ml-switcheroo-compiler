@@ -23,8 +23,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_identifier,
     validate_workgroup_size,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -185,12 +184,12 @@ def test_wgsl_ast_string_statements_validation() -> None:
     emitter = WGSLEmitter()
     emitter.validate("plain_string_node")
 
-    if_node = as_callable(WGSLIf)("cond", ["return;"])
+    if_node = ensure_callable(WGSLIf)("cond", ["return;"])
     if_node.validate()
 
-    for_node = as_callable(WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node = ensure_callable(WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
     for_node.validate()
 
-    func = as_callable(WGSLFunction)("my_func", [], ["return;"])
+    func = ensure_callable(WGSLFunction)("my_func", [], ["return;"])
     func.validate()
-    assert _get_attr(func, "name") == "my_func"
+    assert ensure_eager_tensor(func).name == "my_func"

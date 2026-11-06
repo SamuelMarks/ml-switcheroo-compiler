@@ -5,7 +5,6 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.distributed.collectives as dist_collectives
-from ml_switcheroo_compiler.core.shape import _has_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -123,5 +122,5 @@ def test_distributed_collectives_reexports() -> None:
         "ring_reduce_scatter",
     ]
     for sym in expected_symbols:
-        assert _has_attr(dist_collectives, sym), f"Missing symbol {sym}"
+        assert sym in dir(dist_collectives), f"Missing symbol {sym}"
     assert dist_collectives.__all__ == expected_symbols

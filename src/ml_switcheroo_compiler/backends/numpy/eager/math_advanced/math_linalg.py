@@ -6,10 +6,9 @@ from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @numpy_eager_registry.register("Rsqrt")
@@ -26,7 +25,7 @@ def _np_rsqrt(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
             tuple[int, ...]: Result.
     """
     with np.errstate(divide="ignore", invalid="ignore"):
-        return as_tensor(1.0 / _get_attr(np, "sqrt")(x))
+        return ensure_eager_tensor(1.0 / get_backend_member(np, "sqrt")(x))
 
 
 @numpy_eager_registry.register("Trace")
@@ -40,7 +39,7 @@ def _np_trace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(_get_attr(np, "trace")(np.asarray(args[0]), *args[1:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "trace")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Vander")
@@ -55,7 +54,7 @@ def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "vander")(np.asarray(args[0]), *args[1:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "vander")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Cholesky")
@@ -143,9 +142,9 @@ def _np_customlinearsolve(backend_module: BackendModuleProtocol, *args: EagerVal
     if callable(args[0]):
         solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
         if solve:
-            return as_tensor(as_callable(solve)(args[0], args[1]))
+            return ensure_eager_tensor(ensure_callable(solve)(args[0], args[1]))
         return args[1]
-    return as_tensor(_get_attr(np.linalg, "solve")(args[0], args[1]))
+    return ensure_eager_tensor(get_backend_member(np.linalg, "solve")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("LinearOperatorInversion")
@@ -180,12 +179,12 @@ def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     x = args[0]
     y = args[1]
     axis = kwargs.get("axis", -1)
-    if _has_attr(backend_module, "linalg") and _has_attr(backend_module.linalg, "vecdot"):
+    if has_backend_member(backend_module, "linalg") and has_backend_member(backend_module.linalg, "vecdot"):
         _typed_ret_1: EagerValue = backend_module.linalg.vecdot(x, y, axis=axis)
         return _typed_ret_1
-    if _has_attr(backend_module, "vecdot"):
+    if has_backend_member(backend_module, "vecdot"):
         _typed_ret_2: EagerValue = backend_module.vecdot(x, y, axis=axis)
         return _typed_ret_2
     if backend_module.iscomplexobj(x):
         x = backend_module.conj(x)
-    return as_tensor(backend_module.sum(as_tensor(x) * as_tensor(y), axis=axis))
+    return ensure_eager_tensor(backend_module.sum(ensure_eager_tensor(x) * ensure_eager_tensor(y), axis=axis))

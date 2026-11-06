@@ -2,31 +2,62 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 from collections.abc import Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import (
-    ShapeProtocol,
-    as_callable,
-    as_shape,
-)
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     AttrValue,
-    StructuralOperandProtocol,
     TensorOrScalar,
-    _has_attr,
     is_backend_buffer,
     is_traced_data,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import as_attr_val
 from ml_switcheroo_compiler.ops.shape_inference import infer_shape
 from ml_switcheroo_compiler.ops.type_inference import resolve_output_dtype_and_device
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+def _coerce_attr_val(val: TensorOrScalar | AttrValue) -> AttributeValue:
+    """Coerce a runtime value to an `AttributeValue` for IR node storage.
+
+    Args:
+        val (TensorOrScalar | AttrValue): Runtime attribute value.
+
+    Returns:
+        AttributeValue: IR-compatible attribute value.
+    """
+    if isinstance(val, (int, float, str, bool, bytes)) or val is None:
+        return val
+    if isinstance(val, (list, tuple)):
+        return [_coerce_attr_val(v) for v in val]
+    if isinstance(val, dict):
+        return {str(k): _coerce_attr_val(v) for k, v in val.items()}
+    return str(val)
+
+
+def _extract_builder_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Input shape sequence.
+
+    Returns:
+        tuple[int, ...]: Extracted integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
+
+
+@typing.runtime_checkable
+class _ConstantCacheStateProtocol(typing.Protocol):
+    """Protocol for tracing state objects exposing a `constant_cache` dictionary."""
+
+    constant_cache: dict[int, str]
 
 
 class TracingNodeBuilder:
@@ -44,7 +75,7 @@ class TracingNodeBuilder:
             str: The unique identifier of the created node.
         """
         out_id = str(uuid.uuid4())
-        attrs: dict[str, AttributeValue] = {"value": as_attr_val(val)}
+        attrs: dict[str, AttributeValue] = {"value": _coerce_attr_val(val)}
         node = LogicalNode(
             id=out_id,
             op_type="Constant",
@@ -67,13 +98,11 @@ class TracingNodeBuilder:
         if is_traced_data(a.data):
             return str(a.data.id), a.shape
         data_id = id(a.data)
-        raw_state: StructuralOperandProtocol = global_tracing_state
-        if _has_attr(raw_state, "constant_cache") and data_id in raw_state.constant_cache:
-            return str(raw_state.constant_cache[data_id]), a.shape
+        if data_id in global_tracing_state.constant_cache:
+            return str(global_tracing_state.constant_cache[data_id]), a.shape
         val = a.data.tolist() if is_backend_buffer(a.data) else a.data
         out_id = TracingNodeBuilder.create_constant_node(val, a.shape)
-        if _has_attr(raw_state, "constant_cache"):
-            raw_state.constant_cache[data_id] = out_id
+        global_tracing_state.constant_cache[data_id] = out_id
         return out_id, a.shape
 
     @staticmethod
@@ -104,7 +133,7 @@ class TracingNodeBuilder:
         backend = get_active_backend()
         arr: TensorOrScalar = backend.array(a)
         val = arr.tolist() if is_backend_buffer(arr) else arr
-        shape = as_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
+        shape = _extract_builder_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
         out_id = TracingNodeBuilder.create_constant_node(val, shape)
         return out_id, shape
 
@@ -131,8 +160,7 @@ class TracingNodeBuilder:
                 first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif isinstance(a, ProxyTensor) or is_traced_data(a):
-                raw_a: StructuralOperandProtocol = a
-                out_id, shape = str(a.id), as_shape(raw_a.shape) if isinstance(raw_a, ShapeProtocol) else ()
+                out_id, shape = str(a.id), _extract_builder_shape(a.shape)
             else:
                 out_id, shape = TracingNodeBuilder.extract_from_constant(a)
 
@@ -160,7 +188,7 @@ class TracingNodeBuilder:
             str: The unique identifier of the created node.
         """
         out_id = str(uuid.uuid4())
-        attrs: dict[str, AttributeValue] = {str(k): as_attr_val(v) for k, v in kwargs.items()}
+        attrs: dict[str, AttributeValue] = {str(k): _coerce_attr_val(v) for k, v in kwargs.items()}
         from ml_switcheroo_ir import SymInt, SymNode
 
         raw_inputs: Sequence[AttrValue] = input_ids
@@ -193,8 +221,10 @@ class TracingNodeBuilder:
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
-        inferred: TensorOrScalar = as_callable(infer_shape)(op_type, *shapes, **kwargs)
-        out_shape: tuple[int | str, ...] = tuple(int(d) if isinstance(d, int) else str(d) for d in inferred) if isinstance(inferred, (tuple, list)) else ()
+        norm_shapes: list[tuple[int, ...] | None] = [_extract_builder_shape(s) if isinstance(s, tuple) else None for s in shapes]
+        norm_kwargs: dict[str, int | float | str | bool | tuple[int, ...] | Sequence[int] | None] = {k: v for k, v in kwargs.items() if isinstance(v, (int, float, str, bool, tuple, list)) or v is None}
+        inferred = infer_shape(op_type, *norm_shapes, **norm_kwargs)
+        out_shape: tuple[int | str, ...] = tuple(int(d) if isinstance(d, int) else str(d) for d in inferred)
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
         out_id = TracingNodeBuilder.create_tracing_logical_node(

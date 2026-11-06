@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, _get_attr, as_callable, as_shape, as_tensor, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -39,7 +43,9 @@ def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     Raises:
         ValueError: If either input shape is `None`.
     """
-    if _get_attr(in1, "shape", None) is None or _get_attr(in2, "shape", None) is None:
+    raw_in1: TensorOrScalar = in1
+    raw_in2: TensorOrScalar = in2
+    if not isinstance(raw_in1, ShapeProtocol) or raw_in1.shape is None or not isinstance(raw_in2, ShapeProtocol) or raw_in2.shape is None:
         raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 
@@ -68,10 +74,10 @@ def convolve2d(
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
-        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape")), in1.dtype, in1.device))
+        return Tensor(data, TensorConfig(extract_shape(data), in1.dtype, in1.device))
 
-    return as_tensor(
-        as_callable(_emit_signal_node)(
+    return ensure_eager_tensor(
+        ensure_callable(_emit_signal_node)(
             "Convolve2d",
             [in1, in2],
             kwargs,

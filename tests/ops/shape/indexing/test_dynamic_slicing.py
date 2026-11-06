@@ -7,9 +7,8 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.shape.dynamic_slicing import DynamicSlice, DynamicUpdateSlice, dynamic_slice, dynamic_update_slice, update_slice
-from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -58,13 +57,13 @@ def test_dynamic_slice_eager() -> None:
             """
             self.data = d
 
-    res = as_callable(dynamic_slice)(t, [as_callable(FakeStart)(1)], [2])
-    assert as_tensor(_get_attr(res, "config")).shape == (2,)
-    assert list(as_tensor(_get_attr(res, "data"))) == [2, 3]
+    res = ensure_callable(dynamic_slice)(t, [ensure_callable(FakeStart)(1)], [2])
+    assert ensure_eager_tensor(ensure_eager_tensor(res).config).shape == (2,)
+    assert list(ensure_eager_tensor(ensure_eager_tensor(res).data)) == [2, 3]
 
-    res2 = as_callable(dynamic_slice)(t, [3], [2])
-    assert as_tensor(_get_attr(res2, "config")).shape == (2,)
-    assert list(as_tensor(_get_attr(res2, "data"))) == [4, 5]
+    res2 = ensure_callable(dynamic_slice)(t, [3], [2])
+    assert ensure_eager_tensor(ensure_eager_tensor(res2).config).shape == (2,)
+    assert list(ensure_eager_tensor(ensure_eager_tensor(res2).data)) == [4, 5]
 
     config.eager_mode = False
 
@@ -81,7 +80,7 @@ def test_update_slice(mocker: EagerTensorProtocol) -> None:
     t = MockTensor((5,))
     update = MockTensor((2,))
 
-    res = as_callable(update_slice)(t, update, [1, as_callable(MockTensor)(())])
+    res = ensure_callable(update_slice)(t, update, [1, ensure_callable(MockTensor)(())])
     assert res == "updated"
 
 
@@ -101,9 +100,9 @@ def test_dynamic_update_slice_infer_shape() -> None:
     op = DynamicUpdateSlice()
 
     t = MockTensor((2, 3))
-    assert as_callable(op.infer_shape)(t, "update", "starts") == (2, 3)
+    assert ensure_callable(op.infer_shape)(t, "update", "starts") == (2, 3)
 
-    assert as_callable(op.infer_shape)("not_tensor", "update", "starts") == ()
+    assert ensure_callable(op.infer_shape)("not_tensor", "update", "starts") == ()
 
 
 def test_dynamic_slice_tracing(mocker: EagerTensorProtocol) -> None:
@@ -115,8 +114,8 @@ def test_dynamic_slice_tracing(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing._emit_shape_node", return_value="sliced")
     t = MockTensor((5,))
-    _set_attr(t, "dtype", "float32")
-    res = as_callable(dynamic_slice)(t, [1], [2])
+    ensure_mutable(t).dtype = ensure_eager_tensor("float32")
+    res = ensure_callable(dynamic_slice)(t, [1], [2])
     assert res == "sliced"
 
 
@@ -129,8 +128,8 @@ def test_dynamic_update_slice_tracing(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing._emit_shape_node", return_value="updated")
     t = MockTensor((5,))
-    _set_attr(t, "dtype", "float32")
-    res = dynamic_update_slice(as_tensor_obj(t), as_tensor_obj(MockTensor((2,))), _cast_val("list[Tensor]", [1]))
+    ensure_mutable(t).dtype = ensure_eager_tensor("float32")
+    res = dynamic_update_slice(ensure_tensor_obj(t), ensure_tensor_obj(MockTensor((2,))), [ensure_tensor_obj(1)])
     assert res == "updated"
 
 
@@ -161,9 +160,9 @@ def test_dynamic_slice_validation_and_shapes(mocker: EagerTensorProtocol) -> Non
     config.eager_mode = False
 
     t = MockTensor((10, 20))
-    _set_attr(t, "dtype", "float32")
-    as_callable(dynamic_slice)(t, [0, 0], [4, 8])
+    ensure_mutable(t).dtype = ensure_eager_tensor("float32")
+    ensure_callable(dynamic_slice)(t, [0, 0], [4, 8])
     assert captured_shape["DynamicSlice"] == (4, 8)
 
     with pytest.raises(ValueError, match="slice_sizes length"):
-        as_callable(dynamic_slice)(t, [0], [4])
+        ensure_callable(dynamic_slice)(t, [0], [4])

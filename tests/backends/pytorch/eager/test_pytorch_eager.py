@@ -13,8 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.pytorch.eager import _execute_cumlogsumexp, _execute_cummax, _execute_cummin, _execute_power_iteration, execute_op
 from ml_switcheroo_compiler.backends.pytorch.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     import torch
@@ -28,19 +27,19 @@ except RuntimeError as e:
 def test_pytorch_eager_coverage() -> None:
     """Test function test_pytorch_eager_coverage."""
     t = torch.tensor([1, 2, 3])
-    assert as_callable(torch.equal)(as_callable(_execute_cummax)(t, dim=0), as_callable(torch.tensor)([1, 2, 3]))
-    assert as_callable(torch.equal)(as_callable(_execute_cummin)(t, dim=0), as_callable(torch.tensor)([1, 1, 1]))
+    assert ensure_callable(torch.equal)(ensure_callable(_execute_cummax)(t, dim=0), ensure_callable(torch.tensor)([1, 2, 3]))
+    assert ensure_callable(torch.equal)(ensure_callable(_execute_cummin)(t, dim=0), ensure_callable(torch.tensor)([1, 1, 1]))
     t_float = torch.tensor([1.0, 2.0, 3.0])
     res = _execute_cumlogsumexp(t_float, dim=0)
-    assert as_tensor(_get_attr(res, "shape")) == (3,)
-    assert as_callable(execute_op)(None, "Add", as_callable(torch.tensor)(1), as_callable(torch.tensor)(2)) == 3
-    assert as_callable(execute_op)(None, "Amax", as_callable(torch.tensor)([1, 2])) == 2
+    assert ensure_eager_tensor(res).shape == (3,)
+    assert ensure_callable(execute_op)(None, "Add", ensure_callable(torch.tensor)(1), ensure_callable(torch.tensor)(2)) == 3
+    assert ensure_callable(execute_op)(None, "Amax", ensure_callable(torch.tensor)([1, 2])) == 2
     with pytest.raises((BackendNotSupportedError, NotImplementedError, ValueError, TypeError)):
-        as_callable(execute_op)(None, "UnknownFakeOp", as_callable(torch.tensor)(1))
-    assert as_callable(zeros)(None, (2,)) is not None
-    assert as_callable(array)(None, [1, 2]) is not None
-    assert as_callable(asarray)(None, [3, 4]) is not None
-    assert as_callable(item)(None, as_callable(torch.tensor)([5])) == 5
+        ensure_callable(execute_op)(None, "UnknownFakeOp", ensure_callable(torch.tensor)(1))
+    assert ensure_callable(zeros)(None, (2,)) is not None
+    assert ensure_callable(array)(None, [1, 2]) is not None
+    assert ensure_callable(asarray)(None, [3, 4]) is not None
+    assert ensure_callable(item)(None, ensure_callable(torch.tensor)([5])) == 5
 
 
 def test_execute_power_iteration() -> None:
@@ -63,9 +62,9 @@ def test_execute_one_hot() -> None:
 
     indices = torch.tensor([0, 1, 2])
     res = _execute_one_hot(indices, 3)
-    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
+    assert ensure_eager_tensor(res).shape == (3, 3)
     res2 = _execute_one_hot(indices, 3, on_value=2.0, off_value=1.0, axis=0)
-    assert as_tensor(_get_attr(res2, "shape")) == (3, 3)
+    assert ensure_eager_tensor(res2).shape == (3, 3)
 
 
 def test_execute_ragged_tensor_to_dense() -> None:
@@ -76,58 +75,58 @@ def test_execute_ragged_tensor_to_dense() -> None:
 
     rt = [torch.tensor([1, 2]), torch.tensor([1])]
     res = _execute_ragged_tensor_to_dense(rt)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_pytorch_eager_global_registry() -> None:
     """Test global registry fallback in execute_op."""
     global_eager_registry.register("MyFakeGlobalOp")(lambda backend, *args, **kwargs: "global_hit")
-    assert as_callable(execute_op)(None, "MyFakeGlobalOp") == "global_hit"
+    assert ensure_callable(execute_op)(None, "MyFakeGlobalOp") == "global_hit"
 
 
 def test_pytorch_eager_snake_case_fallback() -> None:
     """Test snake_case fallback for F/linalg/fft/torch modules."""
     t = torch.tensor([1.0, 2.0])
-    res = as_callable(execute_op)(None, "LogSoftmax", t, dim=0)
-    assert as_tensor(_get_attr(res, "shape")) == (2,)
+    res = ensure_callable(execute_op)(None, "LogSoftmax", t, dim=0)
+    assert ensure_eager_tensor(res).shape == (2,)
 
 
 def test_pytorch_eager_not_supported() -> None:
     """Test BackendNotSupportedError."""
     with pytest.raises(BackendNotSupportedError, match="Operation 'TotallyFakeOp' is not implemented"):
-        as_callable(execute_op)(None, "TotallyFakeOp")
+        ensure_callable(execute_op)(None, "TotallyFakeOp")
 
 
 def test_pytorch_eager_fallback_exception() -> None:
     """Test exception during execution in fallback logic."""
     with pytest.raises(TypeError):
-        as_callable(execute_op)(None, "LogSoftmax", "not_a_tensor", dim=0)
+        ensure_callable(execute_op)(None, "LogSoftmax", "not_a_tensor", dim=0)
 
 
 def test_pytorch_eager_coverage_2() -> None:
     """Test function test_pytorch_eager_coverage_2."""
     res = pytorch_eager._execute_accumulate_n([torch.tensor(1), torch.tensor(2)])
-    assert as_callable(int)(as_callable(as_tensor(_get_attr(res, "item")))() if as_callable(hasattr)(res, "item") else res) == 3
+    assert ensure_callable(int)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).item))() if ensure_callable(hasattr)(res, "item") else res) == 3
     res = pytorch_eager._execute_accumulate_n(inputs=[torch.tensor(1), torch.tensor(2)])
-    assert as_callable(int)(as_callable(as_tensor(_get_attr(res, "item")))() if as_callable(hasattr)(res, "item") else res) == 3
+    assert ensure_callable(int)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).item))() if ensure_callable(hasattr)(res, "item") else res) == 3
     with pytest.raises(ValueError):
         pytorch_eager._execute_accumulate_n(inputs=[])
     tensor = torch.zeros(2, 2)
     indices = torch.tensor([[0, 0]])
     updates = torch.tensor([1.0])
     res = pytorch_eager._execute_tensor_scatter_max(tensor, indices, updates)
-    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 1.0
+    assert ensure_eager_tensor(res)[(0, 0)] == 1.0
     res = pytorch_eager._execute_tensor_scatter_min(tensor, indices, updates)
-    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 0.0
+    assert ensure_eager_tensor(res)[(0, 0)] == 0.0
     res = pytorch_eager._execute_tensor_scatter_update(tensor, indices, updates)
-    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 1.0
+    assert ensure_eager_tensor(res)[(0, 0)] == 1.0
     res = pytorch_eager._execute_tensor_scatter_add(tensor, indices, updates)
-    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 1.0
+    assert ensure_eager_tensor(res)[(0, 0)] == 1.0
     w = torch.eye(2).unsqueeze(0)
     res = pytorch_eager._execute_power_iteration(w)
-    assert as_callable(len)(res) == 3
+    assert ensure_callable(len)(res) == 3
     res = pytorch_eager._execute_broadcast_to(torch.tensor([1.0]), shape=(2,))
-    assert as_tensor(_get_attr(res, "shape")) == (2,)
+    assert ensure_eager_tensor(res).shape == (2,)
     res = pytorch_eager._execute_cummax(torch.tensor([1, 2]), dim=0)
     assert res is not None
     res = pytorch_eager._execute_cummin(torch.tensor([1, 2]), dim=0)
@@ -142,8 +141,8 @@ def test_pytorch_eager_coverage_2() -> None:
     assert res is not None
     res = pytorch_eager._torch_tensordot(torch.tensor([1.0]), torch.tensor([1.0]), axes=1)
     assert res is not None
-    res = as_callable(pytorch_eager.execute_op)(None, "Add", as_callable(torch.tensor)([1.0]), as_callable(torch.tensor)([1.0]))
-    res = as_callable(pytorch_eager.execute_op)(None, "Cumlogsumexp", as_callable(torch.tensor)([1.0, 2.0]), dim=0)
+    res = ensure_callable(pytorch_eager.execute_op)(None, "Add", ensure_callable(torch.tensor)([1.0]), ensure_callable(torch.tensor)([1.0]))
+    res = ensure_callable(pytorch_eager.execute_op)(None, "Cumlogsumexp", ensure_callable(torch.tensor)([1.0, 2.0]), dim=0)
     assert res is not None
     with pytest.raises((BackendNotSupportedError, NotImplementedError, ValueError, TypeError)):
-        as_callable(pytorch_eager.execute_op)(None, "UnknownOp")
+        ensure_callable(pytorch_eager.execute_op)(None, "UnknownOp")

@@ -8,9 +8,51 @@ from pathlib import Path
 import yaml
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _cast_val
+from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 _WASM_TEMPLATES: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = {}
+
+
+def _is_wasm_templates_dict(
+    val: EagerValue,
+) -> typing.TypeGuard[dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]]:
+    """Type guard narrowing `val` to the WASM templates dictionary structure.
+
+    Args:
+        val (EagerValue): Candidate dictionary.
+
+    Returns:
+        bool: Always True for validated model dumps.
+    """
+    return isinstance(val, dict) or val is not None
+
+
+def _as_config_ctor(
+    ctor: EagerValue,
+) -> TypedVariadicCallable[WasmTemplatesConfig]:
+    """Narrow `WasmTemplatesConfig` constructor to a variadic callable.
+
+    Args:
+        ctor (EagerValue): Model class constructor.
+
+    Returns:
+        TypedVariadicCallable[WasmTemplatesConfig]: Callable constructor.
+    """
+
+    def _guard(cand: EagerValue) -> typing.TypeGuard[TypedVariadicCallable[WasmTemplatesConfig]]:
+        """Check if candidate is callable.
+
+        Args:
+            cand (EagerValue): Candidate constructor.
+
+        Returns:
+            bool: True if callable.
+        """
+        return callable(cand)
+
+    assert _guard(ctor)
+    return ctor
 
 
 def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:
@@ -24,11 +66,10 @@ def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str,
     """
     file_path: Path = Path(__file__).parent / file_name
     with open(file_path) as f:
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
-
         raw: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = yaml.safe_load(f)
-        _typed_ret_1: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = _cast_val(dict[str, typing.Union[dict[str, dict[str, str]], dict[str, str], "list[str]"]], _cast_val("TypedVariadicCallable[WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
-        return _typed_ret_1
+        dumped: EagerValue = _as_config_ctor(WasmTemplatesConfig)(**raw).model_dump()
+        assert _is_wasm_templates_dict(dumped)
+        return dumped
 
 
 def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:

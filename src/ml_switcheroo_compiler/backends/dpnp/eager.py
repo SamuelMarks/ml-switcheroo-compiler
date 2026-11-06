@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _get_dpnp_module, _has_attr
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.dpnp.types import _get_dpnp_module
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 _DPNP_OP_ALIASES: dict[str, str] = {
@@ -178,9 +179,9 @@ def _get_target_function(module: EagerValue, target_path: str) -> EagerValue | N
     """
     curr = module
     for part in target_path.split("."):
-        if not _has_attr(curr, part):
+        if not has_backend_member(curr, part):
             return None
-        curr = _get_attr(curr, part)
+        curr = get_backend_member(curr, part)
     return curr if callable(curr) else None
 
 
@@ -193,8 +194,8 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped buffer or original value.
     """
-    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
-        return _get_attr(arg, "data")
+    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
+        return get_backend_member(arg, "data")
     return arg
 
 
@@ -208,10 +209,10 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
     Returns:
         EagerValue | None: Resolved callable or None if not found.
     """
-    if _has_attr(dpnp_mod, fn_name):
-        fn = _get_attr(dpnp_mod, fn_name)
+    if has_backend_member(dpnp_mod, fn_name):
+        fn: EagerValue = get_backend_member(dpnp_mod, fn_name)
         if callable(fn):
-            return as_tensor(fn)
+            return ensure_eager_tensor(fn)
 
     target_path = _DPNP_OP_ALIASES.get(fn_name)
     if target_path is not None:
@@ -219,11 +220,11 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
         if fn is not None:
             return fn
 
-    linalg_mod = _get_attr(dpnp_mod, "linalg", None)
-    if linalg_mod is not None and _has_attr(linalg_mod, fn_name):
-        fn = _get_attr(linalg_mod, fn_name)
+    linalg_mod: EagerValue = get_backend_member(dpnp_mod, "linalg", None)
+    if linalg_mod is not None and has_backend_member(linalg_mod, fn_name):
+        fn = get_backend_member(linalg_mod, fn_name)
         if callable(fn):
-            return as_tensor(fn)
+            return ensure_eager_tensor(fn)
 
     return None
 
@@ -251,7 +252,7 @@ def execute_op(
 
     fn = _resolve_dpnp_callable(dpnp_mod, op_type.lower())
     if fn is not None:
-        return as_callable(fn)(*actual_args, **kwargs)
+        return ensure_callable(fn)(*actual_args, **kwargs)
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 

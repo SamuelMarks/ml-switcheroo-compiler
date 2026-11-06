@@ -3,12 +3,34 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    global_eager_registry,
+)
 from ml_switcheroo_compiler.backends.numba import kernels
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import DataHolderProtocol
+
+
+@typing.runtime_checkable
+class _ItemCallableProtocol(typing.Protocol):
+    """Protocol for scalar tensors exposing `.item()`."""
+
+    def item(self) -> EagerValue:
+        """Extract scalar item.
+
+        Returns:
+            EagerValue: Scalar item.
+        """
+        ...
 
 
 def _unwrap_arg(arg: EagerValue) -> EagerValue:
@@ -20,8 +42,9 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped buffer or original value.
     """
-    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
-        return as_tensor(_get_attr(arg, "data"))
+    raw_arg: EagerValue = arg
+    if type(arg).__name__ == "Tensor" and isinstance(raw_arg, DataHolderProtocol):
+        return ensure_eager_tensor(raw_arg.data)
     return arg
 
 
@@ -42,22 +65,23 @@ def _eval_numba_control_flow(
     """
     if op_type in ("Cond", "cond") and len(actual_args) >= 3:
         pred, true_branch, false_branch = actual_args[0], actual_args[1], actual_args[2]
-        pred_bool = bool(_get_attr(pred, "item")()) if _has_attr(pred, "item") else bool(pred)
+        raw_pred: EagerValue = pred
+        pred_bool = bool(raw_pred.item()) if isinstance(raw_pred, _ItemCallableProtocol) else bool(pred)
         branch = true_branch if pred_bool else false_branch
         return True, branch() if callable(branch) else branch
 
     if op_type in ("WhileLoop", "while_loop") and len(actual_args) >= 1:
         curr = actual_args[0]
-        max_iters = int(as_int(kwargs.get("max_iters", 10)))
+        max_iters = int(ensure_int(kwargs.get("max_iters", 10)))
         for _ in range(max_iters):
-            curr = as_tensor(curr) + 1
+            curr = ensure_eager_tensor(curr) + 1
         return True, curr
 
     if op_type in ("Scan", "scan") and len(actual_args) >= 2:
         carry, xs = actual_args[0], actual_args[1]
         res = []
-        for x in _get_attr(kernels.asarray(xs), "tolist")():
-            carry = as_tensor(carry) + x
+        for x in ensure_eager_list(ensure_eager_tensor(kernels.asarray(xs)).tolist()):
+            carry = ensure_eager_tensor(carry) + x
             res.append(carry)
         return True, kernels.asarray(res)
 
@@ -140,10 +164,9 @@ def execute_op(
         return func(kernels, *actual_args, **kwargs)
 
     fn_name = op_type.lower()
-    if _has_attr(kernels, fn_name):
-        fn = _get_attr(kernels, fn_name)
-        if callable(fn):
-            return as_tensor(fn(*actual_args, **kwargs))
+    has_fn, fn = resolve_backend_member(kernels, fn_name)
+    if has_fn and callable(fn):
+        return ensure_eager_tensor(ensure_callable(fn)(*actual_args, **kwargs))
 
     msg = f"Operation '{op_type}' is not implemented for Numba backend."
     raise BackendNotSupportedError(msg)

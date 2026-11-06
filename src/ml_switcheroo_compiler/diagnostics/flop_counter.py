@@ -6,8 +6,6 @@ import math
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import _has_attr
-
 
 def _estimate_node_flops(node: LogicalNode) -> int:
     """Estimate flops for a single node.
@@ -22,7 +20,7 @@ def _estimate_node_flops(node: LogicalNode) -> int:
         # rough estimate
         return 100
 
-    if _has_attr(node, "shape_metadata") and node.shape_metadata is not None:
+    if node.shape_metadata is not None:
         try:
             dims = [int(d) if isinstance(d, int) else int(str(d)) for d in node.shape_metadata]
             return math.prod(dims)

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.text import ops
 from ml_switcheroo_compiler.ops.text.frontend import (
     AsStringConfig,
@@ -33,6 +33,18 @@ _ = ops
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
+def _is_ir_node_res(val: TensorOrScalar) -> typing.TypeGuard[IRNode]:
+    """Type guard narrowing `val` to `IRNode`.
+
+    Args:
+        val (TensorOrScalar): Candidate node result.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
 @register_op("CreateToken")
 class CreateToken(OpDef):
     """CreateToken operation."""
@@ -50,7 +62,7 @@ class CreateToken(OpDef):
             tuple: Shape tuple.
         """
         a = args[0]
-        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
+        shape = extract_shape(a)
         max_length = kwargs.get("max_length")
         if max_length is not None:
             return shape + (max_length,)
@@ -72,8 +84,9 @@ def create_token(
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
-    _typed_ret_1: IRNode = _cast_val("IRNode", get_op("CreateToken")()(*args, **kwargs))
-    return _typed_ret_1
+    raw_res: TensorOrScalar = get_op("CreateToken")()(*args, **kwargs)
+    assert _is_ir_node_res(raw_res)
+    return raw_res
 
 
 __all__ = [

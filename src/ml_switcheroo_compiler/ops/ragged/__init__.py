@@ -7,13 +7,25 @@ tensors with non-uniform shapes across one or more dimensions.
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_list, ensure_int, ensure_shape
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .core import RaggedDot
+
+
+def _ragged_arg_shape(arg: TensorOrScalar) -> tuple[int, ...]:
+    """Extract shape tuple from a ragged argument (tensor, IRNode, or sequence).
+
+    Args:
+        arg (TensorOrScalar): Candidate argument.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    return ensure_shape(tuple(arg)) if isinstance(arg, (list, tuple)) else extract_shape(arg)
 
 
 @register_op("RaggedGather")
@@ -42,8 +54,8 @@ class RaggedGather(OpDef):
         indices = args[1] if len(args) > 1 else kwargs.get("indices")
         if params is None or indices is None:
             return ()
-        shape_p = tuple(_get_attr(params, "shape", _get_attr(params, "shape_metadata", params if isinstance(params, (list, tuple)) else ())))
-        shape_i = tuple(_get_attr(indices, "shape", _get_attr(indices, "shape_metadata", indices if isinstance(indices, (list, tuple)) else ())))
+        shape_p = _ragged_arg_shape(params)
+        shape_i = _ragged_arg_shape(indices)
         leading = shape_i if shape_i else (SymVar("gather_batch"),)
         trailing = shape_p[1:] if len(shape_p) > 1 else ()
         return leading + trailing
@@ -73,11 +85,11 @@ class RaggedTensorToDense(OpDef):
 
         target_shape = kwargs.get("shape")
         if target_shape is not None:
-            return tuple(_get_attr(target_shape, "__iter__")())
+            return tuple(ensure_eager_list(target_shape))
         rt_input = args[0] if args else kwargs.get("rt_input")
         if rt_input is None:
             return ()
-        inp_shape = tuple(_get_attr(rt_input, "shape", _get_attr(rt_input, "shape_metadata", rt_input if isinstance(rt_input, (list, tuple)) else ())))
+        inp_shape = _ragged_arg_shape(rt_input)
         if not inp_shape:
             return ()
         batch = inp_shape[0]
@@ -161,7 +173,7 @@ class RaggedAdd(OpDef):
         inp = args[0] if args else kwargs.get("x", kwargs.get("a"))
         if inp is None:
             return ()
-        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return _ragged_arg_shape(inp)
 
 
 @register_op("RaggedMatMul")
@@ -188,8 +200,8 @@ class RaggedMatMul(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("b")
         if a is None or b is None:
             return ()
-        shape_a = tuple(_get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(_get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = _ragged_arg_shape(a)
+        shape_b = _ragged_arg_shape(b)
         if len(shape_a) < 2 or len(shape_b) < 2:
             return shape_a
         m = shape_a[-2]
@@ -220,11 +232,11 @@ class RaggedDynamicBroadcast(OpDef):
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None:
-            return tuple(_get_attr(shape, "__iter__")())
+            return tuple(ensure_eager_list(shape))
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return _ragged_arg_shape(inp)
 
 
 @register_op("RaggedConstant")
@@ -280,13 +292,13 @@ class RaggedCrossHashed(OpDef):
         """
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-        inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
+        inputs = list(args[0]) if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not inputs and "inputs" in kwargs:
-            inputs = _cast_val(list[EagerTensorProtocol], kwargs["inputs"])
+            inputs = list(ensure_eager_list(kwargs["inputs"]))
         if not inputs:
             return ()
         first = inputs[0]
-        f_shape = tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        f_shape = _ragged_arg_shape(first)
         batch = f_shape[0] if f_shape else 1
         return (batch, SymVar("cross_len"))
 
@@ -316,7 +328,7 @@ class RaggedRange(OpDef):
         starts = args[0] if args else kwargs.get("starts")
         if starts is None:
             return (1, SymVar("range_len"))
-        s_shape = tuple(_get_attr(starts, "shape", _get_attr(starts, "shape_metadata", (len(starts),) if isinstance(starts, (list, tuple)) else ())))
+        s_shape = (len(starts),) if isinstance(starts, (list, tuple)) else extract_shape(starts)
         batch = s_shape[0] if s_shape else 1
         return (batch, SymVar("range_len"))
 
@@ -394,14 +406,14 @@ class RaggedStack(OpDef):
         Returns:
             tuple: Higher-rank stacked shape.
         """
-        rt_inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
+        rt_inputs = list(args[0]) if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not rt_inputs and "values" in kwargs:
-            rt_inputs = _cast_val(list[EagerTensorProtocol], kwargs["values"])
+            rt_inputs = list(ensure_eager_list(kwargs["values"]))
         if not rt_inputs:
             return ()
         first = rt_inputs[0]
-        f_shape = tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        f_shape = _ragged_arg_shape(first)
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         n = len(rt_inputs)
         s = list(f_shape)
         if axis < 0:
@@ -432,11 +444,11 @@ class RaggedStackDynamicPartitions(OpDef):
         """
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-        num_partitions = int(as_int(kwargs.get("num_partitions", 2)))
+        num_partitions = int(ensure_int(kwargs.get("num_partitions", 2)))
         data = args[0] if args else kwargs.get("data")
-        trailing = ()
+        trailing: tuple[int, ...] = ()
         if data is not None:
-            d_shape = tuple(_get_attr(data, "shape", _get_attr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+            d_shape = _ragged_arg_shape(data)
             trailing = d_shape[1:] if len(d_shape) > 1 else ()
         return (num_partitions, SymVar("partition_len")) + trailing
 
@@ -485,10 +497,10 @@ class BooleanMask(OpDef):
         mask = args[1] if len(args) > 1 else kwargs.get("mask")
         if data is None:
             return (SymVar("masked_count"),)
-        d_shape = tuple(_get_attr(data, "shape", _get_attr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+        d_shape = _ragged_arg_shape(data)
         m_ndim = 1
         if mask is not None:
-            m_shape = _get_attr(mask, "shape", _get_attr(mask, "shape_metadata", None))
+            m_shape = extract_shape(mask)
             if m_shape:
                 m_ndim = len(m_shape)
         trailing = d_shape[m_ndim:] if len(d_shape) >= m_ndim else ()
@@ -515,7 +527,7 @@ class MapFlatValues(OpDef):
         inp = args[0] if args else kwargs.get("x", kwargs.get("input"))
         if inp is None:
             return ()
-        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return _ragged_arg_shape(inp)
 
 
 from .frontend import boolean_mask, map_flat_values

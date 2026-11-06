@@ -6,22 +6,20 @@ import importlib.util
 import sys
 import typing
 
-from ml_switcheroo_compiler.core.shape import _cast_val
-
-if typing.TYPE_CHECKING:
-    import jax.numpy as jnp
-else:
-    _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-    jnp = importlib.import_module("jax.numpy") if _has_jax else None
-
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
     generic_asarray,
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager.types_utils import ZerosModule
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+
+if typing.TYPE_CHECKING:
+    import jax.numpy as jnp
+
+_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    jnp = importlib.import_module("jax.numpy") if _has_jax else None
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -34,7 +32,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return generic_zeros(_cast_val(ZerosModule, jnp), shape)
+    return ensure_eager_tensor(ensure_callable(generic_zeros)(jnp, shape))
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
@@ -48,7 +46,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(as_callable(generic_array)(jnp, data, dtype))
+    return ensure_eager_tensor(ensure_callable(generic_array)(jnp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -61,7 +59,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(as_callable(generic_asarray)(jnp, data))
+    return ensure_eager_tensor(ensure_callable(generic_asarray)(jnp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -74,4 +72,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return as_float(as_callable(generic_item)(jnp, data))
+    return ensure_float(ensure_callable(generic_item)(jnp, data))

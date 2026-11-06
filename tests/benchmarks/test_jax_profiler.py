@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -19,8 +19,10 @@ if "jax" in sys.modules:
     import jax.numpy as jnp
 else:
     try:
-        import jax
+        import jax as _jax_pkg
         import jax.numpy as jnp
+
+        jax = _jax_pkg
     except (ValueError, ImportError, AttributeError, RuntimeError) as e:
         pytest.skip(f"JAX not available: {e}", allow_module_level=True)
 
@@ -88,10 +90,9 @@ def _test_jax_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtocol])
 
     # 7. Test _sync_jax_result with dict and single array
     mock_val = MagicMock()
-    _get_attr(_state, "update")({"arr": arr, "g_ops": g_ops, "mock_val": mock_val, "profiler": profiler})
-    _get_attr(_state, "update")({"res_empty": res_empty, "res_jax": res_jax, "res_jit_fail": res_jit_fail, "res_linux": res_linux})
-    _get_attr(_state, "update")({"res_ops": res_ops})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arr": arr, "g_ops": g_ops, "mock_val": mock_val, "profiler": profiler}))
+    _state.update(ensure_tensor_dict({"res_empty": res_empty, "res_jax": res_jax, "res_jit_fail": res_jit_fail, "res_linux": res_linux}))
+    _state.update(ensure_tensor_dict({"res_ops": res_ops}))
 
 
 def _test_jax_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -101,7 +102,7 @@ def _test_jax_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtocol])
         _state: Shared test state dictionary.
     """
     mock_val = _state["mock_val"]
-    _set_attr(mock_val, "block_until_ready", MagicMock())
+    ensure_mutable(mock_val).block_until_ready = ensure_eager_tensor(MagicMock())
     _sync_jax_result({"out": mock_val})
     assert mock_val.block_until_ready.called
     mock_single = MagicMock()
@@ -128,8 +129,8 @@ def _test_jax_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtocol])
         assert mock_leaf.block_until_ready.called
 
         _sync_jax_result(42)
-    _get_attr(_state, "update")({"mock_d": mock_d, "mock_leaf": mock_leaf, "mock_seq": mock_seq, "mock_single": mock_single})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_d": mock_d, "mock_leaf": mock_leaf, "mock_seq": mock_seq, "mock_single": mock_single}))
+    _state.update(ensure_tensor_dict({"mock_val": mock_val}))
 
 
 def _test_jax_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -162,9 +163,8 @@ def _test_jax_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtocol])
         assert _extract_jax_peak_memory_mb() > 0.0
 
     mock_dev_nostats = MagicMock(spec=[])
-    _get_attr(_state, "update")({"mock_dev_bytes": mock_dev_bytes, "mock_dev_none": mock_dev_none, "mock_dev_nostats": mock_dev_nostats, "mock_dev_peak": mock_dev_peak})
-    _get_attr(_state, "update")({"mock_leaf2": mock_leaf2})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_dev_bytes": mock_dev_bytes, "mock_dev_none": mock_dev_none, "mock_dev_nostats": mock_dev_nostats, "mock_dev_peak": mock_dev_peak}))
+    _state.update(ensure_tensor_dict({"mock_leaf2": mock_leaf2}))
 
 
 def _test_jax_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -182,7 +182,7 @@ def _test_jax_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtocol])
     with patch("builtins.range", return_value=[]):
         res_empty_lats = profiler.profile_graph(IRGraph(), {}, num_iters=0, warmup_iters=0)
         assert res_empty_lats["latency_ms"] == 0.0
-    _get_attr(_state, "update")({"res_empty_lats": res_empty_lats})
+    _state.update(ensure_tensor_dict({"res_empty_lats": res_empty_lats}))
 
 
 def test_jax_profiler_exhaustive() -> None:

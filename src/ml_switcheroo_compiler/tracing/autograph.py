@@ -7,7 +7,9 @@ import typing
 from collections.abc import Callable
 from types import TracebackType
 
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, _obj_set_attr
+from ml_switcheroo_ir import LogicalGraph
+
+from ml_switcheroo_compiler.ir import core as _ir_core  # noqa: F401
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 F = typing.TypeVar("F")
@@ -20,14 +22,20 @@ class _GraphMetadataProtocol(typing.Protocol):
     metadata: dict[str, LoopOptions | None]
 
 
-class _AutographSkippedFnProtocol(typing.Protocol):
+class _GraphLoopOptionsProtocol(typing.Protocol):
+    """Protocol for graph objects supporting `loop_options` attribute assignment."""
+
+    loop_options: LoopOptions | None
+
+
+class _AutographSkippedFnProtocol(typing.Protocol[F]):
     """Protocol for functions marked with `_autograph_do_not_convert`."""
 
     _autograph_do_not_convert: bool
-    __wrapped__: StructuralOperandProtocol
+    __wrapped__: F
 
 
-def _is_autograph_fn(fn: F) -> typing.TypeGuard[_AutographSkippedFnProtocol]:
+def _is_autograph_fn(fn: F) -> typing.TypeGuard[_AutographSkippedFnProtocol[F]]:
     """Type guard narrowing `fn` to `_AutographSkippedFnProtocol`.
 
     Args:
@@ -39,14 +47,27 @@ def _is_autograph_fn(fn: F) -> typing.TypeGuard[_AutographSkippedFnProtocol]:
     return fn is not None
 
 
-def _set_graph_loop_options(active_g: StructuralOperandProtocol, opts: LoopOptions | None) -> None:
+def _is_loop_options_graph(val: LogicalGraph) -> typing.TypeGuard[_GraphLoopOptionsProtocol]:
+    """Type guard narrowing `val` to `_GraphLoopOptionsProtocol`.
+
+    Args:
+        val (LogicalGraph): Active graph instance.
+
+    Returns:
+        bool: Always True for runtime graph objects.
+    """
+    return val is not None
+
+
+def _set_graph_loop_options(active_g: LogicalGraph, opts: LoopOptions | None) -> None:
     """Attach `opts` to `active_g` and its `metadata` dict if present.
 
     Args:
-        active_g (StructuralOperandProtocol): Active graph instance.
+        active_g (LogicalGraph): Active graph instance.
         opts (LoopOptions | None): Loop options to attach.
     """
-    _obj_set_attr(active_g, "loop_options", opts)
+    assert _is_loop_options_graph(active_g)
+    active_g.loop_options = opts
     if isinstance(active_g, _GraphMetadataProtocol) and isinstance(active_g.metadata, dict):
         active_g.metadata["loop_options"] = opts
 
@@ -163,11 +184,10 @@ def do_not_convert(func: F | None = None) -> F | Callable[[F], F]:
         Returns:
             F: The original function with the skip flag attached.
         """
-        raw_f: StructuralOperandProtocol = f
         cand_f: F = f
         assert _is_autograph_fn(cand_f)
         cand_f._autograph_do_not_convert = True
-        cand_f.__wrapped__ = raw_f
+        cand_f.__wrapped__ = f
         return f
 
     if func is not None:

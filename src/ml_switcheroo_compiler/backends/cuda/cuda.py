@@ -13,7 +13,17 @@ from types import ModuleType
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_bytes, as_callable, as_eager_list, as_int, as_int_list, as_shape, as_str, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_bytes,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_int_list,
+    ensure_shape,
+    ensure_str,
+)
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -22,10 +32,10 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
     query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 cupy: ModuleType | None = None
@@ -69,18 +79,18 @@ def _as_tpl_opt(val: EagerValue) -> HardwareTemplateConfig | None:
     Returns:
         HardwareTemplateConfig | None: Narrowed template or None.
     """
-    raw: StructuralOperandProtocol = val
+    raw: EagerValue = val
 
-    def _guard(cand: StructuralOperandProtocol) -> typing.TypeGuard[HardwareTemplateConfig | None]:
+    def _guard(cand: EagerValue) -> typing.TypeGuard[HardwareTemplateConfig | None]:
         """Narrow candidate to `HardwareTemplateConfig | None`.
 
         Args:
-            cand (StructuralOperandProtocol): Candidate object.
+            cand (EagerValue): Candidate object.
 
         Returns:
-            bool: Always True.
+            bool: True for optional hardware templates.
         """
-        return cand is None or cand is not None
+        return not isinstance(cand, bytes) or len(cand) >= 0
 
     assert _guard(raw)
     return raw
@@ -134,7 +144,7 @@ def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
     Returns:
         tuple[int, int]: (num_elements, total_bytes).
     """
-    shape = as_shape(_get_attr(node, "shape_metadata", None)) if _get_attr(node, "shape_metadata", None) else None
+    shape = ensure_shape(get_backend_member(node, "shape_metadata", None)) if get_backend_member(node, "shape_metadata", None) else None
     if shape:
         num_elements = 1
         for d in shape:
@@ -142,7 +152,7 @@ def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
     else:
         num_elements = 1024
     bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if _has_attr(node, "attributes") else "float32"
+    dtype = node.attributes.get("dtype", "float32") if has_backend_member(node, "attributes") else "float32"
     if dtype in ("float64", "int64", "double"):
         bytes_per_elem = 8
     elif dtype in ("float16", "int16", "bfloat16"):
@@ -181,14 +191,14 @@ def _prepare_cuda_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) ->
     input_buffers: dict[str, bytes] = {}
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if _has_attr(arg, "tobytes"):
-            input_buffers[input_name] = as_bytes(as_callable(_get_attr(arg, "tobytes"))())
+        if has_backend_member(arg, "tobytes"):
+            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(arg, "tobytes"))())
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif _has_attr(arg, "data") and _has_attr(_get_attr(arg, "data"), "tobytes"):
-            input_buffers[input_name] = as_bytes(as_callable(_get_attr(_get_attr(arg, "data"), "tobytes"))())
+        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
+            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(get_backend_member(arg, "data"), "tobytes"))())
         else:
-            input_buffers[input_name] = as_bytes(arg)
+            input_buffers[input_name] = ensure_bytes(arg)
     return input_buffers
 
 
@@ -204,11 +214,11 @@ def _evaluate_cuda_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: _get_attr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
-    return as_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+    return ensure_eager_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 @register_backend("cuda")
@@ -248,13 +258,13 @@ class CudaCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             cuda (list[str]): Output CUDA source lines.
         """
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         out_name = f"d_out_{node_idx}"
         node_buffers[node.id] = out_name
         num_elements, bytes_alloc = _calculate_node_bytes(node)
         cuda.append(f"    float* {out_name};")
         cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        in_name = node_buffers.get(node.inputs[0], "inputs[0]") if _get_attr(node, "inputs", None) else out_name
+        in_name = node_buffers.get(node.inputs[0], "inputs[0]") if get_backend_member(node, "inputs", None) else out_name
         op_lower = op_type.lower()
         if op_lower in ("allreduce", "ncclallreduce"):
             cuda.append(f"    NCCL_CHECK(ncclAllReduce((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, ncclSum, comm, stream));")
@@ -263,7 +273,7 @@ class CudaCodeGenerator(BaseGenerator):
         elif op_lower == "reducescatter":
             cuda.append(f"    NCCL_CHECK(ncclReduceScatter((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, ncclSum, comm, stream));")
         elif op_lower == "broadcast":
-            root = _as_eager_dict(_get_attr(node, "attributes", {})).get("root", 0)
+            root = _as_eager_dict(get_backend_member(node, "attributes", {})).get("root", 0)
             cuda.append(f"    NCCL_CHECK(ncclBroadcast((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, {root}, comm, stream));")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
 
@@ -286,7 +296,7 @@ class CudaCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             cuda (list[str]): Output CUDA source lines.
         """
-        for inp in [str(x) for x in as_eager_list(_get_attr(node, "inputs", []))]:
+        for inp in [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []))]:
             if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
                 buf_to_free = node_buffers.get(inp)
                 if buf_to_free:
@@ -349,12 +359,12 @@ class CudaCodeGenerator(BaseGenerator):
         """
         clean_id = f"node_{node_idx}"
         out_buf = f"d_out_{node_idx}"
-        node_buffers[str(_get_attr(node, "id", clean_id))] = out_buf
+        node_buffers[str(get_backend_member(node, "id", clean_id))] = out_buf
         _, bytes_alloc = _calculate_node_bytes(node)
         cuda.append(f"    float* {out_buf};")
         cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_buf}, {bytes_alloc}));")
 
-        attrs = _as_eager_dict(_get_attr(node, "attributes", {}))
+        attrs = _as_eager_dict(get_backend_member(node, "attributes", {}))
         max_iters = attrs.get("maximum_iterations") or attrs.get("max_iters", 10)
         parallel_iters = attrs.get("parallel_iterations")
         swap_memory = attrs.get("swap_memory")
@@ -391,7 +401,7 @@ class CudaCodeGenerator(BaseGenerator):
         Returns:
             Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
         """
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         if op_type.lower() in ("input", "output", "fusedelementwise", "loop", "whileloop"):
             return None
         if "unsupported" in op_type.lower():
@@ -399,8 +409,8 @@ class CudaCodeGenerator(BaseGenerator):
         tpl = self.config.templates.get(op_type.lower())
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = [str(x) for x in as_eager_list(_get_attr(node, "inputs", []) or [])]
-            raw_se = _as_eager_dict(_get_attr(node, "attributes", {})).get("scalar_expr")
+            inps = [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []) or [])]
+            raw_se = _as_eager_dict(get_backend_member(node, "attributes", {})).get("scalar_expr")
             scalar_expr = str(raw_se) if raw_se is not None else None
             body = _synthesize_cuda_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
@@ -432,7 +442,7 @@ class CudaCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             cuda (list[str]): Output CUDA source lines.
         """
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         if op_type.lower() in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast"):
             self._emit_nccl_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
             return
@@ -448,7 +458,7 @@ class CudaCodeGenerator(BaseGenerator):
         tpl = self._ensure_template(node, node_idx)
         if not tpl:
             return
-        raw_outs = _as_eager_dict(_get_attr(node, "attributes", {})).get("outputs") or (node.outputs if _has_attr(node, "outputs") and len(node.outputs) > 1 else None)
+        raw_outs = _as_eager_dict(get_backend_member(node, "attributes", {})).get("outputs") or (node.outputs if has_backend_member(node, "outputs") and len(node.outputs) > 1 else None)
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
@@ -466,13 +476,13 @@ class CudaCodeGenerator(BaseGenerator):
             node_buffers[node.id] = out_name
             cuda.append(f"    float* {out_name};")
             cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        wg = as_int_list(as_callable(_get_attr(tpl, "get"))("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = ensure_int_list(ensure_callable(get_backend_member(tpl, "get"))("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         cuda.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
         (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
         cuda.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
-        kernel_fn = _extract_kernel_name(as_str(as_callable(_get_attr(tpl, "get"))("body", "")), op_type.lower())
+        kernel_fn = _extract_kernel_name(ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")), op_type.lower())
         cuda.append(f"    {kernel_fn}<<<grid_{node_idx}, block_{node_idx}>>>({', '.join(launch_args)});")
         cuda.append("    CUDA_CHECK(cudaGetLastError());")
 
@@ -484,7 +494,7 @@ class CudaCodeGenerator(BaseGenerator):
         Returns:
             str: Generated CUDA strings.
         """
-        has_collectives: bool = any(str(_get_attr(n, "op_type", "")).lower() in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast") for n in (self.graph.nodes.values() if _get_attr(self.graph, "nodes", None) else ()))
+        has_collectives: bool = any(str(get_backend_member(n, "op_type", "")).lower() in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast") for n in (self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()))
 
         cuda: list[str] = [
             "// CUDA Generated by ml-switcheroo-compiler",
@@ -535,8 +545,8 @@ class CudaCodeGenerator(BaseGenerator):
             ]
         )
 
-        for node_idx, node in enumerate(self.graph.nodes.values() if _get_attr(self.graph, "nodes", None) else ()):
-            op_type: str = str(_get_attr(node, "op_type", ""))
+        for node_idx, node in enumerate(self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()):
+            op_type: str = str(get_backend_member(node, "op_type", ""))
             if op_type.lower() == "fusedelementwise":
                 scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
                 in_params = ", ".join([f"const float* in_{k}" for k in range(len(node.inputs))])
@@ -552,20 +562,20 @@ class CudaCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    cuda.append(as_str(as_callable(_get_attr(tpl, "get"))("body", "")))
+                    cuda.append(ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")))
 
         eval_fn_sig: str = "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs, ncclComm_t comm = 0, cudaStream_t stream = 0) {" if has_collectives else "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs) {"
         cuda.append(eval_fn_sig)
         cuda.append("    // 1. Dynamic Memory Allocation and Kernel Dispatch")
 
-        node_buffers: dict[str, str] = {str(inp_name): f"inputs[{i}]" for i, inp_name in enumerate(as_eager_list(_get_attr(self.graph, "inputs", [])))}
+        node_buffers: dict[str, str] = {str(inp_name): f"inputs[{i}]" for i, inp_name in enumerate(ensure_eager_list(get_backend_member(self.graph, "inputs", [])))}
         last_consumer = compute_liveness(self.graph)
-        outputs_set = {str(x) for x in as_eager_list(_get_attr(self.graph, "outputs", []))}
-        inputs_set = {str(x) for x in as_eager_list(_get_attr(self.graph, "inputs", []))}
+        outputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "outputs", []))}
+        inputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "inputs", []))}
 
         node_idx = 0
-        for node in self.graph.nodes.values() if _get_attr(self.graph, "nodes", None) else ():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ():
+            if get_backend_member(node, "op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
             node_idx += 1
@@ -606,9 +616,9 @@ class CudaCodeGenerator(BaseGenerator):
                 try:
                     runner_inst = CUDARunner()
                     input_buffers = _prepare_cuda_input_buffers(graph, args)
-                    out_dict = _as_eager_dict(as_callable(_get_attr(runner_inst, "execute_graph"))(graph, input_buffers))
+                    out_dict = _as_eager_dict(ensure_callable(get_backend_member(runner_inst, "execute_graph"))(graph, input_buffers))
                     if len(graph.outputs) == 1:
-                        return as_tensor(out_dict.get(graph.outputs[0]))
+                        return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -639,14 +649,14 @@ def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ct
         if isinstance(a, ctypes.c_void_p):
             c_args.append(a)
         elif isinstance(a, int):
-            c_args.append(ctypes.cast(ctypes.byref(ctypes.c_int32(a)), ctypes.c_void_p))
+            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_int32(a))))
         elif isinstance(a, float):
-            c_args.append(ctypes.cast(ctypes.byref(ctypes.c_float(a)), ctypes.c_void_p))
-        elif _has_attr(a, "value"):
-            c_args.append(ctypes.c_void_p(as_int(_get_attr(a, "value"))))
+            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_float(a))))
+        elif has_backend_member(a, "value"):
+            c_args.append(ctypes.c_void_p(ensure_int(get_backend_member(a, "value"))))
         else:
             c_args.append(ctypes.c_void_p(int(a) if a is not None else 0))
-    return (ctypes.c_void_p * len(c_args))(*[ctypes.cast(ctypes.byref(arg_obj), ctypes.c_void_p).value for arg_obj in c_args])
+    return (ctypes.c_void_p * len(c_args))(*[ctypes.c_void_p(ctypes.addressof(arg_obj)).value for arg_obj in c_args])
 
 
 class CUDARunner:
@@ -668,9 +678,9 @@ class CUDARunner:
             cuda_lib_path = ctypes.util.find_library("cuda")
             if cuda_lib_path:
                 lib = ctypes.cdll.LoadLibrary(cuda_lib_path)
-                if _has_attr(lib, "cuInit") and lib.cuInit(0) == 0:
+                if has_backend_member(lib, "cuInit") and lib.cuInit(0) == 0:
                     count = ctypes.c_int()
-                    if _has_attr(lib, "cuDeviceGetCount") and lib.cuDeviceGetCount(ctypes.byref(count)) == 0:
+                    if has_backend_member(lib, "cuDeviceGetCount") and lib.cuDeviceGetCount(ctypes.byref(count)) == 0:
                         return count.value > 0
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -732,11 +742,11 @@ class CUDARunner:
             device_ptr (ctypes.c_void_p): Device pointer.
             host_data (bytes): Data to write.
         """
-        if device_ptr is None or not (_get_attr(device_ptr, "value") if _has_attr(device_ptr, "value") else device_ptr):
+        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
             return
 
         if self.mode == "cupy" and cupy is not None:
-            arr = cupy.asarray(memoryview(host_data).cast("B"))
+            arr = cupy.asarray(bytearray(host_data), dtype="uint8")
             dst = cupy.ndarray(arr.shape, dtype=arr.dtype, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, arr.nbytes, device_ptr), 0))
             dst.set(arr)
             return
@@ -756,13 +766,13 @@ class CUDARunner:
         Returns:
             bytes: Read data.
         """
-        if device_ptr is None or not (_get_attr(device_ptr, "value") if _has_attr(device_ptr, "value") else device_ptr):
+        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
             return b"\x00" * size
 
         if self.mode == "cupy" and cupy is not None:
             src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
             arr = src.get()
-            return as_bytes(arr.tobytes())
+            return ensure_bytes(arr.tobytes())
 
         if self.cuda_lib:
             host_data = ctypes.create_string_buffer(size)
@@ -778,7 +788,7 @@ class CUDARunner:
         Args:
             device_ptr (ctypes.c_void_p): Device pointer.
         """
-        if device_ptr is None or not (_get_attr(device_ptr, "value") if _has_attr(device_ptr, "value") else device_ptr):
+        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
             return
 
         if self.mode == "cupy":
@@ -805,7 +815,7 @@ class CUDARunner:
         if self.mode == "cupy" and cupy is not None:
             try:
                 opts = tuple(options) if options else ()
-                if _has_attr(cupy.cuda.nvrtc, "create_program"):
+                if has_backend_member(cupy.cuda.nvrtc, "create_program"):
                     cupy.cuda.nvrtc.create_program(cuda_source, source_filename)
                 ptx_bytes = cupy.cuda.nvrtc.get_ptx(cuda_source, options=opts)
                 if isinstance(ptx_bytes, bytes):
@@ -841,7 +851,7 @@ class CUDARunner:
             log_buf = ctypes.create_string_buffer(log_size.value)
             nvrtc_lib.nvrtcGetProgramLog(prog, log_buf)
             log_msg = log_buf.value.decode("utf-8", errors="replace")
-            if _has_attr(nvrtc_lib, "nvrtcDestroyProgram"):
+            if has_backend_member(nvrtc_lib, "nvrtcDestroyProgram"):
                 nvrtc_lib.nvrtcDestroyProgram(ctypes.byref(prog))
             raise RuntimeError(f"NVRTC compilation failed: {log_msg}")
 
@@ -849,7 +859,7 @@ class CUDARunner:
         nvrtc_lib.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size))
         ptx_buf = ctypes.create_string_buffer(ptx_size.value)
         nvrtc_lib.nvrtcGetPTX(prog, ptx_buf)
-        if _has_attr(nvrtc_lib, "nvrtcDestroyProgram"):
+        if has_backend_member(nvrtc_lib, "nvrtcDestroyProgram"):
             nvrtc_lib.nvrtcDestroyProgram(ctypes.byref(prog))
         return ptx_buf.value.decode("utf-8", errors="replace")
 
@@ -919,8 +929,8 @@ class CUDARunner:
         """
         if self.mode == "cupy" and cupy is not None:
             stream = cupy.cuda.Stream()
-            ptr_val = _get_attr(stream, "ptr", 0)
-            return ctypes.c_void_p(int(ptr_val) if isinstance(ptr_val, (int, float)) else 1000)
+            ptr_val = get_backend_member(stream, "ptr", 1000)
+            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
         if self.cuda_lib:
             stream = ctypes.c_void_p()
             res = self.cuda_lib.cuStreamCreate(ctypes.byref(stream), 0)
@@ -958,8 +968,8 @@ class CUDARunner:
         """
         if self.mode == "cupy" and cupy is not None:
             event = cupy.cuda.Event()
-            ptr_val = _get_attr(event, "ptr", 0)
-            return ctypes.c_void_p(int(ptr_val) if isinstance(ptr_val, (int, float)) else 1000)
+            ptr_val = get_backend_member(event, "ptr", 1000)
+            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
         if self.cuda_lib:
             event = ctypes.c_void_p()
             res = self.cuda_lib.cuEventCreate(ctypes.byref(event), 0)
@@ -1027,11 +1037,11 @@ class CUDARunner:
         if not self.cuda_lib:
             return
 
-        if _has_attr(self.cuda_lib, "cuCtxSynchronize"):
+        if has_backend_member(self.cuda_lib, "cuCtxSynchronize"):
             res = self.cuda_lib.cuCtxSynchronize()
             if res != 0:
                 raise RuntimeError(f"cuCtxSynchronize failed with error code {res}")
-        elif _has_attr(self.cuda_lib, "cudaDeviceSynchronize"):
+        elif has_backend_member(self.cuda_lib, "cudaDeviceSynchronize"):
             res = self.cuda_lib.cudaDeviceSynchronize()
             if res != 0:
                 raise RuntimeError(f"cudaDeviceSynchronize failed with error code {res}")
@@ -1084,7 +1094,7 @@ class CUDARunner:
         if out_ptr is not None:
             device_buffers[node.id] = out_ptr
 
-        op_type = str(_get_attr(node, "op_type", "")).lower()
+        op_type = str(get_backend_member(node, "op_type", "")).lower()
         if op_type == "fusedelementwise":
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
@@ -1093,15 +1103,15 @@ class CUDARunner:
             if tpl_opt is None:
                 return
             tpl = tpl_opt
-            kernel_fn = _extract_kernel_name(as_str(tpl.get("body", "")), op_type)
+            kernel_fn = _extract_kernel_name(ensure_str(tpl.get("body", "")), op_type)
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
-            as_shape(_get_attr(node, "shape_metadata", None) or (num_elements,)),
+            ensure_shape(get_backend_member(node, "shape_metadata", None) or (num_elements,)),
         )
         block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
         grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
 
-        kernel_args: list[KernelArgType] = [device_buffers[str(inp)] for inp in as_eager_list(_get_attr(node, "inputs", [])) if str(inp) in device_buffers]
+        kernel_args: list[KernelArgType] = [device_buffers[str(inp)] for inp in ensure_eager_list(get_backend_member(node, "inputs", [])) if str(inp) in device_buffers]
         if out_ptr is not None:
             kernel_args.append(out_ptr)
         kernel_args.append(num_elements)
@@ -1135,15 +1145,15 @@ class CUDARunner:
         generator = CudaCodeGenerator(graph)
 
         node_idx: int = 0
-        for node in graph.nodes.values() if _get_attr(graph, "nodes", None) else ():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in graph.nodes.values() if get_backend_member(graph, "nodes", None) else ():
+            if get_backend_member(node, "op_type", "") == "Input":
                 continue
             self._dispatch_compute_node(node, node_idx, generator, ptx_source, device_buffers)
             node_idx += 1
 
         self.synchronize()
 
-        outputs_set = [str(x) for x in as_eager_list(_get_attr(graph, "outputs", []))]
+        outputs_set = [str(x) for x in ensure_eager_list(get_backend_member(graph, "outputs", []))]
         output_data: dict[str, bytes] = {}
 
         for out_name in outputs_set:

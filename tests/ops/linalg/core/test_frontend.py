@@ -10,7 +10,6 @@ import pytest
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg import CustomLinearSolve, CustomRoot, Vecdot, multi_dot, solvers, vecdot
 from ml_switcheroo_compiler.ops.linalg import matrix_ops as frontend
@@ -20,7 +19,7 @@ from ml_switcheroo_compiler.ops.linalg.matrix_ops import band_part, diag
 from ml_switcheroo_compiler.ops.linalg.products import Diagonal, MultiDot
 from ml_switcheroo_compiler.ops.linalg.solvers import MatrixNorm, Svdvals, Tensorinv, Tensorsolve, VectorNorm
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -57,22 +56,22 @@ def test_frontend_ops() -> None:
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-        (e, t) = as_callable(_test_op)(frontend.matrix_norm, a)
-        assert as_tensor(_get_attr(e, "shape")) == ()
-        (e, t) = as_callable(_test_op)(frontend.vector_norm, b)
-        assert as_tensor(_get_attr(e, "shape")) == ()
-        (e, t) = as_callable(_test_op)(frontend.svdvals, a)
-        assert as_tensor(_get_attr(e, "shape")) == (2,)
-        (e, t) = as_callable(_test_op)(solvers.tensorinv, a, ind=1)
-        assert as_tensor(_get_attr(e, "shape")) == (2, 2)
-        (e, t) = as_callable(_test_op)(solvers.tensorsolve, a, b)
-        assert as_tensor(_get_attr(e, "shape")) == (2,)
-        (e, t) = as_callable(_test_op)(frontend.diagonal, a)
-        assert as_tensor(_get_attr(e, "shape")) == (2,)
-        (e, t) = as_callable(_test_op)(multi_dot, [a, a])
-        assert as_tensor(_get_attr(e, "shape")) == (2, 2)
-        (e, t) = as_callable(_test_op)(vecdot, b, b)
-        assert as_tensor(_get_attr(e, "shape")) == ()
+        (e, t) = ensure_callable(_test_op)(frontend.matrix_norm, a)
+        assert ensure_eager_tensor(e).shape == ()
+        (e, t) = ensure_callable(_test_op)(frontend.vector_norm, b)
+        assert ensure_eager_tensor(e).shape == ()
+        (e, t) = ensure_callable(_test_op)(frontend.svdvals, a)
+        assert ensure_eager_tensor(e).shape == (2,)
+        (e, t) = ensure_callable(_test_op)(solvers.tensorinv, a, ind=1)
+        assert ensure_eager_tensor(e).shape == (2, 2)
+        (e, t) = ensure_callable(_test_op)(solvers.tensorsolve, a, b)
+        assert ensure_eager_tensor(e).shape == (2,)
+        (e, t) = ensure_callable(_test_op)(frontend.diagonal, a)
+        assert ensure_eager_tensor(e).shape == (2,)
+        (e, t) = ensure_callable(_test_op)(multi_dot, [a, a])
+        assert ensure_eager_tensor(e).shape == (2, 2)
+        (e, t) = ensure_callable(_test_op)(vecdot, b, b)
+        assert ensure_eager_tensor(e).shape == ()
 
 
 def test_opdefs_infer_shapes() -> None:
@@ -87,16 +86,16 @@ def test_opdefs_infer_shapes() -> None:
             assert op.infer_shape() == ()
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-        assert as_callable(Svdvals)().infer_shape(a) == (2,)
-        assert as_callable(Tensorinv)().infer_shape(a) == (2, 2)
-        assert as_callable(Tensorsolve)().infer_shape(a, b) == (2,)
-        assert as_callable(ConvTranspose)().infer_shape(a) == (2, 2)
-        assert as_callable(ConvTranspose)().infer_shape() == ()
-        assert id(as_callable(CustomLinearSolve)().infer_shape(a)) == id(a)
+        assert ensure_callable(Svdvals)().infer_shape(a) == (2,)
+        assert ensure_callable(Tensorinv)().infer_shape(a) == (2, 2)
+        assert ensure_callable(Tensorsolve)().infer_shape(a, b) == (2,)
+        assert ensure_callable(ConvTranspose)().infer_shape(a) == (2, 2)
+        assert ensure_callable(ConvTranspose)().infer_shape() == ()
+        assert id(ensure_callable(CustomLinearSolve)().infer_shape(a)) == id(a)
         assert CustomLinearSolve().infer_shape() == ()
-        assert id(as_callable(Vecdot)().infer_shape(a)) == id(a)
+        assert id(ensure_callable(Vecdot)().infer_shape(a)) == id(a)
         assert Vecdot().infer_shape() == ()
-        assert id(as_callable(CustomRoot)().infer_shape(a)) == id(a)
+        assert id(ensure_callable(CustomRoot)().infer_shape(a)) == id(a)
         assert CustomRoot().infer_shape() == ()
         p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
         assert LuPivotsToPermutation().infer_shape(p, permutation_size=2) == (2,)

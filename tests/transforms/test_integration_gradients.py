@@ -7,8 +7,7 @@ import typing
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -26,7 +25,7 @@ def test_gradient_integration_across_backends() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor(x) * as_tensor(x) + as_tensor(x) + as_tensor(x)
+        return ensure_eager_tensor(x) * ensure_eager_tensor(x) + ensure_eager_tensor(x) + ensure_eager_tensor(x)
 
     grad_f = grad(f)
     x_val = np.array([3.0], dtype=np.float32)
@@ -35,9 +34,9 @@ def test_gradient_integration_across_backends() -> None:
     results = {}
     for be in backends_to_test:
         with pytest.raises(AttributeError):
-            as_tensor(_get_attr(config, "set_backend"))(be)
-            x_t = as_callable(Tensor)(x_val)
+            ensure_eager_tensor(ensure_eager_tensor(config).set_backend)(be)
+            x_t = ensure_callable(Tensor)(x_val)
             res = grad_f(x_t)
-            results[be] = as_tensor(_get_attr(res, "numpy"))()
+            results[be] = ensure_eager_tensor(ensure_eager_tensor(res).numpy)()
     for _be, res in results.items():
-        as_callable(np.testing.assert_allclose)(res, expected_grad, rtol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(res, expected_grad, rtol=1e-05)

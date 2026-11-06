@@ -6,12 +6,12 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import as_shape, as_tensor_pair, get_active_backend
+from ml_switcheroo_compiler.backends.registry import ensure_shape, ensure_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
 
 from .frontend_utils import _emit_reduction_node
 
@@ -190,21 +190,21 @@ def fractional_max_pool3d(
 
     if config.eager_mode:
         backend = get_active_backend()
-        data, indices = as_tensor_pair(
+        data, indices = ensure_tensor_pair(
             backend.execute_op(
                 "FractionalMaxPool3D",
                 operand.data,
                 output_size=output_size,
                 output_ratio=output_ratio,
-                random_samples=_get_attr(random_samples, "data") if random_samples is not None else None,
+                random_samples=extract_data(random_samples) if random_samples is not None else None,
             )
         )
         return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
 
     fmp_attrs: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None] = {
         "output_size": output_size,
-        "output_ratio": as_shape(output_ratio),
-        "random_samples": as_tensor_obj(random_samples),
+        "output_ratio": ensure_shape(output_ratio),
+        "random_samples": ensure_tensor(random_samples),
     }
     pooled = _emit_reduction_node(
         "FractionalMaxPool3D",
@@ -284,7 +284,7 @@ def adaptive_max_pool3d(
     if config.eager_mode:
         backend = get_active_backend()
         if return_indices:
-            data, indices = as_tensor_pair(
+            data, indices = ensure_tensor_pair(
                 backend.execute_op(
                     "AdaptiveMaxPool3D",
                     operand.data,

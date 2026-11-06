@@ -4,12 +4,70 @@
 from __future__ import annotations
 
 import os
+import typing
+from collections.abc import Mapping, Sequence
 
 import yaml
+from ml_switcheroo_ir import AttributeValue, SymInt, SymNode
 
-from ml_switcheroo_compiler.backends.registry import as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, clone_logical_node
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+
+
+def _to_int(val: AttributeValue | int | str | SymNode | SymInt | None) -> int:
+    """Coerce a dimension or axis value to int.
+
+    Args:
+        val: Raw integer or attribute value.
+
+    Returns:
+        int: Integer value.
+    """
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str) and val.lstrip("-").isdigit():
+        return int(val)
+    return 0
+
+
+def _to_shape_tuple(
+    val: Sequence[int | str | SymNode | SymInt | None] | AttributeValue,
+) -> tuple[int, ...]:
+    """Coerce a sequence or attribute value to a concrete integer shape tuple.
+
+    Args:
+        val: Raw shape sequence or attribute value.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    if isinstance(val, (list, tuple)):
+        return tuple(_to_int(x) for x in val)
+    if isinstance(val, int):
+        return (val,)
+    return ()
+
+
+@typing.runtime_checkable
+class _BodyGraphNodesProtocol(typing.Protocol):
+    """Protocol for body graph containers exposing `nodes`."""
+
+    nodes: list[IRNode] | Mapping[str, IRNode]
+
+
+@typing.runtime_checkable
+class _BodyGraphIdProtocol(typing.Protocol):
+    """Protocol for body graph containers exposing `id`."""
+
+    id: str
+
+
+@typing.runtime_checkable
+class _BodyGraphIOProtocol(typing.Protocol):
+    """Protocol for body graph containers exposing `inputs` and `outputs`."""
+
+    inputs: list[str]
+    outputs: list[str]
 
 
 def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
@@ -129,7 +187,8 @@ def _init_input_batch_axes(
             axis = in_axes
 
         batch_axis_map[inp_id] = axis
-        orig_shape: tuple[int, ...] = (_get_attr(graph.nodes[inp_id], "shape_metadata", ()) or ()) if inp_id in graph.nodes else ()
+        raw_inp_shape = graph.nodes[inp_id].shape_metadata if inp_id in graph.nodes else None
+        orig_shape: tuple[int, ...] = _to_shape_tuple(raw_inp_shape) if raw_inp_shape else ()
         if axis is not None:
             new_shape = list(orig_shape)
             if len(new_shape) <= axis:
@@ -160,20 +219,23 @@ def _apply_batch_axis_policy(
         str: Final lifted operation type name.
     """
     if policy == "shift_axis":
-        if isinstance(new_attrs.get("axis"), int) and int(as_int(new_attrs["axis"])) >= 0:
-            new_attrs["axis"] = int(as_int(new_attrs["axis"])) + 1
-        if isinstance(new_attrs.get("dim"), int) and int(as_int(new_attrs["dim"])) >= 0:
-            new_attrs["dim"] = int(as_int(new_attrs["dim"])) + 1
-        if isinstance(new_attrs.get("axes"), (list, tuple)):
-            new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in _get_attr(new_attrs["axes"], "__iter__")())
+        raw_axis = new_attrs.get("axis")
+        if isinstance(raw_axis, int) and raw_axis >= 0:
+            new_attrs["axis"] = raw_axis + 1
+        raw_dim = new_attrs.get("dim")
+        if isinstance(raw_dim, int) and raw_dim >= 0:
+            new_attrs["dim"] = raw_dim + 1
+        raw_axes = new_attrs.get("axes")
+        if isinstance(raw_axes, (list, tuple)):
+            new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in raw_axes)
     elif policy == "shift_permutation":
-        perm = list(as_shape(new_attrs.get("permutation", ())))
+        perm = list(_to_shape_tuple(new_attrs.get("permutation", ())))
         new_attrs["permutation"] = tuple([0] + [p + 1 for p in perm])
     elif policy == "prepend_batch_dim":
         if isinstance(new_attrs.get("shape"), (list, tuple)):
-            new_attrs["shape"] = (batch_size, *as_shape(new_attrs["shape"]))
+            new_attrs["shape"] = (batch_size, *_to_shape_tuple(new_attrs["shape"]))
         if isinstance(new_attrs.get("newshape"), (list, tuple)):
-            new_attrs["newshape"] = (batch_size, *as_shape(new_attrs["newshape"]))
+            new_attrs["newshape"] = (batch_size, *_to_shape_tuple(new_attrs["newshape"]))
     elif policy == "batch_matmul":
         return "BatchMatMul"
     return lift_op
@@ -200,17 +262,19 @@ def _vectorize_single_node(
         batch_size (int): Concrete batch dimension size.
     """
     if orig_node.op_type == "Input":
-        v_node = IRNode(**_obj_vars(orig_node))
+        v_node = clone_logical_node(orig_node)
         if node_id in shape_map:
             v_node.shape_metadata = shape_map[node_id]
         vectorized.nodes[node_id] = v_node
         return
 
     input_axes = [batch_axis_map.get(inp, None) for inp in orig_node.inputs]
+    raw_orig_shape = orig_node.shape_metadata
+    orig_shape: tuple[int, ...] = _to_shape_tuple(raw_orig_shape) if raw_orig_shape else ()
     if orig_node.op_type == "Constant" or not any(ax is not None for ax in input_axes):
         batch_axis_map[node_id] = None
-        shape_map[node_id] = _get_attr(orig_node, "shape_metadata", ()) or ()
-        vectorized.nodes[node_id] = IRNode(**_obj_vars(orig_node))
+        shape_map[node_id] = orig_shape
+        vectorized.nodes[node_id] = clone_logical_node(orig_node)
         return
 
     aligned_inputs: list[str] = []
@@ -229,7 +293,6 @@ def _vectorize_single_node(
         new_attrs,
         batch_size,
     )
-    orig_shape = _get_attr(orig_node, "shape_metadata", ()) or ()
     out_shape = (batch_size, *orig_shape) if orig_shape else (batch_size,)
 
     cloned_node = clone_logical_node(
@@ -240,7 +303,7 @@ def _vectorize_single_node(
         attributes=new_attrs,
         shape_metadata=out_shape,
     )
-    vectorized.nodes[node_id] = IRNode(**_obj_vars(cloned_node))
+    vectorized.nodes[node_id] = cloned_node
     batch_axis_map[node_id] = 0
     shape_map[node_id] = out_shape
 
@@ -298,31 +361,34 @@ def _infer_vmap_batch_size(graph: IRGraph, node: IRNode, in_axes: int | tuple[in
         int: Concrete batch dimension size (defaults to 1).
     """
     first_inp = graph.nodes.get(node.inputs[0]) if node.inputs else None
-    first_shape = _get_attr(first_inp, "shape_metadata", None) if first_inp else None
+    first_shape = first_inp.shape_metadata if first_inp else None
     if not first_shape:
         return 1
     axis = in_axes if isinstance(in_axes, int) else in_axes[0]
-    return int(first_shape[axis]) if axis < len(first_shape) else 1
+    return _to_int(first_shape[axis]) if axis < len(first_shape) else 1
 
 
-def _ensure_ir_graph(body_graph: IRGraph | TensorOrScalar) -> IRGraph:
+def _ensure_ir_graph(
+    body_graph: IRGraph | TensorOrScalar | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol,
+) -> IRGraph:
     """Convert a LogicalGraph-like body into an IRGraph if needed.
 
     Args:
-        body_graph (IRGraph | TensorOrScalar): Body graph attribute from a Vmap node.
+        body_graph (IRGraph | TensorOrScalar | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol): Body graph attribute from a Vmap node.
 
     Returns:
         IRGraph: Normalized IRGraph instance.
     """
     if isinstance(body_graph, IRGraph):
         return body_graph
-    b_graph = IRGraph(name=_get_attr(body_graph, "id", "body"))
-    b_graph.inputs = list(_get_attr(body_graph, "inputs", []))
-    b_graph.outputs = list(_get_attr(body_graph, "outputs", []))
-    raw_nodes = _get_attr(body_graph, "nodes", [])
+    body_id = str(body_graph.id) if isinstance(body_graph, _BodyGraphIdProtocol) else "body"
+    b_graph = IRGraph(name=body_id)
+    b_graph.inputs = list(body_graph.inputs) if isinstance(body_graph, _BodyGraphIOProtocol) else []
+    b_graph.outputs = list(body_graph.outputs) if isinstance(body_graph, _BodyGraphIOProtocol) else []
+    raw_nodes = body_graph.nodes if isinstance(body_graph, _BodyGraphNodesProtocol) else []
     b_nodes = raw_nodes if isinstance(raw_nodes, list) else list(raw_nodes.values())
     for n in b_nodes:
-        b_graph.nodes[n.id] = IRNode(**_obj_vars(n)) if type(n) is not IRNode else n
+        b_graph.nodes[n.id] = clone_logical_node(n) if type(n) is not IRNode else n
     return b_graph
 
 
@@ -343,16 +409,16 @@ def _inline_vmap_node(
     Returns:
         bool: True if the Vmap node had a valid body and was inlined, False otherwise.
     """
-    body_graph = node.attributes.get("body")
-    if not body_graph or not _has_attr(body_graph, "nodes"):
+    body_graph: TensorOrScalar = node.attributes.get("body")
+    if not isinstance(body_graph, _BodyGraphNodesProtocol):
         return False
 
     raw_in_axes = node.attributes.get("in_axes", 0)
-    in_axes: int | tuple[int, ...] = raw_in_axes if isinstance(raw_in_axes, int) else as_shape(raw_in_axes)
+    in_axes: int | tuple[int, ...] = raw_in_axes if isinstance(raw_in_axes, int) else _to_shape_tuple(raw_in_axes)
     raw_out_axes = node.attributes.get("out_axes", 0)
-    out_axes: int | tuple[int, ...] = raw_out_axes if isinstance(raw_out_axes, int) else as_shape(raw_out_axes)
+    out_axes: int | tuple[int, ...] = raw_out_axes if isinstance(raw_out_axes, int) else _to_shape_tuple(raw_out_axes)
     batch_size = _infer_vmap_batch_size(graph, node, in_axes)
-    v_body = vectorize_graph(_ensure_ir_graph(as_graph(body_graph)), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+    v_body = vectorize_graph(_ensure_ir_graph(body_graph), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
 
     id_map: dict[str, str] = dict(zip(v_body.inputs, node.inputs))
     for b_id, b_node in v_body.nodes.items():
@@ -362,11 +428,11 @@ def _inline_vmap_node(
         id_map[b_id] = new_b_id
         new_inputs = [id_map.get(inp, inp) for inp in b_node.inputs]
         cloned = clone_logical_node(b_node, id=new_b_id, inputs=new_inputs)
-        new_nodes[new_b_id] = IRNode(**_obj_vars(cloned))
+        new_nodes[new_b_id] = cloned
 
     out_mapped = [id_map.get(o, o) for o in v_body.outputs]
     identity_node = clone_logical_node(node, id=node_id, op_type="Identity", inputs=out_mapped[:1], attributes={})
-    new_nodes[node_id] = IRNode(**_obj_vars(identity_node))
+    new_nodes[node_id] = identity_node
     return True
 
 
@@ -383,18 +449,15 @@ def vectorization_pass(graph: IRGraph) -> IRGraph:
     has_vmap = False
 
     for node_id, node in graph.nodes.items():
-        if _get_attr(node, "op_type", "") == "Vmap":
+        if node.op_type == "Vmap":
             has_vmap = True
             if _inline_vmap_node(graph, node_id, node, new_nodes):
                 continue
 
-        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**_obj_vars(node))
+        new_nodes[node_id] = node
 
     if has_vmap:
         graph.nodes.clear()
         graph.nodes.update(new_nodes)
 
     return graph
-
-
-from ml_switcheroo_ir import AttributeValue

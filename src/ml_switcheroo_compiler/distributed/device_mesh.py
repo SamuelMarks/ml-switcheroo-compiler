@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 import yaml
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.distributed.config_models import DeviceMeshYamlConfig
 
 
@@ -179,11 +180,11 @@ class DeviceMesh:
         """
         return f"DeviceMesh(shape={self.shape}, axis_names={self.axis_names})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | DeviceMesh) -> bool:
         """Equality check.
 
         Args:
-            other (TensorOrScalar): The object to compare with.
+            other (TensorOrScalar | DeviceMesh): The object to compare with.
 
         Returns:
             bool: True if shapes, axis names, and devices are identical.

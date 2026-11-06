@@ -11,9 +11,17 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_translation_eager,
     random_zoom_eager,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_callable, as_float, as_tensor, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int,
+    numpy_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 
 
 @numpy_eager_registry.register("AugMix")
@@ -108,7 +116,7 @@ def _np_random_crop(backend_module: BackendModuleProtocol, images: EagerValue, s
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(random_crop_eager)(backend_module, images, size, seed)
+    return ensure_callable(random_crop_eager)(backend_module, images, size, seed)
 
 
 @numpy_eager_registry.register("RandomErasing")
@@ -138,7 +146,7 @@ def _np_flip_horizontal(img: EagerValue, rng: EagerValue) -> EagerValue:
     Returns:
         The flipped or unchanged image array.
     """
-    return as_tensor(img)[:, :, ::-1] if as_mod(rng).random() > 0.5 else img
+    return ensure_eager_tensor(img)[:, :, ::-1] if ensure_mod(rng).random() > 0.5 else img
 
 
 def _np_flip_vertical(img: EagerValue, rng: EagerValue) -> EagerValue:
@@ -151,7 +159,7 @@ def _np_flip_vertical(img: EagerValue, rng: EagerValue) -> EagerValue:
     Returns:
         The flipped or unchanged image array.
     """
-    return as_tensor(img)[:, ::-1, :] if as_mod(rng).random() > 0.5 else img
+    return ensure_eager_tensor(img)[:, ::-1, :] if ensure_mod(rng).random() > 0.5 else img
 
 
 def _np_flip_both(img: EagerValue, rng: EagerValue) -> EagerValue:
@@ -190,19 +198,19 @@ def _np_random_flip(images: EagerValue, mode: str, seed: EagerValue = None) -> E
 
     import numpy as np
 
-    rng = _get_attr(random, "Random")(seed)
+    rng = get_backend_member(random, "Random")(seed)
 
     # Check if a single image
     strategy: Callable[[EagerValue, EagerValue], EagerValue] = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
-    if len(_get_attr(images, "shape")) == 3:
+    if len(get_backend_member(images, "shape")) == 3:
         return strategy(images, rng)
 
-    out = _get_attr(np, "copy")(images)
+    out = get_backend_member(np, "copy")(images)
 
     for i in range(out.shape[0]):
         out[i] = strategy(out[i], rng)
 
-    return as_tensor(out)
+    return ensure_eager_tensor(out)
 
 
 class _PositionalVisionModel(pydantic.BaseModel):
@@ -217,7 +225,8 @@ class _PositionalVisionModel(pydantic.BaseModel):
             *args (EagerValue): Positional field values.
             **kwargs (EagerValue): Keyword field values.
         """
-        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
+        pos_dict: dict[str, EagerValue] = {k: args[idx] for idx, k in enumerate(type(self).model_fields.keys()) if idx < len(args)}
+        super().__init__(**{**pos_dict, **kwargs})
 
 
 class RotationConfig(_PositionalVisionModel):
@@ -270,10 +279,10 @@ def _nearest_interpolation(
     src_x, src_y = coords
     H, W = shape
     b, c = b_c
-    mod = as_mod(np)
+    mod = ensure_mod(np)
     src_y_round = mod.clip(mod.round(src_y).astype(mod.int32), 0, H - 1)
     src_x_round = mod.clip(mod.round(src_x).astype(mod.int32), 0, W - 1)
-    return as_tensor(images)[b, src_y_round, src_x_round, c]
+    return ensure_eager_tensor(images)[b, src_y_round, src_x_round, c]
 
 
 class InterpPixelsConfig(_PositionalVisionModel):
@@ -304,10 +313,10 @@ def _get_interp_pixels(np: BackendModuleProtocol, cfg: InterpPixelsConfig) -> Ea
     y1_c = np.clip(cfg.y1, 0, cfg.H - 1)
     x0_c = np.clip(cfg.x0, 0, cfg.W - 1)
     x1_c = np.clip(cfg.x1, 0, cfg.W - 1)
-    Ia = as_tensor(cfg.images)[b, y0_c, x0_c, c]
-    Ib = as_tensor(cfg.images)[b, y1_c, x0_c, c]
-    Ic = as_tensor(cfg.images)[b, y0_c, x1_c, c]
-    Id = as_tensor(cfg.images)[b, y1_c, x1_c, c]
+    Ia = ensure_eager_tensor(cfg.images)[b, y0_c, x0_c, c]
+    Ib = ensure_eager_tensor(cfg.images)[b, y1_c, x0_c, c]
+    Ic = ensure_eager_tensor(cfg.images)[b, y0_c, x1_c, c]
+    Id = ensure_eager_tensor(cfg.images)[b, y1_c, x1_c, c]
     return Ia, Ib, Ic, Id
 
 
@@ -324,12 +333,12 @@ def _get_interp_weights(
     Returns:
         tuple: Result.
     """
-    src_y = as_tensor(src_coords[0])
-    src_x = as_tensor(src_coords[1])
-    y0 = as_tensor(bounds[0])
-    y1 = as_tensor(bounds[1])
-    x0 = as_tensor(bounds[2])
-    x1 = as_tensor(bounds[3])
+    src_y = ensure_eager_tensor(src_coords[0])
+    src_x = ensure_eager_tensor(src_coords[1])
+    y0 = ensure_eager_tensor(bounds[0])
+    y1 = ensure_eager_tensor(bounds[1])
+    x0 = ensure_eager_tensor(bounds[2])
+    x1 = ensure_eager_tensor(bounds[3])
     wa = (y1 - src_y) * (x1 - src_x)
     wb = (src_y - y0) * (x1 - src_x)
     wc = (y1 - src_y) * (src_x - x0)
@@ -356,7 +365,7 @@ def _bilinear_interpolation(
     Returns:
             tuple[int, ...]: Result.
     """
-    mod = as_mod(np)
+    mod = ensure_mod(np)
     y0: EagerTensorProtocol = mod.floor(coords[1]).astype(mod.int32)
     y1: EagerTensorProtocol = y0 + 1
     x0: EagerTensorProtocol = mod.floor(coords[0]).astype(mod.int32)
@@ -366,9 +375,11 @@ def _bilinear_interpolation(
     pixels = _get_interp_pixels(mod, pixel_cfg)
     weights = _get_interp_weights((coords[1], coords[0]), (y0, y1, x0, x1))
 
-    p0, p1, p2, p3 = _get_attr(pixels, "__iter__")()
-    w0, w1, w2, w3 = _get_attr(weights, "__iter__")()
-    return as_tensor(p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_tensor_quad
+
+    p0, p1, p2, p3 = ensure_tensor_quad(pixels)
+    w0, w1, w2, w3 = ensure_tensor_quad(weights)
+    return ensure_eager_tensor(p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
 
 
 class AffineConfig(_PositionalVisionModel):
@@ -392,14 +403,14 @@ def _apply_affine_grid(np: BackendModuleProtocol, images: EagerValue, cfg: Affin
     """
     interpolation, fill_mode, fill_value, mask = cfg.options
     if interpolation == "nearest":
-        val = as_callable(_nearest_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = ensure_callable(_nearest_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
     else:
-        val = as_callable(_bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = ensure_callable(_bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
 
     if fill_mode == "constant":
-        val = _get_attr(np, "where")(mask, val, fill_value)
+        val = get_backend_member(np, "where")(mask, val, fill_value)
 
-    return as_tensor(_get_attr(val, "astype")(_get_attr(images, "dtype")))
+    return ensure_eager_tensor(get_backend_member(val, "astype")(get_backend_member(images, "dtype")))
 
 
 class BatchRotationConfig(_PositionalVisionModel):
@@ -423,13 +434,15 @@ def _process_batch_item(np: BackendModuleProtocol, cfg: BatchRotationConfig, b: 
         b (int): The b parameter.
         out (EagerValue): The out parameter.
     """
-    rot_cfg = RotationConfig(theta=as_float(cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
-    src_x, src_y = _get_attr(_get_attr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_tensor_pair
+
+    rot_cfg = RotationConfig(theta=ensure_float(cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
+    src_x, src_y = ensure_tensor_pair(_calculate_rotation_matrix(np, rot_cfg))
     mask = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
     C = int(tuple(cfg.images.shape)[3])
     for c in range(C):
         aff_cfg = AffineConfig(coords=(src_x, src_y), shape=(cfg.H, cfg.W), b_c=(b, c), options=cfg.options + (mask,))
-        as_tensor(out)[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
+        ensure_eager_tensor(out)[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
 
 
 def _apply_rotation_batch(np: BackendModuleProtocol, cfg: BatchRotationConfig) -> EagerValue:
@@ -446,7 +459,7 @@ def _apply_rotation_batch(np: BackendModuleProtocol, cfg: BatchRotationConfig) -
     out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
     for b in range(B):
         _process_batch_item(np, cfg, b, out)
-    return as_tensor(out)
+    return ensure_eager_tensor(out)
 
 
 def _resolve_rotation_factor(
@@ -496,18 +509,21 @@ def _np_random_rotation(backend_module: BackendModuleProtocol, images: EagerValu
     """
     np = backend_module
     images = np.asarray(images)
-    rank = len(_get_attr(images, "shape"))
+    rank = len(get_backend_member(images, "shape"))
     if rank == 3:
         images = np.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    B, H, W, _ = _get_attr(images, "shape")
+    raw_b, raw_h, raw_w, _ = get_backend_member(images, "shape")
+    B, H, W = ensure_int(raw_b), ensure_int(raw_h), ensure_int(raw_w)
+
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_tensor_pair
 
     rng = np.random.default_rng(kwargs.get("seed", None))
-    angles = rng.uniform(*as_callable(_resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
+    angles = rng.uniform(*ensure_callable(_resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
-    y, x = _get_attr(_get_attr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
+    y, x = ensure_tensor_pair(_create_rotation_mesh(np, H, W))
 
     options = (
         kwargs.get("interpolation", "bilinear"),
@@ -515,10 +531,10 @@ def _np_random_rotation(backend_module: BackendModuleProtocol, images: EagerValu
         kwargs.get("fill_value", 0.0),
     )
 
-    batch_cfg = BatchRotationConfig(images=as_tensor(images), angles=angles, H=H, W=W, x=x, y=y, options=options)
+    batch_cfg = BatchRotationConfig(images=ensure_eager_tensor(images), angles=angles, H=H, W=W, x=x, y=y, options=options)
     out = _apply_rotation_batch(np, batch_cfg)
 
-    return _get_attr(out, "__getitem__")(0) if rank == 3 else out
+    return ensure_eager_tensor(out)[0] if rank == 3 else out
 
 
 @numpy_eager_registry.register("RandomTranslation")
@@ -535,7 +551,7 @@ def _np_random_translation(backend_module: BackendModuleProtocol, images: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs)
+    return ensure_callable(random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs)
 
 
 @numpy_eager_registry.register("RandomZoom")
@@ -552,7 +568,7 @@ def _np_random_zoom(backend_module: BackendModuleProtocol, images: EagerValue, h
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs)
+    return ensure_callable(random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs)
 
 
 __all__ = [

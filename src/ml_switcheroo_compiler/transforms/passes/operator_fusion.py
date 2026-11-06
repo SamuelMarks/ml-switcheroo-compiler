@@ -6,11 +6,12 @@ import glob
 import logging
 import os
 import typing
+from collections.abc import Mapping
 
 import yaml
+from ml_switcheroo_ir import SymInt, SymNode
 
-from ml_switcheroo_compiler.backends.registry import as_int
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.passes.config_models import (
     ComputeCosts,
@@ -21,6 +22,54 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
 )
 
 MatchMapType = dict[str, typing.Union[str, IRNode, int, float, "None"]]
+
+
+def _to_fusion_int(
+    val: Mapping[str, float | int | dict[str, float | int]] | Mapping[str, float | int] | float | int | str | SymNode | SymInt | None,
+    default: int = 0,
+) -> int:
+    """Coerce a configuration or shape value to int.
+
+    Args:
+        val: Raw numeric or string value.
+        default (int): Fallback value if not convertible.
+
+    Returns:
+        int: Coerced integer value.
+    """
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str) and val.lstrip("-").isdigit():
+        return int(val)
+    return default
+
+
+@typing.runtime_checkable
+class _GraphInputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `inputs` list."""
+
+    inputs: list[str]
+
+
+@typing.runtime_checkable
+class _GraphOutputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `outputs` list."""
+
+    outputs: list[str]
+
+
+@typing.runtime_checkable
+class _GraphNodesProtocol(typing.Protocol):
+    """Protocol for graphs exposing a `nodes` mapping."""
+
+    nodes: Mapping[str, IRNode]
+
+
+@typing.runtime_checkable
+class _DynamicShapeNodeProtocol(typing.Protocol):
+    """Protocol for nodes exposing an `is_dynamic_shape` boolean attribute."""
+
+    is_dynamic_shape: bool
 
 
 class NodePattern:
@@ -74,7 +123,7 @@ def _match_node_inputs(
     if len(node.inputs) != len(p_inputs):
         return False
 
-    if _get_attr(pattern, "commutative", False) and len(p_inputs) == 2:
+    if pattern.commutative and len(p_inputs) == 2:
         orig_map = dict(capture_map)
         if match_pattern(graph, node.inputs[0], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[1], p_inputs[1], capture_map):
             return True
@@ -108,7 +157,7 @@ def match_pattern(
     Returns:
         bool: True if the pattern matches, False otherwise.
     """
-    is_wildcard = _get_attr(pattern, "wildcard", False) or pattern.op_type in ("*", "any")
+    is_wildcard = pattern.wildcard or pattern.op_type in ("*", "any")
     if not isinstance(node_id, str):
         if (pattern.op_type is not None and not is_wildcard) or pattern.inputs is not None:
             return False
@@ -210,7 +259,8 @@ class PatternMatchingEngine:
         for rule in self.rules:
             capture_map: dict[str, str | IRNode] = {}
             if match_pattern(graph, node_id, rule.pattern, capture_map):
-                replacements: dict[str, IRNode] | None = _get_attr(rule, "apply")(graph, capture_map)
+                match_dict: MatchMapType = dict(capture_map)
+                replacements: dict[str, IRNode] | None = rule.apply(graph, match_dict)
                 if replacements:
                     if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
                         continue
@@ -237,7 +287,7 @@ class PatternMatchingEngine:
         for n in new_nodes.values():
             n.inputs = [id_map.get(in_id, in_id) for in_id in n.inputs]
 
-        if _has_attr(graph, "inputs"):
+        if graph.inputs is not None:
             graph.inputs = [id_map.get(in_id, in_id) for in_id in graph.inputs]
         graph.outputs = [id_map.get(out_id, out_id) for out_id in graph.outputs]
 
@@ -502,9 +552,9 @@ class MemoryAwareCostModel:
             return True
 
         if "max_fusion_memory_bytes" in self.config:
-            max_memory: int = int(as_int(self.config["max_fusion_memory_bytes"]))
+            max_memory: int = _to_fusion_int(self.config["max_fusion_memory_bytes"], 1024 * 1024 * 512)
         elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
-            max_memory = int(as_int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
+            max_memory = _to_fusion_int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512), 1024 * 1024 * 512)
         else:
             max_memory = 1024 * 1024 * 512
 
@@ -512,19 +562,20 @@ class MemoryAwareCostModel:
         memory_sizes = self.config.get("memory_sizes", {})
 
         for node in replacements.values():
-            shape: tuple[int | str, ...] | None = _get_attr(node, "shape_metadata", None)
-            if shape and not _get_attr(node, "is_dynamic_shape", False):
+            shape = node.shape_metadata
+            is_dyn = bool(node.is_dynamic_shape) if isinstance(node, _DynamicShapeNodeProtocol) else False
+            if shape and not is_dyn:
                 if any(isinstance(d, str) for d in shape):
                     continue
 
                 elements: int = 1
                 for dim in shape:
-                    elements *= max(1, int(dim))
+                    elements *= max(1, _to_fusion_int(dim, 1))
 
                 dtype: str = str(node.attributes.get("dtype", "float32"))
                 dtype_size: int = 4
                 if isinstance(memory_sizes, dict):
-                    dtype_size = int(as_int(memory_sizes.get(dtype, 4)))
+                    dtype_size = _to_fusion_int(memory_sizes.get(dtype, 4), 4)
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)
@@ -599,7 +650,9 @@ def _extract_node_ops_and_expr(node: IRNode) -> tuple[list[str], str]:
         tuple[list[str], str]: List of constituent op names and scalar C expression string.
     """
     if node.op_type == "FusedElementwise":
-        return list(_get_attr(node.attributes.get("fused_ops", []), "__iter__")()), str(node.attributes.get("scalar_expr", "0.0f"))
+        raw_ops = node.attributes.get("fused_ops", [])
+        ops_list = [str(op) for op in raw_ops] if isinstance(raw_ops, (list, tuple)) else []
+        return ops_list, str(node.attributes.get("scalar_expr", "0.0f"))
     args = [f"in_{k}" for k in range(len(node.inputs))]
     return [node.op_type], _get_scalar_expression_snippet(node.op_type, args)
 
@@ -660,10 +713,11 @@ def _count_consumers(graph: IRGraph) -> dict[str, int]:
     """
     consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
     for node in graph.nodes.values():
-        for inp in _get_attr(node, "inputs", []):
+        for inp in node.inputs:
             if inp in consumer_counts:
                 consumer_counts[inp] += 1
-    for out_id in _get_attr(graph, "outputs", []):
+    graph_outputs = list(graph.outputs or [])
+    for out_id in graph_outputs:
         if out_id in consumer_counts:
             consumer_counts[out_id] += 1
     return consumer_counts
@@ -699,13 +753,26 @@ def _try_fuse_cluster_step(graph: IRGraph, consumer_counts: dict[str, int]) -> b
             if not _is_fusable_elementwise_node(producer) or consumer_counts.get(inp_id, 0) != 1:
                 continue
             assert producer is not None
-            p_shape = _get_attr(producer, "shape_metadata", None)
-            n_shape = _get_attr(node, "shape_metadata", None)
+            p_shape = producer.shape_metadata
+            n_shape = node.shape_metadata
             if p_shape and n_shape and p_shape != n_shape:
                 continue
             _fuse_single_edge(graph, node, inp_id, i, producer)
             return True
     return False
+
+
+def _has_graph_nodes(graph: IRGraph) -> bool:
+    """Check if `graph` has a non-empty `nodes` mapping.
+
+    Args:
+        graph (IRGraph): Candidate IRGraph.
+
+    Returns:
+        bool: True if `graph.nodes` exists and is non-empty.
+    """
+    raw_graph: TensorOrScalar = graph
+    return isinstance(raw_graph, _GraphNodesProtocol) and bool(raw_graph.nodes)
 
 
 def fuse_elementwise_clusters(graph: IRGraph) -> bool:
@@ -717,7 +784,7 @@ def fuse_elementwise_clusters(graph: IRGraph) -> bool:
     Returns:
         bool: True if any elementwise DAG clusters were fused, False otherwise.
     """
-    if not _get_attr(graph, "nodes", None):
+    if not _has_graph_nodes(graph):
         return False
 
     modified: bool = False
@@ -805,7 +872,7 @@ def fuse_conv_bias_relu(graph: IRGraph) -> bool:
     Returns:
         bool: True if any Conv-Bias-Activation sequences were fused, False otherwise.
     """
-    if not _get_attr(graph, "nodes", None):
+    if not _has_graph_nodes(graph):
         return False
 
     modified: bool = False
@@ -870,7 +937,7 @@ def fuse_elementwise_activation(graph: IRGraph) -> bool:
     Returns:
         bool: True if any elementwise-activation patterns were fused, False otherwise.
     """
-    if not _get_attr(graph, "nodes", None):
+    if not _has_graph_nodes(graph):
         return False
 
     modified: bool = False
@@ -918,7 +985,7 @@ def fuse_horizontal_patterns(graph: IRGraph) -> bool:
     Returns:
         bool: True if horizontal fusions were performed, False otherwise.
     """
-    if not _get_attr(graph, "nodes", None):
+    if not _has_graph_nodes(graph):
         return False
 
     modified: bool = False
@@ -936,8 +1003,8 @@ def fuse_horizontal_patterns(graph: IRGraph) -> bool:
 
         for _key, siblings in groups.items():
             if len(siblings) >= 2:
-                first_shape = _get_attr(siblings[0], "shape_metadata", None)
-                compatible = [s for s in siblings if _get_attr(s, "shape_metadata", None) == first_shape and (s.op_type == siblings[0].op_type or (s.op_type in ELEMENTWISE_OPS and siblings[0].op_type in ELEMENTWISE_OPS))]
+                first_shape = siblings[0].shape_metadata
+                compatible = [s for s in siblings if s.shape_metadata == first_shape and (s.op_type == siblings[0].op_type or (s.op_type in ELEMENTWISE_OPS and siblings[0].op_type in ELEMENTWISE_OPS))]
                 if len(compatible) >= 2:
                     fused_id = f"horizontal_{'_'.join(s.id for s in compatible)}"
                     fused_ops = [s.op_type for s in compatible]
@@ -1008,7 +1075,7 @@ def operator_fusion_pass(graph: IRGraph) -> bool:
         for name, rule_config in config.fusion_patterns.items():
             rules.append(YamlFusionRule(name, rule_config))
 
-    cost_model_config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int] | None = None
+    cost_model_config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int | None] | None = None
     cost_yaml_path: str = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
     if os.path.exists(cost_yaml_path):
         with open(cost_yaml_path) as f:
@@ -1016,7 +1083,7 @@ def operator_fusion_pass(graph: IRGraph) -> bool:
 
     engine: PatternMatchingEngine = PatternMatchingEngine(
         rules,
-        _cast_val("TypedVariadicCallable[MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
+        MemoryAwareCostModel(cost_model_config) if cost_model_config else None,
     )
     pattern_modified: bool = engine.apply_passes(graph)
     if pattern_modified:

@@ -7,8 +7,7 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -27,15 +26,12 @@ def test_shape_misc_functions() -> None:
     shape_misc._infer_shape_percentile_quantile(a, 0.5, axis=None, keepdims=False)
     shape_misc._infer_shape_percentile_quantile(a, [0.5], axis=0, keepdims=True)
     shape_misc._infer_shape_percentile_quantile(a, [0.5], axis=0, keepdims=False)
-    for attr in dir(shape_misc):
-        if attr.startswith("_infer_shape_"):
-            val = _get_attr(shape_misc, attr)
-            if callable(val):
-                with pytest.raises(TypeError):
-                    val(a)
-                val(a, a)
-                with pytest.raises(AttributeError):
-                    val(a, a, a)
+    val = ensure_callable(shape_misc._infer_shape_percentile_quantile)
+    with pytest.raises(TypeError):
+        val(a)
+    val(a, a)
+    with pytest.raises((TypeError, AttributeError)):
+        val(a, a, a)
 
 
 def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None:
@@ -69,19 +65,19 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None
     assert captured_shapes["Tile"] == (4, 12)
     shape_misc.tile(t, reps=(3, 2, 4))
     assert captured_shapes["Tile"] == (3, 4, 12)
-    as_callable(shape_misc.tile)(t, reps=2)
+    ensure_callable(shape_misc.tile)(t, reps=2)
     assert captured_shapes["Tile"] == (2, 6)
     shape_misc.repeat(t, repeats=3, axis=1)
     assert captured_shapes["Repeat"] == (2, 9)
     shape_misc.repeat(t, repeats=[2, 3], axis=0)
     assert captured_shapes["Repeat"] == (5, 3)
-    as_callable(shape_misc.repeat)(t, repeats=None, axis=0)
+    ensure_callable(shape_misc.repeat)(t, repeats=None, axis=0)
     assert captured_shapes["Repeat"] == (2, 3)
     shape_misc.repeat(t, repeats=2, axis=None)
     assert captured_shapes["Repeat"] == (12,)
     shape_misc.repeat(t, repeats=[1, 2, 3], axis=None)
     assert captured_shapes["Repeat"] == (6,)
-    as_callable(shape_misc.repeat)(t, repeats=None, axis=None)
+    ensure_callable(shape_misc.repeat)(t, repeats=None, axis=None)
     assert captured_shapes["Repeat"] == (6,)
     shape_misc.triu(t, diagonal=0)
     assert captured_shapes["Triu"] == (2, 3)

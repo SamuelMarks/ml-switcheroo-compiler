@@ -7,9 +7,8 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.grad.utils import _get_inputs_dict, _to_original_type
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -26,10 +25,10 @@ def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
         """Test class DummyGraph."""
 
         inputs = ["missing_inp"]
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
     with pytest.raises(ValueError, match="Missing input value for node 'missing_inp'"):
-        as_callable(_get_inputs_dict)(as_callable(DummyGraph)())
+        ensure_callable(_get_inputs_dict)(ensure_callable(DummyGraph)())
 
 
 def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
@@ -55,15 +54,15 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
             """
             return val
 
-    as_callable(mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=as_callable(DummyBackend)())
+    ensure_callable(mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=ensure_callable(DummyBackend)())
 
     val_int = np.array(1, dtype=np.int32)
     res_int = _to_original_type(val_int, orig)
-    assert as_tensor(_get_attr(res_int, "dtype")) == DType.Int32
+    assert ensure_eager_tensor(ensure_eager_tensor(res_int).dtype) == DType.Int32
 
     val_bool = np.array(True, dtype=bool)
     res_bool = _to_original_type(val_bool, orig)
-    assert as_tensor(_get_attr(res_bool, "dtype")) == DType.Bool
+    assert ensure_eager_tensor(ensure_eager_tensor(res_bool).dtype) == DType.Bool
 
 
 def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
@@ -83,7 +82,7 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
     class DummyGraph:
         """Test class DummyGraph."""
 
-        nodes = as_tensor({"n": {}})
+        nodes = ensure_eager_tensor({"n": {}})
 
     class DummyTensor1(Tensor):
         """Test class DummyTensor1."""
@@ -112,9 +111,9 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
             return True
 
     t = DummyTensor1(None, TensorConfig((), DType.Float32, None))
-    _set_attr(t, "_data", DummyData())
+    ensure_mutable(t)._data = ensure_eager_tensor(DummyData())
     t2 = DummyTensor2(None, TensorConfig((), DType.Float32, None))
-    _set_attr(t2, "_data", DummyData())
+    ensure_mutable(t2)._data = ensure_eager_tensor(DummyData())
 
     class DummyTensor3(Tensor):
         """Test class DummyTensor3."""
@@ -130,9 +129,9 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
         id = "not_in_graph"
 
     t3 = DummyTensor3(None, TensorConfig((), DType.Float32, None))
-    _set_attr(t3, "_data", DummyDataNotInGraph())
+    ensure_mutable(t3)._data = ensure_eager_tensor(DummyDataNotInGraph())
 
-    wrt_tensors, wrt_ids = as_callable(_find_wrt_tensors)(as_callable(DummyGraph)())
+    wrt_tensors, wrt_ids = ensure_callable(_find_wrt_tensors)(ensure_callable(DummyGraph)())
     assert id(t) in [id(x) for x in wrt_tensors]
     assert id(t2) in [id(x) for x in wrt_tensors]
     assert id(t3) not in [id(x) for x in wrt_tensors]
@@ -148,7 +147,7 @@ def test_get_concrete_val_variants() -> None:
 
         _data = 42
 
-    assert as_callable(_get_concrete_val)(as_callable(NonProxy)()) == 42
+    assert ensure_callable(_get_concrete_val)(ensure_callable(NonProxy)()) == 42
 
 
 def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
@@ -171,7 +170,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
             """
             return val
 
-    as_callable(mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=as_callable(DummyBackend)())
+    ensure_callable(mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=ensure_callable(DummyBackend)())
 
     class NodeData:
         """Test class NodeData."""
@@ -190,23 +189,23 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
         """Test class DummyGraphSuccess."""
 
         inputs = ["in_valid"]
-        nodes = as_tensor({"in_valid": {}, "no_val_node": {}})
+        nodes = ensure_eager_tensor({"in_valid": {}, "no_val_node": {}})
 
     t_valid = Tensor(None, TensorConfig((), DType.Float32, None))
-    _set_attr(t_valid, "_data", NodeData("in_valid", concrete_value=123.0))
+    ensure_mutable(t_valid)._data = ensure_eager_tensor(NodeData("in_valid", concrete_value=123.0))
 
     t_no_val = Tensor(None, TensorConfig((), DType.Float32, None))
-    proxy = as_callable(ProxyTensor)(None, ())
-    _set_attr(proxy, "id", "no_val_node")
-    _set_attr(proxy, "concrete_value", None)
+    proxy = ensure_callable(ProxyTensor)(None, ())
+    ensure_mutable(proxy).id = ensure_eager_tensor("no_val_node")
+    ensure_mutable(proxy).concrete_value = ensure_eager_tensor(None)
     t_no_val._data = proxy
 
     t_not_in_graph = Tensor(None, TensorConfig((), DType.Float32, None))
-    _set_attr(t_not_in_graph, "_data", NodeData("orphan_node", concrete_value=999.0))
+    ensure_mutable(t_not_in_graph)._data = ensure_eager_tensor(NodeData("orphan_node", concrete_value=999.0))
 
     Tensor(1.0, TensorConfig((), DType.Float32, None))
 
-    res = as_callable(_get_inputs_dict)(as_callable(DummyGraphSuccess)())
+    res = ensure_callable(_get_inputs_dict)(ensure_callable(DummyGraphSuccess)())
     assert "in_valid" in res
     assert res["in_valid"] == 123.0
     assert "no_val_node" not in res
@@ -215,7 +214,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
     class GraphNoInputs:
         """Test class GraphNoInputs."""
 
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
-    res_no_inputs = as_callable(_get_inputs_dict)(as_callable(GraphNoInputs)())
-    assert isinstance(as_tensor(res_no_inputs), dict)
+    res_no_inputs = ensure_callable(_get_inputs_dict)(ensure_callable(GraphNoInputs)())
+    assert isinstance(ensure_eager_tensor(res_no_inputs), dict)

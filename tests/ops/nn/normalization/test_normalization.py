@@ -10,7 +10,6 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.normalization import (
     BatchNormConfig,
@@ -36,7 +35,7 @@ from ml_switcheroo_compiler.ops.nn.normalization import (
 from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
 from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_variance, spectral_normalization
 from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -47,9 +46,9 @@ def test_normalization_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert as_callable(GroupMean)().infer_shape(t) == (1, 2)
-    assert as_callable(GroupVariance)().infer_shape(t) == (1, 2)
-    assert as_callable(GroupNorm)().infer_shape(t) == (1, 2)
+    assert ensure_callable(GroupMean)().infer_shape(t) == (1, 2)
+    assert ensure_callable(GroupVariance)().infer_shape(t) == (1, 2)
+    assert ensure_callable(GroupNorm)().infer_shape(t) == (1, 2)
 
     import sys
 
@@ -70,13 +69,13 @@ def test_normalization_coverage() -> None:
             return "normed"
 
     orig_get_op = norm_frontend.get_op
-    _set_attr(norm_frontend, "get_op", lambda x: DummyOp)
+    ensure_mutable(norm_frontend).get_op = ensure_eager_tensor(lambda x: DummyOp)
     try:
-        assert as_tensor(group_mean(t, 1)) == as_tensor("normed")
-        assert as_tensor(group_variance(t, 1)) == as_tensor("normed")
-        assert as_tensor(frontend_group_norm(t, 1)) == as_tensor("normed")
+        assert ensure_eager_tensor(group_mean(t, 1)) == ensure_eager_tensor("normed")
+        assert ensure_eager_tensor(group_variance(t, 1)) == ensure_eager_tensor("normed")
+        assert ensure_eager_tensor(frontend_group_norm(t, 1)) == ensure_eager_tensor("normed")
     finally:
-        _set_attr(norm_frontend, "get_op", orig_get_op)
+        ensure_mutable(norm_frontend).get_op = ensure_eager_tensor(orig_get_op)
 
     with pytest.raises(Exception, match=r".*"):
         spectral_normalization(t, t)
@@ -91,27 +90,27 @@ def test_tracing_normalization_ops() -> None:
     global_tracing_state.start_tracing("test_norm_trace")
 
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-    _set_attr(t, "id", "tensor_n0")
+    ensure_mutable(t).id = ensure_eager_tensor("tensor_n0")
 
     try:
         # Test normalize_moments tracing
-        mean, variance = as_callable(normalize_moments)(t, t, t, t)
-        assert isinstance(as_tensor(mean), Tensor)
-        assert isinstance(as_tensor(variance), Tensor)
+        mean, variance = ensure_callable(normalize_moments)(t, t, t, t)
+        assert isinstance(ensure_eager_tensor(mean), Tensor)
+        assert isinstance(ensure_eager_tensor(variance), Tensor)
         assert mean.shape == (1, 2)
         assert variance.shape == (1, 2)
 
         # Test sufficient_statistics tracing
-        counts, mean_ss, variance_ss, shift = as_callable(sufficient_statistics)(t, 1)
-        assert isinstance(as_tensor(counts), Tensor)
-        assert isinstance(as_tensor(mean_ss), Tensor)
-        assert isinstance(as_tensor(variance_ss), Tensor)
-        assert isinstance(as_tensor(shift), Tensor)
+        counts, mean_ss, variance_ss, shift = ensure_callable(sufficient_statistics)(t, 1)
+        assert isinstance(ensure_eager_tensor(counts), Tensor)
+        assert isinstance(ensure_eager_tensor(mean_ss), Tensor)
+        assert isinstance(ensure_eager_tensor(variance_ss), Tensor)
+        assert isinstance(ensure_eager_tensor(shift), Tensor)
 
         # Test weighted_moments tracing
-        w_mean, w_variance = as_callable(weighted_moments)(t, 1, t)
-        assert isinstance(as_tensor(w_mean), Tensor)
-        assert isinstance(as_tensor(w_variance), Tensor)
+        w_mean, w_variance = ensure_callable(weighted_moments)(t, 1, t)
+        assert isinstance(ensure_eager_tensor(w_mean), Tensor)
+        assert isinstance(ensure_eager_tensor(w_variance), Tensor)
         assert w_mean.shape == (1, 2)
         assert w_variance.shape == (1, 2)
     finally:

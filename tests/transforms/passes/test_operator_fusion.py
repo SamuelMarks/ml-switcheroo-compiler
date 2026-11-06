@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import LogicalNode
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -34,20 +33,20 @@ def _test_operator_fusion_extra_coverage_part_1(_state: dict[str, EagerTensorPro
 
     # len(inputs) mismatch
     pat = NodePatternConfig(op_type="Op1", inputs=[NodePatternConfig(op_type="Input")])  # 1 input vs 2
-    assert bool(as_callable(match_pattern)(graph, "n1", pat, {})) is False
+    assert bool(ensure_callable(match_pattern)(graph, "n1", pat, {})) is False
 
     # not isinstance(node_id, str)
-    assert bool(as_callable(match_pattern)(graph, 123, as_callable(NodePatternConfig)(op_type="Input"), {})) is False
-    cmap = as_tensor_dict({})
-    assert bool(as_callable(match_pattern)(graph, 123, as_callable(NodePatternConfig)(capture="test"), cmap)) is True
+    assert bool(ensure_callable(match_pattern)(graph, 123, ensure_callable(NodePatternConfig)(op_type="Input"), {})) is False
+    cmap = ensure_tensor_dict({})
+    assert bool(ensure_callable(match_pattern)(graph, 123, ensure_callable(NodePatternConfig)(capture="test"), cmap)) is True
     assert cmap["test"] == 123
 
     # not node or op_type mismatch
-    assert bool(as_callable(match_pattern)(graph, "n3", as_callable(NodePatternConfig)(op_type="Input"), {})) is False
-    assert bool(as_callable(match_pattern)(graph, "n1", as_callable(NodePatternConfig)(op_type="Input"), {})) is False
+    assert bool(ensure_callable(match_pattern)(graph, "n3", ensure_callable(NodePatternConfig)(op_type="Input"), {})) is False
+    assert bool(ensure_callable(match_pattern)(graph, "n1", ensure_callable(NodePatternConfig)(op_type="Input"), {})) is False
 
     # capture is not None, inputs is None
-    assert bool(as_callable(match_pattern)(graph, "n1", as_callable(NodePatternConfig)(capture="test_cap"), cmap)) is True
+    assert bool(ensure_callable(match_pattern)(graph, "n1", ensure_callable(NodePatternConfig)(capture="test_cap"), cmap)) is True
     assert cmap["test_cap"] == n1
 
     # apply_replacement base class coverage
@@ -60,11 +59,10 @@ def _test_operator_fusion_extra_coverage_part_1(_state: dict[str, EagerTensorPro
 
     # _match_inputs tests
     n2 = IRNode(id="n2", op_type="Input", inputs=[])
-    _get_attr(_state, "update")({"FusionPatternConfig": FusionPatternConfig, "IRGraph": IRGraph, "IRNode": IRNode, "NodePatternConfig": NodePatternConfig})
-    _get_attr(_state, "update")({"ReplacementConfig": ReplacementConfig, "YamlFusionRule": YamlFusionRule, "cfg": cfg, "cmap": cmap})
-    _get_attr(_state, "update")({"graph": graph, "match_pattern": match_pattern, "n1": n1, "n2": n2})
-    _get_attr(_state, "update")({"pat": pat, "strat": strat})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FusionPatternConfig": FusionPatternConfig, "IRGraph": IRGraph, "IRNode": IRNode, "NodePatternConfig": NodePatternConfig}))
+    _state.update(ensure_tensor_dict({"ReplacementConfig": ReplacementConfig, "YamlFusionRule": YamlFusionRule, "cfg": cfg, "cmap": cmap}))
+    _state.update(ensure_tensor_dict({"graph": graph, "match_pattern": match_pattern, "n1": n1, "n2": n2}))
+    _state.update(ensure_tensor_dict({"pat": pat, "strat": strat}))
 
 
 def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -76,7 +74,7 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
     NodePatternConfig, graph, match_pattern, n2 = _state["NodePatternConfig"], _state["graph"], _state["match_pattern"], _state["n2"]
     strat = _state["strat"]
     graph.nodes["n2"] = n2
-    _set_attr(graph.nodes["n1"], "inputs", ["n2", "n2"])
+    ensure_mutable(graph.nodes["n1"]).inputs = ensure_eager_tensor(["n2", "n2"])
     # recursive match fails
     pat_fail = NodePatternConfig(op_type="Op1", inputs=[NodePatternConfig(op_type="WrongOp"), NodePatternConfig(op_type="WrongOp")])
     assert bool(match_pattern(graph, "n1", pat_fail, {})) is False
@@ -92,11 +90,11 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
 
         def __init__(self) -> None:
             """Test function __init__."""
-            _set_attr(self, "pattern", None)
+            ensure_mutable(self).pattern = ensure_eager_tensor(None)
             self.name = "dummy"
 
     strat2 = DummyFusionRule()
-    assert as_callable(strat2.apply)(graph, {}) is None
+    assert ensure_callable(strat2.apply)(graph, {}) is None
 
     # PatternMatchingEngine coverage
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import PatternMatchingEngine
@@ -113,10 +111,11 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
             """
             return True
 
-    engine = as_callable(PatternMatchingEngine)([strat], cost_model=as_callable(FakeCostModel)())
-    _get_attr(_state, "update")({"DummyFusionRule": DummyFusionRule, "FakeCostModel": FakeCostModel, "FusionRule": FusionRule, "PatternMatchingEngine": PatternMatchingEngine})
-    _get_attr(_state, "update")({"engine": engine, "pat_fail": pat_fail, "pat_pass": pat_pass, "strat2": strat2})
-    _state.update(_caller_locals())
+    engine = ensure_callable(PatternMatchingEngine)([strat], cost_model=ensure_callable(FakeCostModel)())
+    _state.update(ensure_tensor_dict({"DummyFusionRule": DummyFusionRule, "FakeCostModel": FakeCostModel, "FusionRule": FusionRule, "PatternMatchingEngine": PatternMatchingEngine}))
+    _state.update(ensure_tensor_dict({"engine": engine, "pat_fail": pat_fail, "pat_pass": pat_pass, "strat2": strat2}))
+    _state.update(ensure_tensor_dict({"NodePatternConfig": NodePatternConfig, "graph": graph, "match_pattern": match_pattern}))
+    _state.update(ensure_tensor_dict({"n2": n2, "strat": strat}))
 
 
 def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -142,7 +141,7 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
             """
             return False
 
-    engine2 = as_callable(PatternMatchingEngine)([strat], cost_model=as_callable(FakeCostModelFalse)())
+    engine2 = ensure_callable(PatternMatchingEngine)([strat], cost_model=ensure_callable(FakeCostModelFalse)())
     engine2.apply_passes(graph)
 
     # Add id map test
@@ -154,7 +153,7 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
 
         def __init__(self) -> None:
             """Test function __init__."""
-            as_callable(super().__init__)("custom", NodePatternConfig(op_type="A"))
+            ensure_callable(super().__init__)("custom", NodePatternConfig(op_type="A"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, IRNode] | None:
             """Test function apply.
@@ -170,9 +169,10 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
     g.nodes["n_c"] = IRNode(id="n_c", op_type="C", inputs=["n_a"])
     g.outputs = ["n_a"]
     g.inputs = ["n_a"]
-    _get_attr(_state, "update")({"CustomRule": CustomRule, "FakeCostModelFalse": FakeCostModelFalse, "IRGraph": IRGraph, "IRNode": IRNode})
-    _get_attr(_state, "update")({"engine2": engine2, "g": g})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"CustomRule": CustomRule, "FakeCostModelFalse": FakeCostModelFalse, "IRGraph": IRGraph, "IRNode": IRNode}))
+    _state.update(ensure_tensor_dict({"engine2": engine2, "g": g}))
+    _state.update(ensure_tensor_dict({"FusionRule": FusionRule, "NodePatternConfig": NodePatternConfig, "PatternMatchingEngine": PatternMatchingEngine}))
+    _state.update(ensure_tensor_dict({"engine": engine, "graph": graph, "strat": strat}))
 
 
 def _test_operator_fusion_extra_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -204,7 +204,7 @@ def _test_operator_fusion_extra_coverage_part_4(_state: dict[str, EagerTensorPro
     strat3 = YamlFusionRule("test3", cfg)
 
     match_dict = {"target": IRNode(id="n_a", op_type="A", inputs=[]), "val1": IRNode(id="n_1", op_type="In", inputs=[]), "val2": "val2_id"}
-    res = as_callable(strat3.apply)(as_callable(IRGraph)(), match_dict)
+    res = ensure_callable(strat3.apply)(ensure_callable(IRGraph)(), match_dict)
     assert res is not None
     assert "n_a" in res
     assert res["n_a"].op_type == "B"
@@ -214,10 +214,13 @@ def _test_operator_fusion_extra_coverage_part_4(_state: dict[str, EagerTensorPro
     # apply_operator_fusion
     from unittest.mock import mock_open, patch
 
-    _get_attr(_state, "update")({"cfg": cfg, "eng": eng, "eng2": eng2, "g2": g2})
-    _get_attr(_state, "update")({"match_dict": match_dict, "mock_open": mock_open, "patch": patch, "res": res})
-    _get_attr(_state, "update")({"strat3": strat3})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"cfg": cfg, "eng": eng, "eng2": eng2, "g2": g2}))
+    _state.update(ensure_tensor_dict({"match_dict": match_dict, "mock_open": mock_open, "patch": patch, "res": res}))
+    _state.update(ensure_tensor_dict({"strat3": strat3}))
+    _state.update(ensure_tensor_dict({"CustomRule": CustomRule, "FakeCostModelFalse": FakeCostModelFalse, "FusionPatternConfig": FusionPatternConfig}))
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "NodePatternConfig": NodePatternConfig}))
+    _state.update(ensure_tensor_dict({"PatternMatchingEngine": PatternMatchingEngine, "ReplacementConfig": ReplacementConfig, "YamlFusionRule": YamlFusionRule}))
+    _state.update(ensure_tensor_dict({"g": g}))
 
 
 def _test_operator_fusion_extra_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -248,7 +251,7 @@ def _test_operator_fusion_extra_coverage_part_5(_state: dict[str, EagerTensorPro
             g3 = IRGraph()
             # To hit apply_passes(graph) returning True, we need a matching pattern
             g3.nodes["x"] = IRNode(id="x", op_type="Z", inputs=[])
-            as_callable(apply_operator_fusion)(g3)
+            ensure_callable(apply_operator_fusion)(g3)
             cfg = _load_pass_config()
             assert cfg.fusion_patterns is not None
     with patch("os.path.exists", return_value=False):
@@ -258,13 +261,13 @@ def _test_operator_fusion_extra_coverage_part_5(_state: dict[str, EagerTensorPro
         # Also hits 303->305 (engine.apply_passes returns False since no rules)
         g_empty = IRGraph()
         g_empty.nodes["x"] = IRNode(id="x", op_type="UnmatchedOp", inputs=[])
-        as_callable(apply_operator_fusion)(g_empty)
+        ensure_callable(apply_operator_fusion)(g_empty)
 
     # test _build_pattern with inputs
     strat4 = YamlFusionRule("test4", FusionPatternConfig(pattern=NodePatternConfig(op_type="A", inputs=[NodePatternConfig(op_type="B")]), replacement=ReplacementConfig(op_type="x", inputs=[], capture_to_replace="x")))
     assert strat4.pattern.inputs is not None
-    _get_attr(_state, "update")({"_load_pass_config": _load_pass_config, "apply_operator_fusion": apply_operator_fusion, "cfg": cfg, "cfg2": cfg2})
-    _get_attr(_state, "update")({"g3": g3, "g_empty": g_empty, "strat4": strat4, "yaml": yaml})
+    _state.update(ensure_tensor_dict({"_load_pass_config": _load_pass_config, "apply_operator_fusion": apply_operator_fusion, "cfg": cfg, "cfg2": cfg2}))
+    _state.update(ensure_tensor_dict({"g3": g3, "g_empty": g_empty, "strat4": strat4, "yaml": yaml}))
 
 
 def test_operator_fusion_extra_coverage() -> None:
@@ -289,7 +292,7 @@ def test_operator_fusion_exhaustive_patch() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            as_callable(super().__init__)("replace_future", as_callable(NodePatternConfig)(op_type="OpA"))
+            ensure_callable(super().__init__)("replace_future", ensure_callable(NodePatternConfig)(op_type="OpA"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -313,7 +316,7 @@ def test_operator_fusion_exhaustive_patch() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            as_callable(super().__init__)("symbolic_shape", as_callable(NodePatternConfig)(op_type="OpC"))
+            ensure_callable(super().__init__)("symbolic_shape", ensure_callable(NodePatternConfig)(op_type="OpC"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -345,7 +348,7 @@ def test_operator_fusion_symbolic_shape_coverage() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            as_callable(super().__init__)("symbolic_shape", as_callable(NodePatternConfig)(op_type="OpC"))
+            ensure_callable(super().__init__)("symbolic_shape", ensure_callable(NodePatternConfig)(op_type="OpC"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -363,13 +366,14 @@ def test_operator_fusion_symbolic_shape_coverage() -> None:
                     self.id = "n4"
                     self.shape_metadata = ["batch", 128]
                     self.is_dynamic_shape = False
-                    self.attributes = as_tensor_dict({})
-                    self.inputs = as_tensor_list([])
+                    self.attributes = ensure_tensor_dict({})
+                    self.inputs = ensure_tensor_list([])
                     self.op_type = "OpC_Fused"
 
+            from tests.testing_utils import ensure_node_dict
+
             new_node = FakeNode()
-            _typed_ret_1: dict[str, LogicalNode] | None = _cast_val("dict[str, LogicalNode] | None", {"n3": new_node})
-            return _typed_ret_1
+            return ensure_node_dict({"n3": new_node})
 
     g2 = IRGraph()
     g2.nodes["n3"] = IRNode(id="n3", op_type="OpC", inputs=[])
@@ -385,10 +389,10 @@ def test_operator_fusion_extra_coverage2() -> None:
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import FusionRule, MemoryAwareCostModel, NodePattern, PatternMatchingEngine, YamlFusionRule, match_pattern
 
     # 1. match_pattern branch 81->83
-    assert as_callable(match_pattern)(None, None, as_callable(NodePattern)(op_type=None, inputs=None, capture=None), {})
+    assert ensure_callable(match_pattern)(None, None, ensure_callable(NodePattern)(op_type=None, inputs=None, capture=None), {})
 
     # 2. match_pattern where node_id is int or None but pattern.op_type is not None (branch 78->79->80)
-    assert not as_callable(match_pattern)(None, None, as_callable(NodePattern)(op_type="Add"), {})
+    assert not ensure_callable(match_pattern)(None, None, ensure_callable(NodePattern)(op_type="Add"), {})
 
     # 3. Explicit Edge Rewiring branches: 184->183, 189->188, 193->192
     class MockRule(FusionRule):
@@ -405,8 +409,8 @@ def test_operator_fusion_extra_coverage2() -> None:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
             """
-            node = as_tensor(_get_attr(match, "get"))("my_node")
-            if node and as_tensor(_get_attr(node, "id")) == "a_id":
+            node = ensure_eager_tensor(ensure_eager_tensor(match).get)("my_node")
+            if node and ensure_eager_tensor(ensure_eager_tensor(node).id) == "a_id":
                 new_n = IRNode(id="a_fused", op_type="A_fused")
                 return {"a_id": new_n}
             return None
@@ -437,7 +441,7 @@ def test_operator_fusion_extra_coverage2() -> None:
 
     # 5. MemoryAwareCostModel shape calculations
     cfg = {"max_fusion_memory_bytes": 100, "memory_sizes": {"float32": 4}}
-    cost_model = as_callable(MemoryAwareCostModel)(cfg)
+    cost_model = ensure_callable(MemoryAwareCostModel)(cfg)
 
     node_static = IRNode(id="static", op_type="Add")
     node_static.shape_metadata = (2, 3)
@@ -475,8 +479,8 @@ def test_operator_fusion_extra_coverage_3() -> None:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
             """
-            node = as_tensor(_get_attr(match, "get"))("my_node")
-            if node and as_tensor(_get_attr(node, "id")) == "a_id":
+            node = ensure_eager_tensor(ensure_eager_tensor(match).get)("my_node")
+            if node and ensure_eager_tensor(ensure_eager_tensor(node).id) == "a_id":
                 new_n = IRNode(id="a_fused", op_type="A_fused", inputs=["something_else"])
                 return {"a_id": new_n}
             return None
@@ -542,11 +546,10 @@ def _test_operator_fusion_all_remaining_branches_part_1(_state: dict[str, EagerT
                 return {"a_id": IRNode(id="a_fused", op_type="A_fused", inputs=[])}
             return None
 
-    _get_attr(_state, "update")({"FusionRule": FusionRule, "HorizontalFusionPass": HorizontalFusionPass, "IRGraph": IRGraph, "IRNode": IRNode})
-    _get_attr(_state, "update")({"MatchMapType": MatchMapType, "MinimalGraph": MinimalGraph, "MockRule": MockRule, "NodePattern": NodePattern})
-    _get_attr(_state, "update")({"PatternMatchingEngine": PatternMatchingEngine, "VerticalFusionPass": VerticalFusionPass, "fuse_conv_bias_relu": fuse_conv_bias_relu, "fuse_elementwise_activation": fuse_elementwise_activation})
-    _get_attr(_state, "update")({"min_g": min_g, "operator_fusion_pass": operator_fusion_pass})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FusionRule": FusionRule, "HorizontalFusionPass": HorizontalFusionPass, "IRGraph": IRGraph, "IRNode": IRNode}))
+    _state.update(ensure_tensor_dict({"MatchMapType": MatchMapType, "MinimalGraph": MinimalGraph, "MockRule": MockRule, "NodePattern": NodePattern}))
+    _state.update(ensure_tensor_dict({"PatternMatchingEngine": PatternMatchingEngine, "VerticalFusionPass": VerticalFusionPass, "fuse_conv_bias_relu": fuse_conv_bias_relu, "fuse_elementwise_activation": fuse_elementwise_activation}))
+    _state.update(ensure_tensor_dict({"min_g": min_g, "operator_fusion_pass": operator_fusion_pass}))
 
 
 def _test_operator_fusion_all_remaining_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -582,8 +585,9 @@ def _test_operator_fusion_all_remaining_branches_part_2(_state: dict[str, EagerT
     g_bias_multi.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
     g_bias_multi.nodes["other"] = IRNode(id="other", op_type="Neg", inputs=["add"])
     assert not fuse_conv_bias_relu(g_bias_multi)
-    _get_attr(_state, "update")({"eng": eng, "g_bias_multi": g_bias_multi, "g_bias_wrong_len": g_bias_wrong_len, "g_bias_wrong_op": g_bias_wrong_op})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"eng": eng, "g_bias_multi": g_bias_multi, "g_bias_wrong_len": g_bias_wrong_len, "g_bias_wrong_op": g_bias_wrong_op}))
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "MockRule": MockRule}))
+    _state.update(ensure_tensor_dict({"PatternMatchingEngine": PatternMatchingEngine, "fuse_conv_bias_relu": fuse_conv_bias_relu, "min_g": min_g}))
 
 
 def _test_operator_fusion_all_remaining_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -619,8 +623,8 @@ def _test_operator_fusion_all_remaining_branches_part_3(_state: dict[str, EagerT
     # Test out_id in consumer_counts (line 711->712)
     g_conv_out = IRGraph()
     g_conv_out.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
-    _get_attr(_state, "update")({"g_conv_multi": g_conv_multi, "g_conv_out": g_conv_out, "g_no_conv": g_no_conv, "g_no_remaining": g_no_remaining})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_conv_multi": g_conv_multi, "g_conv_out": g_conv_out, "g_no_conv": g_no_conv, "g_no_remaining": g_no_remaining}))
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "fuse_conv_bias_relu": fuse_conv_bias_relu}))
 
 
 def _test_operator_fusion_all_remaining_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -633,7 +637,7 @@ def _test_operator_fusion_all_remaining_branches_part_4(_state: dict[str, EagerT
     g_conv_out = _state["g_conv_out"]
     g_conv_out.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv", "bias"])
     g_conv_out.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
-    _set_attr(g_conv_out, "outputs", ["nonexistent_out", "relu"])
+    ensure_mutable(g_conv_out).outputs = ensure_eager_tensor(["nonexistent_out", "relu"])
     # Also test an act_node that triggers line 716 continue: op_type not in activation list or inputs != 1
     g_conv_out.nodes["multi_input_relu"] = IRNode(id="multi_input_relu", op_type="Relu", inputs=["add", "other"])
     assert not fuse_conv_bias_relu(g_conv_out)
@@ -643,7 +647,7 @@ def _test_operator_fusion_all_remaining_branches_part_4(_state: dict[str, EagerT
     g_elem_out = IRGraph()
     g_elem_out.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["in1", "in2"])
     g_elem_out.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
-    _set_attr(g_elem_out, "outputs", ["nonexistent_out", "relu"])
+    ensure_mutable(g_elem_out).outputs = ensure_eager_tensor(["nonexistent_out", "relu"])
     g_elem_out.nodes["multi_input_relu"] = IRNode(id="multi_input_relu", op_type="Relu", inputs=["add", "other"])
     assert not fuse_elementwise_activation(g_elem_out)
 
@@ -661,8 +665,9 @@ def _test_operator_fusion_all_remaining_branches_part_4(_state: dict[str, EagerT
     g_elem_multi.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
     g_elem_multi.nodes["extra"] = IRNode(id="extra", op_type="Neg", inputs=["add"])
     assert not fuse_elementwise_activation(g_elem_multi)
-    _get_attr(_state, "update")({"g_elem_multi": g_elem_multi, "g_elem_not_elem": g_elem_not_elem, "g_elem_out": g_elem_out})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_elem_multi": g_elem_multi, "g_elem_not_elem": g_elem_not_elem, "g_elem_out": g_elem_out}))
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "fuse_conv_bias_relu": fuse_conv_bias_relu}))
+    _state.update(ensure_tensor_dict({"fuse_elementwise_activation": fuse_elementwise_activation, "g_conv_out": g_conv_out}))
 
 
 def _test_operator_fusion_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -681,7 +686,7 @@ def _test_operator_fusion_all_remaining_branches_part_5(_state: dict[str, EagerT
         patch("ml_switcheroo_compiler.transforms.passes.operator_fusion.fuse_elementwise_clusters", return_value=True),
     ):
         assert operator_fusion_pass(g_pass)
-    _get_attr(_state, "update")({"g_pass": g_pass, "patch": patch})
+    _state.update(ensure_tensor_dict({"g_pass": g_pass, "patch": patch}))
 
 
 def test_operator_fusion_all_remaining_branches() -> None:

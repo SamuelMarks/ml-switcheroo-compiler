@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable, as_tensor_dict, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -17,11 +16,11 @@ class DummyGenerator:
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.sorted_nodes = as_tensor_list([])
+        self.sorted_nodes = ensure_tensor_list([])
         self.var_names = {"in1": "var_in1"}
         self.input_idx = 0
-        self._output_returns = as_tensor_list([])
-        self.lines = as_tensor_list([])
+        self._output_returns = ensure_tensor_list([])
+        self.lines = ensure_tensor_list([])
 
     def _emit_body_return(self, returns: EagerValue) -> None:
         """Test function _emit_body_return.
@@ -29,7 +28,7 @@ class DummyGenerator:
         Args:
             returns: Test parameter `returns`.
         """
-        as_callable(self.lines.append)(f"return {returns}")
+        ensure_callable(self.lines.append)(f"return {returns}")
 
     def emit_constant(self, node: EagerValue) -> EagerValue:
         """Test function emit_constant.
@@ -55,7 +54,7 @@ class DummyGenerator:
             var: Test parameter `var`.
             val: Test parameter `val`.
         """
-        as_callable(self.lines.append)(f"{var} = {val}")
+        ensure_callable(self.lines.append)(f"{var} = {val}")
 
     def _emit_input_assignment(self, var: EagerValue, node: EagerValue, pref: EagerValue, idx: EagerValue) -> None:
         """Test function _emit_input_assignment.
@@ -66,7 +65,7 @@ class DummyGenerator:
             pref: Test parameter `pref`.
             idx: Test parameter `idx`.
         """
-        as_callable(self.lines.append)(f"{var} = {pref}[{idx}]")
+        ensure_callable(self.lines.append)(f"{var} = {pref}[{idx}]")
 
     def _emit_output_assignment(self, node: EagerValue, invars: EagerValue, returns: EagerValue) -> None:
         """Test function _emit_output_assignment.
@@ -76,7 +75,7 @@ class DummyGenerator:
             invars: Test parameter `invars`.
             returns: Test parameter `returns`.
         """
-        as_callable(self._output_returns.append)(returns)
+        ensure_callable(self._output_returns.append)(returns)
 
     def visit(self, node: EagerValue, invars: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function visit.
@@ -94,7 +93,7 @@ class DummyGenerator:
         Args:
             line: Test parameter `line`.
         """
-        as_callable(self.lines.append)(line)
+        ensure_callable(self.lines.append)(line)
 
 
 class DummyNode:
@@ -111,23 +110,23 @@ class DummyNode:
         self.op_type = op_type
         self.id = id
         self.inputs = inputs or []
-        self.attributes = as_tensor_dict({})
+        self.attributes = ensure_tensor_dict({})
         self.shape_metadata = ()
 
 
 def test_visitor() -> None:
     """Test function test_visitor."""
     gen = DummyGenerator()
-    vis = as_callable(CodeGeneratorVisitor)(gen)
+    vis = ensure_callable(CodeGeneratorVisitor)(gen)
 
     n_const = DummyNode("Constant", "c1")
     n_in = DummyNode("Input", "i1")
     n_out = DummyNode("Output", "o1", inputs=["in1"])
     n_op = DummyNode("Op", "op1", inputs=["in1"])
-    _set_attr(n_op, "attributes", {"stream_id": 1, "async_check": True})
-    _set_attr(n_op, "shape_metadata", (1,))
+    ensure_mutable(n_op).attributes = ensure_eager_tensor({"stream_id": 1, "async_check": True})
+    ensure_mutable(n_op).shape_metadata = ensure_eager_tensor((1,))
 
-    _set_attr(gen, "sorted_nodes", [n_const, n_in, n_op, n_out])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([n_const, n_in, n_op, n_out])
 
     vis.generate_body("args")
 
@@ -140,10 +139,10 @@ def test_visitor() -> None:
 def test_visitor_compute_node_branches() -> None:
     """Test function test_visitor_compute_node_branches."""
     gen = DummyGenerator()
-    vis = as_callable(CodeGeneratorVisitor)(gen)
+    vis = ensure_callable(CodeGeneratorVisitor)(gen)
 
     n_op = DummyNode("Op", "op2")
     n_op.attributes = {}
     n_op.shape_metadata = ()
-    as_callable(vis.handle_compute_node)(n_op)
+    ensure_callable(vis.handle_compute_node)(n_op)
     assert "tensor_1 = visited" in gen.lines

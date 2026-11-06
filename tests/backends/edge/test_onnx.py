@@ -9,9 +9,8 @@ from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_attrs, as_callable, as_node_dict, as_tensor
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,14 +28,14 @@ def test_onnx_generate_mocked() -> None:
     graph = IRGraph()
     node = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     graph.nodes["add_1"] = node
-    _obj_set_attr(graph, "sorted_nodes", [node])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Add": "Add"}}
 
     # We test generic_visit manually
-    res = as_callable(generator.generic_visit)(node, ["in1", "in2"])
+    res = ensure_callable(generator.generic_visit)(node, ["in1", "in2"])
     assert res == "add_1"
 
     # We test missing dependencies fallback
@@ -59,10 +58,10 @@ def test_onnx_proto_type() -> None:
         INT64 = 7
         BOOL = 9
 
-    assert as_callable(generator._get_proto_type)("float32", MockTensorProto) == MockTensorProto.FLOAT
-    assert as_callable(generator._get_proto_type)("int32", MockTensorProto) == MockTensorProto.INT32
-    assert as_callable(generator._get_proto_type)("bool", MockTensorProto) == MockTensorProto.BOOL
-    assert as_callable(generator._get_proto_type)("unknown", MockTensorProto) == MockTensorProto.FLOAT
+    assert ensure_callable(generator._get_proto_type)("float32", MockTensorProto) == MockTensorProto.FLOAT
+    assert ensure_callable(generator._get_proto_type)("int32", MockTensorProto) == MockTensorProto.INT32
+    assert ensure_callable(generator._get_proto_type)("bool", MockTensorProto) == MockTensorProto.BOOL
+    assert ensure_callable(generator._get_proto_type)("unknown", MockTensorProto) == MockTensorProto.FLOAT
 
 
 def test_onnx_build_methods() -> None:
@@ -71,21 +70,21 @@ def test_onnx_build_methods() -> None:
     node1 = IRNode("in1", "Input", inputs=[], shape_metadata=[2, 2])
     node2 = IRNode("in2", "Input", inputs=[], shape_metadata=[2, 2])
     node3 = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    _set_attr(node3, "attributes", {"axis": 1})
+    ensure_mutable(node3).attributes = ensure_eager_tensor({"axis": 1})
 
     # Let's add nodes for constant and control flow
     node4 = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1])
-    _set_attr(node4, "attributes", {"value": 1.0})
+    ensure_mutable(node4).attributes = ensure_eager_tensor({"value": 1.0})
 
     node5 = IRNode("if_1", "If", inputs=[], shape_metadata=[1])
     subgraph = IRGraph()
-    _obj_set_attr(node5, "attributes", {"then_branch": subgraph, "else_branch": subgraph})
+    ensure_mutable(node5).attributes = ensure_eager_tensor({"then_branch": subgraph, "else_branch": subgraph})
 
     node6 = IRNode("loop_1", "Loop", inputs=[], shape_metadata=[1])
-    _obj_set_attr(node6, "attributes", {"body": subgraph})
+    ensure_mutable(node6).attributes = ensure_eager_tensor({"body": subgraph})
 
-    graph.nodes = NodeDict(as_node_dict({"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}))
-    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    graph.nodes = NodeDict(ensure_node_dict({"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}))
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
@@ -153,7 +152,7 @@ def test_onnx_build_methods() -> None:
                     """
                     self.name = n
 
-            return as_tensor(Graph(name))
+            return ensure_eager_tensor(Graph(name))
 
         def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function make_model.
@@ -170,7 +169,7 @@ def test_onnx_build_methods() -> None:
                     """Test function SerializeToString."""
                     return b"model"
 
-            return as_tensor(Model())
+            return ensure_eager_tensor(Model())
 
         def printable_graph(self, graph: EagerValue) -> EagerValue:
             """Test function printable_graph.
@@ -196,17 +195,17 @@ def test_onnx_build_methods() -> None:
 
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            v1 = as_callable(generator._build_single_value_info)(node1, None, MockTensorProto, False)
+            v1 = ensure_callable(generator._build_single_value_info)(node1, None, MockTensorProto, False)
             assert v1 is not None
 
-            _set_attr(node1, "id", "in1")
+            ensure_mutable(node1).id = ensure_eager_tensor("in1")
             dyn_axes = {"in1": {0: "batch"}}
-            as_callable(generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
+            ensure_callable(generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
 
-            as_callable(generator._build_single_value_info)("missing", None, MockTensorProto, False)
+            ensure_callable(generator._build_single_value_info)("missing", None, MockTensorProto, False)
 
             # Test _build_onnx_nodes
-            nodes = as_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
             assert any("node(" in n for n in nodes)
             assert any("Constant" in n for n in nodes)
             assert any("If" in n for n in nodes)
@@ -289,7 +288,7 @@ def test_onnx_export_and_missing() -> None:
                     """
                     self.name = n
 
-            return as_tensor(Graph(name))
+            return ensure_eager_tensor(Graph(name))
 
         def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function make_model.
@@ -306,7 +305,7 @@ def test_onnx_export_and_missing() -> None:
                     """Test function SerializeToString."""
                     return b"model"
 
-            return as_tensor(Model())
+            return ensure_eager_tensor(Model())
 
     class MockChecker:
         """Test class MockChecker."""
@@ -367,7 +366,7 @@ def test_onnx_build_single_value_info_missing() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         # Tests missing node ID fallback
-        v = as_callable(generator._build_single_value_info)("non_existent_node", None, MockTensorProto, is_output=False)
+        v = ensure_callable(generator._build_single_value_info)("non_existent_node", None, MockTensorProto, is_output=False)
         assert "value_info(" in v
 
 
@@ -375,10 +374,10 @@ def test_onnx_generate_text_fallback() -> None:
     """Test function test_onnx_generate_text_fallback."""
     graph = IRGraph()
     node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    _set_attr(node, "dtype", "float32")
+    ensure_mutable(node).dtype = ensure_eager_tensor("float32")
     node2 = IRNode("Add", "add_1", inputs=["in_1", "in_1"])
-    graph.nodes = NodeDict(as_node_dict({"in_1": node, "add_1": node2}))
-    _obj_set_attr(graph, "sorted_nodes", [node, node2])
+    graph.nodes = NodeDict(ensure_node_dict({"in_1": node, "add_1": node2}))
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node, node2])
     graph.outputs = ["add_1"]
 
     generator = ONNXCodeGenerator(graph, [])
@@ -392,15 +391,15 @@ def test_onnx_node_attributes() -> None:
     graph = IRGraph()
     # Test all branches of attributes conversion in _build_onnx_nodes
     node_const = IRNode("Constant", "c_1", inputs=[], shape_metadata=[1])
-    _set_attr(node_const, "attributes", {"value": 5.0})
+    ensure_mutable(node_const).attributes = ensure_eager_tensor({"value": 5.0})
 
     node_if = IRNode("If", "if_1", inputs=[])
-    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
 
     node_loop = IRNode("Loop", "loop_1", inputs=[])
-    _obj_set_attr(node_loop, "attributes", {"body": IRGraph()})
+    ensure_mutable(node_loop).attributes = ensure_eager_tensor({"body": IRGraph()})
 
-    _obj_set_attr(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node_const, node_if, node_loop])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -455,7 +454,7 @@ def test_onnx_node_attributes() -> None:
                     """
                     self.name = n
 
-            return as_tensor(Graph(name))
+            return ensure_eager_tensor(Graph(name))
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -466,7 +465,7 @@ def test_onnx_node_attributes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = as_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
             pass
             pass
@@ -476,7 +475,7 @@ def test_onnx_value_infos() -> None:
     """Test function test_onnx_value_infos."""
     graph = IRGraph()
     node_a = IRNode("A", "a_1", inputs=[])
-    _set_attr(node_a, "dtype", "bool")
+    ensure_mutable(node_a).dtype = ensure_eager_tensor("bool")
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -505,12 +504,12 @@ def test_onnx_value_infos() -> None:
 
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
-        vis = as_callable(generator._build_onnx_value_infos)([node_a], None, MockTensorProto)
+        vis = ensure_callable(generator._build_onnx_value_infos)([node_a], None, MockTensorProto)
         assert len(vis) == 1
 
         # Test dict lookup
-        graph.nodes = NodeDict(as_node_dict({"a_1": node_a}))
-        vis2 = as_callable(generator._build_onnx_value_infos)(["a_1"], None, MockTensorProto)
+        graph.nodes = NodeDict(ensure_node_dict({"a_1": node_a}))
+        vis2 = ensure_callable(generator._build_onnx_value_infos)(["a_1"], None, MockTensorProto)
         assert len(vis2) == 1
 
 
@@ -519,28 +518,28 @@ def test_onnx_node_attributes_2() -> None:
     graph = IRGraph()
     # Test op specific logic
     node1 = IRNode("BatchNorm", "bn_1", inputs=[])
-    _set_attr(node1, "attributes", {"epsilon": 1e-5, "momentum": 0.9})
+    ensure_mutable(node1).attributes = ensure_eager_tensor({"epsilon": 1e-5, "momentum": 0.9})
 
     node2 = IRNode("RandomUniform", "ru_1", inputs=[])
-    _obj_set_attr(node2, "shape_metadata", [2, 2])
-    _set_attr(node2, "dtype", "float32")
+    ensure_mutable(node2).shape_metadata = ensure_eager_tensor([2, 2])
+    ensure_mutable(node2).dtype = ensure_eager_tensor("float32")
 
     node3 = IRNode("Split", "split_1", inputs=[])
-    _set_attr(node3, "attributes", {"axis": 1, "split": [1, 1]})
+    ensure_mutable(node3).attributes = ensure_eager_tensor({"axis": 1, "split": [1, 1]})
 
     node4 = IRNode("Cast", "cast_1", inputs=[])
-    _set_attr(node4, "attributes", {"to": "int32"})
+    ensure_mutable(node4).attributes = ensure_eager_tensor({"to": "int32"})
 
     node5 = IRNode("MaxPool2D", "max_1", inputs=[])
-    _set_attr(node5, "attributes", {"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
+    ensure_mutable(node5).attributes = ensure_eager_tensor({"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
 
     node6 = IRNode("Reshape", "res_1", inputs=[])
-    _obj_set_attr(node6, "shape_metadata", [4])
+    ensure_mutable(node6).shape_metadata = ensure_eager_tensor([4])
 
     node7 = IRNode("BroadcastTo", "br_1", inputs=[])
-    _obj_set_attr(node7, "shape_metadata", [2, 2])
+    ensure_mutable(node7).shape_metadata = ensure_eager_tensor([2, 2])
 
-    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6, node7])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6, node7])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -584,7 +583,7 @@ def test_onnx_node_attributes_2() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = as_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
 
 
@@ -593,24 +592,24 @@ def test_onnx_node_attributes_3() -> None:
     graph = IRGraph()
     # Test more ops
     node1 = IRNode("Dropout", "dr_1", inputs=[])
-    _set_attr(node1, "attributes", {"rate": 0.5})
+    ensure_mutable(node1).attributes = ensure_eager_tensor({"rate": 0.5})
 
     node2 = IRNode("LayerNorm", "ln_1", inputs=[])
-    _set_attr(node2, "attributes", {"epsilon": 1e-5, "axis": -1})
+    ensure_mutable(node2).attributes = ensure_eager_tensor({"epsilon": 1e-5, "axis": -1})
 
     node3 = IRNode("Transpose", "tr_1", inputs=[])
-    _set_attr(node3, "attributes", {"axes": [1, 0]})
+    ensure_mutable(node3).attributes = ensure_eager_tensor({"axes": [1, 0]})
 
     node4 = IRNode("Slice", "sl_1", inputs=[])
-    _set_attr(node4, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
+    ensure_mutable(node4).attributes = ensure_eager_tensor({"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
 
     node5 = IRNode("Gather", "ga_1", inputs=[])
-    _set_attr(node5, "attributes", {"axis": 0})
+    ensure_mutable(node5).attributes = ensure_eager_tensor({"axis": 0})
 
     node6 = IRNode("Conv2D", "conv_1", inputs=[])
-    _set_attr(node6, "attributes", {"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
+    ensure_mutable(node6).attributes = ensure_eager_tensor({"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
 
-    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -654,7 +653,7 @@ def test_onnx_node_attributes_3() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = as_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
 
 
@@ -662,14 +661,14 @@ def test_onnx_full_build_nodes() -> None:
     """Test function test_onnx_full_build_nodes."""
     graph = IRGraph()
     node_const = IRNode("c_1", "Constant", inputs=[])
-    _obj_set_attr(node_const, "shape_metadata", [2])
-    _set_attr(node_const, "attributes", {"value": 3.14})
+    ensure_mutable(node_const).shape_metadata = ensure_eager_tensor([2])
+    ensure_mutable(node_const).attributes = ensure_eager_tensor({"value": 3.14})
     node_if = IRNode("if_1", "If", inputs=[])
-    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
     node_loop = IRNode("loop_1", "Loop", inputs=[])
-    _obj_set_attr(node_loop, "attributes", {"body": IRGraph()})
-    graph.nodes = NodeDict(as_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
-    _obj_set_attr(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    ensure_mutable(node_loop).attributes = ensure_eager_tensor({"body": IRGraph()})
+    graph.nodes = NodeDict(ensure_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node_const, node_if, node_loop])
 
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Constant": "Constant", "If": "If", "Loop": "Loop"}}
@@ -726,7 +725,7 @@ def test_onnx_full_build_nodes() -> None:
                     """
                     self.name = n
 
-            return as_tensor(Graph(name))
+            return ensure_eager_tensor(Graph(name))
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -737,7 +736,7 @@ def test_onnx_full_build_nodes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = as_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) == 3
 
 
@@ -757,7 +756,7 @@ def test_onnx_generic_visit_none() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
-    assert as_callable(gen.generic_visit)(None, []) == "onnx_op"
+    assert ensure_callable(gen.generic_visit)(None, []) == "onnx_op"
 
 
 def test_onnx_text_fallback_input() -> None:
@@ -768,11 +767,11 @@ def test_onnx_text_fallback_input() -> None:
     graph = IRGraph()
     # The problem was that IRNode assigns name to node.id usually, but let's be explicit
     node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    _set_attr(node, "id", "in_1")
-    _set_attr(node, "dtype", "float32")
-    _set_attr(node, "op_type", "Input")
+    ensure_mutable(node).id = ensure_eager_tensor("in_1")
+    ensure_mutable(node).dtype = ensure_eager_tensor("float32")
+    ensure_mutable(node).op_type = ensure_eager_tensor("Input")
     gen = ONNXCodeGenerator(graph, [])
-    _set_attr(gen, "sorted_nodes", [node])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
     out = gen._generate_text_fallback()
     assert 'input: "in_1"' in out
 
@@ -789,7 +788,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     node = IRNode("test_1", "TestOp", inputs=[])
 
     gen = ONNXCodeGenerator(graph, [])
-    _set_attr(gen, "sorted_nodes", [node])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
     gen.schema = {"operations": {"TestOp": "TestOpMapped"}}
 
     class MockTensorProto:
@@ -823,7 +822,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = as_callable(gen._build_onnx_nodes)(MockTensorProto)
+                nodes = ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
                 assert nodes[0] == "TestOp"
     finally:
         OPS_REGISTRY.clear()
@@ -838,34 +837,34 @@ def test_onnx_build_onnx_nodes_branches() -> None:
     graph = IRGraph()
 
     node_input = IRNode("Input", "in_1", inputs=[])
-    _set_attr(node_input, "op_type", "Input")
+    ensure_mutable(node_input).op_type = ensure_eager_tensor("Input")
 
     node_constant = IRNode("Constant", "c_1", inputs=[])
-    _set_attr(node_constant, "op_type", "Constant")
-    _obj_set_attr(node_constant, "shape_metadata", [2, 2])
-    _set_attr(node_constant, "attributes", {"value": 1.0})
+    ensure_mutable(node_constant).op_type = ensure_eager_tensor("Constant")
+    ensure_mutable(node_constant).shape_metadata = ensure_eager_tensor([2, 2])
+    ensure_mutable(node_constant).attributes = ensure_eager_tensor({"value": 1.0})
 
     # If without then_branch
     node_if_no_then = IRNode("If", "if_1", inputs=[])
-    _set_attr(node_if_no_then, "op_type", "If")
-    _obj_set_attr(node_if_no_then, "attributes", {"else_branch": IRGraph()})
+    ensure_mutable(node_if_no_then).op_type = ensure_eager_tensor("If")
+    ensure_mutable(node_if_no_then).attributes = ensure_eager_tensor({"else_branch": IRGraph()})
 
     # If without else_branch
     node_if_no_else = IRNode("If", "if_2", inputs=[])
-    _set_attr(node_if_no_else, "op_type", "If")
-    _obj_set_attr(node_if_no_else, "attributes", {"then_branch": IRGraph()})
+    ensure_mutable(node_if_no_else).op_type = ensure_eager_tensor("If")
+    ensure_mutable(node_if_no_else).attributes = ensure_eager_tensor({"then_branch": IRGraph()})
 
     # Loop without body
     node_loop_no_body = IRNode("Loop", "loop_1", inputs=[])
-    _set_attr(node_loop_no_body, "op_type", "Loop")
-    _set_attr(node_loop_no_body, "attributes", {})
+    ensure_mutable(node_loop_no_body).op_type = ensure_eager_tensor("Loop")
+    ensure_mutable(node_loop_no_body).attributes = ensure_eager_tensor({})
 
     node_loop_with_body = IRNode("Loop", "loop_2", inputs=[])
-    _set_attr(node_loop_with_body, "op_type", "Loop")
-    _obj_set_attr(node_loop_with_body, "attributes", {"body": IRGraph()})
+    ensure_mutable(node_loop_with_body).op_type = ensure_eager_tensor("Loop")
+    ensure_mutable(node_loop_with_body).attributes = ensure_eager_tensor({"body": IRGraph()})
 
     gen = ONNXCodeGenerator(graph, [])
-    _set_attr(gen, "sorted_nodes", [node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -911,7 +910,7 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
                 name = "test"
 
-            return as_tensor(M())
+            return ensure_eager_tensor(M())
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -921,7 +920,7 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
     with patch.dict("sys.modules", {"onnx": MockOnnx()}):
         with patch("importlib.import_module", return_value=MockOnnx()):
-            as_callable(gen._build_onnx_nodes)(MockTensorProto)
+            ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
     assert gen is not None
 
 
@@ -1023,11 +1022,11 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
 
     graph = IRGraph()
     node = IRNode("TestOp2", "test_2", inputs=[])
-    _set_attr(node, "id", "test_2")
-    _set_attr(node, "op_type", "TestOp2")
+    ensure_mutable(node).id = ensure_eager_tensor("test_2")
+    ensure_mutable(node).op_type = ensure_eager_tensor("TestOp2")
 
     gen = ONNXCodeGenerator(graph, [])
-    _set_attr(gen, "sorted_nodes", [node])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -1060,7 +1059,7 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = as_callable(gen._build_onnx_nodes)(MockTensorProto)
+                nodes = ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
                 assert nodes[0] == "MyCustomGen"
     finally:
         OPS_REGISTRY.clear()
@@ -1084,7 +1083,7 @@ def test_onnx_remaining_serialization_branches() -> None:
             """Test function __str__."""
             return "custom_val"
 
-    attr_custom = as_callable(serialize_attribute)("custom_attr", as_callable(CustomNonPrimitive)())
+    attr_custom = ensure_callable(serialize_attribute)("custom_attr", ensure_callable(CustomNonPrimitive)())
     assert len(attr_custom) > 0
 
     # 2. Dynamic axes out of range (lines 578->577 and 591->590) and attributes with skipped keys (lines 649-651)
@@ -1122,7 +1121,7 @@ def test_onnx_remaining_serialization_branches() -> None:
     sub.nodes = NodeDict({"in_1": n_in, "sub_n": sub_n})
 
     g_sub = LogicalGraph(name="g_sub")
-    n_if_sub = LogicalNode(id="if_sub", op_type="If", inputs=["in_1"], attributes=as_attrs({"then_branch": sub}))
+    n_if_sub = LogicalNode(id="if_sub", op_type="If", inputs=["in_1"], attributes=ensure_attrs({"then_branch": sub}))
     g_sub.inputs = ["in_1"]
     g_sub.outputs = ["if_sub"]
     g_sub.nodes = NodeDict({"in_1": n_in, "if_sub": n_if_sub})
@@ -1170,11 +1169,11 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
             Returns:
                 list[EagerValue]: Evaluated outputs.
             """
-            return [as_tensor(np.maximum(np.asarray(v), 0.0)) for v in feed.values()]
+            return [ensure_eager_tensor(np.maximum(np.asarray(v), 0.0)) for v in feed.values()]
 
-    _set_attr(mock_ref, "ReferenceEvaluator", _MockRefEval)
-    _set_attr(mock_onnx, "reference", mock_ref)
-    return {"onnx": as_tensor(mock_onnx), "onnx.reference": as_tensor(mock_ref)}
+    ensure_mutable(mock_ref).ReferenceEvaluator = ensure_eager_tensor(_MockRefEval)
+    ensure_mutable(mock_onnx).reference = ensure_eager_tensor(mock_ref)
+    return {"onnx": ensure_eager_tensor(mock_onnx), "onnx.reference": ensure_eager_tensor(mock_ref)}
 
 
 def test_onnx_aot_compilation_and_runner() -> None:
@@ -1195,7 +1194,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
         g.nodes = NodeDict({"x": n_x, "y": n_y})
 
         gen = ONNXCodeGenerator(g)
-        runner = gen.compile_aot(g, dynamic_axes=as_tensor({"x": {0: "batch"}}), opset_version=18)
+        runner = gen.compile_aot(g, dynamic_axes=ensure_eager_tensor({"x": {0: "batch"}}), opset_version=18)
         assert callable(runner)
 
         inp_data = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
@@ -1236,7 +1235,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
         # Single output branch
         g_multi.outputs = ["out_add"]
         fb_res_single = fb_runner(a_val, b=b_val)
-        as_callable(np.testing.assert_allclose)(fb_res_single, a_val + b_val)
+        ensure_callable(np.testing.assert_allclose)(fb_res_single, a_val + b_val)
 
         # No outputs branch
         g_multi.outputs = []

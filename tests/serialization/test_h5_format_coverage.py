@@ -15,7 +15,7 @@ import pytest
 import ml_switcheroo_compiler.backends.registry as registry
 import ml_switcheroo_compiler.serialization.formats.h5 as h5_mod
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
-from tests.testing_utils import as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     pass
@@ -198,7 +198,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # 1. Missing h5py module import branch via reload
     monkeypatch.setitem(sys.modules, "h5py", None)
     importlib.reload(h5_mod)
-    assert as_tensor(h5_mod.h5py) is None
+    assert ensure_eager_tensor(h5_mod.h5py) is None
 
     fmt_missing = H5WeightFormat()
     dummy_path = str(tmp_path / "missing.h5")
@@ -210,7 +210,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Restore h5py
     monkeypatch.undo()
     importlib.reload(h5_mod)
-    assert as_tensor(h5_mod.h5py) is not None
+    assert ensure_eager_tensor(h5_mod.h5py) is not None
 
     fmt = H5WeightFormat()
 
@@ -219,7 +219,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(registry, "get_active_backend", lambda: mock_b)
     res = fmt.load(dummy_path)
     assert "backend_key" in res
-    fmt.save(as_tensor_dict({"w": np.array([1.0])}), dummy_path)
+    fmt.save(ensure_tensor_dict({"w": np.array([1.0])}), dummy_path)
     assert mock_b.saved is not None
     assert mock_b.saved[1] == dummy_path
 
@@ -234,7 +234,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "v_tolist": _MockArrayWithToList([7.0, 8.0]),
         "v_raw": 100,
     }
-    fmt.save(as_tensor_dict(data), filepath)
+    fmt.save(ensure_tensor_dict(data), filepath)
 
     # Insert a group to exercise both branches of dataset visiting
     with h5py.File(filepath, "a") as f:

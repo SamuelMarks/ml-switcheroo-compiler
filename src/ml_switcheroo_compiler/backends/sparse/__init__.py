@@ -5,9 +5,6 @@ from __future__ import annotations
 import importlib.util
 import sys
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
-
 try:
     _has_pkg = importlib.util.find_spec("sparse") is not None
 except (ValueError, ModuleNotFoundError):
@@ -45,12 +42,6 @@ from .types import (
     item,
     zeros,
 )
-
-_obj_set_attr(SparseGenerator, "zeros", classmethod(zeros))
-_obj_set_attr(SparseGenerator, "array", classmethod(array))
-_obj_set_attr(SparseGenerator, "asarray", classmethod(asarray))
-_obj_set_attr(SparseGenerator, "item", classmethod(item))
-_obj_set_attr(SparseGenerator, "execute_op", as_callable(classmethod)(execute_op))
 
 __all__ = [
     "COOTensor",

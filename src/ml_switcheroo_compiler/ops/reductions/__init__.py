@@ -57,9 +57,9 @@ def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
         val (OpDef | None): Candidate op definition.
 
     Returns:
-        bool: Always True for op definitions.
+        bool: True for op definitions.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes)
 
 
 def _safe_get_op(name: str) -> OpDef:

@@ -19,9 +19,8 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
     _reset_mlx_peak_memory,
     _sync_mlx_result,
 )
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -34,7 +33,7 @@ def test_mlx_import_error() -> None:
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof_module)
-        assert as_tensor(_get_attr(mlx_prof_module, "mx")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(mlx_prof_module).mx) is None
 
     # Reload back to normal state
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
@@ -187,7 +186,7 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     custom_inst = CustomMlxArray()
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = as_callable(_prepare_mlx_inputs)(
+        res = ensure_callable(_prepare_mlx_inputs)(
             {
                 "is_inst": dummy_inst,
                 "custom": custom_inst,
@@ -233,7 +232,7 @@ def test_prepare_ordered_inputs_branches() -> None:
     g.nodes["k2"] = IRNode(id="k2", op_type="Input")
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = as_callable(profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst, "k3": [1.0]})
+        res = ensure_callable(profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst, "k3": [1.0]})
         assert id(res[0]) == id(dummy_inst)
         assert id(res[1]) == id(custom_inst)
 
@@ -272,9 +271,8 @@ def _test_mlx_profiler_compile_and_execute_part_1(_state: dict[str, EagerTensorP
     mock_mx.float32 = "float32"
     mock_compiled_fn = MagicMock(return_value=dummy_arr)
     mock_mx.compile.return_value = mock_compiled_fn
-    _get_attr(_state, "update")({"CustomMlxArray": CustomMlxArray, "dummy_arr": dummy_arr, "g_ops": g_ops, "mock_compiled_fn": mock_compiled_fn})
-    _get_attr(_state, "update")({"mock_mx": mock_mx, "profiler": profiler, "res_none": res_none})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"CustomMlxArray": CustomMlxArray, "dummy_arr": dummy_arr, "g_ops": g_ops, "mock_compiled_fn": mock_compiled_fn}))
+    _state.update(ensure_tensor_dict({"mock_mx": mock_mx, "profiler": profiler, "res_none": res_none}))
 
 
 def _test_mlx_profiler_compile_and_execute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -303,9 +301,9 @@ def _test_mlx_profiler_compile_and_execute_part_2(_state: dict[str, EagerTensorP
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx_no_comp):
         res_no_comp = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
         assert len(res_no_comp["latencies"]) == 1
-    _get_attr(_state, "update")({"mock_mx_fail_comp": mock_mx_fail_comp, "mock_mx_no_comp": mock_mx_no_comp, "res": res, "res_fail_comp": res_fail_comp})
-    _get_attr(_state, "update")({"res_no_comp": res_no_comp, "res_unmatched": res_unmatched})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_mx_fail_comp": mock_mx_fail_comp, "mock_mx_no_comp": mock_mx_no_comp, "res": res, "res_fail_comp": res_fail_comp}))
+    _state.update(ensure_tensor_dict({"res_no_comp": res_no_comp, "res_unmatched": res_unmatched}))
+    _state.update(ensure_tensor_dict({"g_ops": g_ops, "mock_mx": mock_mx, "profiler": profiler}))
 
 
 def _test_mlx_profiler_compile_and_execute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -329,8 +327,8 @@ def _test_mlx_profiler_compile_and_execute_part_3(_state: dict[str, EagerTensorP
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
         res_empty = profiler.profile_graph(g_empty, {}, num_iters=1, warmup_iters=1)
         assert len(res_empty["latencies"]) == 1
-    _get_attr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_empty": g_empty, "res_empty": res_empty}))
+    _state.update(ensure_tensor_dict({"g_ops": g_ops, "mock_mx": mock_mx, "profiler": profiler}))
 
 
 def _test_mlx_profiler_compile_and_execute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -350,7 +348,7 @@ def _test_mlx_profiler_compile_and_execute_part_4(_state: dict[str, EagerTensorP
         with patch.object(profiler, "_measure_latencies", return_value=[]):
             res_no_lats = profiler.profile_graph(g_empty, {}, num_iters=0, warmup_iters=0)
             assert res_no_lats["latency_ms"] == 0.0
-    _get_attr(_state, "update")({"res_exec_err": res_exec_err, "res_no_lats": res_no_lats})
+    _state.update(ensure_tensor_dict({"res_exec_err": res_exec_err, "res_no_lats": res_no_lats}))
 
 
 def test_mlx_profiler_compile_and_execute() -> None:

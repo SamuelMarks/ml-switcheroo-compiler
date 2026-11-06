@@ -6,10 +6,9 @@ from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("Piecewise")
@@ -24,7 +23,7 @@ def _np_piecewise(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "piecewise")(np.asarray(args[0]), args[1], args[2], *args[3:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "piecewise")(np.asarray(args[0]), args[1], args[2], *args[3:], **kwargs))
 
 
 @numpy_eager_registry.register("PromoteTypes")
@@ -38,7 +37,7 @@ def _np_promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, *
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(_get_attr(np, "promote_types")(args[0], args[1]))
+    return ensure_eager_tensor(get_backend_member(np, "promote_types")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("ApplyAlongAxis")

@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Bartlett, Blackman, ConstantOfShape, CreationOp, Frombuffer, Full, Hamming, Hanning, Kaiser, Logspace, ManualSeed, Rand, Randint, Range, TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -40,17 +40,17 @@ def test_creation_basic() -> None:
     assert ri.infer_shape(0, 10, (2, 2)) == (2, 2)
     assert ri.infer_shape(0, 10) == ()
 
-    assert as_callable(ManualSeed)().infer_shape(42) == ()
+    assert ensure_callable(ManualSeed)().infer_shape(42) == ()
 
-    assert as_callable(ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
+    assert ensure_callable(ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
     assert ConstantOfShape().infer_shape() == ()
 
-    assert as_callable(Range)().infer_shape((2, 2)) == (2, 2)
+    assert ensure_callable(Range)().infer_shape((2, 2)) == (2, 2)
     assert Range().infer_shape() == ()
 
     for cls in [Blackman, Bartlett, Hamming, Hanning, Kaiser]:
         assert cls().infer_shape(5) == (5,)
-        assert cls().infer_shape(as_tensor(DummyItem())) == (5,)
+        assert cls().infer_shape(ensure_eager_tensor(DummyItem())) == (5,)
 
     for cls in [TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom]:
         assert cls().infer_shape((2, 2)) == (2, 2)

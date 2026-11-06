@@ -6,7 +6,7 @@ import math
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import multiply, subtract
@@ -35,7 +35,7 @@ class RopeOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(input, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(input)
         return _typed_ret_1
 
 
@@ -59,7 +59,7 @@ def rope(
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "Rope",
-            _get_attr(input, "data", input),
+            extract_data(input),
             axis=axis,
             base=base,
             offset=offset,

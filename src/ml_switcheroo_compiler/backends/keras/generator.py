@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.keras.eager import execute_op as _keras_execute_op
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import ShapeMetadataProtocol, extract_data
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
@@ -31,8 +31,9 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string for the Keras Input tensor.
         """
-        shape_str: str = str(node.shape_metadata) if _has_attr(node, "shape_metadata") and node.shape_metadata else "(None,)"
-        return f"{var_name} = keras.Input(shape={shape_str}, name='{_get_attr(node, 'id', '')}')"
+        raw_node: EagerValue = node
+        shape_str: str = str(raw_node.shape_metadata) if isinstance(raw_node, ShapeMetadataProtocol) and raw_node.shape_metadata else "(None,)"
+        return f"{var_name} = keras.Input(shape={shape_str}, name='{node.id or ''}')"
 
     @staticmethod
     def get_return_block(input_vars: list[str], output_vars: list[str]) -> str:
@@ -103,6 +104,23 @@ class KerasTensorManipulator:
 class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
+    keras_input_vars: list[str] = []
+    keras_output_vars: list[str] = []
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Execute an operation eagerly on the Keras backend.
+
+        Args:
+            op_type (str): Canonical operation name.
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Evaluated operation result.
+        """
+        return _keras_execute_op(cls, op_type, *args, **kwargs)
+
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
         """Load a serialized object.
@@ -119,7 +137,7 @@ class KerasCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return as_tensor(pickle.load(f))
+            return ensure_eager_tensor(pickle.load(f))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -228,9 +246,9 @@ class KerasCodeGenerator(BaseGenerator):
             self.add_line("pass")
             return "\n".join(self.code)
         self._generate_body("input_")
-        if _get_attr(self, "keras_input_vars", None) and _get_attr(self, "keras_output_vars", None):
+        if self.keras_input_vars and self.keras_output_vars:
             self.add_line(KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars))
-        elif _get_attr(self, "keras_output_vars", None):
+        elif self.keras_output_vars:
             self.add_line(f"return {', '.join(self.keras_output_vars)}")
         else:
             self.add_line("pass")
@@ -314,8 +332,9 @@ class KerasCodeGenerator(BaseGenerator):
         lines: list[str] = ["import keras\n"]
         if "imports" in data and data["imports"]:
             lines.extend(str(data["imports"]).split("\n"))
-        if "functions" in data and data["functions"]:
-            for func_code in _get_attr(data["functions"], "values")():
+        funcs_dict = data.get("functions")
+        if isinstance(funcs_dict, dict) and funcs_dict:
+            for func_code in funcs_dict.values():
                 lines.extend(str(func_code).split("\n"))
         return lines
 
@@ -345,7 +364,7 @@ class KerasCodeGenerator(BaseGenerator):
         try:
             exec(source_code, scope)
             if "get_model" in scope:
-                model_obj = _cast_val(Callable[[], EagerValue], scope["get_model"])()
+                model_obj = ensure_callable(scope["get_model"])()
         except Exception:
             model_obj = None
 
@@ -360,14 +379,14 @@ class KerasCodeGenerator(BaseGenerator):
                 EagerValue: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
-                return as_callable(model_obj)(*args, **runner_kwargs)
+                return ensure_callable(model_obj)(*args, **runner_kwargs)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = extract_data(arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
                 return res_dict

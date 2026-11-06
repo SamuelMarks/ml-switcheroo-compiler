@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair, as_tensor_triple
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_tensor_pair,
+    ensure_tensor_triple,
+)
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -75,7 +81,7 @@ class HouseholderProduct(OpDef):
         """
         if not args:
             return ()
-        return tuple(int(d) for d in _get_attr(args[0], "shape", _get_attr(args[0], "shape_metadata", args[0] if isinstance(args[0], (list, tuple)) else ())))
+        return _extract_linalg_shape(args[0])
 
 
 @register_op("Schur")
@@ -131,9 +137,9 @@ def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
         backend = get_active_backend()
         res = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
-            res_t = as_tensor(res)
+            res_t = ensure_eager_tensor(res)
             return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
-        q, r = as_tensor_pair(res)
+        q, r = ensure_tensor_pair(res)
         return (
             Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
@@ -163,7 +169,7 @@ def hessenberg(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        h, q = as_tensor_pair(backend.execute_op("Hessenberg", a.data))
+        h, q = ensure_tensor_pair(backend.execute_op("Hessenberg", a.data))
         return (
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
@@ -185,7 +191,7 @@ def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(backend.execute_op("HouseholderProduct", a.data, tau.data))
+        data = ensure_eager_tensor(backend.execute_op("HouseholderProduct", a.data, tau.data))
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
@@ -203,7 +209,7 @@ def schur(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        t, z = as_tensor_pair(backend.execute_op("Schur", a.data))
+        t, z = ensure_tensor_pair(backend.execute_op("Schur", a.data))
         return (
             Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
             Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
@@ -224,7 +230,7 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        diag, off_diag, q = as_tensor_triple(backend.execute_op("Tridiagonal", a.data))
+        diag, off_diag, q = ensure_tensor_triple(backend.execute_op("Tridiagonal", a.data))
         return (
             Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
             Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
@@ -267,10 +273,8 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Ten
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        q, h, num_iters, is_converged = _cast_val(
-            "tuple[TensorLike, TensorLike, TensorLike, TensorLike]",
-            backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations),
-        )
+        parts = ensure_eager_list(backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations))
+        q, h, num_iters, is_converged = ensure_eager_tensor(parts[0]), ensure_eager_tensor(parts[1]), ensure_eager_tensor(parts[2]), ensure_eager_tensor(parts[3])
         return (
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),

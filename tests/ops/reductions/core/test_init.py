@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+from tests.testing_utils import ensure_eager_tensor
 
 
 def test_reductions_init() -> None:
@@ -21,6 +21,6 @@ def test_reductions_init_missing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.reductions)
-        assert _get_attr(ml_switcheroo_compiler.ops.reductions, "sum", None) is None
+        assert ensure_eager_tensor(ml_switcheroo_compiler.ops.reductions).sum is None
 
     importlib.reload(ml_switcheroo_compiler.ops.reductions)

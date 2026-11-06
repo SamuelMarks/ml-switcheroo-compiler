@@ -12,8 +12,7 @@ import ml_switcheroo_compiler.ops.creation.frontend_random as random_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -53,21 +52,21 @@ def test_frontend_random_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.creation.frontend_random.get_active_backend", return_value=mock_backend):
             # rand with default dtype/device and custom dtype/device
             r1 = random_mod.rand(2, 3)
-            assert as_tensor(_get_attr(r1, "shape")) == (2, 3)
+            assert ensure_eager_tensor(r1).shape == (2, 3)
             r2 = random_mod.rand(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert as_tensor(_get_attr(r2, "dtype")) == DType.Float64
+            assert ensure_eager_tensor(ensure_eager_tensor(r2).dtype) == DType.Float64
 
             # randn
             rn1 = random_mod.randn(2, 3)
-            assert as_tensor(_get_attr(rn1, "shape")) == (2, 3)
+            assert ensure_eager_tensor(rn1).shape == (2, 3)
             rn2 = random_mod.randn(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert as_tensor(_get_attr(rn2, "dtype")) == DType.Float64
+            assert ensure_eager_tensor(ensure_eager_tensor(rn2).dtype) == DType.Float64
 
             # randint
             ri1 = random_mod.randint(0, 10, (2, 3))
-            assert as_tensor(_get_attr(ri1, "shape")) == (2, 3)
+            assert ensure_eager_tensor(ri1).shape == (2, 3)
             ri2 = random_mod.randint(0, 10, [2, 3], dtype=DType.Int32, device=Device("cpu"))
-            assert as_tensor(_get_attr(ri2, "dtype")) == DType.Int32
+            assert ensure_eager_tensor(ensure_eager_tensor(ri2).dtype) == DType.Int32
 
             # manual_seed
             seed_val = random_mod.manual_seed(1234)

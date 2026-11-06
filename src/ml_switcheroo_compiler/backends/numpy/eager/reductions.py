@@ -8,9 +8,16 @@ import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
 from ml_switcheroo_compiler.backends.eager import nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerCallableProtocol,
+    EagerValue,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_int,
+    numpy_eager_registry,
+)
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import WindowConfig
@@ -26,7 +33,9 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: EagerValue) -> Eage
     Returns:
         list: Result.
     """
-    pad_total = [max(0, w - 1) for w in _get_attr(window_dimensions, "__iter__")()]
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_int_list
+
+    pad_total = [max(0, int(w) - 1) for w in ensure_int_list(window_dimensions)]
     if len(pad_total) < operand_ndim:
         pad_total = [0] * (operand_ndim - len(pad_total)) + pad_total
     return [(p // 2, p - p // 2) for p in pad_total]
@@ -113,13 +122,14 @@ def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int,
     Returns:
             tuple[int, ...]: Result.
     """
-    idx = _get_attr(np, "argsort")(x, axis=axis)
+    idx = ensure_ndarray(get_backend_member(np, "argsort")(x, axis=axis))
+    ndim_val = ensure_int(get_backend_member(x, "ndim"))
     if axis < 0:
-        axis += _get_attr(x, "ndim")
-    slc = [slice(None)] * _get_attr(x, "ndim")
+        axis += ndim_val
+    slc = [slice(None)] * ndim_val
     slc[axis] = slice(-1, -(k + 1), -1)
-    idx_k = idx[tuple(slc)]
-    val_k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "take_along_axis")(x, idx_k, axis=axis)
+    idx_k = ensure_ndarray(idx[tuple(slc)])
+    val_k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "take_along_axis")(x, idx_k, axis=axis))
     return (val_k, idx_k)
 
 
@@ -155,13 +165,13 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
         operand_arr.ndim,
         config.window_dimensions,
     )
-    operand_arr = _get_attr(np, "pad")(operand_arr, pad_width, mode="constant", constant_values=init_value)
+    operand_arr = ensure_ndarray(get_backend_member(np, "pad")(operand_arr, pad_width, mode="constant", constant_values=init_value))
     (view, axis_to_reduce) = _create_sliding_window_view(operand_arr, config)
     strategies: dict[str, EagerCallableProtocol] = {
-        "max": _get_attr(np, "max"),
-        "min": _get_attr(np, "min"),
-        "sum": _get_attr(np, "sum"),
-        "prod": _get_attr(np, "prod"),
+        "max": ensure_callable(get_backend_member(np, "max")),
+        "min": ensure_callable(get_backend_member(np, "min")),
+        "sum": ensure_callable(get_backend_member(np, "sum")),
+        "prod": ensure_callable(get_backend_member(np, "prod")),
     }
     if computation not in strategies:
         raise ValueError(f"Unknown computation {computation}")
@@ -179,8 +189,8 @@ def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = Fa
     Returns:
             tuple[int, ...]: Result.
     """
-    xmax = _get_attr(np, "max")(x, axis=axis, keepdims=True)
-    return as_tensor(np.log(_get_attr(np, "sum")(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax))
+    xmax = get_backend_member(np, "max")(x, axis=axis, keepdims=True)
+    return ensure_eager_tensor(get_backend_member(np, "log")(get_backend_member(np, "sum")(get_backend_member(np, "exp")(ensure_eager_tensor(x) - xmax), axis=axis, keepdims=keepdims)) + (get_backend_member(np, "squeeze")(xmax) if not keepdims else xmax))
 
 
 def _segment_sum(
@@ -220,7 +230,7 @@ def _np_nms(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs)
+    return ensure_callable(nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs)
 
 
 @numpy_eager_registry.register("TrapezoidalIntegral")
@@ -238,7 +248,7 @@ def _np_trapezoidal_integral(backend_module: BackendModuleProtocol, y: EagerValu
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
     axis = kwargs.get("axis", -1)
-    trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
+    trapz_fn = ensure_callable(get_backend_member(np, "trapezoid", get_backend_member(np, "trapz", None)))
     if x is not None:
         return trapz_fn(y, x=x, axis=axis)
     return trapz_fn(y, dx=dx, axis=axis)
@@ -259,12 +269,12 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, labels: EagerVal
     """
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
-    y_true = _get_attr(labels, "flatten")()
-    y_pred = _get_attr(predictions, "flatten")()
+    y_true = get_backend_member(labels, "flatten")()
+    y_pred = get_backend_member(predictions, "flatten")()
     if num_classes is None:
         num_classes = max(np.max(y_true), np.max(y_pred)) + 1
-    cm = _get_attr(np, "bincount")(as_tensor(y_true) * as_tensor(num_classes) + as_tensor(y_pred), weights=weights, minlength=as_tensor(num_classes) ** 2)
-    return as_tensor(_get_attr(cm, "reshape")((num_classes, num_classes)))
+    cm = get_backend_member(np, "bincount")(ensure_eager_tensor(y_true) * ensure_eager_tensor(num_classes) + ensure_eager_tensor(y_pred), weights=weights, minlength=ensure_eager_tensor(num_classes) ** 2)
+    return ensure_eager_tensor(get_backend_member(cm, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Cummax")
@@ -283,9 +293,9 @@ def _np_cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype = _get_attr(dtype, "value", dtype)
-        return as_tensor(_get_attr(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
-    return as_tensor(_get_attr(np.maximum, "accumulate")(a, axis=axis))
+        dtype = get_backend_member(dtype, "value", dtype)
+        return ensure_eager_tensor(get_backend_member(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
+    return ensure_eager_tensor(get_backend_member(np.maximum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cummin")
@@ -304,9 +314,9 @@ def _np_cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype = _get_attr(dtype, "value", dtype)
-        return as_tensor(_get_attr(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
-    return as_tensor(_get_attr(np.minimum, "accumulate")(a, axis=axis))
+        dtype = get_backend_member(dtype, "value", dtype)
+        return ensure_eager_tensor(get_backend_member(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
+    return ensure_eager_tensor(get_backend_member(np.minimum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cumprod")
@@ -323,8 +333,8 @@ def _np_cumprod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        kwargs["dtype"] = _get_attr(dtype, "value", dtype)
-    return as_tensor(_get_attr(np, "cumprod")(*args, **kwargs))
+        kwargs["dtype"] = get_backend_member(dtype, "value", dtype)
+    return ensure_eager_tensor(get_backend_member(np, "cumprod")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cumlogsumexp")
@@ -342,8 +352,8 @@ def _np_cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, *
     a = args[0]
     axis = kwargs.get("axis", None)
     if axis is None:
-        return np.logaddexp.accumulate(_get_attr(np, "ravel")(a))
-    return as_tensor(_get_attr(np.logaddexp, "accumulate")(a, axis=axis))
+        return np.logaddexp.accumulate(get_backend_member(np, "ravel")(a))
+    return ensure_eager_tensor(get_backend_member(np.logaddexp, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("ApproxMaxK")
@@ -361,17 +371,19 @@ def _np_approx_max_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
-    if not _has_attr(x, "shape"):
+    if not has_backend_member(x, "shape"):
         x = backend_module.array(x)
-    if _get_attr(x, "size") == 0:
+    if get_backend_member(x, "size") == 0:
         return (x, x)
-    idx = _get_attr(np, "argsort")(x, axis=reduction_dimension)
-    idx = _get_attr(np, "take")(
+    idx = get_backend_member(np, "argsort")(x, axis=reduction_dimension)
+    red_dim = int(ensure_int(reduction_dimension))
+    dim_len = int(ensure_int(ensure_eager_tensor(idx.shape)[red_dim]))
+    idx = get_backend_member(np, "take")(
         idx,
-        range(_get_attr(idx.shape, "__getitem__")(reduction_dimension) - 1, _get_attr(idx.shape, "__getitem__")(reduction_dimension) - 1 - k, -1),
+        range(dim_len - 1, dim_len - 1 - int(ensure_int(k)), -1),
         axis=reduction_dimension,
     )
-    val = _get_attr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
+    val = get_backend_member(np, "take_along_axis")(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
@@ -390,13 +402,13 @@ def _np_approx_min_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
-    if not _has_attr(x, "shape"):
+    if not has_backend_member(x, "shape"):
         x = backend_module.array(x)
-    if _get_attr(x, "size") == 0:
+    if get_backend_member(x, "size") == 0:
         return (x, x)
-    idx = _get_attr(np, "argsort")(x, axis=reduction_dimension)
-    idx = _get_attr(np, "take")(idx, range(as_int(k)), axis=reduction_dimension)
-    val = _get_attr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
+    idx = get_backend_member(np, "argsort")(x, axis=reduction_dimension)
+    idx = get_backend_member(np, "take")(idx, range(ensure_int(k)), axis=reduction_dimension)
+    val = get_backend_member(np, "take_along_axis")(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
@@ -409,11 +421,11 @@ def _get_k_val(k: EagerValue) -> int:
     Returns:
         int: Extracted integer.
     """
-    if _has_attr(k, "item"):
-        return int(_get_attr(k, "item")())
-    if _has_attr(k, "data") and _has_attr(_get_attr(k, "data"), "item"):
-        return int(_get_attr(k, "data").item())
-    return int(as_int(k))
+    if has_backend_member(k, "item"):
+        return int(ensure_int(get_backend_member(k, "item")()))
+    if has_backend_member(k, "data") and has_backend_member(get_backend_member(k, "data"), "item"):
+        return int(ensure_int(get_backend_member(k, "data").item()))
+    return int(ensure_int(k))
 
 
 @numpy_eager_registry.register("TopK")
@@ -431,19 +443,20 @@ def _np_top_k(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     """
     k_arg = args[0] if len(args) > 0 else kwargs.get("k", 1)
     k = _get_k_val(k_arg)
-    axis = kwargs.get("axis", -1)
+    axis = ensure_int(kwargs.get("axis", -1))
     return_indices = kwargs.get("return_indices", None)
-    if not _has_attr(x, "shape"):
+    if not has_backend_member(x, "shape"):
         x = backend_module.array(x)
-    kth = max(0, _get_attr(x, "shape")[axis] - k)
+    x_shape = get_backend_member(x, "shape")
+    kth = max(0, ensure_int(x_shape[axis]) - k)
     if return_indices is False:
         val = backend_module.partition(x, kth, axis=axis)
-        slc = [slice(None)] * len(_get_attr(x, "shape"))
-        as_tensor(slc)[axis] = slice(-k, None)
+        slc: list[EagerValue] = [slice(None)] * len(x_shape)
+        slc[axis] = slice(-k, None)
         return val[tuple(slc)]
     idx = backend_module.argpartition(x, kth, axis=axis)
-    slc = [slice(None)] * len(_get_attr(x, "shape"))
-    as_tensor(slc)[axis] = slice(-k, None)
+    slc = [slice(None)] * len(x_shape)
+    slc[axis] = slice(-k, None)
     idx_k = idx[tuple(slc)]
     if return_indices is True:
         return idx_k

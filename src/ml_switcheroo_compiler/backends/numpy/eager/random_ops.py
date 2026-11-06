@@ -6,12 +6,12 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
+@typing.runtime_checkable
 class RandomDistributionConfig(typing.Protocol):
     """Protocol describing configuration attributes for random distributions."""
 
@@ -21,6 +21,63 @@ class RandomDistributionConfig(typing.Protocol):
     maxval: float
 
 
+@typing.runtime_checkable
+class _MeanProtocol(typing.Protocol):
+    """Protocol for config objects exposing `.mean`."""
+
+    @property
+    def mean(self) -> float | int:
+        """Return distribution mean.
+
+        Returns:
+            float | int: Mean value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _StddevProtocol(typing.Protocol):
+    """Protocol for config objects exposing `.stddev`."""
+
+    @property
+    def stddev(self) -> float | int:
+        """Return distribution standard deviation.
+
+        Returns:
+            float | int: Standard deviation value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MinvalProtocol(typing.Protocol):
+    """Protocol for config objects exposing `.minval`."""
+
+    @property
+    def minval(self) -> float | int | None:
+        """Return minimum uniform bound.
+
+        Returns:
+            float | int | None: Minimum bound.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MaxvalProtocol(typing.Protocol):
+    """Protocol for config objects exposing `.maxval`."""
+
+    @property
+    def maxval(self) -> float | int | None:
+        """Return maximum uniform bound.
+
+        Returns:
+            float | int | None: Maximum bound.
+        """
+        ...
+
+
+@typing.runtime_checkable
 class LookupTableProtocol(typing.Protocol):
     """Protocol for table objects supporting lookup."""
 
@@ -40,7 +97,7 @@ class LookupTableProtocol(typing.Protocol):
 def _np_normal(
     backend_module: BackendModuleProtocol,
     shape: tuple[int, ...] | list[int] | int,
-    **kwargs: str | float | int | RandomDistributionConfig | None,
+    **kwargs: EagerValue | RandomDistributionConfig,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate normal distribution random sampling.
 
@@ -53,17 +110,17 @@ def _np_normal(
         np.ndarray: Random samples drawn from normal distribution.
     """
     dtype = kwargs.get("dtype", "float32")
-    config = kwargs.get("config")
-    mean = _get_attr(config, "mean", 0.0) if config else 0.0
-    stddev = _get_attr(config, "stddev", 1.0) if config else 1.0
-    return as_ndarray(_get_attr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
+    config: EagerValue | RandomDistributionConfig | _MeanProtocol | _StddevProtocol = kwargs.get("config")
+    mean = float(config.mean) if isinstance(config, _MeanProtocol) else 0.0
+    stddev = float(config.stddev) if isinstance(config, _StddevProtocol) else 1.0
+    return ensure_ndarray(np.random.normal(loc=mean, scale=stddev, size=shape).astype(str(dtype)))
 
 
 @numpy_eager_registry.register("Uniform")
 def _np_uniform(
     backend_module: BackendModuleProtocol,
     shape: tuple[int, ...] | list[int] | int,
-    **kwargs: str | float | int | RandomDistributionConfig | None,
+    **kwargs: EagerValue | RandomDistributionConfig,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate uniform distribution random sampling.
 
@@ -76,14 +133,12 @@ def _np_uniform(
         np.ndarray: Random samples drawn from uniform distribution.
     """
     dtype = kwargs.get("dtype", "float32")
-    config = kwargs.get("config")
-    minval = _get_attr(config, "minval", 0.0) if config else 0.0
-    if minval is None:
-        minval = 0.0
-    maxval = _get_attr(config, "maxval", 1.0) if config else 1.0
-    if maxval is None:
-        maxval = 1.0
-    return as_ndarray(_get_attr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
+    config: EagerValue | RandomDistributionConfig | _MinvalProtocol | _MaxvalProtocol = kwargs.get("config")
+    raw_min = config.minval if isinstance(config, _MinvalProtocol) else None
+    minval: float = float(raw_min) if isinstance(raw_min, (int, float)) else 0.0
+    raw_max = config.maxval if isinstance(config, _MaxvalProtocol) else None
+    maxval: float = float(raw_max) if isinstance(raw_max, (int, float)) else 1.0
+    return ensure_ndarray(np.random.uniform(low=minval, high=maxval, size=shape).astype(str(dtype)))
 
 
 @numpy_eager_registry.register("StatelessSplit")
@@ -116,14 +171,14 @@ def _np_stateless_split(
     else:
         s_val = 0
     rng = np.random.RandomState(s_val)
-    return as_ndarray(rng.randint(0, 2**31 - 1, size=(num, 2), dtype=np.int64))
+    return ensure_ndarray(rng.randint(0, 2**31 - 1, size=(num, 2), dtype=np.int64))
 
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(
     backend_module: BackendModuleProtocol,
-    table: dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int,
-    keys: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[int | str] | int | str,
+    table: dict[int, int] | dict[int | str, int | float] | LookupTableProtocol | EagerValue,
+    keys: EagerValue,
     **kwargs: int | float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate lookup table query on keys.
@@ -138,11 +193,11 @@ def _np_lookup(
     Returns:
         np.ndarray: Array of looked up values.
     """
-    arr = np.asarray(keys)
+    arr = ensure_ndarray(np.asarray(keys))
     default_value = kwargs.get("default_value", 0)
     if isinstance(table, dict):
-        return as_ndarray(np.vectorize(lambda k: table.get(k, default_value))(arr))
-    if _has_attr(table, "lookup"):
+        return ensure_ndarray(np.vectorize(lambda k: table.get(k, default_value))(arr))
+    if isinstance(table, LookupTableProtocol):
         _typed_ret_1: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = table.lookup(arr)
         return _typed_ret_1
-    return np.full_like(arr, default_value, dtype=np.int32)
+    return ensure_ndarray(np.full_like(arr, default_value, dtype=np.int32))

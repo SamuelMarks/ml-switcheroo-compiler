@@ -8,10 +8,9 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops import array, diag, rand, randint, randn
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,14 +22,14 @@ def test_rand_frontend_eager() -> None:
 
     config.eager_mode = True
     t1 = rand(2, 3)
-    assert as_tensor(_get_attr(t1, "shape")) == (2, 3)
+    assert ensure_eager_tensor(t1).shape == (2, 3)
     import ml_switcheroo_compiler.backends.registry as reg
 
-    _set_attr(reg, "_ACTIVE_BACKEND", type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})())
-    as_callable(randn)([2, 3])
+    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})())
+    ensure_callable(randn)([2, 3])
     pass
     t3 = randint(0, 10, (2, 3))
-    assert as_tensor(_get_attr(t3, "shape")) == (2, 3)
+    assert ensure_eager_tensor(t3).shape == (2, 3)
     pass
     array(type("D", (), {"shape": (1, 3)})(), dtype=DType.Int32)
     pass
@@ -56,6 +55,6 @@ def test_rand_frontend_tracing() -> None:
             with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix._emit_creation_node", return_value="diag_emitted"):
                 arr = type("T", (), {"shape": (1, 1), "device": "cpu", "dtype": "float32"})()
                 diag_out = diag(arr)
-                assert _get_attr(diag_out, "shape", None) == (1,)
+                assert ensure_eager_tensor(diag_out).shape == (1,)
     finally:
         global_tracing_state.stop_tracing()

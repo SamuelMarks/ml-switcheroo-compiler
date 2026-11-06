@@ -8,10 +8,10 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-from .frontend_utils import _emit_creation_node
+from .frontend_utils import _dtype_to_str, _emit_creation_node
 
 
 def arange(
@@ -48,7 +48,7 @@ def arange(
             start,
             stop,
             step,
-            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
+            dtype=_dtype_to_str(dtype),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
@@ -88,7 +88,7 @@ def linspace(
             start,
             stop,
             steps,
-            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
+            dtype=_dtype_to_str(dtype),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(

@@ -2,12 +2,43 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+import typing
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_tensor, ensure_int, get_active_backend
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_shape,
+)
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@typing.runtime_checkable
+class _ArrayCallableProtocol(typing.Protocol):
+    """Protocol for objects exposing `__array__()`."""
+
+    def __array__(self) -> TensorOrScalar:
+        """Convert to array.
+
+        Returns:
+            TensorOrScalar: Array representation.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ItemCallableProtocol(typing.Protocol):
+    """Protocol for objects exposing `.item()`."""
+
+    def item(self) -> TensorOrScalar:
+        """Extract scalar item.
+
+        Returns:
+            TensorOrScalar: Scalar item.
+        """
+        ...
 
 
 def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tuple[int, ...] | None:
@@ -19,16 +50,15 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
     Returns:
             tuple[int, ...]: Result.
     """
-    if _has_attr(k, "__array__") and not isinstance(k, tuple):
-        k = _get_attr(k, "__array__")()
-    if _has_attr(k, "item"):
-        k = int(_get_attr(k, "item")())
-    else:
-        try:
-            k = int(as_int(k))
-        except (ValueError, TypeError):
-            return k
-    return k
+    raw_k: TensorOrScalar | _ArrayCallableProtocol | _ItemCallableProtocol = k
+    if not isinstance(raw_k, tuple) and isinstance(raw_k, _ArrayCallableProtocol):
+        raw_k = get_active_backend().asarray(ensure_eager_tensor(raw_k))
+    if isinstance(raw_k, _ItemCallableProtocol):
+        return int(ensure_int(raw_k.item()))
+    try:
+        return int(ensure_int(raw_k))
+    except (ValueError, TypeError):
+        return k
 
 
 @register_op("TopK")
@@ -50,12 +80,13 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        k = as_callable(_normalize_k)(k)
+        k = ensure_callable(_normalize_k)(k)
 
-        if not _has_attr(x, "shape") or not x.shape:
+        x_shape = extract_shape(x)
+        if not x_shape:
             return (None,)
-        out_shape = list(x.shape)
-        out_shape[-1] = as_int(k)
+        out_shape = list(x_shape)
+        out_shape[-1] = ensure_int(k)
         return tuple(out_shape)
 
 
@@ -83,9 +114,7 @@ class Argsort(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        if isinstance(x, tuple) and _has_attr(x, "shape"):
-            return as_shape(_get_attr(x, "shape"))
-        return as_shape(_get_attr(x, "shape", ()))
+        return extract_shape(x)
 
 
 @register_op("Sort")
@@ -112,7 +141,7 @@ class Sort(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(x)
         return _typed_ret_1
 
 
@@ -371,7 +400,7 @@ class TensorScatterUpdate(OpDef):
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_2: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_2
 
 
@@ -394,7 +423,7 @@ class Argpartition(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return a.shape if _has_attr(a, "shape") else ()
+        return extract_shape(a)
 
 
 @register_op("Partition")
@@ -416,7 +445,7 @@ class Partition(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return a.shape if _has_attr(a, "shape") else ()
+        return extract_shape(a)
 
 
 @register_op("Compress")
@@ -563,5 +592,5 @@ class InvertPermutation(OpDef):
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_3: TensorOrScalar = extract_shape(x)
         return _typed_ret_3

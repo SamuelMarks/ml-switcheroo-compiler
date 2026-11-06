@@ -7,36 +7,30 @@ import sys
 import typing
 from collections.abc import Callable  # noqa: F401
 
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ShapeProtocol,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int_list,
+)
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
+
 if typing.TYPE_CHECKING:
     import jax.ops
     import jax.scipy.linalg
     import jax.scipy.signal
     import jax.scipy.special
-    import jax.scipy.special as jss
     import jax.scipy.stats
 
-    from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-
-    jnp: BackendModuleProtocol
-    lax: BackendModuleProtocol
-else:
-    _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-    jax = importlib.import_module("jax") if _has_jax else None
-    jnp = importlib.import_module("jax.numpy") if _has_jax else None
-    lax = importlib.import_module("jax.lax") if _has_jax else None
-    jss = importlib.import_module("jax.scipy.special") if _has_jax else None
-    _ = (importlib.import_module("jax.ops"), importlib.import_module("jax.scipy.linalg"), importlib.import_module("jax.scipy.signal"), importlib.import_module("jax.scipy.stats")) if _has_jax else None
-
-from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
-from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ShapeProtocol,
-    as_callable,
-    as_eager_list,
-    as_float,
-    as_int_list,
-    as_tensor,
-)
+_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+jax = importlib.import_module("jax") if _has_jax else ensure_mod(None)
+jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
+lax = ensure_mod(importlib.import_module("jax.lax") if _has_jax else None)
+jss = importlib.import_module("jax.scipy.special") if _has_jax else ensure_mod(None)
+_ = (importlib.import_module("jax.ops"), importlib.import_module("jax.scipy.linalg"), importlib.import_module("jax.scipy.signal"), importlib.import_module("jax.scipy.stats")) if _has_jax else None
 
 
 def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
@@ -57,7 +51,7 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(as_int_list(output_size))
+        output_size_list = list(ensure_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -83,7 +77,7 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
     import math
 
     window_area: int = math.prod(window_dimensions[-spatial_rank:])
-    return as_tensor(sum_pooled / float(window_area))
+    return ensure_eager_tensor(sum_pooled / float(window_area))
 
 
 def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
@@ -104,7 +98,7 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(as_int_list(output_size))
+        output_size_list = list(ensure_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -121,7 +115,7 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
         window_dimensions.append(max(1, kernel))
         window_strides.append(max(1, stride))
 
-    return as_tensor(reduce_window(operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID"))
+    return ensure_eager_tensor(reduce_window(operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID"))
 
 
 def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -137,12 +131,12 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Raises:
         ValueError: An exception.
     """
-    inputs = as_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
+    inputs = ensure_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         raise ValueError("inputs must not be empty")
     res: EagerValue = inputs[0]
     for i in range(1, len(inputs)):
-        res = as_tensor(res) + as_tensor(inputs[i])
+        res = ensure_eager_tensor(res) + ensure_eager_tensor(inputs[i])
     return res
 
 
@@ -156,9 +150,9 @@ def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Binomial CDF array.
     """
-    k, n, p = as_tensor(args[0]), as_tensor(args[1]), as_tensor(args[2])
-    loc: float = float(as_float(kwargs.get("loc", 0.0)))
-    return as_tensor(as_callable(_get_attr(jss, "betainc"))(n - (k - loc), (k - loc) + 1, 1 - p))
+    k, n, p = ensure_eager_tensor(args[0]), ensure_eager_tensor(args[1]), ensure_eager_tensor(args[2])
+    loc: float = float(ensure_float(kwargs.get("loc", 0.0)))
+    return ensure_eager_tensor(ensure_callable(get_backend_member(jss, "betainc"))(n - (k - loc), (k - loc) + 1, 1 - p))
 
 
 def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -171,7 +165,7 @@ def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Binomial PMF array.
     """
-    return as_tensor(jax.scipy.stats.binom.pmf(*args, **kwargs))
+    return ensure_eager_tensor(jax.scipy.stats.binom.pmf(*args, **kwargs))
 
 
 def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -184,7 +178,7 @@ def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Convolved 2D array.
     """
-    return as_tensor(jax.scipy.signal.convolve2d(*args, **kwargs))
+    return ensure_eager_tensor(jax.scipy.signal.convolve2d(*args, **kwargs))
 
 
 def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -197,7 +191,7 @@ def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Sample frequencies and power spectral density.
     """
-    return as_tensor(jax.scipy.signal.welch(*args, **kwargs))
+    return ensure_eager_tensor(jax.scipy.signal.welch(*args, **kwargs))
 
 
 def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -210,7 +204,7 @@ def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(jax.scipy.special.bessel_jn(args[1], v=args[0]))
+    return ensure_eager_tensor(jax.scipy.special.bessel_jn(args[1], v=args[0]))
 
 
 def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -223,7 +217,7 @@ def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(jax.ops.segment_sum(*args, **kwargs))
+    return ensure_eager_tensor(jax.ops.segment_sum(*args, **kwargs))
 
 
 def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -236,7 +230,7 @@ def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(jax.ops.segment_max(*args, **kwargs))
+    return ensure_eager_tensor(jax.ops.segment_max(*args, **kwargs))
 
 
 def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -249,7 +243,7 @@ def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(jax.ops.segment_min(*args, **kwargs))
+    return ensure_eager_tensor(jax.ops.segment_min(*args, **kwargs))
 
 
 def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -262,7 +256,7 @@ def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> E
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(jax.ops.segment_prod(*args, **kwargs))
+    return ensure_eager_tensor(jax.ops.segment_prod(*args, **kwargs))
 
 
 def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -278,7 +272,7 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
-    return as_tensor(as_callable(_get_attr(jnp, "var"))(*args, **kwargs))
+    return ensure_eager_tensor(ensure_callable(get_backend_member(jnp, "var"))(*args, **kwargs))
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -293,20 +287,20 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     tensor: EagerValue = args[0]
     dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dt_str: str = str(_get_attr(dtype, "value", dtype)).split(".")[-1]
+    dt_str: str = str(get_backend_member(dtype, "value", dtype)).split(".")[-1]
     import jax.numpy as jnp
 
     if "int4" in dt_str:
-        dt: EagerValue = _get_attr(jnp, "int8")
+        dt: EagerValue = get_backend_member(jnp, "int8")
     elif "bfloat16" in dt_str:
-        dt = _get_attr(jnp, "bfloat16")
+        dt = get_backend_member(jnp, "bfloat16")
     elif "float16" in dt_str:
-        dt = _get_attr(jnp, "float16")
+        dt = get_backend_member(jnp, "float16")
     elif "float8" in dt_str:
-        dt = _get_attr(jnp, "float8_e4m3fn", _get_attr(jnp, "float32"))
+        dt = get_backend_member(jnp, "float8_e4m3fn", get_backend_member(jnp, "float32"))
     else:
-        dt = _get_attr(jnp, dt_str, None)
-    return as_tensor(tensor).astype(dt)
+        dt = get_backend_member(jnp, dt_str, None)
+    return ensure_eager_tensor(tensor).astype(dt)
 
 
 def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -324,7 +318,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], ShapeProtocol):
         max_len: int = max(len(x) for x in rt)
         padded: list[EagerValue] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
-        return as_tensor(as_callable(_get_attr(jnp, "stack"))(padded))
+        return ensure_eager_tensor(ensure_callable(get_backend_member(jnp, "stack"))(padded))
     return rt
 
 
@@ -373,16 +367,16 @@ _OP_DISPATCH = (
         "AdaptiveMaxPool2D": _execute_adaptive_max_pool,
         "AdaptiveMaxPool3D": _execute_adaptive_max_pool,
         "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
-        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=_get_attr(target, "dtype", None))),
+        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=get_backend_member(target, "dtype", None))),
         "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
-        "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if _has_attr(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
+        "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if has_backend_member(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
         "AllReduce": lambda tensor, *args, **kwargs: __import__("jax").lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
         "ReduceScatter": lambda tensor, *args, **kwargs: (
             __import__("jax").lax.reduce_scatter(tensor, __import__("jax").lax.add if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.max, scatter_dimension=kwargs.get("axis", 0), axis_name=kwargs.get("axis_name", "i"))
-            if _has_attr(__import__("jax").lax, "reduce_scatter")
+            if has_backend_member(__import__("jax").lax, "reduce_scatter")
             else tensor
         ),
-        "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if _has_attr(__import__("jax").lax, "all_to_all") else tensor,
+        "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if has_backend_member(__import__("jax").lax, "all_to_all") else tensor,
         "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli(__import__("jax").random.PRNGKey(0), 1.0 - float(kwargs.get("p", 0.5)), x.shape), x, 0.0),
         "AsString": lambda arr, **kwargs: str(arr),
         "Assert": lambda condition, data, summarize=3, **kwargs: None,
@@ -419,7 +413,7 @@ _OP_DISPATCH = (
         "Irfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
         "Irfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
         "LogSoftmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.log_softmax(x, axis=axis),
-        "Mish": lambda x: __import__("jax").nn.mish(x) if _has_attr(__import__("jax").nn, "mish") else x * __import__("jax").numpy.tanh(__import__("jax").numpy.log1p(__import__("jax").numpy.exp(x))),
+        "Mish": lambda x: __import__("jax").nn.mish(x) if has_backend_member(__import__("jax").nn, "mish") else x * __import__("jax").numpy.tanh(__import__("jax").numpy.log1p(__import__("jax").numpy.exp(x))),
         "OneHot": lambda *args, **kwargs: __import__("jax").nn.one_hot(args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)),
         "Rfft": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft(args[0], **kwargs),
         "Rfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft2(args[0], **kwargs),
@@ -428,9 +422,9 @@ _OP_DISPATCH = (
         "Rfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn(args[0], **kwargs),
         "Sigmoid": lambda *args, **kwargs: __import__("jax").nn.sigmoid(args[0]),
         "Softmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.softmax(x, axis=axis),
-        "Squareplus": lambda x: __import__("jax").nn.squareplus(x) if _has_attr(__import__("jax").nn, "squareplus") else 0.5 * (x + __import__("jax").numpy.sqrt(x**2 + 4.0)),
+        "Squareplus": lambda x: __import__("jax").nn.squareplus(x) if has_backend_member(__import__("jax").nn, "squareplus") else 0.5 * (x + __import__("jax").numpy.sqrt(x**2 + 4.0)),
     }
-    if _get_attr(jax, "scipy", None) is not None
+    if get_backend_member(jax, "scipy", None) is not None
     else {}
 )
 
@@ -458,7 +452,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
         func_resolved = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
         if func_resolved:
-            return as_callable(func_resolved)(*args, **kwargs)
+            return ensure_callable(func_resolved)(*args, **kwargs)
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -478,12 +472,12 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
     elif snake == "div":
         snake = "divide"
     func = None
-    for mod in [jnp, lax, _get_attr(jnp, "linalg", None), _get_attr(jnp, "fft", None)]:
-        if mod is not None and _has_attr(mod, snake) and snake != "totally_unknown_op_missing" and snake != "unknown_op_missing_missing":
-            func = as_callable(_get_attr(mod, snake))
+    for mod in [jnp, lax, get_backend_member(jnp, "linalg", None), get_backend_member(jnp, "fft", None)]:
+        if mod is not None and has_backend_member(mod, snake) and snake != "totally_unknown_op_missing" and snake != "unknown_op_missing_missing":
+            func = ensure_callable(get_backend_member(mod, snake))
             break
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

@@ -8,9 +8,10 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, global_eager_registry, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+_np_module = np
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
@@ -20,12 +21,12 @@ def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float6
         val (EagerValue | np.ndarray): Candidate array value.
 
     Returns:
-        bool: Always True for runtime array values.
+        bool: True for runtime array values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+def ensure_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Narrow an `EagerValue` array to `np.ndarray` without `typing.cast`.
 
     Args:
@@ -115,13 +116,13 @@ def execute_op(
     try:
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        func = _get_attr(np, snake)
+        func = get_backend_member(np, snake)
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
         msg = f"Operation {op_type} is not implemented in interpreter."
         raise UnimplementedMathError(msg) from None
-    return as_callable(func)(*args, **kwargs)
+    return ensure_callable(func)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Clone")
@@ -141,7 +142,7 @@ def clone_op(
         np.ndarray: Copied array.
     """
     del np_mod, kwargs
-    return as_ndarray(_get_attr(np, "copy")(args[0]))
+    return ensure_ndarray(get_backend_member(np, "copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
@@ -160,7 +161,7 @@ def repeat(
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_ndarray(_get_attr(np_mod, "repeat")(*args, **kwargs))
+    return ensure_ndarray(get_backend_member(np_mod, "repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
@@ -179,7 +180,7 @@ def searchsorted(
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_ndarray(_get_attr(np_mod, "searchsorted")(*args, **kwargs))
+    return ensure_ndarray(get_backend_member(np_mod, "searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
@@ -204,8 +205,8 @@ def split(
     Returns:
         List of output arrays.
     """
-    split_fn = _get_attr(np_mod, "split", _get_attr(np, "split"))
-    return list(split_fn(x, num_or_size_splits, axis=axis))
+    split_fn = get_backend_member(np_mod, "split", get_backend_member(np, "split"))
+    return [ensure_ndarray(s) for s in split_fn(x, num_or_size_splits, axis=axis)]
 
 
 @numpy_eager_registry.register("Squeeze")
@@ -228,7 +229,7 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return as_ndarray(_get_attr(np_mod, "squeeze")(x, axis=axis))
+    return ensure_ndarray(get_backend_member(np_mod, "squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
@@ -251,7 +252,7 @@ def stack(
     Returns:
         Stacked array.
     """
-    return as_ndarray(_get_attr(np_mod, "stack")(arrays, axis=axis))
+    return ensure_ndarray(get_backend_member(np_mod, "stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
@@ -275,13 +276,15 @@ def unstack(
         List of unstacked arrays.
     """
     # unstack is basically split into 1-sized chunks along axis and squeezed
-    if _has_attr(x, "shape"):
-        num_splits = _get_attr(x, "shape")[axis]
-        split_fn = _get_attr(np_mod, "split", _get_attr(np, "split"))
+    if has_backend_member(x, "shape"):
+        num_splits = get_backend_member(x, "shape")[axis]
+        split_fn = get_backend_member(np_mod, "split", get_backend_member(np, "split"))
         splits = split_fn(x, num_splits, axis=axis)
-        squeeze_fn = _get_attr(np_mod, "squeeze", _get_attr(np, "squeeze"))
-        return tuple(squeeze_fn(s, axis=axis) for s in splits)
-    return tuple(_get_attr(x, "__iter__")())
+        squeeze_fn = get_backend_member(np_mod, "squeeze", get_backend_member(np, "squeeze"))
+        return tuple(ensure_ndarray(squeeze_fn(s, axis=axis)) for s in splits)
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
+
+    return tuple(ensure_ndarray(item) for item in ensure_eager_list(x))
 
 
 @numpy_eager_registry.register("Equal")
@@ -304,7 +307,7 @@ def equal(
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return as_ndarray(_get_attr(np_mod, "equal")(x, y))
+        return ensure_ndarray(get_backend_member(np_mod, "equal")(x, y))
     except Exception:
         # Fallback for incompatible types
         return bool(x == y)

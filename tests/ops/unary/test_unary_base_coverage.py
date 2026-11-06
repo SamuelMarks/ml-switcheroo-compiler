@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.unary.base as unary_base
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -71,10 +71,10 @@ def test_unary_base_exhaustive() -> None:
     assert op.infer_shape([4, 5]) == (4, 5)
 
     # 3. Object with shape attribute
-    assert as_callable(op.infer_shape)(as_callable(_MockShapeContainer)((6, 7))) == (6, 7)
+    assert ensure_callable(op.infer_shape)(ensure_callable(_MockShapeContainer)((6, 7))) == (6, 7)
 
     # 4. Object with shape_metadata attribute
-    assert as_callable(op.infer_shape)(as_callable(_MockShapeMetaContainer)((8, 9))) == (8, 9)
+    assert ensure_callable(op.infer_shape)(ensure_callable(_MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 5. Scalar input without shape attributes
-    assert as_callable(op.infer_shape)(123) == ()
+    assert ensure_callable(op.infer_shape)(123) == ()

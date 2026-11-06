@@ -7,15 +7,15 @@ from collections.abc import (
     Sequence,
 )
 
-from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
+from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
 
 
 def _resolve_scale_factor(
     input: Tensor,
-    scale_factor: float | Sequence[float],
+    scale_factor: float | Sequence[float] | None,
     spatial_dims: int,
 ) -> tuple[int, ...] | None:
     """Resolve the scale factor for upsampling.
@@ -31,6 +31,7 @@ def _resolve_scale_factor(
     Raises:
         ValueError: An exception.
     """
+    assert scale_factor is not None
     if isinstance(scale_factor, (float, int)):
         sfs = [float(scale_factor)] * spatial_dims
     else:
@@ -77,7 +78,7 @@ def _upsample_resolve_size(
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1
 
     if has_sf or size is None:
-        return _cast_val("TypedVariadicCallable[tuple[int, ...] | None]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
+        return _resolve_scale_factor(input, scale_factor, spatial_dims) or ()
 
     if isinstance(size, int):
         return tuple([size] * spatial_dims)
@@ -117,7 +118,7 @@ def _upsample_dispatch(
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return as_tensor(as_callable(fn)(input, size=target_size, align_corners=align_corners))
+        return ensure_eager_tensor(ensure_callable(fn)(input, size=target_size, align_corners=align_corners))
 
     # 1D or 3D fallback
     dispatch_map_fallback = {
@@ -174,7 +175,7 @@ def pixel_shuffle(input: Tensor, upscale_factor: int) -> TensorOrScalar:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device),
         )
     return _emit_shape_node(
         "PixelShuffle",
@@ -212,7 +213,7 @@ def upsample_nearest(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleNearest",
@@ -250,7 +251,7 @@ def upsample_bilinear(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBilinear",
@@ -288,7 +289,7 @@ def upsample_bicubic(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBicubic",

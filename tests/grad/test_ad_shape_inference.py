@@ -8,11 +8,10 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -28,7 +27,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return as_callable(Tensor)(val, as_callable(TensorConfig)(shape, DType.Float32, as_callable(Device)("cpu")))
+    return ensure_callable(Tensor)(val, ensure_callable(TensorConfig)(shape, DType.Float32, ensure_callable(Device)("cpu")))
 
 
 def test_vjp_shape_dtype_inference() -> None:
@@ -46,14 +45,14 @@ def test_vjp_shape_dtype_inference() -> None:
     x = make_tensor(np.ones((2, 3), dtype=np.float32))
     y = make_tensor(np.ones((2, 3), dtype=np.float32))
 
-    out, vjp_fn = as_callable(vjp)(f, x, y)
+    out, vjp_fn = ensure_callable(vjp)(f, x, y)
 
-    assert as_tensor(_get_attr(out, "shape")) == (2, 3)
-    assert as_tensor(_get_attr(out, "dtype")).value == "float32"
+    assert ensure_eager_tensor(out).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(out).dtype).value == "float32"
 
     cot = make_tensor(np.ones((2, 3), dtype=np.float32))
-    grads = as_callable(vjp_fn)(cot)
+    grads = ensure_callable(vjp_fn)(cot)
 
-    assert as_callable(len)(grads) == 2
-    assert as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(0)), "shape")) == (2, 3)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(1)), "shape")) == (2, 3)
+    assert ensure_callable(len)(grads) == 2
+    assert ensure_eager_tensor(grads)[0].shape == (2, 3)
+    assert ensure_eager_tensor(grads)[1].shape == (2, 3)

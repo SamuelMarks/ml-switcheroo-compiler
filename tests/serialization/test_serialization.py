@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _set_attr
 from ml_switcheroo_compiler.serialization import (
     LoadedModel,
     SavedModel,
@@ -26,7 +25,7 @@ from ml_switcheroo_compiler.serialization import (
     save_model,
     serialize_object,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -61,17 +60,18 @@ def test_serialization_primitives_and_custom_objects() -> None:
             Args:
                 cfg: Test parameter `cfg`.
             """
-            _typed_ret_1: CustomDense = _cast_val("CustomDense", as_callable(cls)(**cfg))
-            return _typed_ret_1
+            from ml_switcheroo_compiler.backends.eager_registry import ensure_int
+
+            return cls(units=int(ensure_int(cfg.get("units", 0))))
 
     obj = CustomDense(units=64)
-    serialized = serialize_object(as_tensor(obj))
-    assert as_tensor(_get_attr(serialized, "__getitem__")("class_name")) == "CustomDense"
-    assert as_tensor(_get_attr(as_tensor(_get_attr(serialized, "__getitem__")("config")), "__getitem__")("units")) == 64
+    serialized = serialize_object(ensure_eager_tensor(obj))
+    assert ensure_eager_tensor(serialized)["class_name"] == "CustomDense"
+    assert ensure_eager_tensor(serialized)["config"]["units"] == 64
 
     # Deserialization from registry
-    deserialized = _cast_val("CustomDense", deserialize_object(serialized))
-    assert isinstance(deserialized, CustomDense)
+    deserialized = ensure_eager_tensor(deserialize_object(serialized))
+    assert type(deserialized).__name__ == "CustomDense"
     assert deserialized.units == 64
 
     # Scoped custom object
@@ -92,9 +92,9 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
     with custom_object_scope({"ScopedLayer": ScopedLayer}):
         assert get_registered_object("ScopedLayer") is ScopedLayer
-        s_cfg = as_tensor({"class_name": "ScopedLayer", "config": {"rate": 0.25}})
-        des_scoped = _cast_val("ScopedLayer", deserialize_object(s_cfg))
-        assert isinstance(des_scoped, ScopedLayer)
+        s_cfg = ensure_eager_tensor({"class_name": "ScopedLayer", "config": {"rate": 0.25}})
+        des_scoped = ensure_eager_tensor(deserialize_object(s_cfg))
+        assert type(des_scoped).__name__ == "ScopedLayer"
         assert des_scoped.rate == 0.25
 
     # Scope restoration
@@ -102,7 +102,7 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
     # Unknown class raises ValueError
     with pytest.raises(ValueError, match="Unknown class 'UnregisteredClass'"):
-        deserialize_object(as_tensor({"class_name": "UnregisteredClass", "config": {}}))
+        deserialize_object(ensure_eager_tensor({"class_name": "UnregisteredClass", "config": {}}))
 
 
 def test_universal_model_loader_and_save_model() -> None:
@@ -123,7 +123,7 @@ def test_universal_model_loader_and_save_model() -> None:
                 return {"architecture": "linear", "hidden_dim": 128}
 
         m = DummyModel()
-        as_callable(save_model)(m, model_path)
+        ensure_callable(save_model)(m, model_path)
         assert os.path.exists(model_path)
 
         # Successful load
@@ -168,7 +168,7 @@ def test_saved_model_and_fingerprinting() -> None:
                 """Test function get_config."""
                 return {"op": "Add", "inputs": ["x", "y"]}
 
-        sm = SavedModel(model=as_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
+        sm = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
         sm.save(sm_dir)
 
         assert os.path.exists(os.path.join(sm_dir, "saved_model.pb"))
@@ -180,14 +180,14 @@ def test_saved_model_and_fingerprinting() -> None:
 
         # Fingerprint invariance for identical structure
         sm_dir2 = os.path.join(tmpdir, "my_saved_model2")
-        sm2 = SavedModel(model=as_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
+        sm2 = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
         sm2.save(sm_dir2)
         fp2 = read_fingerprint(sm_dir2)
         assert fp == fp2
 
         # Fingerprint changes on mutation
         sm_mutated_dir = os.path.join(tmpdir, "mutated_model")
-        sm_mut = SavedModel(model=as_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x", "z"]}})
+        sm_mut = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x", "z"]}})
         sm_mut.save(sm_mutated_dir)
         fp_mut = read_fingerprint(sm_mutated_dir)
         assert fp != fp_mut
@@ -195,7 +195,7 @@ def test_saved_model_and_fingerprinting() -> None:
         # SavedModel load
         loaded_sm = SavedModel.load(sm_dir)
         assert loaded_sm.signatures == {"serving_default": {"inputs": ["x"]}}
-        assert as_tensor(_get_attr(loaded_sm.model, "__getitem__")("op")) == "Add"
+        assert ensure_eager_tensor(loaded_sm.model)["op"] == "Add"
 
         # Corrupted proto load
         corrupt_pb_dir = os.path.join(tmpdir, "corrupt_sm")
@@ -224,8 +224,8 @@ def test_variable_restoration_engine() -> None:
         restored = run_restore_ops(tmpdir)
         assert "dense_w" in restored
         assert "dense_b" in restored
-        assert as_callable(np.allclose)(restored["dense_w"], var1)
-        assert as_callable(np.allclose)(restored["dense_b"], var2)
+        assert ensure_callable(np.allclose)(restored["dense_w"], var1)
+        assert ensure_callable(np.allclose)(restored["dense_b"], var2)
 
         # Restore into target model with matching shapes
         class MockVar:
@@ -248,7 +248,7 @@ def test_variable_restoration_engine() -> None:
                 Args:
                     val: Test parameter `val`.
                 """
-                _set_attr(self, "assigned", val)
+                ensure_mutable(self).assigned = ensure_eager_tensor(val)
 
         class TargetModel:
             """Test class TargetModel."""
@@ -261,9 +261,9 @@ def test_variable_restoration_engine() -> None:
                 ]
 
         model_inst = TargetModel()
-        run_restore_ops(tmpdir, target_model=as_tensor(model_inst))
-        assert as_callable(np.allclose)(model_inst.weights[0].assigned, var1)
-        assert as_callable(np.allclose)(model_inst.weights[1].assigned, var2)
+        run_restore_ops(tmpdir, target_model=ensure_eager_tensor(model_inst))
+        assert ensure_callable(np.allclose)(model_inst.weights[0].assigned, var1)
+        assert ensure_callable(np.allclose)(model_inst.weights[1].assigned, var2)
 
         # Shape mismatch in target model raises ValueError
         class IncompatibleModel:
@@ -274,7 +274,7 @@ def test_variable_restoration_engine() -> None:
                 self.weights = [MockVar("dense_w", (3, 3))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'dense_w'"):
-            run_restore_ops(tmpdir, target_model=as_tensor(IncompatibleModel()))
+            run_restore_ops(tmpdir, target_model=ensure_eager_tensor(IncompatibleModel()))
 
         # Shape mismatch in variables dictionary raises ValueError
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'dense_b'"):
@@ -291,4 +291,4 @@ def test_file_handler() -> None:
             """Test function to_json."""
             return "{}"
 
-    assert as_callable(graph_to_json)(as_callable(DummyGraph)()) == "{}"
+    assert ensure_callable(graph_to_json)(ensure_callable(DummyGraph)()) == "{}"

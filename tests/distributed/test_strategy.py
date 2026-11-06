@@ -13,7 +13,6 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.distributed.config_models import MeshMappingConfig, MicrobatchSplittingConfig, ScheduleConfig, SchedulePhaseConfig, StageCommunicationConfig, TopologyConfig
 from ml_switcheroo_compiler.distributed.strategy import (
     Coordinator,
@@ -30,7 +29,7 @@ from ml_switcheroo_compiler.distributed.strategy import (
     _load_webrtc_topology,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -53,19 +52,19 @@ def test_parameter_server_strategy() -> None:
     """Test function test_parameter_server_strategy."""
     strategy = ParameterServerStrategy()
     graph = _make_graph()
-    _get_attr(_get_attr(graph, "nodes"), "__setitem__")("const_node", IRNode(id="const_node", op_type="Constant", inputs=[], attributes={}))
-    _get_attr(_get_attr(graph, "nodes"), "__setitem__")("scalar_const", IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True}))
-    as_tensor(_get_attr(as_tensor(_get_attr(graph, "nodes")), "__getitem__")("node_1")).inputs.extend(["const_node", "scalar_const"])
-    _get_attr(_get_attr(graph, "nodes"), "__setitem__")("add_after", IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={}))
-    as_callable(strategy.push_gradients)(graph)
-    as_callable(strategy.pull_weights)(graph)
+    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["const_node"] = IRNode(id="const_node", op_type="Constant", inputs=[], attributes={})
+    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["scalar_const"] = IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True})
+    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["node_1"].inputs.extend(["const_node", "scalar_const"])
+    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["add_after"] = IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={})
+    ensure_callable(strategy.push_gradients)(graph)
+    ensure_callable(strategy.pull_weights)(graph)
 
     # Verify scalar constant was NOT replaced by Recv
-    assert "scalar_const" in as_tensor(_get_attr(graph, "nodes"))
-    assert "scalar_const_recv" not in as_tensor(_get_attr(graph, "nodes"))
+    assert "scalar_const" in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
+    assert "scalar_const_recv" not in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
     # Verify parameter constant was replaced by Recv with correct attributes
-    assert "const_node_recv" in as_tensor(_get_attr(graph, "nodes"))
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(graph, "nodes")), "__getitem__")("const_node_recv")).attributes, "__getitem__")("src_rank")) == 0
+    assert "const_node_recv" in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["const_node_recv"].attributes)["src_rank"] == 0
 
     assert not strategy.push_gradients(IRGraph())
     # Empty graph -> modified is False, covering branch 87->90
@@ -107,8 +106,8 @@ def test_data_parallel_strategy() -> None:
     """Test function test_data_parallel_strategy."""
     strategy = DataParallelStrategy(mesh_axis="dp")
     graph = _make_graph()
-    assert as_callable(strategy.sync_gradients)(graph)
-    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in as_tensor(_get_attr(graph, "nodes")).values())
+    assert ensure_callable(strategy.sync_gradients)(graph)
+    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in ensure_eager_tensor(ensure_eager_tensor(graph).nodes).values())
 
     # Try with empty graph
     assert not strategy.sync_gradients(IRGraph())
@@ -136,8 +135,8 @@ def test_pipeline_parallel_strategy() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=4, topology_name="invalid_one")
     # Will use fallback config
     graph = _make_graph()
-    assert as_callable(strategy.lower)(graph)
-    assert "pipeline_schedule" in as_tensor(_get_attr(graph, "attributes"))
+    assert ensure_callable(strategy.lower)(graph)
+    assert "pipeline_schedule" in ensure_eager_tensor(ensure_eager_tensor(graph).attributes)
     assert not strategy.lower(IRGraph())
 
     strategy_browser = PipelineParallelismStrategy(target_env="browser")
@@ -145,7 +144,7 @@ def test_pipeline_parallel_strategy() -> None:
 
     with patch("ml_switcheroo_compiler.distributed.strategy._load_strategy_config", return_value={}):
         strategy_noyaml = PipelineParallelismStrategy(num_microbatches=4)
-        as_callable(strategy_noyaml.lower)(as_callable(_make_graph)())
+        ensure_callable(strategy_noyaml.lower)(ensure_callable(_make_graph)())
 
     # Test yaml driven schedule by mocking _load_strategy_config
     config = TopologyConfig(
@@ -164,13 +163,13 @@ def test_pipeline_parallel_strategy() -> None:
         m.return_value = {"custom": config}
         strategy = PipelineParallelismStrategy(topology_name="custom")
         graph = _make_graph()
-        assert as_callable(strategy.lower)(graph)
+        assert ensure_callable(strategy.lower)(graph)
         assert isinstance(strategy.get_communication_protocol(), str)
     s2 = MultiWorkerMirroredStrategy(target_env="browser")
     assert s2.get_communication_protocol() == "webrtc"
 
     with pytest.raises(ValueError):
-        as_callable(strategy.split_into_stages)(graph, 0)
+        ensure_callable(strategy.split_into_stages)(graph, 0)
 
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig.get", return_value=None):
         with pytest.raises(ValueError):
@@ -182,10 +181,10 @@ def test_mesh_sharding_strategy() -> None:
     strategy = MeshShardingStrategy()
     graph = _make_graph()
     # propagate_layouts is pass
-    as_callable(strategy.propagate_layouts)(graph)
+    ensure_callable(strategy.propagate_layouts)(graph)
 
-    _obj_set_attr(_get_attr(_get_attr(graph, "nodes"), "__getitem__")("node_1"), "sharding", "shard1")
-    as_callable(strategy.lower_sharding)(graph)
+    ensure_mutable(ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["node_1"]).sharding = ensure_eager_tensor("shard1")
+    ensure_callable(strategy.lower_sharding)(graph)
     strategy.lower_sharding(IRGraph())
     assert graph is not None
 
@@ -209,9 +208,9 @@ def test_declarative_cluster_topology_and_cost_matrices() -> None:
 def test_server_and_coordinator() -> None:
     """Test function test_server_and_coordinator."""
     coord = Coordinator()
-    assert not as_tensor(coord.joined)
+    assert not ensure_eager_tensor(coord.joined)
     coord.join()
-    assert as_tensor(coord.joined)
+    assert ensure_eager_tensor(coord.joined)
 
     server = Server(server_def={"hello": "world"})
     # Start and stop to cover thread
@@ -536,16 +535,16 @@ def test_pipeline_engine_missing_branches() -> None:
     engine.generate_microbatch_loop(g3)
 
     # 739->724: custom phase type in generate_schedule
-    as_tensor(_get_attr(engine.config.schedule, "phases")).append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
+    ensure_eager_tensor(ensure_eager_tensor(engine.config.schedule).phases).append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
     sched = engine.generate_schedule(IRGraph())
     assert isinstance(sched, list)
 
     # 773->775: lower with graph having hasattr(graph, 'attributes') == True
     g4 = IRGraph()
-    _obj_set_attr(g4, "attributes", {"existing": 123})
+    ensure_mutable(g4).attributes = ensure_eager_tensor({"existing": 123})
     for i in range(12):
         g4.nodes[f"node_{i}"] = IRNode(id=f"node_{i}", op_type="Identity", inputs=[])
     res = engine.lower(g4)
     assert res is True
-    assert as_tensor(_get_attr(g4, "attributes"))["existing"] == 123
-    assert "pipeline_schedule" in as_tensor(_get_attr(g4, "attributes"))
+    assert ensure_eager_tensor(ensure_eager_tensor(g4).attributes)["existing"] == 123
+    assert "pipeline_schedule" in ensure_eager_tensor(ensure_eager_tensor(g4).attributes)

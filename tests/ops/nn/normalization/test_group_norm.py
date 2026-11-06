@@ -8,7 +8,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.core_group_ops import _group_mean, _group_norm, _group_variance
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -25,7 +25,7 @@ def test_group_mean_eager() -> None:
         out = _group_mean(np, x, 2, axis=-1)
         reshaped = x.reshape(2, 4, 4, 2, 4)
         expected = np.mean(reshaped, axis=(1, 2, 4), keepdims=True)
-        as_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
         pass
@@ -42,7 +42,7 @@ def test_group_variance_eager() -> None:
         out = _group_variance(np, x, 2, axis=-1)
         reshaped = x.reshape(2, 4, 4, 2, 4)
         expected = np.var(reshaped, axis=(1, 2, 4), keepdims=True)
-        as_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
         pass
@@ -61,7 +61,7 @@ def test_group_norm_eager() -> None:
         mean = np.mean(reshaped, axis=(1, 2, 4), keepdims=True)
         var = np.var(reshaped, axis=(1, 2, 4), keepdims=True)
         expected = ((reshaped - mean) / np.sqrt(var + 1e-05)).reshape(x.shape)
-        as_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
         pass
@@ -83,7 +83,7 @@ def test_group_norm_5d_eager() -> None:
         var = np.var(reshaped, axis=(1, 2, 3, 5), keepdims=True)
         expected = ((reshaped - mean) / np.sqrt(var + 1e-05)).reshape(x.shape)
         expected = expected * weight.reshape(1, 1, 1, 1, 8) + bias.reshape(1, 1, 1, 1, 8)
-        as_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
         pass
@@ -101,7 +101,7 @@ def test_group_norm_invalid_channels() -> None:
         shape = (1, 3, 2, 2)
 
     with pytest.raises(ValueError):
-        as_callable(group_norm)(as_callable(DummyTensor)(), num_groups=2)
+        ensure_callable(group_norm)(ensure_callable(DummyTensor)(), num_groups=2)
 
 
 def test_backends_eager_group_ops_affine_branches() -> None:
@@ -112,4 +112,4 @@ def test_backends_eager_group_ops_affine_branches() -> None:
     weight = np.array([2.0, 2.0, 2.0, 2.0], dtype=np.float32)
     bias = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
     res = _apply_affine_transform(np, out, axis=1, weight=weight, bias=bias)
-    assert as_callable(np.allclose)(res, 3.0)
+    assert ensure_callable(np.allclose)(res, 3.0)

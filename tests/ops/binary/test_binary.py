@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.ops.binary.math as math_ops
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.binary import clip, divide_no_nan, polar, rem, view_as_complex, view_as_real
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -90,11 +90,11 @@ def test_binary_math_coverage() -> None:
         shape = (1, 2)
 
     op = math_ops.BinaryMathOp()
-    assert as_callable(op.infer_shape)(as_callable(DummyShape)(), as_callable(DummyShape)()) is not None
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyShape)(), ensure_callable(DummyShape)()) is not None
 
     op_beta = math_ops.Betainc()
-    assert as_callable(op_beta.infer_shape)(as_callable(DummyShape)(), as_callable(DummyShape)(), as_callable(DummyShape)()) is not None
-    assert as_callable(op_beta.infer_shape)(as_callable(DummyShape)(), as_callable(DummyShape)()) is not None
+    assert ensure_callable(op_beta.infer_shape)(ensure_callable(DummyShape)(), ensure_callable(DummyShape)(), ensure_callable(DummyShape)()) is not None
+    assert ensure_callable(op_beta.infer_shape)(ensure_callable(DummyShape)(), ensure_callable(DummyShape)()) is not None
 
     ops = [
         math_ops.DivideNoNan(),
@@ -124,9 +124,9 @@ def test_binary_math_coverage() -> None:
 
     poly_ops = [math_ops.Polyadd(), math_ops.Polysub(), math_ops.Polymul(), math_ops.Polydiv(), math_ops.Polyval(), math_ops.Poly(), math_ops.Polyder(), math_ops.Polyfit(), math_ops.Polyint(), math_ops.Roots()]
     for p in poly_ops:
-        assert as_callable(p.infer_shape)(as_callable(DummyShape)()) is not None
+        assert ensure_callable(p.infer_shape)(ensure_callable(DummyShape)()) is not None
         assert p.infer_shape() == ()
 
     c = math_ops.Clip()
-    assert as_callable(c.infer_shape)(as_callable(DummyShape)()) == (1, 2)
+    assert ensure_callable(c.infer_shape)(ensure_callable(DummyShape)()) == (1, 2)
     assert c.infer_shape() == ()

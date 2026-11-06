@@ -26,9 +26,8 @@ from ml_switcheroo_compiler.backends.eager.vision_filtering import (
     iou_eager,
     nms_eager,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -50,25 +49,25 @@ class DummyBackend:
 def test_vision_filtering_volume_patches() -> None:
     # Empty args
     """Test function test_vision_filtering_volume_patches."""
-    assert as_callable(len)(as_callable(_extract_volume_patches)(as_callable(DummyBackend)())) == 0
+    assert ensure_callable(len)(ensure_callable(_extract_volume_patches)(ensure_callable(DummyBackend)())) == 0
 
     # 1D array - should just return array
     arr_1d = np.array([1, 2, 3])
-    assert as_callable(np.array_equal)(as_callable(_extract_volume_patches)(as_callable(DummyBackend)(), arr_1d), arr_1d)
+    assert ensure_callable(np.array_equal)(ensure_callable(_extract_volume_patches)(ensure_callable(DummyBackend)(), arr_1d), arr_1d)
 
     # 5D array - normal case
     arr_5d = np.arange(32).reshape(1, 2, 2, 2, 4)
-    patches = _extract_volume_patches(as_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 1], strides=[1, 1, 1, 1, 1])
-    assert as_tensor(_get_attr(patches, "shape")) == (1, 2, 2, 2, 4, 1)
+    patches = _extract_volume_patches(ensure_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 1], strides=[1, 1, 1, 1, 1])
+    assert ensure_eager_tensor(patches).shape == (1, 2, 2, 2, 4, 1)
 
     # Invalid window size (ValueError caught)
-    patches = _extract_volume_patches(as_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 5])
-    assert as_callable(np.array_equal)(patches, arr_5d)
+    patches = _extract_volume_patches(ensure_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 5])
+    assert ensure_callable(np.array_equal)(patches, arr_5d)
 
 
 def test_vision_filtering_box_coords() -> None:
     """Test function test_vision_filtering_box_coords."""
-    coords = _get_box_coords(np, (10, 10, 5, 5), [0.0, 0.0, 1.0, 1.0])
+    coords = _get_box_coords(ensure_eager_tensor(np), (10, 10, 5, 5), [0.0, 0.0, 1.0, 1.0])
     assert coords == ((0, 0), (9, 9))
 
 
@@ -79,15 +78,15 @@ def test_vision_filtering_box_channels() -> None:
     config = BBoxConfig(crop_size=(5, 5))
 
     # Normal
-    _extract_box_channels(np, img, out, (((0, 0), (9, 9)), 0), config)
+    _extract_box_channels(ensure_eager_tensor(np), img, out, (((0, 0), (9, 9)), 0), config)
     assert out[0].shape == (5, 5)
 
     # Empty crop
-    _extract_box_channels(np, img, out, (((5, 5), (4, 4)), 0), config)
+    _extract_box_channels(ensure_eager_tensor(np), img, out, (((5, 5), (4, 4)), 0), config)
 
     # 0 size
     img_empty = np.array([[]])
-    _extract_box_channels(np, img_empty, out, (((0, 0), (9, 9)), 0), config)
+    _extract_box_channels(ensure_eager_tensor(np), img_empty, out, (((0, 0), (9, 9)), 0), config)
 
 
 def test_vision_filtering_single_box() -> None:
@@ -99,15 +98,15 @@ def test_vision_filtering_single_box() -> None:
     config = BBoxConfig(crop_size=(5, 5))
 
     batch_ctx = (imgs, bxs, bxs_idx, out)
-    _extract_single_box(np, batch_ctx, 0, config)
+    _extract_single_box(ensure_eager_tensor(np), batch_ctx, 0, config)
 
     # Out of bounds image index
     bxs_idx_oob = [1]
-    _extract_single_box(np, (imgs, bxs, bxs_idx_oob, out), 0, config)
+    _extract_single_box(ensure_eager_tensor(np), (imgs, bxs, bxs_idx_oob, out), 0, config)
 
     # Image < 2D
     imgs_1d = [np.array([1])]
-    _extract_single_box(np, (imgs_1d, bxs, bxs_idx, out), 0, config)
+    _extract_single_box(ensure_eager_tensor(np), (imgs_1d, bxs, bxs_idx, out), 0, config)
     assert out is not None
 
 
@@ -118,31 +117,31 @@ def test_vision_filtering_boxes_batch() -> None:
     bxs_idx = np.array([0])
     config = BBoxConfig(crop_size=(5, 5))
 
-    out = _extract_boxes_batch(np, imgs, bxs, bxs_idx, config)
-    assert as_tensor(_get_attr(out, "shape")) == (1, 5, 5, 1)
+    out = _extract_boxes_batch(ensure_eager_tensor(np), imgs, bxs, bxs_idx, config)
+    assert ensure_eager_tensor(out).shape == (1, 5, 5, 1)
 
     # scalar imgs
     imgs_scalar = np.array(0)
-    out2 = _extract_boxes_batch(np, imgs_scalar, bxs, bxs_idx, config)
-    assert as_tensor(_get_attr(out2, "shape")) == (1, 5, 5, 1)
+    out2 = _extract_boxes_batch(ensure_eager_tensor(np), imgs_scalar, bxs, bxs_idx, config)
+    assert ensure_eager_tensor(out2).shape == (1, 5, 5, 1)
 
-    res = as_callable(_extract_boxes_tf)(as_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
-    assert as_tensor(_get_attr(res, "shape")) == (1, 5, 5, 1)
+    res = ensure_callable(_extract_boxes_tf)(ensure_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
+    assert ensure_eager_tensor(res).shape == (1, 5, 5, 1)
 
-    res2 = as_callable(extract_bounding_boxes_eager)(as_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
-    assert as_tensor(_get_attr(res2, "shape")) == (1, 5, 5, 1)
+    res2 = ensure_callable(extract_bounding_boxes_eager)(ensure_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
+    assert ensure_eager_tensor(res2).shape == (1, 5, 5, 1)
 
 
 def test_vision_filtering_xyxy_format() -> None:
     """Test function test_vision_filtering_xyxy_format."""
     boxes = np.array([[0, 0, 10, 10]])
 
-    assert as_callable(np.array_equal)(as_callable(_to_xyxy_format)(np, boxes, "xyxy"), boxes)
-    assert as_callable(np.array_equal)(as_callable(_to_xyxy_format)(np, boxes, "xyWH"), as_callable(np.array)([[0, 0, 10, 10]]))
-    assert as_callable(np.array_equal)(as_callable(_to_xyxy_format)(np, boxes, "cxcyWH"), as_callable(np.array)([[-5, -5, 5, 5]]))
+    assert ensure_callable(np.array_equal)(ensure_callable(_to_xyxy_format)(np, boxes, "xyxy"), boxes)
+    assert ensure_callable(np.array_equal)(ensure_callable(_to_xyxy_format)(np, boxes, "xyWH"), ensure_callable(np.array)([[0, 0, 10, 10]]))
+    assert ensure_callable(np.array_equal)(ensure_callable(_to_xyxy_format)(np, boxes, "cxcyWH"), ensure_callable(np.array)([[-5, -5, 5, 5]]))
 
     with pytest.raises(ValueError):
-        _to_xyxy_format(np, boxes, "invalid")
+        _to_xyxy_format(ensure_eager_tensor(np), boxes, "invalid")
 
 
 def test_vision_filtering_iou() -> None:
@@ -150,15 +149,15 @@ def test_vision_filtering_iou() -> None:
     b1 = np.array([[0, 0, 10, 10]])
     b2 = np.array([[0, 0, 10, 10]])
 
-    iou = _compute_iou(np, b1, b2)
-    assert as_callable(np.allclose)(iou, 1.0)
+    iou = _compute_iou(ensure_eager_tensor(np), b1, b2)
+    assert ensure_callable(np.allclose)(iou, 1.0)
 
-    iou2 = as_callable(iou_eager)(as_callable(DummyBackend)(), b1, b2)
-    assert as_callable(np.allclose)(iou2, 1.0)
+    iou2 = ensure_callable(iou_eager)(ensure_callable(DummyBackend)(), b1, b2)
+    assert ensure_callable(np.allclose)(iou2, 1.0)
 
     # Empty
-    iou3 = _compute_iou(np, np.empty((0, 4)), np.empty((0, 4)))
-    assert as_tensor(_get_attr(iou3, "size")) == 0
+    iou3 = _compute_iou(ensure_eager_tensor(np), np.empty((0, 4)), np.empty((0, 4)))
+    assert ensure_eager_tensor(ensure_eager_tensor(iou3).size) == 0
 
 
 def test_vision_filtering_sort_and_nms() -> None:
@@ -166,37 +165,37 @@ def test_vision_filtering_sort_and_nms() -> None:
     boxes = np.array([[0, 0, 10, 10], [0, 0, 10, 10], [20, 20, 30, 30]])
     scores = np.array([0.9, 0.8, 0.95])
 
-    b, s, i, o = _sort_boxes_by_score(np, boxes, scores, 0.85)
-    assert as_callable(len)(b) == 2
-    assert as_tensor(_get_attr(o, "__getitem__")(0)) == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
+    b, s, i, o = _sort_boxes_by_score(ensure_eager_tensor(np), boxes, scores, 0.85)
+    assert ensure_callable(len)(b) == 2
+    assert ensure_eager_tensor(o)[0] == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
 
     # empty sort
-    b2, s2, i2, o2 = _sort_boxes_by_score(np, np.array([]), np.array([]), 0.5)
-    assert as_callable(len)(b2) == 0
+    b2, s2, i2, o2 = _sort_boxes_by_score(ensure_eager_tensor(np), np.array([]), np.array([]), 0.5)
+    assert ensure_callable(len)(b2) == 0
 
     # NMS overlap
-    ov = _compute_overlap(np, boxes, 0, [0, 1, 2])
-    assert as_callable(len)(ov) == 2
+    ov = _compute_overlap(ensure_eager_tensor(np), boxes, 0, [0, 1, 2])
+    assert ensure_callable(len)(ov) == 2
 
     # suppression
-    keep = _apply_suppression_threshold(np, boxes, [0, 1, 2], 2, 0.5)
-    assert as_callable(len)(keep) <= 2
+    keep = _apply_suppression_threshold(ensure_eager_tensor(np), boxes, [0, 1, 2], 2, 0.5)
+    assert ensure_callable(len)(keep) <= 2
 
     config = NMSConfig(max_output_size=2, iou_threshold=0.5, score_threshold=0.85)
     res_torch = _nms_torch(boxes, scores, config)
-    assert as_callable(len)(res_torch) == 2
+    assert ensure_callable(len)(res_torch) == 2
 
-    res_tf = as_callable(_nms_tf)(as_callable(DummyBackend)(), boxes, scores, config)
-    assert as_callable(len)(res_tf) == 2
+    res_tf = ensure_callable(_nms_tf)(ensure_callable(DummyBackend)(), boxes, scores, config)
+    assert ensure_callable(len)(res_tf) == 2
 
     # None config
-    res_tf2 = as_callable(_nms_tf)(as_callable(DummyBackend)(), boxes, scores, None)
-    assert as_callable(len)(res_tf2) > 0
+    res_tf2 = ensure_callable(_nms_tf)(ensure_callable(DummyBackend)(), boxes, scores, None)
+    assert ensure_callable(len)(res_tf2) > 0
 
     # Eager nms
-    res_eager = as_callable(nms_eager)(as_callable(DummyBackend)(), boxes, scores, config)
-    assert as_callable(len)(res_eager) == 2
+    res_eager = ensure_callable(nms_eager)(ensure_callable(DummyBackend)(), boxes, scores, config)
+    assert ensure_callable(len)(res_eager) == 2
 
     # Empty nms
     res_empty = _nms_torch(np.array([]), np.array([]), config)
-    assert as_callable(len)(res_empty) == 0
+    assert ensure_callable(len)(res_empty) == 0

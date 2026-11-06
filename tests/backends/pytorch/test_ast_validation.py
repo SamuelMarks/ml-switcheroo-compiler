@@ -8,7 +8,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_tensor_dict
+from tests.testing_utils import ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,7 +45,7 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
         if importlib.util.find_spec("torch") is None
         else MagicMock()
     )
-    exec_globals = as_tensor_dict({})
+    exec_globals = ensure_tensor_dict({})
     with ctx:
         try:
             exec(prefix_str, exec_globals)

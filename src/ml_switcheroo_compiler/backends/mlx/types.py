@@ -10,7 +10,8 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 
 mx: ModuleType | None
 try:
@@ -31,7 +32,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(as_callable(generic_zeros)(mx, shape))
+    return ensure_eager_tensor(ensure_callable(generic_zeros)(mx, shape))
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
@@ -46,8 +47,8 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         EagerValue: Result.
     """
     del cls
-    actual_dtype = _get_attr(mx, dtype) if isinstance(dtype, str) and _has_attr(mx, dtype) else dtype
-    return as_tensor(as_callable(generic_array)(mx, data, actual_dtype))
+    actual_dtype = get_backend_member(mx, dtype) if isinstance(dtype, str) and has_backend_member(mx, dtype) else dtype
+    return ensure_eager_tensor(ensure_callable(generic_array)(mx, data, actual_dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -60,9 +61,9 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    if _has_attr(mx, "asarray"):
-        return as_tensor(as_callable(generic_asarray)(mx, data))
-    return as_tensor(as_callable(generic_array)(mx, data))
+    if has_backend_member(mx, "asarray"):
+        return ensure_eager_tensor(ensure_callable(generic_asarray)(mx, data))
+    return ensure_eager_tensor(ensure_callable(generic_array)(mx, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -75,4 +76,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return as_float(as_callable(generic_item)(mx, data))
+    return ensure_float(ensure_callable(generic_item)(mx, data))

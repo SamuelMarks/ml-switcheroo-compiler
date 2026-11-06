@@ -40,6 +40,26 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     return new_id
 
 
+def _to_int_shape(seq: Sequence[int | SymbolicDim | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | SymbolicDim | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+
+    Raises:
+        TypeError: If any dimension is not an integer.
+    """
+    out: list[int] = []
+    for d in seq:
+        if not isinstance(d, int):
+            raise TypeError("Symbolic or unknown dimension in broadcast")
+        out.append(int(d))
+    return tuple(out)
+
+
 def _needs_broadcast(
     shape1: Sequence[int | SymbolicDim | None] | None,
     shape2: Sequence[int | SymbolicDim | None] | None,
@@ -55,10 +75,8 @@ def _needs_broadcast(
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None
-    from ml_switcheroo_compiler.backends.registry import as_shape
-
     try:
-        return broadcast_shapes(as_shape(shape1), as_shape(shape2))
+        return broadcast_shapes(_to_int_shape(shape1), _to_int_shape(shape2))
     except Exception:
         return None
 

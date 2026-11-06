@@ -9,12 +9,11 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -63,5 +62,5 @@ def test_cond_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
-        assert as_tensor(_get_attr(res, "dtype")) == DType.Float32
+        assert ensure_eager_tensor(ensure_eager_tensor(res).dtype) == DType.Float32
         global_tracing_state.stop_tracing()

@@ -8,10 +8,11 @@ from multiprocessing.connection import Client, Connection, Listener
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_eager_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member, has_backend_member
+
+_DEFAULT_NP_MOD: BackendModuleProtocol = ensure_mod(np)
 
 
 @numpy_eager_registry.register("AxisIndex")
@@ -101,7 +102,7 @@ class TCPDistributedContext:
 
         t.join()
 
-    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]], op_type: str = "sum", backend_module: BackendModuleProtocol = np) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]], op_type: str = "sum", backend_module: BackendModuleProtocol = _DEFAULT_NP_MOD) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Evaluate all_reduce_ring.
 
         Args:
@@ -115,7 +116,8 @@ class TCPDistributedContext:
         if self.world_size <= 1:
             return tensor
 
-        chunks: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(backend_module, "array_split")(tensor, self.world_size)
+        raw_chunks = get_backend_member(backend_module, "array_split")(tensor, self.world_size)
+        chunks: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = [ensure_ndarray(c) for c in raw_chunks]
 
         # Scatter-reduce phase
         for step in range(self.world_size - 1):
@@ -124,16 +126,16 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            recv_data = self.recv_conns[0].recv() if self.recv_conns else None
+            recv_data = ensure_ndarray(self.recv_conns[0].recv()) if self.recv_conns else chunks[recv_chunk_idx]
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
             elif op_type == "prod":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] * recv_data
             elif op_type == "max":
-                chunks[recv_chunk_idx] = _get_attr(backend_module, "maximum")(chunks[recv_chunk_idx], recv_data)
+                chunks[recv_chunk_idx] = ensure_ndarray(get_backend_member(backend_module, "maximum")(chunks[recv_chunk_idx], recv_data))
             elif op_type == "min":
-                chunks[recv_chunk_idx] = _get_attr(backend_module, "minimum")(chunks[recv_chunk_idx], recv_data)
+                chunks[recv_chunk_idx] = ensure_ndarray(get_backend_member(backend_module, "minimum")(chunks[recv_chunk_idx], recv_data))
 
         # All-gather phase
         for step in range(self.world_size - 1):
@@ -142,9 +144,9 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            chunks[recv_chunk_idx] = as_ndarray(self.recv_conns[0].recv() if self.recv_conns else None)
+            chunks[recv_chunk_idx] = ensure_ndarray(self.recv_conns[0].recv() if self.recv_conns else None)
 
-        return as_ndarray(_get_attr(backend_module, "concatenate")(chunks))
+        return ensure_ndarray(get_backend_member(backend_module, "concatenate")(chunks))
 
     def all_gather_tensors(self, tensor: EagerValue) -> list[EagerValue]:
         """Perform AllGather over TCP Ring.
@@ -174,11 +176,11 @@ class TCPDistributedContext:
     def shutdown(self) -> None:
         """Shutdown connections."""
         if self.world_size > 1:
-            if self.recv_conns and _has_attr(self.recv_conns[0], "close"):
+            if self.recv_conns and has_backend_member(self.recv_conns[0], "close"):
                 self.recv_conns[0].close()
-            if self.send_conns and _has_attr(self.send_conns[0], "close"):
+            if self.send_conns and has_backend_member(self.send_conns[0], "close"):
                 self.send_conns[0].close()
-            if self.listener and _has_attr(self.listener, "close"):
+            if self.listener and has_backend_member(self.listener, "close"):
                 self.listener.close()
 
 
@@ -220,7 +222,7 @@ def _np_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, op
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    return as_tensor(_get_attr(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
+    return ensure_eager_tensor(get_backend_member(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
 
 
 @numpy_eager_registry.register("AllGather")
@@ -286,12 +288,12 @@ def _np_reduce_scatter(backend_module: BackendModuleProtocol, tensor: EagerValue
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    all_tensors: list[EagerTensorProtocol] = _cast_val("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
+    all_tensors: list[EagerTensorProtocol] = [ensure_eager_tensor(t) for t in _tcp_dist_ctx.all_gather_tensors(tensor)]
 
     if op_type == "sum":
         reduced: EagerTensorProtocol = backend_module.sum(all_tensors, axis=0)
     elif op_type == "prod":
-        reduced = all_tensors[0].copy() if _has_attr(all_tensors[0], "copy") else all_tensors[0]
+        reduced = all_tensors[0].copy() if has_backend_member(all_tensors[0], "copy") else all_tensors[0]
         for t in all_tensors[1:]:
             reduced = reduced * t
     elif op_type == "max":
@@ -324,12 +326,12 @@ def _np_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, root_r
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    all_tensors: list[EagerTensorProtocol] = _cast_val("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
+    all_tensors: list[EagerTensorProtocol] = [ensure_eager_tensor(t) for t in _tcp_dist_ctx.all_gather_tensors(tensor)]
 
     if op_type == "sum":
         reduced: EagerTensorProtocol = backend_module.sum(all_tensors, axis=0)
     elif op_type == "prod":
-        reduced = all_tensors[0].copy() if _has_attr(all_tensors[0], "copy") else all_tensors[0]
+        reduced = all_tensors[0].copy() if has_backend_member(all_tensors[0], "copy") else all_tensors[0]
         for t in all_tensors[1:]:
             reduced = reduced * t
     elif op_type == "max":

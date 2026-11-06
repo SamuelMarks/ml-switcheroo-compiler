@@ -9,7 +9,6 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _determine_node_shape,
@@ -20,7 +19,7 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _prepare_op_kwargs,
     shape_inference_pass,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -72,7 +71,7 @@ def test_infer_op_shape() -> None:
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
-        assert as_callable(_infer_op_shape)(node1, shapes) == (1, 2)
+        assert ensure_callable(_infer_op_shape)(node1, shapes) == (1, 2)
 
 
 def test_determine_node_shape() -> None:
@@ -234,12 +233,12 @@ def test_annotate_learned_shapes_feedback_loop() -> None:
     graph = IRGraph(name="learned_test", nodes={"in1": node1, "add": node2}, outputs=["add"])
 
     # First annotation updates in1
-    modified = as_callable(annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
+    modified = ensure_callable(annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
     assert bool(modified) is True
     assert graph.nodes["in1"].shape_metadata == (8, 16)
 
     # Subsequent annotation with identical shape does not modify
-    modified_again = as_callable(annotate_learned_shapes)(graph, {"in1": (8, 16)})
+    modified_again = ensure_callable(annotate_learned_shapes)(graph, {"in1": (8, 16)})
     assert bool(modified_again) is False
 
 
@@ -314,8 +313,8 @@ def test_record_runtime_observation_and_packet() -> None:
     # Valid observation matching current shape
     record_runtime_observation(graph, "n1", [4, 8], observed_dtype="float32")
     assert graph.nodes["n1"].shape_metadata == (4, 8)
-    assert _has_attr(graph, "annotations")
-    assert len(graph.annotations["learned_shapes_history"]) == 1
+    assert ensure_eager_tensor(graph).annotations is not None
+    assert len(ensure_eager_tensor(ensure_eager_tensor(graph).annotations)["learned_shapes_history"]) == 1
 
     # Missing node raises KeyError
     with pytest.raises(KeyError, match="not found in computation graph"):
@@ -346,7 +345,7 @@ def test_record_runtime_observation_and_packet() -> None:
     modified = annotate_learned_shapes(graph, packet)
     assert modified is True
     assert graph.nodes["n2"].shape_metadata == (4, 16)
-    assert graph.annotations.get("convergence_converged") is True
+    assert bool(ensure_eager_tensor(graph).annotations.get("convergence_converged")) is True
 
 
 def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
@@ -384,7 +383,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     modified = annotate_learned_shapes(graph, packet_pass1)
     assert modified is True
     assert graph.nodes["inp"].shape_metadata == (8, 32)
-    assert bool(as_tensor(_get_attr(graph, "annotations"))["convergence_converged"]) is True
+    assert bool(ensure_eager_tensor(ensure_eager_tensor(graph).annotations)["convergence_converged"]) is True
 
     # Multi-pass: second observation with different batch size
     packet_pass2 = RuntimeShapePacket(
@@ -405,7 +404,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
 
     # ShapeTracker telemetry resolution integration
     telemetry = {"inp": [16, 32], "add": [16, 32]}
-    resolved = as_callable(ShapeTracker.update_from_feedback)(telemetry)
+    resolved = ensure_callable(ShapeTracker.update_from_feedback)(telemetry)
     assert resolved["inp"] == (16, 32)
     assert resolved["add"] == (16, 32)
 
@@ -419,12 +418,12 @@ def test_shape_inference_annotation_branches() -> None:
     graph = LogicalGraph(name="test_graph")
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
-    _obj_set_attr(graph, "annotations", "invalid_annotations")
-    res1 = as_callable(annotate_learned_shapes)(graph, {"n1": (4, 4)})
+    ensure_mutable(graph).annotations = ensure_eager_tensor("invalid_annotations")
+    res1 = ensure_callable(annotate_learned_shapes)(graph, {"n1": (4, 4)})
     assert bool(res1) is False
-    assert isinstance(as_tensor(_get_attr(graph, "annotations")), dict)
-    assert bool(as_tensor(_get_attr(graph, "annotations")).get("convergence_converged")) is True
-    res2 = as_callable(annotate_learned_shapes)(graph, None)
+    assert isinstance(ensure_eager_tensor(ensure_eager_tensor(graph).annotations), dict)
+    assert bool(ensure_eager_tensor(ensure_eager_tensor(graph).annotations).get("convergence_converged")) is True
+    res2 = ensure_callable(annotate_learned_shapes)(graph, None)
     assert bool(res2) is False
 
 
@@ -475,9 +474,9 @@ def test_normalize_shape_edge_cases() -> None:
     assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
     assert _normalize_shape_tuple((4, 5)) == (4, 5)
     assert _normalize_shape_tuple(["invalid", "str"]) is None
-    assert as_callable(_normalize_shape_tuple)(12345) is None
-    assert as_callable(_normalize_shape_tuple)("not_a_list") is None
-    assert as_callable(_normalize_shape_tuple)([[]]) is None
+    assert ensure_callable(_normalize_shape_tuple)(12345) is None
+    assert ensure_callable(_normalize_shape_tuple)("not_a_list") is None
+    assert ensure_callable(_normalize_shape_tuple)([[]]) is None
 
 
 def test_shape_inference_subgraphs() -> None:

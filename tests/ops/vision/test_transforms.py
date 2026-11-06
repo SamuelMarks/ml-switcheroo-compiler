@@ -6,10 +6,9 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.transforms import elastic_transform, flip_left_right, flip_up_down, perspective_transform
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -41,19 +40,19 @@ def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.transforms._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_op")
     mock_op = mocker.MagicMock()
-    _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+    ensure_mutable(mock_get_op).return_value = ensure_eager_tensor(mocker.MagicMock(return_value=mock_op))
     assert perspective_transform(t, t, t) == "node"
     assert elastic_transform(t, t) == "node"
     assert flip_left_right(t) == mock_op()
     assert flip_up_down(t) == mock_op()
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_active_backend").return_value
-    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(_get_attr(perspective_transform(t, t, t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(elastic_transform(t, t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(flip_left_right(t), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(flip_up_down(t), "config")).shape == (2, 3)
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    assert ensure_eager_tensor(ensure_eager_tensor(perspective_transform(t, t, t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(elastic_transform(t, t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(flip_left_right(t)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(flip_up_down(t)).config).shape == (2, 3)
 
 
 def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:
@@ -82,4 +81,4 @@ def test_transforms_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert as_callable(ElasticTransform)().infer_shape(t) == (1, 2, 3)
+    assert ensure_callable(ElasticTransform)().infer_shape(t) == (1, 2, 3)

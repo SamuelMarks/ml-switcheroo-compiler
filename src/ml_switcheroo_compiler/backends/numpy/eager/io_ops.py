@@ -6,11 +6,10 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bool, as_opt_str, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_bool, ensure_opt_str, ensure_shape, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @numpy_eager_registry.register("Load")
@@ -32,7 +31,7 @@ def _np_load(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     from ml_switcheroo_compiler.ops.io import _fallback_load
 
     filepath = args[0] if args else kwargs.get("file", "")
-    res = _fallback_load(as_opt_str(filepath))
+    res = _fallback_load(ensure_opt_str(filepath))
     if res is not None:
         return res
     raise ValueError(f"Format not supported or file not found for load: {filepath}")
@@ -49,11 +48,11 @@ def _np_save(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     _ = backend_module
     if len(args) >= 2:
-        _get_attr(np, "save")(args[0], args[1])
+        get_backend_member(np, "save")(args[0], args[1])
     elif "filepath" in kwargs and "arr" in kwargs:
-        _get_attr(np, "save")(kwargs["filepath"], kwargs["arr"])
+        get_backend_member(np, "save")(kwargs["filepath"], kwargs["arr"])
     elif "file" in kwargs and "arr" in kwargs:
-        _get_attr(np, "save")(kwargs["file"], kwargs["arr"])
+        get_backend_member(np, "save")(kwargs["file"], kwargs["arr"])
 
 
 @numpy_eager_registry.register("SaveGguf")
@@ -83,10 +82,10 @@ def _np_savez(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     _ = backend_module
     if len(args) > 0:
-        _get_attr(np, "savez")(args[0], *args[1:], **kwargs)
+        get_backend_member(np, "savez")(args[0], *args[1:], **kwargs)
     else:
         kw = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
-        _get_attr(np, "savez")(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
+        get_backend_member(np, "savez")(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
 
 
 @numpy_eager_registry.register("SavezCompressed")
@@ -100,10 +99,10 @@ def _np_savez_compressed(backend_module: BackendModuleProtocol, *args: EagerValu
     """
     _ = backend_module
     if len(args) > 0:
-        _get_attr(np, "savez_compressed")(args[0], *args[1:], **kwargs)
+        get_backend_member(np, "savez_compressed")(args[0], *args[1:], **kwargs)
     else:
         kw = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
-        _get_attr(np, "savez_compressed")(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
+        get_backend_member(np, "savez_compressed")(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
 
 
 @numpy_eager_registry.register("ReadFile")
@@ -121,7 +120,7 @@ def _np_read_file(backend_module: BackendModuleProtocol, filename: EagerValue, *
     _ = (backend_module, kwargs)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    fname = _get_attr(filename, "data") if _has_attr(filename, "data") else filename
+    fname = get_backend_member(filename, "data") if has_backend_member(filename, "data") else filename
     if not isinstance(fname, str):
         return Tensor(None, TensorConfig((), DType("float32"), Device(DeviceType.CPU)))
     with open(fname, "rb") as f:
@@ -144,8 +143,8 @@ def _np_write_file(
         **kwargs (EagerValue): Additional keyword arguments.
     """
     _ = (backend_module, kwargs)
-    fname = _get_attr(filename, "data") if _has_attr(filename, "data") else filename
-    data = _get_attr(contents, "data") if _has_attr(contents, "data") else contents
+    fname = get_backend_member(filename, "data") if has_backend_member(filename, "data") else filename
+    data = get_backend_member(contents, "data") if has_backend_member(contents, "data") else contents
     if isinstance(fname, str) and isinstance(data, bytes):
         with open(fname, "wb") as f:
             f.write(data)
@@ -271,10 +270,10 @@ def _np_encode_base64(backend_module: BackendModuleProtocol, input: EagerValue, 
 
     if input is None:
         return None
-    data = _get_attr(input, "data", input)
+    data = get_backend_member(input, "data", input)
     pad = kwargs.get("pad", False)
-    res = _eager_base64("encode", data, as_bool(pad))
-    return Tensor(res, TensorConfig(_get_attr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
+    res = _eager_base64("encode", data, ensure_bool(pad))
+    return Tensor(res, TensorConfig(ensure_shape(get_backend_member(input, "shape", ())), DType.Float32, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("DecodeBase64")
@@ -295,9 +294,9 @@ def _np_decode_base64(backend_module: BackendModuleProtocol, input: EagerValue, 
 
     if input is None:
         return None
-    data = _get_attr(input, "data", input)
+    data = get_backend_member(input, "data", input)
     res = _eager_base64("decode", data, False)
-    return Tensor(res, TensorConfig(_get_attr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
+    return Tensor(res, TensorConfig(ensure_shape(get_backend_member(input, "shape", ())), DType.Float32, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("ParseSequenceExample")

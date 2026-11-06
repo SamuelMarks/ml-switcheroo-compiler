@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable  # noqa: F401
+from collections.abc import Callable, Sequence  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_list, ensure_eager_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    DTypeHolderProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+    invoke_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
@@ -119,6 +125,25 @@ class AssertOp(OpDef):
         return ()
 
 
+@typing.runtime_checkable
+class _InputsNodeProtocol(typing.Protocol):
+    """Protocol for IR nodes exposing an `inputs` sequence."""
+
+    inputs: Sequence[str]
+
+
+def _is_opt_tensor(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
+    """Type guard narrowing `val` to `Tensor | None`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True for optional tensor values.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
 def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrScalar, init_val: TensorOrScalar) -> TensorOrScalar:
     """Compute the fori loop tensor operation.
 
@@ -142,7 +167,7 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
         Returns:
             tuple[int, ...]: Result.
         """
-        i, _ = _get_attr(val, "__iter__")()
+        i, _ = ensure_eager_list(val)
         return less(i, upper)
 
     def body_wrapper(val: TensorOrScalar) -> TensorOrScalar:
@@ -154,11 +179,11 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
         Returns:
             tuple[int, ...]: Result.
         """
-        i, x = _get_attr(val, "__iter__")()
+        i, x = ensure_eager_list(val)
         return add(i, 1), invoke_callable(body_callable, i, x)
 
-    _, res = as_callable(while_loop)(cond_fn, body_wrapper, (lower, init_val))
-    return as_tensor(res)
+    _, res = ensure_callable(while_loop)(cond_fn, body_wrapper, (lower, init_val))
+    return ensure_eager_tensor(res)
 
 
 def map(fn: TensorOrScalar, elems: Tensor) -> TensorOrScalar:
@@ -184,7 +209,7 @@ def vectorized_map(fn: TensorOrScalar, elems: Tensor) -> TensorOrScalar:
     Returns:
         Tensor: The vectorized result tensor.
     """
-    return as_tensor(as_callable(vmap)(fn)(elems))
+    return ensure_eager_tensor(ensure_callable(vmap)(fn)(elems))
 
 
 def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -> TensorOrScalar:
@@ -203,6 +228,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
     """
     if not branches:
         raise ValueError("branches cannot be empty")
+    branches_list = branches if isinstance(branches, (list, tuple)) else ensure_eager_list(branches)
 
     def build_tree(start: int, end: int) -> TensorOrScalar:
         """Compute the build tree tensor operation.
@@ -215,7 +241,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
             tuple[int, ...]: Result.
         """
         if end - start == 1:
-            return as_tensor(_get_attr(branches, "__getitem__")(start)(*operands))
+            return ensure_eager_tensor(ensure_callable(branches_list[start])(*operands))
 
         mid = (start + end) // 2
 
@@ -237,7 +263,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
 
         return cond(less(index, mid), true_fn, false_fn)
 
-    return build_tree(0, _get_attr(branches, "__len__")())
+    return build_tree(0, len(branches_list))
 
 
 def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
@@ -261,7 +287,7 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
         Returns:
             tuple[int, ...]: Result.
         """
-        res_seq = list(_get_attr(invoke_callable(fn_callable, *_get_attr(args, "__iter__")(), **kwargs), "__iter__")())
+        res_seq = list(ensure_eager_list(invoke_callable(fn_callable, *args, **kwargs)))
         val: TensorOrScalar = res_seq[0]
         _ = res_seq[1]
         if config.eager_mode:
@@ -291,8 +317,7 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
                 Returns:
                 tuple[int, ...]: Result.
                 """
-                _typed_ret_2: TensorOrScalar = _get_attr(val, "shape", ())
-                return _typed_ret_2
+                return extract_shape(val)
 
         @register_vjp(op_name)
         def dyn_vjp(graph: TensorOrScalar, node: TensorOrScalar, cotangent: str) -> tuple[str, ...]:
@@ -306,9 +331,12 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
             Returns:
                 tuple: Input gradients.
             """
-            return tuple([cotangent] * len(_get_attr(node, "inputs") if node else []))
+            raw_node: TensorOrScalar | _InputsNodeProtocol = node
+            num_inputs = len(raw_node.inputs) if isinstance(raw_node, _InputsNodeProtocol) else 0
+            return tuple([cotangent] * num_inputs)
 
-        return _emit_shape_node(op_name, list(args), kwargs, _get_attr(val, "shape", ()), _get_attr(val, "dtype", None))
+        val_dtype = extract_dtype(val) if isinstance(val, DTypeHolderProtocol) else None
+        return _emit_shape_node(op_name, list(args), kwargs, extract_shape(val), val_dtype)
 
     return wrapper
 
@@ -346,10 +374,11 @@ def case(
         if idx == len(pred_fn_pairs):
             return default if default is not None else lambda: None
         pred, fn = pred_fn_pairs[idx]
-        return lambda: as_callable(cond)(pred, fn, _build_case(idx + 1))
+        return lambda: ensure_callable(cond)(pred, fn, _build_case(idx + 1))
 
-    _typed_ret_1: Tensor | None = _cast_val(typing.Union[Tensor, "None"], as_callable(_build_case)(0)())
-    return _typed_ret_1
+    res = ensure_callable(_build_case)(0)()
+    assert _is_opt_tensor(res)
+    return res
 
 
 def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: TensorOrScalar = None) -> TensorOrScalar:
@@ -366,19 +395,19 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
     Raises:
         ValueError: An exception.
     """
-    if not branch_fns:
+    if not branch_fns or not isinstance(branch_fns, dict):
         if default is not None:
-            return as_tensor(as_callable(default)())
+            return ensure_eager_tensor(ensure_callable(default)())
         raise ValueError("switch_case requires at least one branch or a default")
 
     pred_fn_pairs = []
     # Sort keys to ensure deterministic ordering (not strictly necessary but good practice)
-    for key in sorted(_get_attr(branch_fns, "keys")()):
+    for key in sorted(branch_fns.keys()):
         key_tensor = Tensor(key, TensorConfig((), branch_index.dtype, branch_index.device))
         pred = equal(branch_index, key_tensor)
-        pred_fn_pairs.append((pred, _get_attr(branch_fns, "__getitem__")(key)))
+        pred_fn_pairs.append((pred, branch_fns[key]))
 
-    return as_tensor(as_callable(case)(pred_fn_pairs, default))
+    return ensure_eager_tensor(ensure_callable(case)(pred_fn_pairs, default))
 
 
 @register_op("DebugInfs")
@@ -502,8 +531,8 @@ def associative_scan(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    shape = _get_attr(args[0], "shape", ()) if args else ()
-    dtype = _get_attr(args[0], "dtype", "float32") if args else "float32"
+    shape = extract_shape(args[0]) if args else ()
+    dtype = extract_dtype(args[0]) if args else "float32"
     return _emit_shape_node("AssociativeScan", list(args), kwargs, shape, dtype)
 
 

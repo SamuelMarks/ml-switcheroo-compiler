@@ -4,20 +4,180 @@ from __future__ import annotations
 
 import ast
 import builtins
+import typing
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    ShapeProtocol,
+)
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars, _set_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
 
 TensorLike = EagerTensorProtocol
 IndexableArray = TensorLike
 EvalValue = TensorOrScalar
-as_tensor_like = as_tensor
+
+
+def _is_eval_tensor(val: TensorOrScalar | EvalValue) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar | EvalValue): Candidate array or tensor value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_eval_tensor(val: TensorOrScalar | EvalValue) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar | EvalValue): Candidate array or tensor value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_eval_tensor(val)
+    return val
+
+
+def _eval_to_int(val: TensorOrScalar | EvalValue, default: int = 0) -> int:
+    """Coerce an evaluation value or dimension to int.
+
+    Args:
+        val (TensorOrScalar | EvalValue): Raw integer or dimension value.
+        default (int): Default fallback integer.
+
+    Returns:
+        int: Coerced integer value.
+    """
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str) and val.lstrip("-").isdigit():
+        return int(val)
+    return default
+
+
+as_tensor_like = _ensure_eval_tensor
+
+
+@typing.runtime_checkable
+class _ScalarItemProtocol(typing.Protocol):
+    """Protocol for scalar tensor values exposing `.item()`."""
+
+    def item(self) -> int | float | bool | complex | str | bytes:
+        """Return scalar value.
+
+        Returns:
+            int | float | bool | complex | str | bytes: Scalar value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ExecuteOpBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `execute_op`."""
+
+    def execute_op(self, op_name: str, *args: EvalValue, **kwargs: EvalValue) -> EvalValue:
+        """Execute an operation on the backend.
+
+        Args:
+            op_name (str): Operation name.
+            *args (EvalValue): Positional arguments.
+            **kwargs (EvalValue): Keyword arguments.
+
+        Returns:
+            EvalValue: Operation output.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _CustomNodeFieldsProtocol(typing.Protocol):
+    """Protocol for custom node objects exposing LogicalNode fields."""
+
+    id: str
+    op_type: str
+    inputs: list[str]
+    attributes: dict[str, AttributeValue]
+
+
+@typing.runtime_checkable
+class _SubgraphNodesProtocol(typing.Protocol):
+    """Protocol for subgraphs exposing `nodes`."""
+
+    nodes: Mapping[str, LogicalNode | _CustomNodeFieldsProtocol] | Sequence[LogicalNode | _CustomNodeFieldsProtocol]
+
+
+@typing.runtime_checkable
+class _SubgraphInputsProtocol(typing.Protocol):
+    """Protocol for subgraphs exposing `inputs`."""
+
+    inputs: list[str]
+
+
+@typing.runtime_checkable
+class _SubgraphOutputsProtocol(typing.Protocol):
+    """Protocol for subgraphs exposing `outputs`."""
+
+    outputs: list[str] | str
+
+
+@typing.runtime_checkable
+class _NamedSubgraphProtocol(typing.Protocol):
+    """Protocol for subgraphs exposing `id`."""
+
+    id: str
+
+
+def _coerce_logical_node(n: LogicalNode | _CustomNodeFieldsProtocol) -> LogicalNode:
+    """Return `n` if it is a `LogicalNode`, or construct one from its fields.
+
+    Args:
+        n (LogicalNode | _CustomNodeFieldsProtocol): Node instance.
+
+    Returns:
+        LogicalNode: Coerced `LogicalNode`.
+    """
+    return n if isinstance(n, LogicalNode) else LogicalNode(id=n.id, op_type=n.op_type, inputs=list(n.inputs), attributes=dict(n.attributes or {}))
+
+
+def _extract_subgraph_nodes(
+    subgraph: TensorOrScalar | EvalValue | _NamedSubgraphProtocol | _SubgraphInputsProtocol | _SubgraphOutputsProtocol | _SubgraphNodesProtocol,
+) -> list[LogicalNode]:
+    """Extract ordered `LogicalNode` list from a subgraph's `.nodes` container.
+
+    Args:
+        subgraph (TensorOrScalar | EvalValue | _NamedSubgraphProtocol | _SubgraphInputsProtocol | _SubgraphOutputsProtocol | _SubgraphNodesProtocol): Subgraph instance.
+
+    Returns:
+        list[LogicalNode]: Extracted nodes list.
+    """
+    assert isinstance(subgraph, _SubgraphNodesProtocol)
+    raw_nodes = list(subgraph.nodes.values()) if isinstance(subgraph.nodes, Mapping) else list(subgraph.nodes)
+    return [_coerce_logical_node(n) for n in raw_nodes]
+
+
+def _eval_truthy(val: TensorOrScalar | EvalValue | _ScalarItemProtocol) -> bool:
+    """Evaluate the boolean truthiness of a scalar or 0-D tensor value.
+
+    Args:
+        val (TensorOrScalar | EvalValue | _ScalarItemProtocol): Condition value.
+
+    Returns:
+        bool: Boolean truth value.
+    """
+    if isinstance(val, (bool, int, float)):
+        return bool(val)
+    return bool(val.item()) if isinstance(val, _ScalarItemProtocol) else bool(val)
 
 
 def evaluate_graph(
@@ -38,7 +198,7 @@ def evaluate_graph(
     Raises:
         RuntimeError: If an output node was never evaluated during the graph execution.
     """
-    initial_env: dict[str, EvalValue] = dict(_get_attr(graph, "initializers", {}) or {})
+    initial_env: dict[str, EvalValue] = dict(graph.initializers or {})
     initial_env.update(inputs)
     env = Environment(initial_env)
     sorted_nodes = topological_sort(graph)
@@ -195,10 +355,11 @@ def _handle_slice(
     arr = backend.asarray(in_vals[0])
     if "slices" in kwargs:
         parsed_key = _parse_slice_string(str(kwargs["slices"]))
-        env.set(node.id, _get_attr(arr, "__getitem__")(parsed_key))
+        env.set(node.id, _ensure_eval_tensor(arr)[parsed_key])
         return
 
-    dim = int(_get_attr(kwargs.get("dim", 0), "__int__", lambda: 0)())
+    raw_dim = kwargs.get("dim", 0)
+    dim = _eval_to_int(raw_dim, 0) if raw_dim is not None else 0
     raw_start = kwargs.get("start", None)
     raw_end = kwargs.get("end", None)
     raw_step = kwargs.get("step", 1)
@@ -206,9 +367,11 @@ def _handle_slice(
     end: int | float | str | None = raw_end if isinstance(raw_end, (int, float, str)) else None
     step: int | float | str | None = raw_step if isinstance(raw_step, (int, float, str)) else None
 
-    sl: list[EvalValue] = [builtins.slice(None)] * len(_get_attr(in_vals[0], "shape"))
+    first_in: TensorOrScalar = in_vals[0]
+    in_rank = len(first_in.shape) if isinstance(first_in, ShapeProtocol) else 1
+    sl: list[EvalValue] = [builtins.slice(None)] * in_rank
     sl[dim] = builtins.slice(start, end, step)
-    env.set(node.id, _get_attr(arr, "__getitem__")(tuple(sl)))
+    env.set(node.id, _ensure_eval_tensor(arr)[tuple(sl)])
 
 
 def _handle_getitem(
@@ -230,7 +393,7 @@ def _handle_getitem(
     key = kwargs.get("key")
     parsed_key = _parse_slice_string(str(key))
     arr = backend.asarray(in_vals[0])
-    env.set(node.id, _get_attr(arr, "__getitem__")(parsed_key))
+    env.set(node.id, _ensure_eval_tensor(arr)[parsed_key])
 
 
 def _handle_index_put(
@@ -253,7 +416,7 @@ def _handle_index_put(
     parsed_key = _parse_slice_string(str(key))
     arr = backend.execute_op("Clone", in_vals[0])
     val = in_vals[1]
-    _get_attr(arr, "__setitem__")(parsed_key, val)
+    _ensure_eval_tensor(arr)[parsed_key] = val
     env.set(node.id, arr)
 
 
@@ -269,20 +432,19 @@ def _handle_checkpoint(
         env (Environment): The local variable environment.
         in_vals (list[EvalValue]): List of input tensors to feed into the subgraph.
     """
-    subgraph = _get_attr(node, "subgraphs", {}).get("body") or _get_attr(node, "subgraphs", {}).get("subgraph") or node.attributes.get("subgraph")
-    sub_inputs: dict[str, EvalValue] = {}
-    for inp_val, in_id in zip(in_vals, _get_attr(subgraph, "inputs")):
-        sub_inputs[in_id] = inp_val
-
+    raw_sg: TensorOrScalar = node.subgraphs.get("body") or node.subgraphs.get("subgraph") or node.attributes.get("subgraph")
+    if not isinstance(raw_sg, _SubgraphInputsProtocol) or not isinstance(raw_sg, _SubgraphOutputsProtocol):
+        msg = "Checkpoint node is missing a valid subgraph"
+        raise AttributeError(msg)
+    sg_inputs = list(raw_sg.inputs)
+    raw_outputs = raw_sg.outputs
+    sg_outputs = list(raw_outputs) if isinstance(raw_outputs, list) else [str(raw_outputs)]
+    sub_inputs: dict[str, EvalValue] = dict(zip(sg_inputs, in_vals))
     sub_graph = LogicalGraph(name="checkpoint_subgraph")
-    if isinstance(_get_attr(subgraph, "nodes"), list):
-        for n in _get_attr(subgraph, "nodes"):
-            sub_graph.nodes[n.id] = n
-    else:
-        for k, n in _get_attr(subgraph, "nodes").items():
-            sub_graph.nodes[k] = n
-    _set_attr(sub_graph, "inputs", _get_attr(subgraph, "inputs"))
-    _set_attr(sub_graph, "outputs", _get_attr(subgraph, "outputs"))
+    for n in _extract_subgraph_nodes(raw_sg):
+        sub_graph.nodes[n.id] = n
+    sub_graph.inputs = sg_inputs
+    sub_graph.outputs = sg_outputs
 
     sub_outputs = evaluate_graph(sub_graph, sub_inputs)
 
@@ -312,7 +474,7 @@ def _handle_meshgrid(
     raw_idx = kwargs.pop("output_index", 0)
     idx = int(raw_idx) if isinstance(raw_idx, (int, float, str)) else 0
     result = backend.execute_op("Meshgrid", *in_vals, **kwargs)
-    env.set(node.id, _get_attr(result, "__getitem__")(idx))
+    env.set(node.id, _ensure_eval_tensor(result)[idx])
 
 
 def _dispatch_op(node: LogicalNode, env: Environment, backend: type[BaseGenerator], target_op: str, in_vals: list[EvalValue], kwargs: dict[str, EvalValue]) -> None:
@@ -350,18 +512,13 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: type[BaseGen
         backend (type[BaseGenerator]): The backend parameter.
     """
     cond_val = env.get(node.inputs[0])
-    is_true = bool(cond_val) if isinstance(cond_val, (bool, int, float)) else bool(_get_attr(cond_val, "item", lambda cr=cond_val: cr)())
-    branch = (
-        _get_attr(node, "subgraphs", {}).get("then_branch" if is_true else "else_branch")
-        or node.attributes.get("then_branch" if is_true else "else_branch")
-        or _get_attr(node, "subgraphs", {}).get("true_branch" if is_true else "false_branch")
-        or node.attributes.get("true_branch" if is_true else "false_branch")
-    )
-    if branch:
-        nodes = _get_attr(branch, "nodes") if isinstance(_get_attr(branch, "nodes"), list) else list(_get_attr(branch, "nodes").values())
+    is_true = _eval_truthy(cond_val)
+    branch: TensorOrScalar = node.subgraphs.get("then_branch" if is_true else "else_branch") or node.attributes.get("then_branch" if is_true else "else_branch") or node.subgraphs.get("true_branch" if is_true else "false_branch") or node.attributes.get("true_branch" if is_true else "false_branch")
+    if branch is not None:
+        nodes = _extract_subgraph_nodes(branch)
         for sub_node in nodes:
             _evaluate_node(sub_node, env, backend)
-        if _has_attr(branch, "outputs") and branch.outputs:
+        if isinstance(branch, _SubgraphOutputsProtocol) and branch.outputs:
             if isinstance(branch.outputs, list):
                 env.set(node.id, env.get(branch.outputs[0]))
             else:
@@ -379,27 +536,30 @@ def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: type[BaseG
         env (Environment): The env parameter.
         backend (type[BaseGenerator]): The backend parameter.
     """
-    cond_graph = _get_attr(node, "subgraphs", {}).get("cond") or node.attributes.get("cond")
-    body_graph = _get_attr(node, "subgraphs", {}).get("body") or node.attributes.get("body")
+    cond_graph: TensorOrScalar = node.subgraphs.get("cond") or node.attributes.get("cond")
+    body_graph: TensorOrScalar = node.subgraphs.get("body") or node.attributes.get("body")
     curr_val = env.get(node.inputs[0])
     while True:
-        cond_input_id = _get_attr(cond_graph, "nodes")[0].id if isinstance(_get_attr(cond_graph, "nodes"), list) else list(_get_attr(cond_graph, "nodes").keys())[0]
+        cond_nodes = _extract_subgraph_nodes(cond_graph)
+        cond_input_id = cond_nodes[0].id
         env.set(cond_input_id, curr_val)
-        nodes = _get_attr(cond_graph, "nodes") if isinstance(_get_attr(cond_graph, "nodes"), list) else _get_attr(cond_graph, "nodes").values()
-        for sub_node in nodes:
+        for sub_node in cond_nodes:
             if sub_node.id != cond_input_id:
                 _evaluate_node(sub_node, env, backend)
-        cond_res = env.get(_get_attr(cond_graph, "outputs")[0])
-        is_true = bool(cond_res) if isinstance(cond_res, (bool, int, float)) else bool(_get_attr(cond_res, "item", lambda cr=cond_res: cr)())
-        if not is_true:
+        cond_outs = cond_graph.outputs if isinstance(cond_graph, _SubgraphOutputsProtocol) else []
+        cond_out_id = cond_outs[0] if isinstance(cond_outs, list) else str(cond_outs)
+        cond_res = env.get(cond_out_id)
+        if not _eval_truthy(cond_res):
             break
-        body_input_id = _get_attr(body_graph, "nodes")[0].id if isinstance(_get_attr(body_graph, "nodes"), list) else list(_get_attr(body_graph, "nodes").keys())[0]
+        body_nodes = _extract_subgraph_nodes(body_graph)
+        body_input_id = body_nodes[0].id
         env.set(body_input_id, curr_val)
-        nodes = _get_attr(body_graph, "nodes") if isinstance(_get_attr(body_graph, "nodes"), list) else _get_attr(body_graph, "nodes").values()
-        for sub_node in nodes:
+        for sub_node in body_nodes:
             if sub_node.id != body_input_id:
                 _evaluate_node(sub_node, env, backend)
-        curr_val = env.get(_get_attr(body_graph, "outputs")[0])
+        body_outs = body_graph.outputs if isinstance(body_graph, _SubgraphOutputsProtocol) else []
+        body_out_id = body_outs[0] if isinstance(body_outs, list) else str(body_outs)
+        curr_val = env.get(body_out_id)
     env.set(node.id, curr_val)
 
 
@@ -413,9 +573,10 @@ def _evaluate_identity_node(node: LogicalNode, env: Environment, backend: type[B
     """
     in_vals = [env.get(inp) for inp in node.inputs if inp]
     val: EvalValue = in_vals[0] if in_vals else None
-    if _has_attr(backend, "execute_op"):
+    raw_backend: TensorOrScalar = backend
+    if isinstance(raw_backend, _ExecuteOpBackendProtocol):
         try:
-            val = backend.execute_op("Identity", *in_vals)
+            val = raw_backend.execute_op("Identity", *in_vals)
         except Exception:
             val = in_vals[0] if in_vals else None
     env.set(node.id, val)
@@ -429,27 +590,29 @@ def _evaluate_vmap_node(node: LogicalNode, env: Environment, backend: type[BaseG
         env (Environment): The local variable environment.
         backend (type[BaseGenerator]): The active compute backend.
     """
-    raw_bg: EvalValue = node.attributes.get("body")
+    raw_bg: TensorOrScalar | _NamedSubgraphProtocol | _SubgraphInputsProtocol | _SubgraphOutputsProtocol | _SubgraphNodesProtocol = node.attributes.get("body")
     in_axes = node.attributes.get("in_axes", 0)
     out_axes = node.attributes.get("out_axes", 0)
 
     in_vals = [env.get(inp) for inp in node.inputs if inp]
-    first_val = in_vals[0] if in_vals else None
+    first_val: TensorOrScalar = in_vals[0] if in_vals else None
     axis = in_axes if isinstance(in_axes, int) else (int(in_axes[0]) if isinstance(in_axes, (list, tuple)) and in_axes and isinstance(in_axes[0], int) else 0)
-    batch_size = _get_attr(first_val, "shape")[axis] if _has_attr(first_val, "shape") and axis < len(_get_attr(first_val, "shape")) else 1
+    batch_size = _eval_to_int(first_val.shape[axis], 1) if isinstance(first_val, ShapeProtocol) and axis < len(first_val.shape) else 1
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.ir.core import IRGraph
 
     body_graph: IRGraph
     if isinstance(raw_bg, IRGraph):
         body_graph = raw_bg
     else:
-        b_graph = IRGraph(name=_get_attr(raw_bg, "id", "body"))
-        b_graph.inputs = list(_get_attr(raw_bg, "inputs", []))
-        b_graph.outputs = list(_get_attr(raw_bg, "outputs", []))
-        b_nodes = _get_attr(raw_bg, "nodes") if isinstance(_get_attr(raw_bg, "nodes"), list) else list(_get_attr(raw_bg, "nodes", {}).values())
+        bg_name = raw_bg.id if isinstance(raw_bg, _NamedSubgraphProtocol) else "body"
+        b_graph = IRGraph(name=bg_name)
+        b_graph.inputs = list(raw_bg.inputs) if isinstance(raw_bg, _SubgraphInputsProtocol) else []
+        raw_outs: list[str] | str = raw_bg.outputs if isinstance(raw_bg, _SubgraphOutputsProtocol) else []
+        b_graph.outputs = list(raw_outs) if isinstance(raw_outs, list) else [str(raw_outs)]
+        b_nodes = _extract_subgraph_nodes(raw_bg)
         for n in b_nodes:
-            b_graph.nodes[n.id] = IRNode(**_obj_vars(n)) if not isinstance(n, IRNode) else n
+            b_graph.nodes[n.id] = n
         body_graph = b_graph
 
     from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass, vectorize_graph
@@ -569,7 +732,7 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, EvalVal
         "StridedSlice",
     }:
         kwargs.pop("strides", None)
-    if _get_attr(node, "shape_metadata", None):
+    if node.shape_metadata:
         meta_seq = node.shape_metadata or ()
         meta_tuple: EvalValue = tuple(int(d) if isinstance(d, int) else str(d) for d in meta_seq)
         if target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full") and "shape" not in kwargs:

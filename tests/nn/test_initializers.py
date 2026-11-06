@@ -7,42 +7,24 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.nn.initializers as init
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 class DummyOps:
     """Mock ops module recording invoked operation names."""
 
-    def __getattr__(self, name: str) -> EagerValue:
-        """Return a mock callable for the requested operation name.
-
-        Args:
-            name (str): Operation name.
-
-        Returns:
-            Callable: Mock operation callable.
-        """
-
-        def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Execute mock operation.
-
-            Args:
-                *args (EagerValue): Positional arguments.
-                **kwargs (EagerValue): Keyword arguments.
-
-            Returns:
-                EagerValue: Operation name or tuple for QR decomposition.
-            """
-            _ = (args, kwargs)
-            if name == "qr":
-                return ("qr_q", "qr_r")
-            return name
-
-        return _dummy
+    zeros = staticmethod(lambda *args, **kwargs: "zeros")
+    ones = staticmethod(lambda *args, **kwargs: "ones")
+    full = staticmethod(lambda *args, **kwargs: "full")
+    scalar_mul = staticmethod(lambda *args, **kwargs: "scalar_mul")
+    rand = staticmethod(lambda *args, **kwargs: "rand")
+    randn = staticmethod(lambda *args, **kwargs: "randn")
+    clip = staticmethod(lambda *args, **kwargs: "clip")
+    subtract = staticmethod(lambda *args, **kwargs: "subtract")
+    qr = staticmethod(lambda *args, **kwargs: ("qr_q", "qr_r"))
 
 
 def test_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -57,24 +39,24 @@ def test_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
     assert init._compute_fans((4,)) == (4, 4)
     assert init._compute_fans((3, 3, 16, 32)) == (144, 288)
 
-    assert as_tensor(init.zeros(None, (1,))) == as_tensor("zeros")
-    assert as_tensor(init.ones(None, (1,))) == as_tensor("ones")
-    assert as_callable(init.constant)(42)(None, (1,)) == "full"
-    assert as_callable(init.uniform)(1.0)(None, (2, 3)) == "scalar_mul"
-    assert as_callable(init.normal)(1.0, "float32")(None, (2, 3)) == "scalar_mul"
-    assert as_callable(init.truncated_normal)(1.0, "float32", -2.0, 2.0)(None, (2, 3)) == "scalar_mul"
+    assert ensure_eager_tensor(init.zeros(None, (1,))) == ensure_eager_tensor("zeros")
+    assert ensure_eager_tensor(init.ones(None, (1,))) == ensure_eager_tensor("ones")
+    assert ensure_callable(init.constant)(42)(None, (1,)) == "full"
+    assert ensure_callable(init.uniform)(1.0)(None, (2, 3)) == "scalar_mul"
+    assert ensure_callable(init.normal)(1.0, "float32")(None, (2, 3)) == "scalar_mul"
+    assert ensure_callable(init.truncated_normal)(1.0, "float32", -2.0, 2.0)(None, (2, 3)) == "scalar_mul"
 
-    assert as_callable(init.orthogonal)(1.0)(None, (1,)) == "scalar_mul"
-    assert as_callable(init.orthogonal)(1.0)(None, (3, 3)) == "scalar_mul"
-    assert as_callable(init.delta_orthogonal)(1.0)(None, (3, 3, 4)) == "scalar_mul"
+    assert ensure_callable(init.orthogonal)(1.0)(None, (1,)) == "scalar_mul"
+    assert ensure_callable(init.orthogonal)(1.0)(None, (3, 3)) == "scalar_mul"
+    assert ensure_callable(init.delta_orthogonal)(1.0)(None, (3, 3, 4)) == "scalar_mul"
 
-    assert as_callable(init.variance_scaling)(as_callable(as_tensor(_get_attr(init, "InitializerConfig")))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.variance_scaling)(as_callable(_get_attr(init, "InitializerConfig"))(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
-    assert as_callable(init.variance_scaling)(as_callable(as_tensor(_get_attr(init, "InitializerConfig")))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.variance_scaling)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(init).InitializerConfig))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.variance_scaling)(ensure_callable(ensure_eager_tensor(init).InitializerConfig)(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
+    assert ensure_callable(init.variance_scaling)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(init).InitializerConfig))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
 
-    assert as_callable(init.glorot_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.glorot_normal)()(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.he_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.he_normal)()(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.lecun_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.lecun_normal)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.glorot_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.glorot_normal)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.he_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.he_normal)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.lecun_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert ensure_callable(init.lecun_normal)()(None, (2, 4)) == "scalar_mul"

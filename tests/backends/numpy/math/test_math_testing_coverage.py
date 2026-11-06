@@ -10,8 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_testing as test_module
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -24,39 +23,38 @@ def _test_math_testing_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
         _state: Shared test state dictionary.
     """
     pw_x = np.array([-2, -1, 0, 1, 2])
-    pw_res = test_module._np_piecewise(np, pw_x, [pw_x < 0, pw_x >= 0], [-1, 1])
-    assert as_callable(np.array_equal)(pw_res, [-1, -1, 1, 1, 1])
+    pw_res = test_module._np_piecewise(ensure_eager_tensor(np), pw_x, [pw_x < 0, pw_x >= 0], [-1, 1])
+    assert ensure_callable(np.array_equal)(pw_res, [-1, -1, 1, 1, 1])
     reg_pw = numpy_eager_registry.get("Piecewise")
-    assert as_callable(np.array_equal)(as_callable(reg_pw)(np, pw_x, [pw_x < 0, pw_x >= 0], [-1, 1]), [-1, -1, 1, 1, 1])
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_pw)(np, pw_x, [pw_x < 0, pw_x >= 0], [-1, 1]), [-1, -1, 1, 1, 1])
 
     # PromoteTypes
-    assert test_module._np_promotetypes(np, np.float32, np.int64) == np.dtype(np.float64)
+    assert test_module._np_promotetypes(ensure_eager_tensor(np), np.float32, np.int64) == np.dtype(np.float64)
     reg_promo = numpy_eager_registry.get("PromoteTypes")
-    assert as_callable(str)(as_callable(reg_promo)(np, np.float32, np.int64)) == "float64"
+    assert ensure_callable(str)(ensure_callable(reg_promo)(np, np.float32, np.int64)) == "float64"
 
     # ApplyAlongAxis
     arr_2d = np.array([[1, 2], [3, 4]])
-    assert as_callable(np.array_equal)(as_callable(test_module._np_apply_along_axis)(np, np.sum, 0, arr_2d), [4, 6])
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_apply_along_axis)(np, np.sum, 0, arr_2d), [4, 6])
     reg_aaa = numpy_eager_registry.get("ApplyAlongAxis")
-    assert as_callable(np.array_equal)(as_callable(reg_aaa)(np, np.sum, 0, arr_2d), [4, 6])
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_aaa)(np, np.sum, 0, arr_2d), [4, 6])
 
     # ArrayEquiv
-    assert test_module._np_array_equiv_(np, [1, 2], [1, 2])
-    assert not test_module._np_array_equiv_(np, [1, 2], [2, 3])
+    assert test_module._np_array_equiv_(ensure_eager_tensor(np), [1, 2], [1, 2])
+    assert not test_module._np_array_equiv_(ensure_eager_tensor(np), [1, 2], [2, 3])
     reg_equiv = numpy_eager_registry.get("ArrayEquiv")
-    assert as_callable(reg_equiv)(np, [1, 2], [1, 2])
+    assert ensure_callable(reg_equiv)(np, [1, 2], [1, 2])
 
     # BroadcastArrays
-    b1, b2 = as_callable(test_module._np_broadcast_arrays_)(np, [1, 2], [[1], [2]])
-    assert as_tensor(_get_attr(b1, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(b2, "shape")) == (2, 2)
+    b1, b2 = ensure_callable(test_module._np_broadcast_arrays_)(np, [1, 2], [[1], [2]])
+    assert ensure_eager_tensor(b1).shape == (2, 2)
+    assert ensure_eager_tensor(b2).shape == (2, 2)
     reg_bc = numpy_eager_registry.get("BroadcastArrays")
-    rb1, rb2 = as_callable(reg_bc)(np, [1, 2], [[1], [2]])
-    assert as_tensor(_get_attr(rb1, "shape")) == (2, 2)
-    _get_attr(_state, "update")({"arr_2d": arr_2d, "b1": b1, "b2": b2, "pw_res": pw_res})
-    _get_attr(_state, "update")({"pw_x": pw_x, "rb1": rb1, "rb2": rb2, "reg_aaa": reg_aaa})
-    _get_attr(_state, "update")({"reg_bc": reg_bc, "reg_equiv": reg_equiv, "reg_promo": reg_promo, "reg_pw": reg_pw})
-    _state.update(_caller_locals())
+    rb1, rb2 = ensure_callable(reg_bc)(np, [1, 2], [[1], [2]])
+    assert ensure_eager_tensor(rb1).shape == (2, 2)
+    _state.update(ensure_tensor_dict({"arr_2d": arr_2d, "b1": b1, "b2": b2, "pw_res": pw_res}))
+    _state.update(ensure_tensor_dict({"pw_x": pw_x, "rb1": rb1, "rb2": rb2, "reg_aaa": reg_aaa}))
+    _state.update(ensure_tensor_dict({"reg_bc": reg_bc, "reg_equiv": reg_equiv, "reg_promo": reg_promo, "reg_pw": reg_pw}))
 
 
 def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -65,9 +63,9 @@ def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
     Args:
         _state: Shared test state dictionary.
     """
-    assert test_module._np_can_cast_(np, np.int32, np.int64)
+    assert test_module._np_can_cast_(ensure_eager_tensor(np), np.int32, np.int64)
     reg_cc = numpy_eager_registry.get("CanCast")
-    assert as_callable(reg_cc)(np, np.int32, np.int64)
+    assert ensure_callable(reg_cc)(np, np.int32, np.int64)
     mock_hist_mod = types.SimpleNamespace(
         histogram=lambda *args, **kw: (np.array([2, 1]), np.array([0, 1, 2])),
         histogram2d=lambda *args, **kw: (np.zeros((2, 2)), np.array([0, 1, 2]), np.array([0, 1, 2])),
@@ -75,33 +73,32 @@ def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
         histogramdd=lambda *args, **kw: (np.zeros((2, 2)), [np.array([0, 1, 2]), np.array([0, 1, 2])]),
     )
     h_data = np.array([1, 2, 1])
-    counts, edges = as_callable(test_module._np_histogram_)(mock_hist_mod, h_data, bins=2)
-    assert as_callable(len)(counts) == 2
+    counts, edges = ensure_callable(test_module._np_histogram_)(mock_hist_mod, h_data, bins=2)
+    assert ensure_callable(len)(counts) == 2
     reg_hist = numpy_eager_registry.get("Histogram")
-    assert as_callable(len)(as_tensor(_get_attr(as_callable(reg_hist)(mock_hist_mod, h_data, bins=2), "__getitem__")(0))) == 2
+    assert ensure_callable(len)(ensure_eager_tensor(ensure_callable(reg_hist)(mock_hist_mod, h_data, bins=2))[0]) == 2
 
-    h2_counts, _, _ = as_callable(test_module._np_histogram2d_)(mock_hist_mod, [1, 2], [2, 3], bins=2)
-    assert as_tensor(_get_attr(h2_counts, "shape")) == (2, 2)
+    h2_counts, _, _ = ensure_callable(test_module._np_histogram2d_)(mock_hist_mod, [1, 2], [2, 3], bins=2)
+    assert ensure_eager_tensor(h2_counts).shape == (2, 2)
     reg_h2d = numpy_eager_registry.get("Histogram2d")
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_callable(reg_h2d)(mock_hist_mod, [1, 2], [2, 3], bins=2), "__getitem__")(0)), "shape")) == (2, 2)
+    assert ensure_eager_tensor(ensure_callable(reg_h2d)(mock_hist_mod, [1, 2], [2, 3], bins=2))[0].shape == (2, 2)
 
-    bin_edges = test_module._np_histogram_bin_edges_(as_mod(mock_hist_mod), [1, 2, 3], bins=2)
-    assert as_callable(len)(bin_edges) == 3
+    bin_edges = test_module._np_histogram_bin_edges_(ensure_mod(mock_hist_mod), [1, 2, 3], bins=2)
+    assert ensure_callable(len)(bin_edges) == 3
     reg_edges = numpy_eager_registry.get("HistogramBinEdges")
-    assert as_callable(len)(as_callable(reg_edges)(mock_hist_mod, [1, 2, 3], bins=2)) == 3
+    assert ensure_callable(len)(ensure_callable(reg_edges)(mock_hist_mod, [1, 2, 3], bins=2)) == 3
 
-    hdd_counts, _ = as_callable(test_module._np_histogramdd_)(mock_hist_mod, as_callable(np.array)([[1, 2], [3, 4]]), bins=2)
-    assert as_tensor(_get_attr(hdd_counts, "shape")) == (2, 2)
+    hdd_counts, _ = ensure_callable(test_module._np_histogramdd_)(mock_hist_mod, ensure_callable(np.array)([[1, 2], [3, 4]]), bins=2)
+    assert ensure_eager_tensor(hdd_counts).shape == (2, 2)
     reg_hdd = numpy_eager_registry.get("Histogramdd")
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_callable(reg_hdd)(mock_hist_mod, as_callable(np.array)([[1, 2], [3, 4]]), bins=2), "__getitem__")(0)), "shape")) == (2, 2)
+    assert ensure_eager_tensor(ensure_callable(reg_hdd)(mock_hist_mod, ensure_callable(np.array)([[1, 2], [3, 4]]), bins=2))[0].shape == (2, 2)
 
     # Iscomplex and Iscomplexobj
-    assert as_callable(np.array_equal)(as_callable(test_module._np_iscomplex_)(np, [1 + 2j, 3]), [True, False])
-    _get_attr(_state, "update")({"_": _, "bin_edges": bin_edges, "counts": counts, "edges": edges})
-    _get_attr(_state, "update")({"h2_counts": h2_counts, "h_data": h_data, "hdd_counts": hdd_counts, "mock_hist_mod": mock_hist_mod})
-    _get_attr(_state, "update")({"reg_cc": reg_cc, "reg_edges": reg_edges, "reg_h2d": reg_h2d, "reg_hdd": reg_hdd})
-    _get_attr(_state, "update")({"reg_hist": reg_hist})
-    _state.update(_caller_locals())
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_iscomplex_)(np, [1 + 2j, 3]), [True, False])
+    _state.update(ensure_tensor_dict({"_": _, "bin_edges": bin_edges, "counts": counts, "edges": edges}))
+    _state.update(ensure_tensor_dict({"h2_counts": h2_counts, "h_data": h_data, "hdd_counts": hdd_counts, "mock_hist_mod": mock_hist_mod}))
+    _state.update(ensure_tensor_dict({"reg_cc": reg_cc, "reg_edges": reg_edges, "reg_h2d": reg_h2d, "reg_hdd": reg_hdd}))
+    _state.update(ensure_tensor_dict({"reg_hist": reg_hist}))
 
 
 def _test_math_testing_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -110,39 +107,38 @@ def _test_math_testing_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
     Args:
         _state: Shared test state dictionary.
     """
-    assert test_module._np_iscomplexobj_(np, [1 + 2j])
+    assert test_module._np_iscomplexobj_(ensure_eager_tensor(np), [1 + 2j])
     reg_is_c = numpy_eager_registry.get("Iscomplex")
-    assert as_callable(np.array_equal)(as_callable(reg_is_c)(np, [1 + 2j, 3]), [True, False])
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_is_c)(np, [1 + 2j, 3]), [True, False])
     reg_is_co = numpy_eager_registry.get("Iscomplexobj")
-    assert as_callable(reg_is_co)(np, [1 + 2j])
+    assert ensure_callable(reg_is_co)(np, [1 + 2j])
 
     # Isdtype / Issubdtype
-    assert test_module._np_issubdtype_op_(np, np.int32, np.integer)
-    assert test_module._np_issubdtype_issubdtype_(np, np.float32, np.floating)
+    assert test_module._np_issubdtype_op_(ensure_eager_tensor(np), np.int32, np.integer)
+    assert test_module._np_issubdtype_issubdtype_(ensure_eager_tensor(np), np.float32, np.floating)
     reg_isdt = numpy_eager_registry.get("Isdtype")
-    assert as_callable(reg_isdt)(np, np.int32, np.integer)
+    assert ensure_callable(reg_isdt)(np, np.int32, np.integer)
     reg_issub = numpy_eager_registry.get("Issubdtype")
-    assert as_callable(reg_issub)(np, np.float32, np.floating)
+    assert ensure_callable(reg_issub)(np, np.float32, np.floating)
 
     # Isreal and Isrealobj
-    assert as_callable(np.array_equal)(as_callable(test_module._np_isreal_)(np, [1 + 2j, 3]), [False, True])
-    assert test_module._np_isrealobj_(np, [1.0, 2.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_isreal_)(np, [1 + 2j, 3]), [False, True])
+    assert test_module._np_isrealobj_(ensure_eager_tensor(np), [1.0, 2.0])
     reg_is_r = numpy_eager_registry.get("Isreal")
-    assert as_callable(np.array_equal)(as_callable(reg_is_r)(np, [1 + 2j, 3]), [False, True])
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_is_r)(np, [1 + 2j, 3]), [False, True])
     reg_is_ro = numpy_eager_registry.get("Isrealobj")
-    assert as_callable(reg_is_ro)(np, [1.0, 2.0])
+    assert ensure_callable(reg_is_ro)(np, [1.0, 2.0])
 
     # Isscalar
-    assert test_module._np_isscalar_(np, 5.0)
-    assert not test_module._np_isscalar_(np, [5.0])
+    assert test_module._np_isscalar_(ensure_eager_tensor(np), 5.0)
+    assert not test_module._np_isscalar_(ensure_eager_tensor(np), [5.0])
     reg_isscalar = numpy_eager_registry.get("Isscalar")
-    assert as_callable(reg_isscalar)(np, 5.0)
+    assert ensure_callable(reg_isscalar)(np, 5.0)
 
     # ResultType
-    assert test_module._np_result_type_(np, 3, 1.5) == np.dtype(np.float64)
-    _get_attr(_state, "update")({"reg_is_c": reg_is_c, "reg_is_co": reg_is_co, "reg_is_r": reg_is_r, "reg_is_ro": reg_is_ro})
-    _get_attr(_state, "update")({"reg_isdt": reg_isdt, "reg_isscalar": reg_isscalar, "reg_issub": reg_issub})
-    _state.update(_caller_locals())
+    assert test_module._np_result_type_(ensure_eager_tensor(np), 3, 1.5) == np.dtype(np.float64)
+    _state.update(ensure_tensor_dict({"reg_is_c": reg_is_c, "reg_is_co": reg_is_co, "reg_is_r": reg_is_r, "reg_is_ro": reg_is_ro}))
+    _state.update(ensure_tensor_dict({"reg_isdt": reg_isdt, "reg_isscalar": reg_isscalar, "reg_issub": reg_issub}))
 
 
 def _test_math_testing_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -152,18 +148,18 @@ def _test_math_testing_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> Non
         _state: Shared test state dictionary.
     """
     reg_rt = numpy_eager_registry.get("ResultType")
-    assert as_callable(str)(as_callable(reg_rt)(np, 3, 1.5)) == "float64"
+    assert ensure_callable(str)(ensure_callable(reg_rt)(np, 3, 1.5)) == "float64"
 
     # AssertOp branches
-    assert as_callable(np.array_equal)(as_callable(test_module._np_assertop)(np, [True, True]), [0.0])
-    assert as_callable(np.array_equal)(as_callable(test_module._np_assertop)(np, condition=[True]), [0.0])
-    assert as_callable(np.array_equal)(as_callable(test_module._np_assertop)(np), [0.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_assertop)(np, [True, True]), [0.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_assertop)(np, condition=[True]), [0.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(test_module._np_assertop)(np), [0.0])
     with pytest.raises(AssertionError):
-        test_module._np_assertop(np, [True, False])
+        test_module._np_assertop(ensure_eager_tensor(np), [True, False])
 
     reg_assertop = numpy_eager_registry.get("AssertOp")
-    assert as_callable(np.array_equal)(as_callable(reg_assertop)(np, [True]), [0.0])
-    _get_attr(_state, "update")({"reg_assertop": reg_assertop, "reg_rt": reg_rt})
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_assertop)(np, [True]), [0.0])
+    _state.update(ensure_tensor_dict({"reg_assertop": reg_assertop, "reg_rt": reg_rt}))
 
 
 def test_math_testing_ops() -> None:

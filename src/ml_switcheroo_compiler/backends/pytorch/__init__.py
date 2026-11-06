@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
-from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 
 try:
     _has_pkg = importlib.util.find_spec("torch") is not None
@@ -53,7 +54,7 @@ def _all_reduce(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return as_callable(_get_attr(dc, "pytorch_all_reduce"))(*args, **kwargs)
+    return ensure_mod(dc).pytorch_all_reduce(*args, **kwargs)
 
 
 def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -69,7 +70,7 @@ def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return as_callable(_get_attr(dc, "pytorch_all_gather"))(*args, **kwargs)
+    return ensure_mod(dc).pytorch_all_gather(*args, **kwargs)
 
 
 def _reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -85,7 +86,7 @@ def _reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return as_callable(_get_attr(dc, "pytorch_reduce_scatter"))(*args, **kwargs)
+    return ensure_mod(dc).pytorch_reduce_scatter(*args, **kwargs)
 
 
 def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -101,15 +102,43 @@ def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return as_callable(_get_attr(dc, "pytorch_broadcast"))(*args, **kwargs)
+    return ensure_mod(dc).pytorch_broadcast(*args, **kwargs)
 
 
-_obj_set_attr(PyTorchCodeGenerator, "zeros", classmethod(zeros))
-_obj_set_attr(PyTorchCodeGenerator, "array", classmethod(array))
-_obj_set_attr(PyTorchCodeGenerator, "asarray", classmethod(asarray))
-_obj_set_attr(PyTorchCodeGenerator, "item", classmethod(item))
-_obj_set_attr(PyTorchCodeGenerator, "execute_op", as_callable(classmethod)(execute_op))
-_obj_set_attr(PyTorchCodeGenerator, "all_reduce", staticmethod(_all_reduce))
-_obj_set_attr(PyTorchCodeGenerator, "all_gather", staticmethod(_all_gather))
-_obj_set_attr(PyTorchCodeGenerator, "reduce_scatter", staticmethod(_reduce_scatter))
-_obj_set_attr(PyTorchCodeGenerator, "broadcast", staticmethod(_broadcast))
+class _PyTorchGeneratorClassProtocol(typing.Protocol):
+    """Protocol for attaching PyTorch classmethods and staticmethods to `PyTorchCodeGenerator`."""
+
+    zeros: EagerValue
+    array: EagerValue
+    asarray: EagerValue
+    item: EagerValue
+    execute_op: EagerValue
+    all_reduce: EagerValue
+    all_gather: EagerValue
+    reduce_scatter: EagerValue
+    broadcast: EagerValue
+
+
+def _is_pytorch_gen_cls(cls_obj: type) -> typing.TypeGuard[_PyTorchGeneratorClassProtocol]:
+    """Type guard narrowing `cls_obj` to `_PyTorchGeneratorClassProtocol`.
+
+    Args:
+        cls_obj (type): Target class.
+
+    Returns:
+        bool: Always True.
+    """
+    return cls_obj is not None
+
+
+_raw_pt_cls: type = PyTorchCodeGenerator
+assert _is_pytorch_gen_cls(_raw_pt_cls)
+_raw_pt_cls.zeros = ensure_callable(classmethod)(zeros)
+_raw_pt_cls.array = ensure_callable(classmethod)(array)
+_raw_pt_cls.asarray = ensure_callable(classmethod)(asarray)
+_raw_pt_cls.item = ensure_callable(classmethod)(item)
+_raw_pt_cls.execute_op = ensure_callable(classmethod)(execute_op)
+_raw_pt_cls.all_reduce = ensure_callable(staticmethod)(_all_reduce)
+_raw_pt_cls.all_gather = ensure_callable(staticmethod)(_all_gather)
+_raw_pt_cls.reduce_scatter = ensure_callable(staticmethod)(_reduce_scatter)
+_raw_pt_cls.broadcast = ensure_callable(staticmethod)(_broadcast)

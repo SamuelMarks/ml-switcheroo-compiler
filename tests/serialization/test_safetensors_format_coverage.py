@@ -12,9 +12,8 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -205,19 +204,19 @@ def test_safetensors_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
         "w1": np.array([1.0, 2.0], dtype=np.float32),
         "w2": np.array([10, 20], dtype=np.int32),
     }
-    as_callable(fmt.save)(data, filepath)
+    ensure_callable(fmt.save)(data, filepath)
 
     # 2. Load without backend from_buffer hook (raw buffer dict returned)
     monkeypatch.setattr(registry, "get_active_backend", lambda: _PlainBackend())
     loaded_plain = fmt.load(filepath)
     assert "w1" in loaded_plain
-    assert "buffer" in _get_attr(loaded_plain, "__getitem__")("w1")
+    assert "buffer" in ensure_eager_tensor(loaded_plain)["w1"]
 
     # 3. Load with backend from_buffer hook
     monkeypatch.setattr(registry, "get_active_backend", lambda: _MockBackendSafetensors())
     loaded_hook = fmt.load(filepath)
     assert "w1" in loaded_hook
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(loaded_hook, "__getitem__")("w1")), as_tensor(_get_attr(data, "__getitem__")("w1")))
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(loaded_hook)["w1"], ensure_eager_tensor(data)["w1"])
 
     # 4. Empty / corrupted file (< 8 bytes)
     empty_file = str(tmp_path / "empty.safetensors")

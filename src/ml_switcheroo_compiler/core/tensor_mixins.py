@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import operator
+import inspect
 import types
 import typing
 import uuid
@@ -10,7 +10,10 @@ from collections.abc import Callable, Iterator, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import ShapeProtocol, as_int, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ShapeProtocol,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -33,6 +36,43 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
     from .tensor import ArrayAtIndexer, Tensor
+
+
+def _is_mixin_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None or None.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _ensure_mixin_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_mixin_eager_tensor(val)
+    return val
+
+
+def _extract_mixin_shape(seq: Sequence[int | str | SymNode | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | SymNode | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 @typing.runtime_checkable
@@ -80,8 +120,10 @@ class TensorPropertiesMixin:
         for s in self._shape:
             if isinstance(s, str):
                 return None
+            if isinstance(s, int):
+                prod *= s
             else:
-                prod *= as_int(s)
+                return None
         return prod
 
     @property
@@ -91,7 +133,7 @@ class TensorPropertiesMixin:
         Returns:
             tuple[int, ...]: The shape tuple of the tensor.
         """
-        return as_shape(self._shape)
+        return _extract_mixin_shape(self._shape)
 
     @property
     def dtype(self) -> DType:
@@ -130,13 +172,7 @@ class TensorPropertiesMixin:
         return self._data
 
 
-if typing.TYPE_CHECKING:
-    _ConversionBase = TensorPropertiesMixin
-else:
-    _ConversionBase = object
-
-
-class TensorConversionMixin(_ConversionBase):
+class TensorConversionMixin(TensorPropertiesMixin):
     """Tensor conversion mixin."""
 
     if typing.TYPE_CHECKING:
@@ -164,10 +200,10 @@ class TensorConversionMixin(_ConversionBase):
         Returns:
             TensorOrScalar: The converted array.
         """
-        arr_hook: TensorOrScalar = operator.attrgetter("__array__")(self)
-        if isinstance(arr_hook, types.FunctionType):
-            res_hook: TensorOrScalar = arr_hook()
-            return res_hook
+        for m_name, m_val in inspect.getmembers(self):
+            if m_name.endswith("array__") and isinstance(m_val, types.FunctionType):
+                res_hook: TensorOrScalar = m_val()
+                return res_hook
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -273,18 +309,12 @@ class TensorConversionMixin(_ConversionBase):
         for i in range(int(shape[0])):
             from .tensor import Tensor, TensorConfig
 
-            item_arr: TensorOrScalar = as_tensor(arr)[i]
-            item_shape = as_shape(item_arr.shape) if isinstance(item_arr, ShapeProtocol) else ()
+            item_arr: TensorOrScalar = _ensure_mixin_tensor(arr)[i]
+            item_shape = _extract_mixin_shape(item_arr.shape) if isinstance(item_arr, ShapeProtocol) else ()
             yield Tensor(item_arr, TensorConfig(item_shape, self.dtype, self.device))
 
 
-if typing.TYPE_CHECKING:
-    _IndexingBase = TensorConversionMixin
-else:
-    _IndexingBase = object
-
-
-class TensorIndexingMixin(_IndexingBase):
+class TensorIndexingMixin(TensorConversionMixin):
     """Tensor indexing mixin."""
 
     def __getitem__(self, key: TensorOrScalar) -> Tensor:
@@ -301,14 +331,17 @@ class TensorIndexingMixin(_IndexingBase):
             RuntimeError: If tracing but not in an active tracing context.
         """
         arr = self.to_backend_array()
-        if isinstance(key, _DataWrapperProtocol):
-            key = key.data
+        raw_key: TensorOrScalar = key
+        if isinstance(raw_key, _DataWrapperProtocol):
+            key = raw_key.data
         elif isinstance(key, tuple):
             key = tuple(k.data if isinstance(k, _DataWrapperProtocol) else k for k in key)
 
+        res: TensorOrScalar = None
         try:
-            res: TensorOrScalar = as_tensor(arr)[tuple(key) if isinstance(key, list) else key]
-            res_shape = as_shape(res.shape) if isinstance(res, ShapeProtocol) else ()
+            raw_res = _ensure_mixin_tensor(arr)[tuple(key) if isinstance(key, list) else key]
+            res = raw_res
+            res_shape = _extract_mixin_shape(raw_res.shape)
         except IndexError as e:
             if config.eager_mode:
                 raise
@@ -352,7 +385,7 @@ class TensorIndexingMixin(_IndexingBase):
         """
         if config.eager_mode:
             val = value.data if isinstance(value, _DataWrapperProtocol) else value
-            as_tensor(self.data)[key] = val
+            _ensure_mixin_tensor(self.data)[key] = val
         else:
             msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
             raise TypeError(msg)

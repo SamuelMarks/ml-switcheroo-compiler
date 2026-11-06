@@ -6,15 +6,15 @@ import builtins
 import math
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node, _extract_shape_or_seq
 
 
 def slice(
@@ -39,7 +39,7 @@ def slice(
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data = as_tensor(input.data)[tuple(sl)]
+        data = ensure_eager_tensor(input.data)[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -96,7 +96,7 @@ def strided_slice(
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data = as_tensor(input.data)[idx]
+        data = ensure_eager_tensor(input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -178,7 +178,7 @@ class Choose(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return a.shape if _has_attr(a, "shape") else ()
+        return extract_shape(a)
 
 
 @register_op("IndexInDim")
@@ -199,17 +199,16 @@ class IndexInDim(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         keepdims = bool(kwargs.get("keepdims", True))
-        raw_shape = _get_attr(operand, "shape", _get_attr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
-        shape = list(int(d) for d in raw_shape)
+        shape = list(_extract_shape_or_seq(operand))
         if not shape:
             return ()
 
         if axis < 0:
             axis += len(shape)
 
-        index_shape = tuple(int(d) for d in _get_attr(index, "shape", _get_attr(index, "shape_metadata", index if isinstance(index, (list, tuple)) else ())))
+        index_shape = _extract_shape_or_seq(index)
         if keepdims:
             shape[axis] = index_shape[0] if index_shape else 1
         else:
@@ -241,8 +240,7 @@ class UpdateSlice(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         if operand is None:
             return ()
-        raw = _get_attr(operand, "shape", _get_attr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
-        return tuple(int(d) for d in raw)
+        return _extract_shape_or_seq(operand)
 
 
 def index_in_dim(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

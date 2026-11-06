@@ -6,7 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -59,7 +59,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = type("M", (), {"id": "1"})()
             self.shape = (2,)
 
-    assert as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(MockTensor1)()) == ("1", (2,))
+    assert ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(MockTensor1)()) == ("1", (2,))
 
     class MockTensor2:
         """Test class MockTensor2."""
@@ -69,7 +69,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = 42
             self.shape = ()
 
-    res = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(MockTensor2)())
+    res = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(MockTensor2)())
     assert res[1] == ()
 
     # Test the branch where hasattr(global_tracing_state, "constant_cache") is False
@@ -86,18 +86,18 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             obj: Test parameter `obj`.
             name: Test parameter `name`.
         """
-        if as_tensor(obj) is as_tensor(global_tracing_state) and as_tensor(name) == as_tensor("constant_cache"):
+        if ensure_eager_tensor(obj) is ensure_eager_tensor(global_tracing_state) and ensure_eager_tensor(name) == ensure_eager_tensor("constant_cache"):
             return False
-        return as_callable(original_hasattr)(obj, name)
+        return ensure_callable(original_hasattr)(obj, name)
 
     with patch("builtins.hasattr", side_effect=custom_hasattr):
-        res2 = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(MockTensor2)())
+        res2 = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(MockTensor2)())
         assert res2[1] == ()
 
     # Hit the cache condition
     m2 = MockTensor2()
     with patch.object(global_tracing_state, "constant_cache", {id(m2.data): "cached_id"}, create=True):
-        res3 = as_callable(TracingNodeBuilder.extract_from_tensor)(m2)
+        res3 = ensure_callable(TracingNodeBuilder.extract_from_tensor)(m2)
         assert res3 == ("cached_id", ())
 
 

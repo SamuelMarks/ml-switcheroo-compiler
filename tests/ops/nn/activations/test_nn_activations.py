@@ -7,10 +7,9 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
-from tests.testing_utils import as_callable, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -52,8 +51,7 @@ def _test_nn_activations_coverage_part_1(_state: dict[str, EagerTensorProtocol])
     assert OneHot().infer_shape(DummyShape(), 5) == (1, 2, 5)
     assert OneHot().infer_shape(DummyShape(), depth=5) == (1, 2, 5)
     assert OneHot().infer_shape() == (1,)
-    _get_attr(_state, "update")({"DummyShape": DummyShape, "t": t, "t_idx": t_idx})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "t": t, "t_idx": t_idx}))
 
 
 def _test_nn_activations_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -81,8 +79,8 @@ def _test_nn_activations_coverage_part_2(_state: dict[str, EagerTensorProtocol])
 
     # tracing
     original_eager = config.eager_mode
-    _get_attr(_state, "update")({"HardSilu": HardSilu, "HardSwish": HardSwish, "Squareplus": Squareplus, "original_eager": original_eager})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"HardSilu": HardSilu, "HardSwish": HardSwish, "Squareplus": Squareplus, "original_eager": original_eager}))
+    _state.update(ensure_tensor_dict({"DummyShape": DummyShape}))
 
 
 def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -102,7 +100,7 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = as_tensor_dict({})
+            nodes = ensure_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -112,13 +110,13 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
                 """
                 pass
 
-        _set_attr(global_tracing_state, "active_graph", DummyGraph())
+        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
 
         res = softmax(t)
         assert res is not None
         res = log_softmax(t)
         assert res is not None
-        res = as_callable(sigmoid)(t)
+        res = ensure_callable(sigmoid)(t)
         assert res is not None
         res = one_hot(t_idx, 2)
         assert res is not None
@@ -126,7 +124,7 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
         assert res is not None
 
     finally:
-        _set_attr(config, "eager_mode", original_eager)
+        ensure_mutable(config).eager_mode = ensure_eager_tensor(original_eager)
         global_tracing_state.is_tracing = False
 
 

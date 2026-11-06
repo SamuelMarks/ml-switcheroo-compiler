@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+import typing
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_list, ensure_int
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
+
+
+@typing.runtime_checkable
+class _ExprHolderProtocol(typing.Protocol):
+    """Protocol for symbolic expression objects exposing `.expr`."""
+
+    expr: EagerValue
 
 
 class ArrayASTVisitor(CommonASTVisitor):
@@ -162,8 +170,8 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for computing the top k elements.
         """
-        k = node.attributes.get("k", 1)
-        k_val = str(_get_attr(k, "expr")) if _has_attr(k, "expr") else str(k)
+        raw_k: EagerValue = node.attributes.get("k", 1)
+        k_val = str(raw_k.expr) if isinstance(raw_k, _ExprHolderProtocol) else str(raw_k)
         is_idx = node.attributes.get("return_indices", False)
         pfx = self.generator.get_fallback_prefix()
         var = input_vars[0]
@@ -237,7 +245,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         elif pfx in ("torch", "pt"):
             return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         else:
-            fallback = _get_attr(self.generator, "get_fallback_prefix", lambda: "numpy")()
+            fallback = self.generator.get_fallback_prefix()
             return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
     def visit_Slice(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -251,7 +259,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the slice operation.
         """
-        dim = int(as_int(node.attributes.get("dim", 0)))
+        dim = int(ensure_int(node.attributes.get("dim", 0)))
         start = node.attributes.get("start")
         end = node.attributes.get("end")
         step = node.attributes.get("step", 1)
@@ -278,7 +286,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         """
         operand = input_vars[0]
         starts = input_vars[1:]
-        slice_sizes = list(_get_attr(node.attributes.get("slice_sizes", []), "__iter__")())
+        slice_sizes = list(ensure_eager_list(node.attributes.get("slice_sizes", [])))
         pfx = self.generator.get_fallback_prefix()
 
         starts_str = ", ".join(starts)

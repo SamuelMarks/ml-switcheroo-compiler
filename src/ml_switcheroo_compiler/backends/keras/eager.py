@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import sys
+import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_str, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_str
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+
+_T = typing.TypeVar("_T")
 
 
 def _get_keras_module() -> EagerValue | None:
@@ -35,10 +38,11 @@ def _convert_arg(arg: EagerValue, keras: EagerValue | None) -> EagerValue:
     Returns:
         EagerValue: Converted tensor or original object.
     """
-    ops_mod = _get_attr(keras, "ops", None) if keras is not None else None
-    if isinstance(arg, (list, tuple)) and ops_mod is not None and _has_attr(ops_mod, "convert_to_tensor"):
+    ops_mod = resolve_backend_member(keras, "ops", None)[1] if keras is not None else None
+    has_conv, conv_fn = resolve_backend_member(ops_mod, "convert_to_tensor") if ops_mod is not None else (False, None)
+    if isinstance(arg, (list, tuple)) and has_conv:
         try:
-            return as_tensor(ops_mod.convert_to_tensor(arg))
+            return ensure_eager_tensor(ensure_callable(conv_fn)(arg))
         except Exception:
             return arg
     return arg
@@ -63,26 +67,27 @@ def _try_dispatch_mapped_op(
     """
     from ml_switcheroo_compiler.backends.mapping_loader import resolve_target_api
 
-    target_api = _get_attr(op_spec, "target_api", None)
-    custom_code = _get_attr(op_spec, "custom_code", None)
+    target_api = op_spec.target_api
+    custom_code = op_spec.custom_code
     if not (target_api or custom_code):
         return None
 
-    func = resolve_target_api(as_str(target_api), custom_code, keras)
+    func = resolve_target_api(ensure_str(target_api), custom_code, keras)
     if func is None or not callable(func):
         return None
 
-    kwarg_trans = _get_attr(op_spec, "kwarg_translations", {}) or {}
-    translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k, v in kwargs.items()}
-    if _get_attr(op_spec, "is_method", False) and args:
-        method = _get_attr(args[0], as_str(target_api), None)
-        if method is not None and callable(method):
-            return as_tensor(method(*args[1:], **translated_kwargs))
+    kwarg_trans = op_spec.kwarg_translations or {}
+    translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k in kwargs for v in (kwargs[k],)}
+    if op_spec.is_method and args:
+        has_method, method = resolve_backend_member(args[0], ensure_str(target_api), None)
+        if has_method and callable(method):
+            return ensure_eager_tensor(ensure_callable(method)(*args[1:], **translated_kwargs))
     return func(*args, **translated_kwargs)
 
 
 def execute_op(
-    cls: type,
+    cls: type[_T],
+    /,
     op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,

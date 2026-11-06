@@ -8,7 +8,6 @@ import typing
 import yaml
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     NodePattern,
 )
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -71,14 +70,14 @@ def test_subgraph_pattern_matcher_wildcard_and_commutativity() -> None:
 
     cap_map: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_add, cap_map)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(cap_map, "__getitem__")("c0")), "id")) == "c"
-    assert as_tensor(_get_attr(as_tensor(_get_attr(cap_map, "__getitem__")("c1")), "id")) == "x"
+    assert ensure_eager_tensor(ensure_eager_tensor(cap_map)["c0"].id) == "c"
+    assert ensure_eager_tensor(ensure_eager_tensor(cap_map)["c1"].id) == "x"
 
     # Wildcard pattern
     p_wild = NodePattern(op_type="*", capture="any_op")
     cap_wild: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_wild, cap_wild)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(cap_wild, "__getitem__")("any_op")), "id")) == "add_node"
+    assert ensure_eager_tensor(ensure_eager_tensor(cap_wild)["any_op"].id) == "add_node"
 
 
 def test_dynamic_buffer_allocation_symbolic_batch() -> None:
@@ -98,7 +97,7 @@ def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     modified = alloc_pass.run(graph)
     assert modified is True
     assert "buffer_offset_symbolic" in n_in.attributes
-    assert "dynamic_memory_schema" in as_tensor(_get_attr(graph, "attributes"))
+    assert "dynamic_memory_schema" in ensure_eager_tensor(ensure_eager_tensor(graph).attributes)
 
 
 def test_pass_manager_optimization_levels_and_fixpoint() -> None:

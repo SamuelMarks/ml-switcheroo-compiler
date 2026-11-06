@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     _resolve_scale_factor,
@@ -22,7 +21,7 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     upsample_bilinear,
     upsample_nearest,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -99,16 +98,16 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         mock_backend.return_value = DummyBackend()
 
         ps_out = pixel_shuffle(t_2d, 2)
-        assert as_tensor(_get_attr(ps_out, "shape")) == (1, 1, 4, 4)
+        assert ensure_eager_tensor(ps_out).shape == (1, 1, 4, 4)
 
         un_out = upsample_nearest(t_1d, size=(4,))
-        assert as_tensor(_get_attr(un_out, "shape")) == (1, 1, 4, 4)
+        assert ensure_eager_tensor(un_out).shape == (1, 1, 4, 4)
 
         ub_out = upsample_bilinear(t_1d, size=(4,))
-        assert as_tensor(_get_attr(ub_out, "shape")) == (1, 1, 4, 4)
+        assert ensure_eager_tensor(ub_out).shape == (1, 1, 4, 4)
 
         uc_out = upsample_bicubic(t_1d, size=(4,))
-        assert as_tensor(_get_attr(uc_out, "shape")) == (1, 1, 4, 4)
+        assert ensure_eager_tensor(uc_out).shape == (1, 1, 4, 4)
 
     # 2. Non-eager (tracing) mode with mocked _emit_shape_node
     config.eager_mode = False
@@ -147,7 +146,7 @@ def test_upsample_brute() -> None:
 
         shape = (1, 1, 1)
 
-    as_callable(_resolve_scale_factor)(as_callable(DummyTensorDynamic)(), 2.0, 2)
+    ensure_callable(_resolve_scale_factor)(ensure_callable(DummyTensorDynamic)(), 2.0, 2)
 
     _upsample_resolve_size(t_2d, 8, None)
     _upsample_resolve_size(t_2d, (8, 8), None)

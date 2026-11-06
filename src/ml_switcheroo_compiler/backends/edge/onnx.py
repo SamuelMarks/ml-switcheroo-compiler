@@ -12,12 +12,112 @@ from collections.abc import Callable, Sequence
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int,
+    ensure_int_list,
+    ensure_str,
+)
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_graph
 
 T = typing.TypeVar("T")
+
+
+def _node_inputs_list(node: EagerValue) -> list[str]:
+    """Return string list of input IDs on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        list[str]: Node input IDs.
+    """
+    raw = get_backend_member(node, "inputs", [])
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    return []
+
+
+def _node_shape_tuple(node: EagerValue) -> tuple[int, ...]:
+    """Return integer shape tuple from `shape_metadata` on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        tuple[int, ...]: Shape dimensions tuple.
+    """
+    raw = get_backend_member(node, "shape_metadata", ())
+    if isinstance(raw, (list, tuple)):
+        return tuple(int(x) for x in ensure_int_list(raw))
+    return ()
+
+
+def _node_attrs_dict(node: EagerValue) -> dict[str, EagerValue]:
+    """Return attributes dictionary on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        dict[str, EagerValue]: Attributes mapping.
+    """
+    raw = get_backend_member(node, "attributes", {})
+    return {str(k): v for k, v in raw.items()} if isinstance(raw, dict) else {}
+
+
+def _is_delegates_list(val: EagerValue) -> typing.TypeGuard[list[BaseGenerator] | None]:
+    """Type guard narrowing `val` to `list[BaseGenerator] | None`.
+
+    Args:
+        val (EagerValue): Candidate delegates list.
+
+    Returns:
+        bool: True for optional delegate lists.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _is_graph_proto(val: EagerValue) -> typing.TypeGuard[GraphProtoType]:
+    """Type guard narrowing `val` to `GraphProtoType`.
+
+    Args:
+        val (EagerValue): Candidate GraphProto object.
+
+    Returns:
+        bool: True for runtime GraphProto objects.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _as_node_proto(val: EagerValue) -> NodeProtoType:
+    """Narrow `val` to `NodeProtoType`.
+
+    Args:
+        val (EagerValue): Candidate NodeProto object.
+
+    Returns:
+        NodeProtoType: Narrowed NodeProto object.
+    """
+
+    def _guard(cand: EagerValue) -> typing.TypeGuard[NodeProtoType]:
+        """Type guard narrowing `cand` to `NodeProtoType`.
+
+        Args:
+            cand (EagerValue): Candidate NodeProto object.
+
+        Returns:
+            bool: True for runtime NodeProto objects.
+        """
+        return not isinstance(cand, bytes) or len(cand) >= 0
+
+    assert _guard(val)
+    return val
 
 
 class TensorProtoType(typing.Protocol):
@@ -214,10 +314,10 @@ def _serialize_sequence_attribute(attr_bytes: bytes, val: Sequence[EagerValue]) 
         bytes: Wire bytes for sequence AttributeProto message.
     """
     if val and isinstance(val[0], int):
-        ints_bytes: bytes = b"".join(encode_int(8, int(as_int(x))) for x in val)
+        ints_bytes: bytes = b"".join(encode_int(8, int(ensure_int(x))) for x in val)
         return attr_bytes + ints_bytes + encode_int(20, 7)  # INTS
     if val and isinstance(val[0], float):
-        floats_bytes: bytes = b"".join(encode_tag(7, 5) + struct.pack("<f", float(as_float(x))) for x in val)
+        floats_bytes: bytes = b"".join(encode_tag(7, 5) + struct.pack("<f", float(ensure_float(x))) for x in val)
         return attr_bytes + floats_bytes + encode_int(20, 6)  # FLOATS
     if val and isinstance(val[0], str):
         strs_bytes: bytes = b"".join(encode_length_delimited(9, str(x).encode("utf-8")) for x in val)
@@ -246,8 +346,8 @@ def serialize_attribute(name: str, val: EagerValue, graph_serializer: Callable[[
         return attr_bytes + encode_length_delimited(4, raw_str) + encode_int(20, 3)  # STRING
     if isinstance(val, (list, tuple)):
         return _serialize_sequence_attribute(attr_bytes, val)
-    if _has_attr(val, "nodes") and graph_serializer is not None:
-        subgraph_bytes: bytes = graph_serializer(as_graph(val), f"{name}_subgraph")
+    if has_backend_member(val, "nodes") and graph_serializer is not None:
+        subgraph_bytes: bytes = graph_serializer(ensure_graph(val), f"{name}_subgraph")
         return attr_bytes + encode_length_delimited(6, subgraph_bytes) + encode_int(20, 5)  # GRAPH
     return attr_bytes + encode_string(4, str(val)) + encode_int(20, 3)
 
@@ -364,12 +464,12 @@ def validate_topological_sort(nodes: Sequence[IRNode], graph_inputs: Sequence[st
     """
     defined: set[str] = set(graph_inputs)
     for node in nodes:
-        nid: str = _get_attr(node, "id", "")
-        op_type: str = _get_attr(node, "op_type", "")
+        nid: str = ensure_str(get_backend_member(node, "id", ""))
+        op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
         if op_type == "Input":
             defined.add(nid)
             continue
-        for inp in _get_attr(node, "inputs", []):
+        for inp in _node_inputs_list(node):
             if inp not in defined:
                 raise ValueError(f"Graph nodes are not topologically sorted: input '{inp}' is referenced before definition.")
         defined.add(nid)
@@ -514,14 +614,14 @@ class ONNXCodeGenerator(BaseGenerator):
         var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
     """
 
-    def __init__(self, graph: IRGraph, delegates: T | None = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: list[BaseGenerator] | EagerValue | None = None) -> None:
         """Initialize ONNXCodeGenerator.
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (Optional[T], optional): Visitor delegates.
+            delegates (Optional[list[BaseGenerator]], optional): Visitor delegates.
         """
-        super().__init__(graph, _cast_val("list[BaseGenerator] | None", delegates))
+        super().__init__(graph, list(delegates) if isinstance(delegates, list) else None)
         self.var_map: dict[str, str] = {}
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
@@ -545,7 +645,7 @@ class ONNXCodeGenerator(BaseGenerator):
         if node is None:
             return "onnx_op"
 
-        nid: str = _get_attr(node, "id", str(uuid.uuid4()))
+        nid: str = ensure_str(get_backend_member(node, "id", str(uuid.uuid4())))
         self.var_map[nid] = nid
         return nid
 
@@ -572,20 +672,21 @@ class ONNXCodeGenerator(BaseGenerator):
         lines: list[str] = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph ml_switcheroo_graph {"]
 
         for node in self.sorted_nodes:
-            if _get_attr(node, "op_type", "") == "Input":
-                nid: str = _get_attr(node, "id", "")
-                shape: str = "x".join(str(s) for s in (_get_attr(node, "shape_metadata", ()) or ()))
-                dtype: str = _get_attr(node, "dtype", "float32")
+            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
+                nid: str = ensure_str(get_backend_member(node, "id", ""))
+                shape: str = "x".join(str(s) for s in _node_shape_tuple(node))
+                dtype: str = ensure_str(get_backend_member(node, "dtype", "float32"))
                 lines.append(f'  input: "{nid}" [shape: {shape}, dtype: {dtype}]')
 
         for node in self.sorted_nodes:
-            op_type: str = _get_attr(node, "op_type", "")
+            op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
             if op_type != "Input":
-                nid = _get_attr(node, "id", "")
-                inps: str = ", ".join(f'"{i}"' for i in _get_attr(node, "inputs", []))
+                nid = ensure_str(get_backend_member(node, "id", ""))
+                inps: str = ", ".join(f'"{i}"' for i in _node_inputs_list(node))
                 lines.append(f'  "{nid}" = {op_type}({inps})')
 
-        for out_id in _get_attr(self.graph, "outputs", []) or []:
+        raw_outs = get_backend_member(self.graph, "outputs", []) or []
+        for out_id in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
             lines.append(f'  output: "{out_id}"')
 
         lines.append("}")
@@ -603,11 +704,11 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         if is_output:
             out_id: str = str(item)
-            node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
+            node = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == out_id), None)
             return node, out_id
         if isinstance(item, IRNode):
-            return item, str(_get_attr(item, "id", ""))
-        node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == str(item)), None)
+            return item, str(get_backend_member(item, "id", ""))
+        node = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == str(item)), None)
         return node, str(item)
 
     def _build_single_value_info(
@@ -631,15 +732,15 @@ class ONNXCodeGenerator(BaseGenerator):
         from onnx import helper
 
         node, name = self._get_node_and_name(item, is_output)
-        shape: tuple[int, ...] = _get_attr(node, "shape_metadata", ()) or () if node else ()
-        dt: str = _get_attr(node, "dtype", "float32") if node else "float32"
+        shape: tuple[int, ...] = _node_shape_tuple(node) if node else ()
+        dt: str = ensure_str(get_backend_member(node, "dtype", "float32")) if node else "float32"
         proto_type: int = self._get_proto_type(dt, TensorProto)
         shape_list: list[int | str] = list(shape)
 
         if dynamic_axes and name in dynamic_axes:
             for axis_idx, axis_name in dynamic_axes[name].items():
                 shape_list[axis_idx] = axis_name
-        return as_tensor(helper.make_tensor_value_info(name, proto_type, shape_list))
+        return ensure_eager_tensor(helper.make_tensor_value_info(name, proto_type, shape_list))
 
     def _build_onnx_value_infos(
         self,
@@ -702,12 +803,12 @@ class ONNXCodeGenerator(BaseGenerator):
         if op_type == "If":
             for branch_key, suffix in (("then_branch", "then"), ("else_branch", "else")):
                 if branch_key in node.attributes:
-                    subgen = ONNXCodeGenerator(as_graph(node.attributes[branch_key]))
+                    subgen = ONNXCodeGenerator(ensure_graph(node.attributes[branch_key]))
                     g_proto = subgen._build_onnx_graph(None)
                     g_proto.name = f"{nid}_{suffix}"
                     kwargs[branch_key] = g_proto
         elif op_type in ("Loop", "WhileLoop") and "body" in node.attributes:
-            subgen = ONNXCodeGenerator(as_graph(node.attributes["body"]))
+            subgen = ONNXCodeGenerator(ensure_graph(node.attributes["body"]))
             g_proto = subgen._build_onnx_graph(None)
             g_proto.name = f"{nid}_body"
             kwargs["body"] = g_proto
@@ -727,17 +828,17 @@ class ONNXCodeGenerator(BaseGenerator):
         onnx_nodes: list[NodeProtoType] = []
 
         for node in self.sorted_nodes:
-            op_type: str = _get_attr(node, "op_type", "")
+            op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
             if op_type == "Input":
                 continue
 
-            nid: str = _get_attr(node, "id", "")
-            inputs: list[str] = _get_attr(node, "inputs", [])
+            nid: str = ensure_str(get_backend_member(node, "id", ""))
+            inputs: list[str] = _node_inputs_list(node)
 
             if op_type == "Constant":
-                val = float(as_float(node.attributes.get("value", 0.0)))
-                dt: str = _get_attr(node, "dtype", "float32")
-                shape: tuple[int, ...] = _get_attr(node, "shape_metadata", ()) or ()
+                val = float(ensure_float(node.attributes.get("value", 0.0)))
+                dt: str = ensure_str(get_backend_member(node, "dtype", "float32"))
+                shape: tuple[int, ...] = _node_shape_tuple(node)
                 proto_type: int = self._get_proto_type(dt, TensorProto)
                 num_elements: int = math.prod(shape) if shape else 1
                 tensor_proto = helper.make_tensor(
@@ -750,7 +851,7 @@ class ONNXCodeGenerator(BaseGenerator):
             else:
                 onnx_op: str = self._resolve_onnx_op_name(op_type)
                 kwargs = self._build_subgraph_node_kwargs(node, nid, op_type)
-                onnx_nodes.append(_get_attr(helper, "make_node")(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
+                onnx_nodes.append(_as_node_proto(ensure_mod(helper).make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs)))
         return onnx_nodes
 
     def _build_onnx_graph(self, dynamic_axes: dict[str, dict[int, str]] | None = None) -> GraphProtoType:
@@ -764,15 +865,18 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         from onnx import TensorProto, helper
 
-        input_nodes = [n for n in self.sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
-        onnx_inputs = _get_attr(self, "_build_onnx_value_infos")(input_nodes, dynamic_axes, TensorProto, is_output=False)
+        input_nodes = [n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "op_type", "")) == "Input"]
+        build_fn = ensure_callable(get_backend_member(self, "_build_onnx_value_infos"))
+        onnx_inputs = build_fn(input_nodes, dynamic_axes, TensorProto, is_output=False)
 
-        output_ids: list[str] = _get_attr(self.graph, "outputs", []) or []
-        onnx_outputs = _get_attr(self, "_build_onnx_value_infos")(output_ids, dynamic_axes, TensorProto, is_output=True)
+        raw_outs = get_backend_member(self.graph, "outputs", []) or []
+        output_ids: list[str] = [str(x) for x in raw_outs] if isinstance(raw_outs, (list, tuple)) else []
+        onnx_outputs = build_fn(output_ids, dynamic_axes, TensorProto, is_output=True)
 
         onnx_nodes = self._build_onnx_nodes(TensorProto)
-        _typed_ret_1: GraphProtoType = _cast_val(GraphProtoType, _get_attr(helper, "make_graph")(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs))
-        return _typed_ret_1
+        graph_proto: EagerValue = ensure_mod(helper).make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
+        assert _is_graph_proto(graph_proto)
+        return graph_proto
 
     @staticmethod
     def _apply_dynamic_axes_to_shape(
@@ -810,19 +914,20 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         inputs_bytes: list[bytes] = []
         for n in self.sorted_nodes:
-            if _get_attr(n, "op_type", "") == "Input":
-                name: str = _get_attr(n, "id", "")
-                dt: str = _get_attr(n, "dtype", "float32")
-                shape: list[int | str | None] = list(_get_attr(n, "shape_metadata", ()) or ())
+            if ensure_str(get_backend_member(n, "op_type", "")) == "Input":
+                name: str = ensure_str(get_backend_member(n, "id", ""))
+                dt: str = ensure_str(get_backend_member(n, "dtype", "float32"))
+                shape: list[int | str | None] = list(_node_shape_tuple(n))
                 self._apply_dynamic_axes_to_shape(name, shape, dynamic_axes)
                 inputs_bytes.append(serialize_value_info(name, self._get_proto_type(dt), shape))
 
         outputs_bytes: list[bytes] = []
-        for out_id in _get_attr(self.graph, "outputs", []) or []:
+        raw_outs = get_backend_member(self.graph, "outputs", []) or []
+        for out_id in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
             out_name = str(out_id)
-            out_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_name), None)
-            dt = _get_attr(out_node, "dtype", "float32") if out_node else "float32"
-            shape = list(_get_attr(out_node, "shape_metadata", ()) or ()) if out_node else []
+            out_node = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == out_name), None)
+            dt = ensure_str(get_backend_member(out_node, "dtype", "float32")) if out_node else "float32"
+            shape = list(_node_shape_tuple(out_node)) if out_node else []
             self._apply_dynamic_axes_to_shape(out_name, shape, dynamic_axes)
             outputs_bytes.append(serialize_value_info(out_name, self._get_proto_type(dt), shape))
 
@@ -842,20 +947,20 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             bytes: Serialized NodeProto wire bytes.
         """
-        op_type: str = _get_attr(node, "op_type", "")
-        nid: str = _get_attr(node, "id", "")
-        inputs: list[str] = list(_get_attr(node, "inputs", []))
+        op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
+        nid: str = ensure_str(get_backend_member(node, "id", ""))
+        inputs: list[str] = _node_inputs_list(node)
         outputs: list[str] = [nid]
-        attrs_dict: dict[str, EagerValue] = _get_attr(node, "attributes", {})
+        attrs_dict: dict[str, EagerValue] = _node_attrs_dict(node)
         attributes: list[bytes] = []
 
         if op_type == "Constant":
             c_val = attrs_dict.get("value", 0.0)
-            dt = _get_attr(node, "dtype", "float32")
-            shape_c = [int(x) for x in (_get_attr(node, "shape_metadata", ()) or ())]
+            dt = ensure_str(get_backend_member(node, "dtype", "float32"))
+            shape_c = list(_node_shape_tuple(node))
             p_type = self._get_proto_type(dt)
             num_elem: int = math.prod(shape_c) if shape_c else 1
-            raw_data: bytes = struct.pack(f"<{num_elem}f", *([float(as_float(c_val))] * num_elem))
+            raw_data: bytes = struct.pack(f"<{num_elem}f", *([float(ensure_float(c_val))] * num_elem))
             t_proto: bytes = serialize_tensor_proto(nid, p_type, shape_c, raw_data)
             attr_c: bytes = encode_string(1, "value") + encode_length_delimited(5, t_proto) + encode_int(20, 4)
             return serialize_node("Constant", [], outputs, nid, [attr_c])
@@ -899,7 +1004,9 @@ class ONNXCodeGenerator(BaseGenerator):
         if not (14 <= opset_version <= 20):
             raise ValueError(f"Unsupported ONNX opset_version {opset_version}: must be between 14 and 20.")
 
-        validate_topological_sort(self.sorted_nodes, _get_attr(self.graph, "inputs", []) or [])
+        raw_inps = get_backend_member(self.graph, "inputs", []) or []
+        graph_inputs = [str(x) for x in raw_inps] if isinstance(raw_inps, (list, tuple)) else []
+        validate_topological_sort(self.sorted_nodes, graph_inputs)
         inputs_bytes, outputs_bytes = self._serialize_io_value_infos(dynamic_axes)
 
         def sub_serializer(subgraph: IRGraph, sub_name: str) -> bytes:
@@ -915,7 +1022,7 @@ class ONNXCodeGenerator(BaseGenerator):
             subgen = ONNXCodeGenerator(subgraph)
             return subgen._serialize_graph_internal(sub_name, None)
 
-        nodes_bytes: list[bytes] = [self._serialize_single_ir_node(node, sub_serializer) for node in self.sorted_nodes if _get_attr(node, "op_type", "") != "Input"]
+        nodes_bytes: list[bytes] = [self._serialize_single_ir_node(node, sub_serializer) for node in self.sorted_nodes if ensure_str(get_backend_member(node, "op_type", "")) != "Input"]
 
         graph_payload: bytes = serialize_graph("ml_switcheroo_graph", nodes_bytes, inputs_bytes, outputs_bytes)
         return serialize_model(graph_payload, producer_name="ml-switcheroo-compiler", opset_version=opset_version, ir_version=8)
@@ -932,31 +1039,32 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         inputs_bytes: list[bytes] = []
         for n in self.sorted_nodes:
-            if _get_attr(n, "op_type", "") == "Input":
-                name: str = _get_attr(n, "id", "")
-                dt: str = _get_attr(n, "dtype", "float32")
-                shape: list[int | str | None] = list(_get_attr(n, "shape_metadata", ()) or ())
+            if ensure_str(get_backend_member(n, "op_type", "")) == "Input":
+                name: str = ensure_str(get_backend_member(n, "id", ""))
+                dt: str = ensure_str(get_backend_member(n, "dtype", "float32"))
+                shape: list[int | str | None] = list(_node_shape_tuple(n))
                 p_type: int = self._get_proto_type(dt)
                 inputs_bytes.append(serialize_value_info(name, p_type, shape))
 
         outputs_bytes: list[bytes] = []
-        for out_id in _get_attr(self.graph, "outputs", []) or []:
-            out_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == str(out_id)), None)
-            dt = _get_attr(out_node, "dtype", "float32") if out_node else "float32"
-            shape = list(_get_attr(out_node, "shape_metadata", ()) or ()) if out_node else []
+        raw_outs = get_backend_member(self.graph, "outputs", []) or []
+        for out_id in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
+            out_node = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == str(out_id)), None)
+            dt = ensure_str(get_backend_member(out_node, "dtype", "float32")) if out_node else "float32"
+            shape = list(_node_shape_tuple(out_node)) if out_node else []
             p_type = self._get_proto_type(dt)
             outputs_bytes.append(serialize_value_info(str(out_id), p_type, shape))
 
         nodes_bytes: list[bytes] = []
         for node in self.sorted_nodes:
-            op_type: str = _get_attr(node, "op_type", "")
+            op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
             if op_type == "Input":
                 continue
-            nid: str = _get_attr(node, "id", "")
-            inputs: list[str] = list(_get_attr(node, "inputs", []))
+            nid: str = ensure_str(get_backend_member(node, "id", ""))
+            inputs: list[str] = _node_inputs_list(node)
             outputs: list[str] = [nid]
             attributes: list[bytes] = []
-            for k, v in _get_attr(node, "attributes", {}).items():
+            for k, v in _node_attrs_dict(node).items():
                 if k in ("dtype", "shape", "is_state", "is_state_update", "param_name", "variable_name", "name"):
                     continue
                 attributes.append(serialize_attribute(k, v))
@@ -980,10 +1088,10 @@ class ONNXCodeGenerator(BaseGenerator):
             try:
                 from onnx import printer
 
-                res = _get_attr(printer, "to_text")(graph_def)
-                return res if isinstance(res, str) else str(res)
+                res = ensure_mod(printer).to_text(graph_def)
+                return str(res)
             except (ImportError, AttributeError):
-                return str(_get_attr(helper, "printable_graph")(graph_def))
+                return str(ensure_mod(helper).printable_graph(graph_def))
         except (ImportError, AttributeError):
             return self._generate_text_fallback()
 
@@ -1048,7 +1156,7 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
-        input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+        input_nodes = [n for n in graph.nodes.values() if ensure_str(get_backend_member(n, "op_type", "")) == "Input"]
         input_feed: dict[str, EagerValue] = {}
         for i, inp_node in enumerate(input_nodes):
             if i < len(w_args):
@@ -1068,7 +1176,7 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             EagerValue: Runnable execution session callable executing the ONNX model.
         """
-        opset_version = int(as_int(kwargs.get("opset_version", 18)))
+        opset_version = int(ensure_int(kwargs.get("opset_version", 18)))
         dynamic_axes = kwargs.get("dynamic_axes")
         dyn_map = dynamic_axes if isinstance(dynamic_axes, dict) else None
 
@@ -1089,7 +1197,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                return as_tensor(session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
+                return ensure_eager_tensor(session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
 
             return onnx_reference_runner
         except Exception:
@@ -1106,9 +1214,9 @@ class ONNXCodeGenerator(BaseGenerator):
                     EagerValue: Evaluated output tensors.
                 """
                 evaluated = evaluate_graph(graph, inputs=self._prepare_runner_input_feed(graph, w_args, w_kwargs))
-                outputs = _get_attr(graph, "outputs", None)
-                if outputs:
-                    return evaluated.get(outputs[0]) if len(outputs) == 1 else tuple(evaluated.get(out_id) for out_id in outputs)
+                outputs = get_backend_member(graph, "outputs", None)
+                if isinstance(outputs, (list, tuple)) and outputs:
+                    return evaluated.get(str(outputs[0])) if len(outputs) == 1 else tuple(evaluated.get(str(out_id)) for out_id in outputs)
                 return evaluated
 
             return fallback_runner

@@ -8,7 +8,6 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.shape_system import (
     AlgebraicRuleSetModel,
     Polynomial,
@@ -28,7 +27,7 @@ from ml_switcheroo_compiler.ir.shape_system import (
     matmul_shape,
     normalize_axis,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -303,7 +302,7 @@ def test_symbolic_constraint_tracker_graph_traversal() -> None:
     n_matmul = MockLogicalNode(op="matmul", inputs=[n1, n2], shape=(b, s1, s2))
     graph = MockLogicalGraph(nodes=[n1, n2, n_matmul])
 
-    as_callable(tracker.track_graph)(graph)
+    ensure_callable(tracker.track_graph)(graph)
     assert tracker.is_consistent()
 
     # Now test add op with broadcasting
@@ -311,7 +310,7 @@ def test_symbolic_constraint_tracker_graph_traversal() -> None:
     t2 = MockLogicalNode(op="input", inputs=[], shape=(1, s1, 64))
     t_add = MockLogicalNode(op="add", inputs=[t1, t2], shape=(b, s1, 64))
     graph2 = MockLogicalGraph(nodes=[t1, t2, t_add])
-    as_callable(tracker.track_graph)(graph2)
+    ensure_callable(tracker.track_graph)(graph2)
     assert tracker.is_consistent()
 
 
@@ -344,7 +343,7 @@ def test_symnode_eval_and_free_vars() -> None:
 def test_symnode_conversion_errors() -> None:
     """Test type error when converting an invalid object to SymNode."""
     with pytest.raises(TypeError):
-        as_callable(SymNode.to_node)([1, 2, 3])
+        ensure_callable(SymNode.to_node)([1, 2, 3])
 
 
 def test_polynomial_edge_cases() -> None:
@@ -506,12 +505,12 @@ def test_poly_to_symnode_conversions() -> None:
     # Zero polynomial
     p0 = Polynomial.from_const(0)
     assert isinstance(_poly_to_symnode(p0), SymConst)
-    assert as_tensor(_get_attr(_poly_to_symnode(p0), "value")) == 0
+    assert ensure_eager_tensor(ensure_eager_tensor(_poly_to_symnode(p0)).value) == 0
 
     # Const polynomial
     p7 = Polynomial.from_const(7)
     assert isinstance(_poly_to_symnode(p7), SymConst)
-    assert as_tensor(_get_attr(_poly_to_symnode(p7), "value")) == 7
+    assert ensure_eager_tensor(ensure_eager_tensor(_poly_to_symnode(p7)).value) == 7
 
     # Polynomial with negative leading coefficient
     p_neg_lead = Polynomial({((("x", 1),)): -3})
@@ -607,7 +606,7 @@ def test_track_graph_empty_node_shapes() -> None:
     tracker = SymbolicConstraintTracker()
     n_none = MockLogicalNode(op="custom", inputs=[], shape=())
     graph = MockLogicalGraph(nodes=[n_none])
-    as_callable(tracker.track_graph)(graph)
+    ensure_callable(tracker.track_graph)(graph)
     assert tracker.is_consistent()
 
 
@@ -655,11 +654,10 @@ def _test_polynomial_and_symnode_detailed_branches_part_1(_state: dict[str, Eage
     # to_polynomial for binary op operators
     x = SymVar("x")
     y = SymVar("y")
-    _get_attr(_state, "update")({"div_zero_op": div_zero_op, "p2": p2, "p2x": p2x, "p3x": p3x})
-    _get_attr(_state, "update")({"p5": p5, "p_zero_coeff": p_zero_coeff, "p_zero_const": p_zero_const, "px": px})
-    _get_attr(_state, "update")({"px2": px2, "pxy": pxy, "py": py, "simplified_div_zero": simplified_div_zero})
-    _get_attr(_state, "update")({"x": x, "y": y})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"div_zero_op": div_zero_op, "p2": p2, "p2x": p2x, "p3x": p3x}))
+    _state.update(ensure_tensor_dict({"p5": p5, "p_zero_coeff": p_zero_coeff, "p_zero_const": p_zero_const, "px": px}))
+    _state.update(ensure_tensor_dict({"px2": px2, "pxy": pxy, "py": py, "simplified_div_zero": simplified_div_zero}))
+    _state.update(ensure_tensor_dict({"x": x, "y": y}))
 
 
 def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -669,10 +667,10 @@ def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, Eage
         _state: Shared test state dictionary.
     """
     x, y = _state["x"], _state["y"]
-    sub_op = as_callable(SymBinaryOp)("-", x, y)
+    sub_op = ensure_callable(SymBinaryOp)("-", x, y)
     assert sub_op.to_polynomial() is not None
 
-    mul_op = as_callable(SymBinaryOp)("*", x, y)
+    mul_op = ensure_callable(SymBinaryOp)("*", x, y)
     assert mul_op.to_polynomial() is not None
 
     # Poly to symnode with constant term 0
@@ -703,9 +701,9 @@ def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, Eage
     tracker2.record_equality(15, "Y")
     tracker2.record_equality("X", "Y")
     assert tracker2.is_consistent()
-    _get_attr(_state, "update")({"mul_op": mul_op, "p_empty": p_empty, "p_unclosed": p_unclosed, "si": si})
-    _get_attr(_state, "update")({"sub_op": sub_op, "tokens": tokens, "tracker": tracker, "tracker2": tracker2})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mul_op": mul_op, "p_empty": p_empty, "p_unclosed": p_unclosed, "si": si}))
+    _state.update(ensure_tensor_dict({"sub_op": sub_op, "tokens": tokens, "tracker": tracker, "tracker2": tracker2}))
+    _state.update(ensure_tensor_dict({"x": x, "y": y}))
 
 
 def _test_polynomial_and_symnode_detailed_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -721,12 +719,12 @@ def _test_polynomial_and_symnode_detailed_branches_part_3(_state: dict[str, Eage
 
     # Track graph with node with input without shape
     n_noshape = MockLogicalNode(op="matmul", inputs=[MockLogicalNode(op="in", inputs=[], shape=())], shape=())
-    as_callable(tracker2.track_graph)(as_callable(MockLogicalGraph)(nodes=[n_noshape]))
+    ensure_callable(tracker2.track_graph)(ensure_callable(MockLogicalGraph)(nodes=[n_noshape]))
 
     # _broadcast_dim where b is SymConst
     sc3 = SymConst(3)
     assert _broadcast_dim(3, sc3) == 3
-    _get_attr(_state, "update")({"n_noshape": n_noshape, "sc3": sc3, "sub_res": sub_res})
+    _state.update(ensure_tensor_dict({"n_noshape": n_noshape, "sc3": sc3, "sub_res": sub_res}))
 
 
 def test_polynomial_and_symnode_detailed_branches() -> None:
@@ -891,7 +889,7 @@ def test_shape_and_axis_error_branches() -> None:
 
     # normalize_axis invalid type
     with pytest.raises(TypeError, match="Invalid type for axis"):
-        as_callable(normalize_axis)("0", 3)
+        ensure_callable(normalize_axis)("0", 3)
 
     # normalize_axis list input
     assert normalize_axis([0, -1], 3) == (0, 2)
@@ -955,10 +953,9 @@ def _test_shape_system_all_remaining_coverage_branches_part_1(_state: dict[str, 
     # 771->774: op == "//" where left is (a * b) and right is c
     s_div_nomatch = SymBinaryOp("//", SymBinaryOp("*", SymVar("a"), SymVar("b")), SymVar("c"))
     assert s_div_nomatch.simplify() is not None
-    _get_attr(_state, "update")({"p_add": p_add, "p_xy": p_xy, "patch": patch, "poly_const_zero": poly_const_zero})
-    _get_attr(_state, "update")({"poly_zero": poly_zero, "px": px, "s_div_nomatch": s_div_nomatch, "s_sub": s_sub})
-    _get_attr(_state, "update")({"s_sub_nomatch": s_sub_nomatch})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"p_add": p_add, "p_xy": p_xy, "patch": patch, "poly_const_zero": poly_const_zero}))
+    _state.update(ensure_tensor_dict({"poly_zero": poly_zero, "px": px, "s_div_nomatch": s_div_nomatch, "s_sub": s_sub}))
+    _state.update(ensure_tensor_dict({"s_sub_nomatch": s_sub_nomatch}))
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1004,8 +1001,7 @@ def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, 
 
     # 4. _poly_to_symnode line 925:
     assert _poly_to_symnode(Polynomial({})) == SymConst(0)
-    _get_attr(_state, "update")({"IrreducibleNode": IrreducibleNode, "s_irred": s_irred})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"IrreducibleNode": IrreducibleNode, "s_irred": s_irred}))
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1022,7 +1018,7 @@ def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, 
     assert "a" in tokens
 
     # 6. _parse_sym_str lines 1060-1061: syntax error fallback
-    with as_callable(patch)("ml_switcheroo_compiler.ir.shape_system.SymBinaryOp.__init__", side_effect=as_callable(ValueError)("forced error")):
+    with ensure_callable(patch)("ml_switcheroo_compiler.ir.shape_system.SymBinaryOp.__init__", side_effect=ensure_callable(ValueError)("forced error")):
         assert _parse_sym_str("1 + 2") == SymVar("1 + 2")
 
     # 7. SymInt.simplify line 1096:
@@ -1044,9 +1040,9 @@ def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, 
     tracker_const.record_equality("K", 42)
     assert tracker_const.substitute(42) == 42
     assert tracker_const.substitute("K") == 42
-    _get_attr(_state, "update")({"p_power0": p_power0, "s_int": s_int, "sol": sol, "tokens": tokens})
-    _get_attr(_state, "update")({"tracker": tracker, "tracker_const": tracker_const})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"p_power0": p_power0, "s_int": s_int, "sol": sol, "tokens": tokens}))
+    _state.update(ensure_tensor_dict({"tracker": tracker, "tracker_const": tracker_const}))
+    _state.update(ensure_tensor_dict({"patch": patch}))
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1068,16 +1064,16 @@ def _test_shape_system_all_remaining_coverage_branches_part_4(_state: dict[str, 
             self.nodes = nodes
 
     n_mat = MockLogicalNode("matmul", [MockLogicalNode("in1", [], ()), MockLogicalNode("in2", [], ())], (1,))
-    n_add = as_callable(MockLogicalNode)("add", [as_callable(MockLogicalNode)("in1", [], None), as_callable(MockLogicalNode)("in2", [], None)], (1,))
+    n_add = ensure_callable(MockLogicalNode)("add", [ensure_callable(MockLogicalNode)("in1", [], None), ensure_callable(MockLogicalNode)("in2", [], None)], (1,))
     tracker_graph = SymbolicConstraintTracker()
-    as_callable(tracker_graph.track_graph)(as_callable(MockGraph)([n_mat, n_add]))
+    ensure_callable(tracker_graph.track_graph)(ensure_callable(MockGraph)([n_mat, n_add]))
 
     # Line 1606: broadcast_dimension where SymbolicSolver.is_consistent is True
     from ml_switcheroo_compiler.ir.shape_system import _broadcast_dim
 
     assert _broadcast_dim("N + 1", "1 + N") == "N + 1"
-    _get_attr(_state, "update")({"MockGraph": MockGraph, "_broadcast_dim": _broadcast_dim, "n_add": n_add, "n_mat": n_mat})
-    _get_attr(_state, "update")({"tracker_graph": tracker_graph})
+    _state.update(ensure_tensor_dict({"MockGraph": MockGraph, "_broadcast_dim": _broadcast_dim, "n_add": n_add, "n_mat": n_mat}))
+    _state.update(ensure_tensor_dict({"tracker_graph": tracker_graph}))
 
 
 def test_shape_system_all_remaining_coverage_branches() -> None:

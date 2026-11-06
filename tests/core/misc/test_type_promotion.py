@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -42,7 +42,7 @@ def test_promote_types() -> None:
     assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
     assert promote_types(DType.Float64, DType.Float32) == DType.Float64
     with pytest.raises(DTypePromotionError):
-        as_callable(promote_types)("unknown", DType.Float32)
+        ensure_callable(promote_types)("unknown", DType.Float32)
     config.jax_enable_x64 = False
 
 
@@ -56,7 +56,7 @@ def test_bool_promotion() -> None:
     """Test boolean promotion."""
     assert promote_types(DType.Bool, DType.Bool) == DType.Bool
     with pytest.raises(DTypePromotionError):
-        as_callable(promote_types)("bool", "bool")
+        ensure_callable(promote_types)("bool", "bool")
 
 
 def test_promote_complex128_downcast() -> None:
@@ -67,11 +67,12 @@ def test_promote_complex128_downcast() -> None:
 
 def test_type_promotion_129() -> None:
     """Test type promotion edge case with custom equality object."""
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
     class FakeType:
         """Custom object equal to DType.Bool but not equal to another FakeType."""
 
-        def __eq__(self, other: object) -> bool:
+        def __eq__(self, other: TensorOrScalar | FakeType) -> bool:
             """Test function __eq__.
 
             Args:
@@ -79,13 +80,13 @@ def test_type_promotion_129() -> None:
             """
             if type(other) is type(self):
                 return False
-            return other == DType.Bool
+            return bool(other == DType.Bool)
 
         def __hash__(self) -> int:
             """Test function __hash__."""
             return hash(DType.Bool)
 
-    res = as_callable(tp.promote_types)(as_callable(FakeType)(), as_callable(FakeType)())
+    res = ensure_callable(tp.promote_types)(ensure_callable(FakeType)(), ensure_callable(FakeType)())
     assert isinstance(res, FakeType)
 
 

@@ -8,9 +8,61 @@ import typing
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ml_switcheroo_compiler.backends.eager_registry import as_int_list
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import ensure_int_list, ensure_shape
+from ml_switcheroo_compiler.backends.protocols import BackendNodeProtocol
+from ml_switcheroo_compiler.core.shape import ShapeMetadataProtocol, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+@typing.runtime_checkable
+class _BodyTemplateProtocol(typing.Protocol):
+    """Protocol for template objects exposing `.body`."""
+
+    body: str
+
+
+def _node_shape_meta(
+    node: IRNode | BackendNodeProtocol | TensorOrScalar,
+    default: tuple[int, ...],
+) -> tuple[int, ...]:
+    """Extract integer shape metadata from `node` or fall back to `default`.
+
+    Args:
+        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node or None.
+        default (tuple[int, ...]): Fallback shape tuple.
+
+    Returns:
+        tuple[int, ...]: Resolved shape metadata tuple.
+    """
+    if isinstance(node, ShapeMetadataProtocol) and node.shape_metadata:
+        return tuple(ensure_shape(node.shape_metadata))
+    return default
+
+
+def _node_inputs_list(node: IRNode | BackendNodeProtocol | TensorOrScalar) -> list[str]:
+    """Extract `.inputs` list from `node`.
+
+    Args:
+        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node.
+
+    Returns:
+        list[str]: Node input identifiers.
+    """
+    if isinstance(node, (IRNode, BackendNodeProtocol)) and node.inputs:
+        return list(node.inputs)
+    return []
+
+
+def _node_op_type_lower(node: IRNode | BackendNodeProtocol | TensorOrScalar) -> str:
+    """Extract lowercase `.op_type` from `node`.
+
+    Args:
+        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node.
+
+    Returns:
+        str: Lowercase op_type string.
+    """
+    return str(node.op_type).lower() if isinstance(node, (IRNode, BackendNodeProtocol)) and node.op_type else ""
 
 
 class KernelParameterConfig(BaseModel):
@@ -82,18 +134,25 @@ class HardwareTemplateConfig(BaseModel):
         Returns:
             Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]]: The attribute value or default.
         """
-        if _has_attr(self, key):
-            val = _get_attr(self, key)
-            if val is not None:
-                _typed_ret_1: int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None = _cast_val(typing.Union[typing.Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, "list[KernelParameterConfig]"], "None"], val)
-                return _typed_ret_1
+        fields_map: dict[str, int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None] = {
+            "body": self.body,
+            "workgroup_size": self.workgroup_size,
+            "grid_calc": self.grid_calc,
+            "parameters": self.parameters,
+            "shared_memory_bytes": self.shared_memory_bytes,
+            "header": self.header,
+            "epilogue": self.epilogue,
+            "type_mappings": self.type_mappings,
+        }
+        if key in fields_map and fields_map[key] is not None:
+            return fields_map[key]
         return default
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | HardwareTemplateConfig) -> bool:
         """Compare template configuration against another instance or dict.
 
         Args:
-            other (TensorOrScalar): Other object to compare against.
+            other (TensorOrScalar | HardwareTemplateConfig): Other object to compare against.
 
         Returns:
             bool: True if contents match.
@@ -110,6 +169,18 @@ class HardwareTemplateConfig(BaseModel):
 
 
 TemplateEntryType = typing.Union[HardwareTemplateConfig, dict[str, typing.Union[str, int, float, list[int], "None"]], list[str], "str"]
+
+
+def _is_template_entry(val: TensorOrScalar | TemplateEntryType) -> typing.TypeGuard[TemplateEntryType]:
+    """Type guard narrowing `val` to `TemplateEntryType`.
+
+    Args:
+        val (TensorOrScalar | TemplateEntryType): Candidate template entry.
+
+    Returns:
+        bool: True for valid template entries.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 class HardwareTemplatesConfig(BaseModel):
@@ -142,11 +213,12 @@ class HardwareTemplatesConfig(BaseModel):
         out: dict[str, TemplateEntryType] = {}
         for key, val in v.items():
             if isinstance(val, dict) and "body" in val:
-                out[str(key)] = _cast_val("TypedVariadicCallable[HardwareTemplateConfig]", HardwareTemplateConfig)(**val)
+                out[str(key)] = HardwareTemplateConfig.model_validate(val)
             elif isinstance(val, str):
                 out[str(key)] = HardwareTemplateConfig(body=val)
             else:
-                out[str(key)] = _cast_val(TemplateEntryType, val)
+                assert _is_template_entry(val)
+                out[str(key)] = val
         return out
 
     _validate_templates = _coerce_templates
@@ -204,8 +276,8 @@ def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) 
             continue
         existing = cfg.templates.get(op_key)
         is_dummy = False
-        if existing and _has_attr(existing, "body"):
-            ex_body = _get_attr(existing, "body", "")
+        if isinstance(existing, _BodyTemplateProtocol):
+            ex_body = existing.body
             if "C[id] = A[id];" in ex_body or "C[id] = A[id] + B[id];" in ex_body or "output[idx] = input[idx];" in ex_body:
                 is_dummy = True
         if existing is None or is_dummy:
@@ -258,8 +330,8 @@ def compute_liveness(graph: IRGraph) -> dict[str, str]:
         dict[str, str]: Mapping from producer node ID to last consumer node ID.
     """
     consumers: dict[str, list[str]] = {}
-    for n in _get_attr(graph, "nodes", {}).values():
-        for inp in _get_attr(n, "inputs", []):
+    for n in (graph.nodes or {}).values():
+        for inp in _node_inputs_list(n):
             consumers.setdefault(inp, []).append(n.id)
     return {inp: user_ids[-1] for inp, user_ids in consumers.items()}
 
@@ -285,9 +357,9 @@ def _resolve_conv2d_args(
     """
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
     in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-    in0_shape = _get_attr(in0_node, "shape_metadata", None) or (1, 1, 1, 1)
-    in1_shape = _get_attr(in1_node, "shape_metadata", None) or (1, 1, 1, 1)
-    out_shape = _get_attr(node, "shape_metadata", None) or (1, 1, 1, 1)
+    in0_shape = _node_shape_meta(in0_node, (1, 1, 1, 1))
+    in1_shape = _node_shape_meta(in1_node, (1, 1, 1, 1))
+    out_shape = _node_shape_meta(node, (1, 1, 1, 1))
     n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
     c_in = in0_shape[1] if len(in0_shape) > 1 else 1
     h_dim = in0_shape[2] if len(in0_shape) > 2 else 1
@@ -301,7 +373,7 @@ def _resolve_conv2d_args(
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = str(c_out)
     grid_z = str(n_dim)
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [out_name, str(n_dim), str(c_in), str(h_dim), str(w_in), str(c_out), str(k_h), str(k_w), str(h_out), str(w_out)]
     return (grid_x, grid_y, grid_z), launch_args
 
@@ -327,8 +399,8 @@ def _resolve_matmul_args(
     """
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
     in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-    in0_shape = _get_attr(in0_node, "shape_metadata", None) or (1, 1)
-    in1_shape = _get_attr(in1_node, "shape_metadata", None) or (1, 1)
+    in0_shape = _node_shape_meta(in0_node, (1, 1))
+    in1_shape = _node_shape_meta(in1_node, (1, 1))
     m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
     k_dim = in0_shape[-1] if len(in0_shape) >= 1 else 1
     n_dim = in1_shape[-1] if len(in1_shape) >= 1 else 1
@@ -336,7 +408,7 @@ def _resolve_matmul_args(
     grid_x = f"({n_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = f"({m_dim} + block_{node_idx}.y - 1) / block_{node_idx}.y"
     grid_z = "1"
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [out_name, str(m_dim), str(n_dim), str(k_dim)]
     return (grid_x, grid_y, grid_z), launch_args
 
@@ -362,8 +434,8 @@ def _resolve_batchmatmul_args(
     """
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
     in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-    in0_shape = _get_attr(in0_node, "shape_metadata", None) or (1, 1, 1)
-    in1_shape = _get_attr(in1_node, "shape_metadata", None) or (1, 1, 1)
+    in0_shape = _node_shape_meta(in0_node, (1, 1, 1))
+    in1_shape = _node_shape_meta(in1_node, (1, 1, 1))
     b_sz = in0_shape[0] if len(in0_shape) > 2 else 1
     m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
     k_dim = in0_shape[-1] if len(in0_shape) >= 1 else 1
@@ -372,7 +444,7 @@ def _resolve_batchmatmul_args(
     grid_x = f"({n_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = f"({m_dim} + block_{node_idx}.y - 1) / block_{node_idx}.y"
     grid_z = str(b_sz)
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [out_name, str(b_sz), str(m_dim), str(n_dim), str(k_dim)]
     return (grid_x, grid_y, grid_z), launch_args
 
@@ -398,9 +470,9 @@ def _resolve_conv3d_args(
     """
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
     in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-    in0_shape = _get_attr(in0_node, "shape_metadata", None) or (1, 1, 1, 1, 1)
-    in1_shape = _get_attr(in1_node, "shape_metadata", None) or (1, 1, 1, 1, 1)
-    out_shape = _get_attr(node, "shape_metadata", None) or (1, 1, 1, 1, 1)
+    in0_shape = _node_shape_meta(in0_node, (1, 1, 1, 1, 1))
+    in1_shape = _node_shape_meta(in1_node, (1, 1, 1, 1, 1))
+    out_shape = _node_shape_meta(node, (1, 1, 1, 1, 1))
     n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
     c_in = in0_shape[1] if len(in0_shape) > 1 else 1
     d_dim = in0_shape[2] if len(in0_shape) > 2 else 1
@@ -417,7 +489,7 @@ def _resolve_conv3d_args(
     grid_x = f"({d_out} * {h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = str(c_out)
     grid_z = str(n_dim)
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [
         out_name,
         str(n_dim),
@@ -455,12 +527,13 @@ def _resolve_pool_args(
     Returns:
         tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
     """
-    op_type = _get_attr(node, "op_type", "").lower()
+    op_type = _node_op_type_lower(node)
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
-    in0_shape: tuple[int, ...] = _get_attr(in0_node, "shape_metadata", None) or (1, 1, 1, 1)
-    out_shape: tuple[int, ...] = _get_attr(node, "shape_metadata", None) or in0_shape
+    in0_shape: tuple[int, ...] = _node_shape_meta(in0_node, (1, 1, 1, 1))
+    out_shape: tuple[int, ...] = _node_shape_meta(node, in0_shape)
     n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
     c_dim = in0_shape[1] if len(in0_shape) > 1 else 1
+    node_attrs = node.attributes or {}
 
     if "3d" in op_type:
         d_dim = in0_shape[2] if len(in0_shape) > 2 else 1
@@ -469,14 +542,14 @@ def _resolve_pool_args(
         d_out = out_shape[2] if len(out_shape) > 2 else 1
         h_out = out_shape[3] if len(out_shape) > 3 else 1
         w_out = out_shape[4] if len(out_shape) > 4 else 1
-        k_3d = as_int_list(node.attributes.get("kernel_size", [2, 2, 2])) if _has_attr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
+        k_3d = ensure_int_list(node_attrs.get("kernel_size", [2, 2, 2])) if isinstance(node_attrs.get("kernel_size"), (list, tuple)) else [2, 2, 2]
         kd = k_3d[0]
         kh = k_3d[1]
         kw = k_3d[2]
         grid_x = f"({d_out} * {h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
         grid_y = str(c_dim)
         grid_z = str(n_dim)
-        in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+        in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
         launch_args = in_args + [
             out_name,
             str(n_dim),
@@ -497,13 +570,13 @@ def _resolve_pool_args(
     w_in = in0_shape[3] if len(in0_shape) > 3 else 1
     h_out = out_shape[2] if len(out_shape) > 2 else 1
     w_out = out_shape[3] if len(out_shape) > 3 else 1
-    k_2d = as_int_list(node.attributes.get("kernel_size", [2, 2])) if _has_attr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
+    k_2d = ensure_int_list(node_attrs.get("kernel_size", [2, 2])) if isinstance(node_attrs.get("kernel_size"), (list, tuple)) else [2, 2]
     kh = k_2d[0]
     kw = k_2d[1]
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = str(c_dim)
     grid_z = str(n_dim)
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [
         out_name,
         str(n_dim),
@@ -538,7 +611,7 @@ def _resolve_row_wise_args(
         tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
     """
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
-    in0_shape = _get_attr(in0_node, "shape_metadata", None) or (1, 1)
+    in0_shape = _node_shape_meta(in0_node, (1, 1))
     cols = in0_shape[-1] if len(in0_shape) >= 1 else 1
     rows = 1
     for d in in0_shape[:-1]:
@@ -546,10 +619,11 @@ def _resolve_row_wise_args(
     grid_x = str(rows)
     grid_y = "1"
     grid_z = "1"
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
-    op_type = _get_attr(node, "op_type", "").lower()
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
+    op_type = _node_op_type_lower(node)
     if op_type in ("layernorm", "rmsnorm", "groupnorm"):
-        eps = str(_get_attr(node, "attributes", {}).get("epsilon", 1e-5))
+        node_attrs = node.attributes or {}
+        eps = str(node_attrs.get("epsilon", 1e-5))
         launch_args = in_args + [out_name, str(rows), str(cols), eps]
     else:
         launch_args = in_args + [out_name, str(rows), str(cols)]
@@ -579,7 +653,7 @@ def resolve_hardware_launch_grid_and_args(
     Returns:
         tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
     """
-    op_type_lower = _get_attr(node, "op_type", "").lower()
+    op_type_lower = _node_op_type_lower(node)
     dispatch_map = {
         "conv2d": _resolve_conv2d_args,
         "conv3d": _resolve_conv3d_args,
@@ -601,7 +675,7 @@ def resolve_hardware_launch_grid_and_args(
         return handler(node, node_buffers, out_name, node_idx, graph)
 
     grid_x = f"({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x"
-    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _get_attr(node, "inputs", [])]
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
     launch_args = in_args + [out_name, str(num_elements)]
     return (grid_x, "1", "1"), launch_args
 
@@ -1192,7 +1266,7 @@ def validate_and_bound_shared_memory(
     profile = manifest.profiles.get(backend.lower())
     if not profile:
         return requested_bytes
-    limit = _get_attr(profile, "shared_memory_limit_bytes", None) or _get_attr(profile, "threadgroup_memory_limit_bytes", None) or 65536
+    limit = profile.shared_memory_limit_bytes or profile.threadgroup_memory_limit_bytes or 65536
     if requested_bytes > limit:
         raise ValueError(f"Requested shared memory ({requested_bytes} bytes) exceeds device limit of {limit} bytes for backend '{backend}'.")
     return requested_bytes

@@ -7,8 +7,7 @@ import typing
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -164,7 +163,7 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     gen = _MockDummyGenerator(graph)
     assert gen._generate_file_header() == ["# Header comment"]
     assert gen._resolve_imports() == []
-    assert as_callable(gen._generate_return_block)() is None
+    assert ensure_callable(gen._generate_return_block)() is None
 
     code_str = gen.generate()
     assert "# Header comment" in code_str
@@ -178,17 +177,17 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     assert _MockEagerBackendWithModule.zeros((2, 3)) == ("custom_zeros", (2, 3))
     assert _MockEagerBackendWithModule.array([1, 2], dtype="float32") == ("custom_array", [1, 2], "float32")
     assert _MockEagerBackendWithModule.asarray([3, 4]) == ("custom_asarray", [3, 4])
-    assert as_callable(_MockEagerBackendWithModule.item)(as_callable(_MockScalarHolder)()) == 33.3
+    assert ensure_callable(_MockEagerBackendWithModule.item)(ensure_callable(_MockScalarHolder)()) == 33.3
 
     # Eager zeros, array, asarray, item with default numpy fallback
     z_def = _MockEagerBackendDefault.zeros((2, 2))
-    assert as_tensor(_get_attr(z_def, "shape")) == (2, 2)
+    assert ensure_eager_tensor(z_def).shape == (2, 2)
 
     arr_def = _MockEagerBackendDefault.array([5, 6])
-    assert as_tensor(_get_attr(arr_def, "tolist"))() == [5, 6]
+    assert ensure_eager_tensor(ensure_eager_tensor(arr_def).tolist)() == [5, 6]
 
     as_arr_def = _MockEagerBackendDefault.asarray([7.5, 8.5])
-    assert as_tensor(_get_attr(as_arr_def, "tolist"))() == [7.5, 8.5]
+    assert ensure_eager_tensor(ensure_eager_tensor(as_arr_def).tolist)() == [7.5, 8.5]
 
-    item_val = as_callable(_MockEagerBackendDefault.item)(as_callable(_MockScalarHolder)())
+    item_val = ensure_callable(_MockEagerBackendDefault.item)(ensure_callable(_MockScalarHolder)())
     assert item_val == 33.3

@@ -5,15 +5,28 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import as_bool, as_callable, as_int, as_opt_int, as_shape, as_tensor, get_active_backend
+from ml_switcheroo_compiler.backends.registry import (
+    ensure_bool,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_opt_int,
+    ensure_shape,
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import SymNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.reshape import Resize
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.shape.utils import (
+    _emit_shape_node,
+    _extract_shape_dtype,
+    _extract_shape_or_seq,
+)
 
 
 def tile(input: Tensor, reps: Sequence[int]) -> TensorOrScalar:
@@ -29,10 +42,10 @@ def tile(input: Tensor, reps: Sequence[int]) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tile", (input.data if type(input).__name__ == "Tensor" else input), reps)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input]
     in_shape = list(inputs[0].shape) if inputs[0].shape else [1]
-    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(as_int(reps))]
+    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(ensure_int(reps))]
     while len(in_shape) < len(rep_list):
         in_shape.insert(0, 1)
     while len(rep_list) < len(in_shape):
@@ -65,7 +78,7 @@ def repeat(
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=axis)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
     if axis is None:
@@ -109,7 +122,7 @@ def triu(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Triu", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input]
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -134,7 +147,7 @@ def tril(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tril", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input]
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -179,14 +192,14 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("Meshgrid", *[(t.data if type(t).__name__ == "Tensor" else t) for t in tensors], indexing=indexing)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), tensors[0].dtype, tensors[0].device)) for d in _get_attr(datas, "__iter__")())
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), tensors[0].dtype, tensors[0].device)) for d in ensure_eager_list(datas))
     inputs = list(tensors)
     out_shape = _compute_meshgrid_shape(inputs, indexing)
     dtype = inputs[0].dtype if inputs else DType.Float32
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
-def _normalize_pad_width(pad_width: TensorOrScalar, ndim: int) -> TensorOrScalar:
+def _normalize_pad_width(pad_width: TensorOrScalar, ndim: int) -> tuple[TensorOrScalar, ...]:
     """Normalize pad width representation.
 
     Args:
@@ -216,7 +229,7 @@ def _compute_pad_dim(dim: int, pw: TensorOrScalar) -> int:
     if isinstance(pw, int):
         return dim + pw * 2
     if isinstance(pw, tuple) and len(pw) == 2:
-        return dim + int(as_int(pw[0])) + int(as_int(pw[1]))
+        return dim + int(ensure_int(pw[0])) + int(ensure_int(pw[1]))
     return dim
 
 
@@ -238,14 +251,14 @@ class Pad(OpDef):
         Returns:
             tuple: Result.
         """
-        in_shape = _get_attr(array, "shape", ())
+        in_shape = extract_shape(array)
         if not in_shape:
             return ()
         normalized_pw = _normalize_pad_width(pad_width, len(in_shape))
         out_shape = []
         for i, dim in enumerate(in_shape):
-            if i < _get_attr(normalized_pw, "__len__")():
-                out_shape.append(_compute_pad_dim(dim, _get_attr(normalized_pw, "__getitem__")(i)))
+            if i < len(normalized_pw):
+                out_shape.append(_compute_pad_dim(dim, normalized_pw[i]))
             else:
                 out_shape.append(dim)
         return tuple(out_shape)
@@ -270,10 +283,10 @@ def pad(
             tuple[int, ...]: Result.
     """
     op = Pad()
-    out_shape = _get_attr(op, "infer_shape")(array, pad_width, mode, **kwargs)
+    out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
     attributes = {"pad_width": pad_width, "mode": mode}
     attributes.update(kwargs)
-    return _emit_shape_node("Pad", [array], attributes, out_shape, _get_attr(array, "dtype", None))
+    return _emit_shape_node("Pad", [array], attributes, out_shape, _extract_shape_dtype(array, None))
 
 
 @dispatch_eager("TopK")
@@ -345,7 +358,7 @@ def sort(
         data = backend.execute_op("Sort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), operand.dtype, operand.device),
+            TensorConfig(extract_shape(backend.array(data)), operand.dtype, operand.device),
         )
     inputs = [operand]
     attributes = {"dimension": axis, "is_stable": is_stable}
@@ -365,7 +378,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
         Tensor: Result.
     """
     op = Resize()
-    out_shape = _get_attr(op, "infer_shape")(image, shape, method)
+    out_shape = op.infer_shape(ensure_eager_tensor(image), ensure_eager_tensor(shape), method)
     return _emit_shape_node(
         "Resize",
         [image],
@@ -389,7 +402,7 @@ class DynamicShape(OpDef):
         Returns:
             tuple: Result.
         """
-        return (len(_get_attr(x, "shape", ())),)
+        return (len(extract_shape(x)),)
 
 
 @register_op("Rank")
@@ -528,8 +541,8 @@ class Lexsort(OpDef):
         """
         keys = args[0] if len(args) > 0 else kwargs.get("keys")
         if isinstance(keys, (list, tuple)):
-            return tuple(_get_attr(keys[0], "shape", _get_attr(keys[0], "shape_metadata", keys[0] if isinstance(keys[0], (list, tuple)) else ()))) if keys else ()
-        in_shape = tuple(_get_attr(keys, "shape", _get_attr(keys, "shape_metadata", keys if isinstance(keys, (list, tuple)) else ())))
+            return _extract_shape_or_seq(keys[0]) if keys else ()
+        in_shape = _extract_shape_or_seq(keys)
         if len(in_shape) > 0:
             return in_shape[1:] if len(in_shape) > 1 else ()
         return ()
@@ -554,7 +567,7 @@ class Nonzero(OpDef):
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
         a = args[0] if len(args) > 0 else kwargs.get("a")
-        in_shape = tuple(_get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        in_shape = _extract_shape_or_seq(a)
         return tuple((SymVar("nonzero_count"),) for _ in in_shape)
 
 
@@ -570,8 +583,8 @@ def _infer_shape_percentile_quantile(a: TensorOrScalar, q: TensorOrScalar, axis:
     Returns:
         tuple: Result.
     """
-    in_shape = _get_attr(a, "shape", ())
-    q_shape = _get_attr(q, "shape", ())
+    in_shape = extract_shape(a)
+    q_shape = extract_shape(q)
     if isinstance(q, (int, float)):
         q_shape = ()
     elif isinstance(q, (list, tuple)):
@@ -582,7 +595,7 @@ def _infer_shape_percentile_quantile(a: TensorOrScalar, q: TensorOrScalar, axis:
             return _typed_ret_3
         _typed_ret_2: tuple[int, ...] = q_shape
         return _typed_ret_2
-    axis_tup = (axis,) if isinstance(axis, int) else tuple(_get_attr(axis, "__iter__")())
+    axis_tup = (axis,) if isinstance(axis, int) else ensure_shape(axis)
     out_shape = list(in_shape)
     for ax in sorted(axis_tup, reverse=True):
         if keepdims:
@@ -613,7 +626,7 @@ class Percentile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, as_bool(keepdims))
+        return _infer_shape_percentile_quantile(a, q, axis, ensure_bool(keepdims))
 
 
 @register_op("Quantile")
@@ -636,7 +649,7 @@ class Quantile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, as_bool(keepdims))
+        return _infer_shape_percentile_quantile(a, q, axis, ensure_bool(keepdims))
 
 
 @register_op("RavelMultiIndex")
@@ -659,9 +672,9 @@ class RavelMultiIndex(OpDef):
         if isinstance(multi_index, (list, tuple)) and multi_index:
             first = multi_index[0]
             if isinstance(first, (list, tuple)) and first:
-                return tuple(_get_attr(first[0], "shape", _get_attr(first[0], "shape_metadata", first[0] if isinstance(first[0], (list, tuple)) else ())))
-            return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
-        return tuple(_get_attr(multi_index, "shape", _get_attr(multi_index, "shape_metadata", ())))
+                return _extract_shape_or_seq(first[0])
+            return _extract_shape_or_seq(first)
+        return extract_shape(multi_index)
 
 
 def _repeat_infer_no_axis(
@@ -684,7 +697,7 @@ def _repeat_infer_no_axis(
         if s is None:
             size = None
             break
-        size = int(as_int(size)) * s
+        size = int(ensure_int(size)) * s
     if isinstance(repeats, int) and size is not None:
         return (size * repeats,)
     if isinstance(repeats, (list, tuple)):
@@ -711,16 +724,16 @@ class Repeat(OpDef):
         a = args[0] if len(args) > 0 else None
         repeats = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
-        in_shape = _get_attr(a, "shape", ())
+        in_shape = extract_shape(a)
         if axis is None:
-            return as_tensor(as_callable(_repeat_infer_no_axis)(in_shape, repeats))
+            return ensure_eager_tensor(ensure_callable(_repeat_infer_no_axis)(in_shape, repeats))
         out_shape: list[int | None] = list(in_shape)
-        ax = int(as_int(axis))
+        ax = int(ensure_int(axis))
         if isinstance(repeats, int):
             cur_dim = out_shape[ax]
             out_shape[ax] = cur_dim * repeats if cur_dim is not None else None
         elif isinstance(repeats, (list, tuple)):
-            out_shape[ax] = int(sum(repeats))
+            out_shape[ax] = int(sum(int(ensure_int(r)) for r in repeats))
         else:
             out_shape[ax] = None
         return tuple(out_shape)
@@ -744,8 +757,8 @@ class Searchsorted(OpDef):
         """
         seq = args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
-        v_shape: tuple[int, ...] = _get_attr(v, "shape", ())
-        seq_shape: tuple[int, ...] = _get_attr(seq, "shape", ())
+        v_shape: tuple[int, ...] = extract_shape(v)
+        seq_shape: tuple[int, ...] = extract_shape(seq)
         if not v_shape and not seq_shape:
             return ()
         if not seq_shape or len(seq_shape) <= 1:
@@ -774,7 +787,7 @@ class SortComplex(OpDef):
         if not args or args[0] is None:
             return ()
         a = args[0]
-        return tuple(_get_attr(a, "shape", ()))
+        return extract_shape(a)
 
 
 def _compute_tile_shape(
@@ -819,15 +832,15 @@ class Tile(OpDef):
         reps = args[1] if len(args) > 1 else None
         if reps is None:
             return ()
-        in_shape = _get_attr(A, "shape", ())
+        in_shape = extract_shape(A)
         if isinstance(reps, int):
             reps_tuple: tuple[int, ...] = (reps,)
         else:
-            reps_tuple = tuple(as_shape(reps))
-        return as_tensor(as_callable(_compute_tile_shape)(in_shape, reps_tuple))
+            reps_tuple = tuple(ensure_shape(reps))
+        return ensure_eager_tensor(ensure_callable(_compute_tile_shape)(in_shape, reps_tuple))
 
 
-def _get_unique_inverse_shape(axis: int | None, in_shape: TensorOrScalar) -> TensorOrScalar:
+def _get_unique_inverse_shape(axis: int | None, in_shape: Sequence[int | None]) -> tuple[int | None, ...]:
     """Get the inverse shape for the unique operation.
 
     Args:
@@ -838,13 +851,13 @@ def _get_unique_inverse_shape(axis: int | None, in_shape: TensorOrScalar) -> Ten
         tuple: The inverse shape.
     """
     if axis is not None:
-        return (_get_attr(in_shape, "__getitem__")(axis),)
+        return (in_shape[axis],)
     size: int | None = 1
-    for s in _get_attr(in_shape, "__iter__")():
+    for s in in_shape:
         if s is None:
             size = None
             break
-        size *= s
+        size = int(ensure_int(size)) * s
     return (size,)
 
 
@@ -869,20 +882,20 @@ class Unique(OpDef):
         return_inverse = kwargs.get("return_inverse", False)
         return_counts = kwargs.get("return_counts", False)
         axis = kwargs.get("axis", None)
-        in_shape = _get_attr(ar, "shape", ())
+        in_shape = extract_shape(ar)
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
         if axis is None:
-            ret_shape = (SymVar("unique_count"),)
+            ret_shape: tuple[int | SymNode | None, ...] = (SymVar("unique_count"),)
         else:
-            ret_shape_list = list(in_shape)
-            as_tensor(ret_shape_list)[axis] = SymVar("unique_count")
+            ret_shape_list: list[int | SymNode | None] = list(in_shape)
+            ensure_eager_tensor(ret_shape_list)[axis] = SymVar("unique_count")
             ret_shape = tuple(ret_shape_list)
-        ret = [ret_shape]
+        ret: list[tuple[int | SymNode | None, ...]] = [ret_shape]
         if return_index:
-            ret.append((SymVar("unique_count"),) if axis is None else (_get_attr(in_shape, "__getitem__")(axis),))
+            ret.append((SymVar("unique_count"),) if axis is None else (in_shape[ensure_int(axis)],))
         if return_inverse:
-            _get_attr(ret, "append")(_get_unique_inverse_shape(as_opt_int(axis), in_shape))
+            ret.append(_get_unique_inverse_shape(ensure_opt_int(axis), in_shape))
         if return_counts:
             ret.append((SymVar("unique_count"),))
         if len(ret) == 1:

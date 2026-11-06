@@ -10,9 +10,8 @@ from unittest import mock
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.export.export_api import ExportArchive
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -38,7 +37,7 @@ def test_track() -> None:
     """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    as_callable(archive.track)(resource)
+    ensure_callable(archive.track)(resource)
     assert id(resource) in archive.trackables
 
 
@@ -87,10 +86,10 @@ def test_build_signature_def_with_graph() -> None:
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    _set_attr(input_node, "dtype", "float32")
+    ensure_mutable(input_node).dtype = ensure_eager_tensor("float32")
 
     output_node = LogicalNode(id="n2", op_type="Add")
-    _set_attr(output_node, "dtype", "float32")
+    ensure_mutable(output_node).dtype = ensure_eager_tensor("float32")
 
     graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
@@ -104,7 +103,7 @@ def test_build_signature_def_with_graph_no_outputs() -> None:
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    _set_attr(input_node, "dtype", "float32")
+    ensure_mutable(input_node).dtype = ensure_eager_tensor("float32")
     graph.nodes = NodeDict({"n1": input_node})
     graph.outputs = []
 

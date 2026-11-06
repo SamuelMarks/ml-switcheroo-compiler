@@ -12,7 +12,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuPivotsToPermutation, lu_factor, lu_pivots_to_permutation
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -27,8 +27,8 @@ def test_lu_dummy() -> None:
         shape = (2, 3)
 
     t = MockTensor()
-    assert as_callable(LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
-    assert as_callable(LuPivotsToPermutation)().infer_shape(t) == (2, 0)
+    assert ensure_callable(LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
+    assert ensure_callable(LuPivotsToPermutation)().infer_shape(t) == (2, 0)
     assert LuPivotsToPermutation().infer_shape() == ()
     assert LuPivotsToPermutation().infer_shape(None) == ()
 
@@ -40,11 +40,11 @@ def test_lu_dummy() -> None:
 
         shape = (5,)
 
-    assert as_callable(LuFactor)().infer_shape(as_callable(Mock1DTensor)()) == ((5,), (5,))
+    assert ensure_callable(LuFactor)().infer_shape(ensure_callable(Mock1DTensor)()) == ((5,), (5,))
 
     # kwargs 'a' and 'input'
-    assert as_callable(LuFactor)().infer_shape(a=as_callable(MockTensor)()) == ((2, 3), (2,))
-    assert as_callable(LuFactor)().infer_shape(input=as_callable(MockTensor)()) == ((2, 3), (2,))
+    assert ensure_callable(LuFactor)().infer_shape(a=ensure_callable(MockTensor)()) == ((2, 3), (2,))
+    assert ensure_callable(LuFactor)().infer_shape(input=ensure_callable(MockTensor)()) == ((2, 3), (2,))
 
 
 def test_lu_factor() -> None:
@@ -82,14 +82,14 @@ def test_lu_factor_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_lu", "mock_piv")
         (res1, res2) = lu_factor(t)
-        assert as_tensor(res1) == as_tensor("mock_lu")
-        assert as_tensor(res2) == as_tensor("mock_piv")
+        assert ensure_eager_tensor(res1) == ensure_eager_tensor("mock_lu")
+        assert ensure_eager_tensor(res2) == ensure_eager_tensor("mock_piv")
 
         # Non-tuple fallback branch
         mock_emit.return_value = "single_res"
         (res3, res4) = lu_factor(t)
-        assert as_tensor(res3) == as_tensor("single_res")
-        assert as_tensor(res4) == as_tensor("single_res")
+        assert ensure_eager_tensor(res3) == ensure_eager_tensor("single_res")
+        assert ensure_eager_tensor(res4) == ensure_eager_tensor("single_res")
 
 
 def test_lu_pivots_trace() -> None:
@@ -101,9 +101,9 @@ def test_lu_pivots_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = "mock_perm"
         res = lu_pivots_to_permutation(t, 2)
-        assert as_tensor(res) == as_tensor("mock_perm")
+        assert ensure_eager_tensor(res) == ensure_eager_tensor("mock_perm")
 
         # Tuple branch
         mock_emit.return_value = ("tuple_perm",)
         res_tuple = lu_pivots_to_permutation(t, 2)
-        assert as_tensor(res_tuple) == as_tensor("tuple_perm")
+        assert ensure_eager_tensor(res_tuple) == ensure_eager_tensor("tuple_perm")

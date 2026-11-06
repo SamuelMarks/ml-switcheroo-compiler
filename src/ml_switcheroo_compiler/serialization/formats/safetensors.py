@@ -4,11 +4,59 @@ from __future__ import annotations
 
 import json
 import struct
+import typing
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
+
+
+def _is_safetensors_entry(val: dict[str, bytes | str | list[int]]) -> typing.TypeGuard[TensorLike]:
+    """Type guard narrowing a raw buffer dictionary fallback to `TensorLike`.
+
+    Args:
+        val (dict[str, bytes | str | list[int]]): Raw buffer dict.
+
+    Returns:
+        bool: True if val is a dict.
+    """
+    return isinstance(val, dict)
+
+
+@typing.runtime_checkable
+class _FromBufferBackendProtocol(typing.Protocol):
+    """Protocol for backends implementing `from_buffer(buffer, dtype, shape)`."""
+
+    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> TensorLike:
+        """Construct tensor from raw bytes buffer.
+
+        Args:
+            buffer (bytes): Raw bytes.
+            dtype (str): Safetensors dtype identifier.
+            shape (Sequence[int]): Tensor shape dimensions.
+
+        Returns:
+            TensorLike: Reconstructed tensor.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SafetensorsArrayProtocol(typing.Protocol):
+    """Protocol for array-like objects serializable into Safetensors format."""
+
+    dtype: TensorOrScalar
+    shape: Sequence[int]
+
+    def tobytes(self) -> bytes:
+        """Serialize array contents to raw bytes.
+
+        Returns:
+            bytes: Raw array bytes.
+        """
+        ...
 
 
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):
@@ -32,7 +80,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
             header_bytes = f.read(header_size)
             header = json.loads(header_bytes.decode("utf-8"))
 
-            weights = {}
+            weights: dict[str, TensorLike] = {}
             for k, v in header.items():
                 if k == "__metadata__":
                     continue
@@ -42,12 +90,18 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-                backend = get_active_backend()
-                if _has_attr(backend, "from_buffer"):
+                backend: TensorOrScalar = get_active_backend()
+                if isinstance(backend, _FromBufferBackendProtocol):
                     weights[k] = backend.from_buffer(buffer, dtype=v["dtype"], shape=v["shape"])
                 else:
                     # Pass the raw buffer if no converter is available
-                    weights[k] = {"buffer": buffer, "dtype": v["dtype"], "shape": v["shape"]}
+                    fallback_entry: dict[str, bytes | str | list[int]] = {
+                        "buffer": buffer,
+                        "dtype": v["dtype"],
+                        "shape": v["shape"],
+                    }
+                    assert _is_safetensors_entry(fallback_entry)
+                    weights[k] = fallback_entry
 
             return weights
 
@@ -60,10 +114,12 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         """
         header = {}
         offset = 0
-        buffers = []
+        buffers: list[bytes] = []
 
-        for k, v in _get_attr(weights_np, "items")():
-            if not _has_attr(v, "dtype") or not _has_attr(v, "shape") or not _has_attr(v, "tobytes"):
+        assert isinstance(weights_np, Mapping)
+        for k, v in weights_np.items():
+            raw_v: TensorOrScalar = v
+            if not isinstance(raw_v, _SafetensorsArrayProtocol):
                 continue
 
             import os
@@ -78,15 +134,15 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 schema = SerializationSchemaConfig(**data)
             dtype_map = schema.safetensors.dtype_map
 
-            dtype_str = str(_get_attr(v, "dtype"))
+            dtype_str = str(raw_v.dtype)
             st_dtype = dtype_map.get(dtype_str, "F32")
 
-            buffer = _get_attr(v, "tobytes")()
+            buffer = raw_v.tobytes()
             length = len(buffer)
 
-            header[k] = {
+            header[str(k)] = {
                 "dtype": st_dtype,
-                "shape": list(_get_attr(v, "shape")),
+                "shape": list(raw_v.shape),
                 "data_offsets": [offset, offset + length],
             }
 

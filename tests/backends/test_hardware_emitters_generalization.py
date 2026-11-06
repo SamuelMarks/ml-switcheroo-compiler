@@ -16,9 +16,8 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -50,7 +49,7 @@ def test_calculate_hardware_launch_config() -> None:
     assert g3[2] >= 1
 
     # 4D with symbolic / string dim handling
-    b4, g4 = as_callable(calculate_hardware_launch_config)(["batch", 3, 32, 32])
+    b4, g4 = ensure_callable(calculate_hardware_launch_config)(["batch", 3, 32, 32])
     assert b4[0] == 16
     assert g4[0] == 2
 
@@ -79,7 +78,7 @@ def test_generate_nd_coordinate_offset_logic() -> None:
     assert any("offset = c_idx_1" in ln for ln in lines_bcast)
 
     # Invalid non-integer shape elements fallback to 1
-    lines_invalid = as_callable(generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
+    lines_invalid = ensure_callable(generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
     assert any("rem_idx" in ln for ln in lines_invalid)
 
 
@@ -128,7 +127,7 @@ def _mock_device_count(ptr: EagerValue) -> int:
     Returns:
         int: Return code 0.
     """
-    _set_attr(_get_attr(ptr, "_obj", ptr), "value", 1)
+    ensure_mutable(ensure_eager_tensor(ptr)._obj).value = ensure_eager_tensor(1)
     return 0
 
 

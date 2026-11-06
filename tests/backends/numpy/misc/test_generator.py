@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -75,7 +75,7 @@ def test_numpy_generator_kwargs_only() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     op_type = "Zeros"
-    input_vars = as_tensor_list([])
+    input_vars = ensure_tensor_list([])
     kwargs = {"shape": "(2, 2)"}
 
     class Gen(gen.NumpyGenerator):
@@ -90,7 +90,7 @@ def test_numpy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    res = as_callable(OpFormatter.format_generic_fallback)(as_callable(FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
+    res = ensure_callable(OpFormatter.format_generic_fallback)(ensure_callable(FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
     assert "zeros" in str(res)
 
 
@@ -182,27 +182,27 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
             """
             self.op_type = op_type
             self.id = id
-            self.attributes = as_tensor_dict({})
+            self.attributes = ensure_tensor_dict({})
 
     class DummyGraph:
         """Test class DummyGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_list([])
+            self.nodes = ensure_tensor_list([])
 
-    assert as_tensor(NumpyTypeTranslator.get_fallback_prefix()) == "np"
-    assert as_tensor(NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
-    assert as_callable(NumpyASTVisitor.generic_visit)(as_callable(DummyNode)("Unknown"), []) == "np.unknown()"
-    gen = as_callable(NumpyGenerator)(as_callable(DummyGraph)())
+    assert ensure_eager_tensor(NumpyTypeTranslator.get_fallback_prefix()) == "np"
+    assert ensure_eager_tensor(NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
+    assert ensure_callable(NumpyASTVisitor.generic_visit)(ensure_callable(DummyNode)("Unknown"), []) == "np.unknown()"
+    gen = ensure_callable(NumpyGenerator)(ensure_callable(DummyGraph)())
     DummyNode("Einsum")
     DummyNode("PowerIteration")
-    assert as_tensor(gen.get_fallback_prefix()) == "np"
+    assert ensure_eager_tensor(gen.get_fallback_prefix()) == "np"
     ops = gen.get_ops_map({})
-    assert isinstance(as_tensor(ops), dict)
-    assert as_tensor(gen.get_fallback_prefix()) == "np"
+    assert isinstance(ensure_eager_tensor(ops), dict)
+    assert ensure_eager_tensor(gen.get_fallback_prefix()) == "np"
     helpers = gen.get_helper_functions()
-    assert isinstance(as_tensor(helpers), list)
+    assert isinstance(ensure_eager_tensor(helpers), list)
     with pytest.raises(Exception, match=".*"):
         NumpyGenerator.load("")
     dummy_npy = str(tmp_path / "dummy.npy")

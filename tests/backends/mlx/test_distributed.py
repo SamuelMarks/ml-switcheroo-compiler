@@ -6,7 +6,7 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,14 +43,14 @@ def test_mlx_generator_distributed_ops() -> None:
 
     mixin = MLXOpRegistryMixin()
 
-    ar = as_callable(mixin.visit_AllReduce)(None, ["tensor"])
+    ar = ensure_callable(mixin.visit_AllReduce)(None, ["tensor"])
     assert "mx.distributed.all_sum(tensor)" in ar
 
-    ag = as_callable(mixin.visit_AllGather)(None, ["tensor"])
+    ag = ensure_callable(mixin.visit_AllGather)(None, ["tensor"])
     assert "mx.distributed.all_gather(tensor)" in ag
 
-    a2a = as_callable(mixin.visit_AllToAll)(None, ["tensor"])
+    a2a = ensure_callable(mixin.visit_AllToAll)(None, ["tensor"])
     assert "mx.distributed.all_to_all(tensor)" in a2a
 
-    rs = as_callable(mixin.visit_ReduceScatter)(None, ["tensor"])
+    rs = ensure_callable(mixin.visit_ReduceScatter)(None, ["tensor"])
     assert "mx.distributed.recv(tensor)" in rs

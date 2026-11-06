@@ -9,8 +9,8 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -45,16 +45,16 @@ def test_gru_coverage() -> None:
 
     orig_matmul = gru_mod.matmul
     orig_gates = gru_mod._compute_gru_gates
-    _set_attr(gru_mod, "matmul", mock_matmul)
-    _set_attr(gru_mod, "_compute_gru_gates", mock_gates)
+    ensure_mutable(gru_mod).matmul = ensure_eager_tensor(mock_matmul)
+    ensure_mutable(gru_mod)._compute_gru_gates = ensure_eager_tensor(mock_gates)
     try:
         res = gru_mod.gru_cell(t_in, t_state, w, rw, b)
         assert res == ("hidden", "hidden")
         res = gru_mod.gru_cell(t_in, t_state, w, rw)
         assert res == ("hidden", "hidden")
     finally:
-        _set_attr(gru_mod, "matmul", orig_matmul)
-        _set_attr(gru_mod, "_compute_gru_gates", orig_gates)
+        ensure_mutable(gru_mod).matmul = ensure_eager_tensor(orig_matmul)
+        ensure_mutable(gru_mod)._compute_gru_gates = ensure_eager_tensor(orig_gates)
 
     assert gru_mod.Gru().infer_shape(t_in) is t_in
     assert gru_mod.Gru().infer_shape() == ()
@@ -72,11 +72,11 @@ def test_gru_coverage() -> None:
             return "gru_res"
 
     orig_backend = gru_mod.get_active_backend
-    _set_attr(gru_mod, "get_active_backend", lambda: MockBackend())
+    ensure_mutable(gru_mod).get_active_backend = ensure_eager_tensor(lambda: MockBackend())
     try:
         assert gru_mod.gru(t_in) == "gru_res"
     finally:
-        _set_attr(gru_mod, "get_active_backend", orig_backend)
+        ensure_mutable(gru_mod).get_active_backend = ensure_eager_tensor(orig_backend)
 
     config.eager_mode = False
     orig_emit = gru_mod._emit_shape_node
@@ -90,9 +90,9 @@ def test_gru_coverage() -> None:
         """
         return "emitted"
 
-    _set_attr(gru_mod, "_emit_shape_node", dummy_emit)
+    ensure_mutable(gru_mod)._emit_shape_node = ensure_eager_tensor(dummy_emit)
     try:
         assert gru_mod.gru(t_in) == "emitted"
     finally:
-        _set_attr(gru_mod, "_emit_shape_node", orig_emit)
+        ensure_mutable(gru_mod)._emit_shape_node = ensure_eager_tensor(orig_emit)
         config.eager_mode = True

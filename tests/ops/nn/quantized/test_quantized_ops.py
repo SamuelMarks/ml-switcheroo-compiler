@@ -36,7 +36,7 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     quantized_matmul,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -121,7 +121,7 @@ def test_quantized_ops_missing() -> None:
     with ConfigContext(eager_mode=True):
         res = quantized_conv(inp, q_cfg)
         assert isinstance(res, Tensor)
-        as_callable(np.testing.assert_array_equal)(as_callable(res.numpy)(), as_callable(np.array)([[[[4.0]]]]))
+        ensure_callable(np.testing.assert_array_equal)(ensure_callable(res.numpy)(), ensure_callable(np.array)([[[[4.0]]]]))
 
 
 def test_quantized_ops_brute() -> None:

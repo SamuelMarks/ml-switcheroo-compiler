@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -20,7 +20,7 @@ class Dummy:
 
     def __iter__(self) -> EagerValue:
         """Test function __iter__."""
-        return as_tensor(iter(self.shape))
+        return ensure_eager_tensor(iter(self.shape))
 
 
 def test_shape_misc_stubs() -> None:
@@ -145,8 +145,8 @@ def test_broadcast_to_empty_shape() -> None:
 
     op = BroadcastTo()
     assert op.infer_shape() == ()
-    assert as_callable(op.infer_shape)(42) == ()
-    assert as_callable(op.infer_shape)(as_callable(NoShape)()) == ()
+    assert ensure_callable(op.infer_shape)(42) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(NoShape)()) == ()
     assert op.infer_shape(shape=(5, 5)) == (5, 5)
 
 

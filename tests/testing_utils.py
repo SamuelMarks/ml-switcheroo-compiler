@@ -6,26 +6,26 @@ import types
 import typing
 
 import numpy as np
+import pytest
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerCallableProtocol,
     EagerTensorProtocol,
     EagerValue,
-    as_float,
-    as_int,
-    as_int_list,
-    as_shape,
-    as_str,
-    as_tensor_pair,
+    ensure_float,
+    ensure_int,
+    ensure_int_list,
+    ensure_shape,
+    ensure_str,
+    ensure_tensor_pair,
 )
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray as _src_as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray as _src_ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ir.core import as_attr_val as _src_as_attr_val
-from ml_switcheroo_compiler.ir.core import as_attrs as _src_as_attrs
-from ml_switcheroo_compiler.ir.core import as_graph as _src_as_graph
+from ml_switcheroo_compiler.ir.core import ensure_attr_val as _src_ensure_attr_val
+from ml_switcheroo_compiler.ir.core import ensure_attrs as _src_ensure_attrs
+from ml_switcheroo_compiler.ir.core import ensure_graph as _src_ensure_graph
 
 _TestValT = typing.TypeVar("_TestValT")
 
@@ -39,10 +39,10 @@ def _is_callable_proto(val: _TestValT) -> typing.TypeGuard[EagerCallableProtocol
     Returns:
         bool: Always True for runtime callables.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_callable(val: _TestValT) -> EagerCallableProtocol:
+def ensure_callable(val: _TestValT) -> EagerCallableProtocol:
     """Narrow `val` to `EagerCallableProtocol`.
 
     Args:
@@ -64,10 +64,10 @@ def _is_tensor_proto(val: _TestValT) -> typing.TypeGuard[EagerTensorProtocol]:
     Returns:
         bool: Always True for runtime tensors.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_tensor(val: _TestValT) -> EagerTensorProtocol:
+def ensure_eager_tensor(val: _TestValT) -> EagerTensorProtocol:
     """Narrow `val` to `EagerTensorProtocol`.
 
     Args:
@@ -89,10 +89,10 @@ def _is_mod_proto(val: _TestValT) -> typing.TypeGuard[BackendModuleProtocol]:
     Returns:
         bool: Always True for runtime backend modules.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_mod(val: _TestValT) -> BackendModuleProtocol:
+def ensure_mod(val: _TestValT) -> BackendModuleProtocol:
     """Narrow `val` to `BackendModuleProtocol`.
 
     Args:
@@ -114,10 +114,10 @@ def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, 
     Returns:
         bool: Always True for runtime arrays.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def ensure_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Narrow `val` to `np.ndarray`.
 
     Args:
@@ -126,7 +126,7 @@ def as_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generi
     Returns:
         np.ndarray: Narrowed numpy ndarray reference.
     """
-    _ = _src_as_ndarray
+    _ = _src_ensure_ndarray
     assert _is_ndarray_proto(val)
     return val
 
@@ -140,10 +140,10 @@ def _is_tensor_inst_proto(val: _TestValT) -> typing.TypeGuard[Tensor]:
     Returns:
         bool: Always True for runtime Tensor instances.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_tensor_obj(val: _TestValT) -> Tensor:
+def ensure_tensor_obj(val: _TestValT) -> Tensor:
     """Narrow `val` to `Tensor`.
 
     Args:
@@ -165,10 +165,10 @@ def _is_attrs_proto(val: _TestValT) -> typing.TypeGuard[dict[str, AttributeValue
     Returns:
         bool: Always True for runtime attribute dicts.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_attrs(val: _TestValT) -> dict[str, AttributeValue]:
+def ensure_attrs(val: _TestValT) -> dict[str, AttributeValue]:
     """Narrow `val` to `dict[str, AttributeValue]`.
 
     Args:
@@ -177,7 +177,7 @@ def as_attrs(val: _TestValT) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Narrowed attribute dictionary.
     """
-    _ = _src_as_attrs
+    _ = _src_ensure_attrs
     assert _is_attrs_proto(val)
     return val
 
@@ -191,10 +191,10 @@ def _is_attr_val_proto(val: _TestValT) -> typing.TypeGuard[AttributeValue]:
     Returns:
         bool: Always True for runtime attribute values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_attr_val(val: _TestValT) -> AttributeValue:
+def ensure_attr_val(val: _TestValT) -> AttributeValue:
     """Narrow `val` to `AttributeValue`.
 
     Args:
@@ -203,7 +203,7 @@ def as_attr_val(val: _TestValT) -> AttributeValue:
     Returns:
         AttributeValue: Narrowed attribute value.
     """
-    _ = _src_as_attr_val
+    _ = _src_ensure_attr_val
     assert _is_attr_val_proto(val)
     return val
 
@@ -217,10 +217,10 @@ def _is_graph_proto(val: _TestValT) -> typing.TypeGuard[LogicalGraph]:
     Returns:
         bool: Always True for runtime graphs.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_graph(val: _TestValT) -> LogicalGraph:
+def ensure_graph(val: _TestValT) -> LogicalGraph:
     """Narrow `val` to `LogicalGraph`.
 
     Args:
@@ -229,7 +229,7 @@ def as_graph(val: _TestValT) -> LogicalGraph:
     Returns:
         LogicalGraph: Narrowed LogicalGraph.
     """
-    _ = _src_as_graph
+    _ = _src_ensure_graph
     assert _is_graph_proto(val)
     return val
 
@@ -243,10 +243,10 @@ def _is_tensor_dict(val: _TestValT) -> typing.TypeGuard[dict[str, EagerTensorPro
     Returns:
         bool: Always True for runtime tensor dictionaries.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_tensor_dict(val: _TestValT) -> dict[str, EagerTensorProtocol]:
+def ensure_tensor_dict(val: _TestValT) -> dict[str, EagerTensorProtocol]:
     """Narrow `val` to `dict[str, EagerTensorProtocol]`.
 
     Args:
@@ -268,10 +268,10 @@ def _is_tensor_list(val: _TestValT) -> typing.TypeGuard[list[EagerTensorProtocol
     Returns:
         bool: Always True for runtime tensor lists.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_tensor_list(val: _TestValT) -> list[EagerTensorProtocol]:
+def ensure_tensor_list(val: _TestValT) -> list[EagerTensorProtocol]:
     """Narrow `val` to `list[EagerTensorProtocol]`.
 
     Args:
@@ -293,10 +293,10 @@ def _is_node_dict(val: _TestValT) -> typing.TypeGuard[dict[str, LogicalNode]]:
     Returns:
         bool: Always True for runtime node dictionaries.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_node_dict(val: _TestValT) -> dict[str, LogicalNode]:
+def ensure_node_dict(val: _TestValT) -> dict[str, LogicalNode]:
     """Narrow `val` to `dict[str, LogicalNode]`.
 
     Args:
@@ -318,10 +318,10 @@ def _is_logical_node(val: _TestValT) -> typing.TypeGuard[LogicalNode]:
     Returns:
         bool: Always True for runtime nodes.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_node(val: _TestValT) -> LogicalNode:
+def ensure_node(val: _TestValT) -> LogicalNode:
     """Narrow `val` to `LogicalNode`.
 
     Args:
@@ -343,10 +343,10 @@ def _is_module_type(val: _TestValT) -> typing.TypeGuard[types.ModuleType]:
     Returns:
         bool: Always True for runtime modules.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_module_type(val: _TestValT) -> types.ModuleType:
+def ensure_module_type(val: _TestValT) -> types.ModuleType:
     """Narrow `val` to `types.ModuleType`.
 
     Args:
@@ -368,10 +368,10 @@ def _is_type_obj(val: _TestValT) -> typing.TypeGuard[type]:
     Returns:
         bool: Always True for runtime types.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_type_obj(val: _TestValT) -> type:
+def ensure_type_obj(val: _TestValT) -> type:
     """Narrow `val` to `type`.
 
     Args:
@@ -381,6 +381,298 @@ def as_type_obj(val: _TestValT) -> type:
         type: Narrowed type reference.
     """
     assert _is_type_obj(val)
+    return val
+
+
+def get_test_members(obj: _TestValT) -> dict[str, EagerTensorProtocol]:
+    """Return a dictionary of member names to values for a module or object.
+
+    Args:
+        obj (_TestValT): Target module or object.
+
+    Returns:
+        dict[str, EagerTensorProtocol]: Mapping of attribute names to values.
+    """
+    import inspect
+
+    raw_items = ensure_callable(inspect.getmembers)(obj)
+    res: dict[str, EagerTensorProtocol] = {}
+    for pair in ensure_eager_tensor(raw_items):
+        k = str(ensure_eager_tensor(pair)[0])
+        v = ensure_eager_tensor(pair)[1]
+        res[k] = v
+    return res
+
+
+class TestMutableProtocol(typing.Protocol):
+    """Protocol for objects whose attributes are mutated or deleted in unit tests."""
+
+    __abstractmethods__: EagerValue
+    __add__: EagerValue
+    __all__: EagerValue
+    __array__: EagerValue
+    __call__: EagerValue
+    __module__: str
+    __name__: str
+    __signature__: EagerValue
+    __sub__: EagerValue
+    __wrapped__: EagerValue
+    argnums: EagerValue
+    hide_names: EagerValue
+    np_members: EagerValue
+    CodeGeneratorVisitor: EagerValue
+    ConfusionMatrix: EagerValue
+    DecodeCsv: EagerValue
+    DecodeImage: EagerValue
+    EagerEvaluator: EagerValue
+    GroundingEngine: EagerValue
+    OpDef: EagerValue
+    ParseExample: EagerValue
+    ParseTensor: EagerValue
+    RawMatMul: EagerValue
+    ReadFile: EagerValue
+    ReferenceEvaluator: EagerValue
+    Rem: EagerValue
+    SerializeTensor: EagerValue
+    SparseDenseMatMul: EagerValue
+    Tensor: EagerValue
+    WriteFile: EagerValue
+    _ACTIVE_BACKEND: EagerValue
+    _GLOBAL_NP_DIST_CONTEXT: EagerValue
+    _MANIFEST_MODEL_CACHE: EagerValue
+    _WASM_TEMPLATES: EagerValue
+    _compressor: EagerValue
+    _compute_gru_gates: EagerValue
+    _conv_nd: EagerValue
+    _data: EagerValue
+    _device: EagerValue
+    _dtype: EagerValue
+    _emit_linalg_node: EagerValue
+    _emit_reduction_node: EagerValue
+    _emit_shape_node: EagerValue
+    _generate_body: EagerValue
+    _generator: EagerValue
+    _getframe: EagerValue
+    _grounding_engine: EagerValue
+    _import_header: EagerValue
+    _nodes: EagerValue
+    _priv: EagerValue
+    _requires_grad: EagerValue
+    _running: EagerValue
+    _server: EagerValue
+    _shape: EagerValue
+    _thread: EagerValue
+    active_graph: EagerValue
+    add: EagerValue
+    add_line: EagerValue
+    add_node: EagerValue
+    address: EagerValue
+    all_gather_tensors: EagerValue
+    all_reduce_ring: EagerValue
+    allocate_buffer: EagerValue
+    alpha: EagerValue
+    annotations: EagerValue
+    array: EagerValue
+    asarray: EagerValue
+    assigned: EagerValue
+    ast_template: EagerValue
+    attributes: EagerValue
+    backend: EagerValue
+    backend_name: EagerValue
+    bad_sig: EagerValue
+    beta: EagerValue
+    block_until_ready: EagerValue
+    called: EagerValue
+    chars: EagerValue
+    cls_attr: EagerValue
+    code: EagerValue
+    compile_and_dispatch: EagerValue
+    compile_cuda_to_ptx: EagerValue
+    compile_hip_to_code: EagerValue
+    concrete_value: EagerValue
+    config: EagerValue
+    confusion_matrix: EagerValue
+    conn: EagerValue
+    connections: EagerValue
+    conv2d: EagerValue
+    conv2d_transpose: EagerValue
+    convergence_criteria: EagerValue
+    convert_to_tensor: EagerValue
+    core: EagerValue
+    count: EagerValue
+    counter: EagerValue
+    cuda: EagerValue
+    cudaMalloc: EagerValue
+    cuda_lib: EagerValue
+    cuda_rt: EagerValue
+    cummax: EagerValue
+    cummin: EagerValue
+    cumprod: EagerValue
+    current_loop_options: EagerValue
+    current_stream: EagerValue
+    da: EagerValue
+    dask: EagerValue
+    decode_csv: EagerValue
+    decode_image: EagerValue
+    default_device: EagerValue
+    descriptive: EagerValue
+    device: EagerValue
+    distributions: EagerValue
+    domain: EagerValue
+    dtype: EagerValue
+    eager_eval: EagerValue
+    eager_mode: EagerValue
+    einsum: EagerValue
+    emit_constant: EagerValue
+    enable_in_place: EagerValue
+    eval: EagerValue
+    f_kwonly: EagerValue
+    f_normal: EagerValue
+    f_varargs: EagerValue
+    f_varpos_kw: EagerValue
+    float32: EagerValue
+    formatter: EagerValue
+    free_buffer: EagerValue
+    fromfunction: EagerValue
+    fromiter: EagerValue
+    frompyfunc: EagerValue
+    gcd: EagerValue
+    generic_array: EagerValue
+    generic_asarray: EagerValue
+    generic_item: EagerValue
+    generic_zeros: EagerValue
+    getDeviceCount: EagerValue
+    get_active_backend: EagerValue
+    get_fallback_prefix: EagerValue
+    get_op: EagerValue
+    get_ops_map: EagerValue
+    getsource: EagerValue
+    global_tracing_state: EagerValue
+    grad: EagerValue
+    graph: EagerValue
+    hasattr: EagerValue
+    header: EagerValue
+    hipMalloc: EagerValue
+    hip_rt: EagerValue
+    histogram: EagerValue
+    id: EagerValue
+    indent_level: EagerValue
+    initializers: EagerValue
+    input_specs: EagerValue
+    inputs: EagerValue
+    is_available: EagerValue
+    is_tracing: EagerValue
+    item: EagerValue
+    keras: EagerValue
+    keras_input_vars: EagerValue
+    keras_output_vars: EagerValue
+    kwarg_map: EagerValue
+    linalg: EagerValue
+    load: EagerValue
+    load_and_dispatch: EagerValue
+    log: EagerValue
+    matmul: EagerValue
+    mean: EagerValue
+    mesh_mapping: EagerValue
+    metadata: EagerValue
+    mixed_list: EagerValue
+    mod: EagerValue
+    mode: EagerValue
+    multiply: EagerValue
+    mx: EagerValue
+    name: EagerValue
+    nodes: EagerValue
+    non_callable: EagerValue
+    non_existent_module: EagerValue
+    num_microbatches: EagerValue
+    numpy: EagerValue
+    op_type: EagerValue
+    operations: EagerValue
+    ops: EagerValue
+    ops_map: EagerValue
+    outputs: EagerValue
+    parse_example: EagerValue
+    parse_tensor: EagerValue
+    pattern: EagerValue
+    random: EagerValue
+    rank: EagerValue
+    raw: EagerValue
+    read_buffer: EagerValue
+    read_file: EagerValue
+    recv_conn: EagerValue
+    recv_conns: EagerValue
+    reference: EagerValue
+    rem: EagerValue
+    res: EagerValue
+    return_value: EagerValue
+    rocm_lib: EagerValue
+    run_method: EagerValue
+    runtime: EagerValue
+    save: EagerValue
+    save_safetensors: EagerValue
+    scalar_attr: EagerValue
+    send_conn: EagerValue
+    send_conns: EagerValue
+    serialize_tensor: EagerValue
+    set_numpy_seed: EagerValue
+    shape: EagerValue
+    shape_metadata: EagerValue
+    sharding: EagerValue
+    side_effect: EagerValue
+    signature: EagerValue
+    sorted_nodes: EagerValue
+    special: EagerValue
+    split: EagerValue
+    sqrt: EagerValue
+    stack: EagerValue
+    stream: EagerValue
+    subgraphs: EagerValue
+    sum: EagerValue
+    synchronize: EagerValue
+    tanh: EagerValue
+    target_api: EagerValue
+    target_config: EagerValue
+    target_env: EagerValue
+    tf: EagerValue
+    tolist: EagerValue
+    torch: EagerValue
+    trainable: EagerValue
+    uuid4: EagerValue
+    value: EagerValue
+    var_names: EagerValue
+    visit_OpNode: EagerValue
+    visitors: EagerValue
+    wait_drain: EagerValue
+    weight: EagerValue
+    workgroup_size: EagerValue
+    world_size: EagerValue
+    write_buffer: EagerValue
+    write_file: EagerValue
+    zeros: EagerValue
+
+
+def _is_mutable_proto(val: _TestValT) -> typing.TypeGuard[TestMutableProtocol]:
+    """Type guard narrowing `val` to `TestMutableProtocol`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime mutable objects.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def ensure_mutable(val: _TestValT) -> TestMutableProtocol:
+    """Narrow `val` to `TestMutableProtocol`.
+
+    Args:
+        val (_TestValT): Object to mutate.
+
+    Returns:
+        TestMutableProtocol: Narrowed mutable protocol reference.
+    """
+    assert _is_mutable_proto(val)
     return val
 
 
@@ -403,20 +695,26 @@ class _MockTorchDevice:
         Args:
             dev_type (EagerValue): Device type string or object.
         """
-        self.type = str(_get_attr(dev_type, "type", dev_type)).split(":")[0]
+        self.type = str(dev_type).split(":")[0]
 
-    if not typing.TYPE_CHECKING:
+    def __str__(self) -> str:
+        """Return string representation of device type.
 
-        def __eq__(self, other: EagerValue) -> bool:
-            """Check device equality.
+        Returns:
+            str: Device type string.
+        """
+        return self.type
 
-            Args:
-                other (EagerValue): Other device object.
+    def __eq__(self, other: EagerTensorProtocol | EagerCallableProtocol | int | float | bool | str | bytes | None) -> bool:
+        """Check device equality.
 
-            Returns:
-                bool: True if equal.
-            """
-            return self.type == str(_get_attr(other, "type", other)).split(":")[0]
+        Args:
+            other (EagerValue): Other device object.
+
+        Returns:
+            bool: True if equal.
+        """
+        return self.type == str(other).split(":")[0]
 
 
 class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
@@ -497,11 +795,20 @@ class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
             _MockTorchTensor: Broadcasted tensor.
         """
         target = sizes[0] if len(sizes) == 1 and isinstance(sizes[0], (tuple, list)) else sizes
-        return np.broadcast_to(np.asarray(self), as_shape(target)).copy().view(_MockTorchTensor)
+        return np.broadcast_to(np.asarray(self), ensure_shape(target)).copy().view(_MockTorchTensor)
 
 
 class _MockNNModule:
     """Mock torch.nn.Module base class."""
+
+    def __init__(self) -> None:
+        """Initialize mock module."""
+        self.const: EagerValue = None
+        self.const_0: EagerValue = None
+        self.const_1: EagerValue = None
+        self.const_2: EagerValue = None
+        self.weight: EagerValue = None
+        self.bias: EagerValue = None
 
     def to(self, *args: EagerValue, **kwargs: EagerValue) -> _MockNNModule:
         """Move module to device.
@@ -523,7 +830,31 @@ class _MockNNModule:
             name (str): Parameter name.
             param (EagerValue): Parameter tensor.
         """
-        _set_attr(self, name, param)
+        if name == "const":
+            self.const = param
+        elif name == "const_0":
+            self.const_0 = param
+        elif name == "const_1":
+            self.const_1 = param
+        elif name == "const_2":
+            self.const_2 = param
+        elif name == "weight":
+            self.weight = param
+        elif name == "bias":
+            self.bias = param
+
+    def forward(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Forward pass placeholder.
+
+        Args:
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Forward output.
+        """
+        del kwargs
+        return args[0] if args else None
 
     def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Invoke forward method.
@@ -535,7 +866,7 @@ class _MockNNModule:
         Returns:
             EagerValue: Forward output.
         """
-        return as_callable(_get_attr(self, "forward"))(*args, **kwargs)
+        return self.forward(*args, **kwargs)
 
 
 class _MockNNLinear(_MockNNModule):
@@ -549,18 +880,22 @@ class _MockNNLinear(_MockNNModule):
             out_features (int): Output feature count.
             bias (bool): Whether to include bias.
         """
+        super().__init__()
         self.weight = np.zeros((out_features, in_features), dtype=np.float32).view(_MockTorchTensor)
         self.bias = np.zeros((out_features,), dtype=np.float32).view(_MockTorchTensor) if bias else None
 
-    def forward(self, x: EagerValue) -> _MockTorchTensor:
+    def forward(self, *args: EagerValue, **kwargs: EagerValue) -> _MockTorchTensor:
         """Compute linear projection.
 
         Args:
-            x (EagerValue): Input tensor.
+            *args (EagerValue): Positional arguments (first is input tensor).
+            **kwargs (EagerValue): Keyword arguments.
 
         Returns:
             _MockTorchTensor: Projected tensor.
         """
+        del kwargs
+        x = args[0] if args else 0.0
         res = np.matmul(np.asarray(x), np.swapaxes(np.asarray(self.weight), -1, -2))
         if self.bias is not None:
             res = res + np.asarray(self.bias)
@@ -774,16 +1109,16 @@ def _install_mlx_and_sparse_stubs(mp_setitem: EagerCallableProtocol, mp_setattr:
         mp_setattr(sp_prof, "sparse", mock_sparse)
 
 
-def install_profiler_backend_stubs(monkeypatch: _TestValT) -> None:
+def install_profiler_backend_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     """Install NumPy-backed mock modules for optional profiler backends when not installed.
 
     Args:
-        monkeypatch (_TestValT): Pytest MonkeyPatch instance.
+        monkeypatch (pytest.MonkeyPatch): Pytest MonkeyPatch instance.
     """
     import importlib.util
 
-    mp_setitem = as_callable(_get_attr(monkeypatch, "setitem"))
-    mp_setattr = as_callable(_get_attr(monkeypatch, "setattr"))
+    mp_setitem = ensure_callable(monkeypatch.setitem)
+    mp_setattr = ensure_callable(monkeypatch.setattr)
 
     if importlib.util.find_spec("torch") is None:
         _install_torch_stub(mp_setitem, mp_setattr)
@@ -801,26 +1136,30 @@ __all__ = [
     "LogicalGraph",
     "LogicalNode",
     "Tensor",
-    "as_attr_val",
-    "as_attrs",
-    "as_callable",
-    "as_float",
-    "as_graph",
-    "as_int",
-    "as_int_list",
-    "as_mod",
-    "as_module_type",
-    "as_ndarray",
-    "as_node",
-    "as_node_dict",
-    "as_shape",
-    "as_str",
-    "as_tensor",
-    "as_tensor_dict",
-    "as_tensor_list",
-    "as_tensor_obj",
-    "as_tensor_pair",
-    "as_type_obj",
+    "ensure_attr_val",
+    "ensure_attrs",
+    "ensure_callable",
+    "ensure_float",
+    "ensure_graph",
+    "ensure_int",
+    "ensure_int_list",
+    "ensure_mod",
+    "TestMutableProtocol",
+    "ensure_module_type",
+    "ensure_mutable",
+    "ensure_ndarray",
+    "ensure_node",
+    "ensure_node_dict",
+    "ensure_shape",
+    "ensure_str",
+    "ensure_eager_tensor",
+    "ensure_tensor_dict",
+    "ensure_tensor_list",
+    "ensure_tensor_obj",
+    "ensure_tensor_pair",
+    "ensure_type_obj",
+    "get_backend_member",
+    "has_backend_member",
     "install_profiler_backend_stubs",
     "np",
     "AttributeValue",

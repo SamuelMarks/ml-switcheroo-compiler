@@ -11,9 +11,8 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.dropout as do
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -26,19 +25,19 @@ def test_dropout_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert as_callable(do.Dropout)().infer_shape(t) == (2, 2)
-    assert as_callable(do.AlphaDropout)().infer_shape(t) == (2, 2)
-    assert as_callable(do.ActivityRegularization)().infer_shape(t) == (2, 2)
-    assert as_callable(do.ActivityRegularization)().infer_shape([t]) == [t]
+    assert ensure_callable(do.Dropout)().infer_shape(t) == (2, 2)
+    assert ensure_callable(do.AlphaDropout)().infer_shape(t) == (2, 2)
+    assert ensure_callable(do.ActivityRegularization)().infer_shape(t) == (2, 2)
+    assert ensure_callable(do.ActivityRegularization)().infer_shape([t]) == [t]
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (2, 2)
 
-    assert as_callable(do.Dropout1d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
-    assert as_callable(do.Dropout2d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
-    assert as_callable(do.Dropout3d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
+    assert ensure_callable(do.Dropout1d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
+    assert ensure_callable(do.Dropout2d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
+    assert ensure_callable(do.Dropout3d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         config.eager_mode = False
@@ -69,7 +68,7 @@ def test_dropout_coverage() -> None:
             """
             return "emitted"
 
-        _set_attr(d_mod, "_emit_shape_node", dummy_emit)
+        ensure_mutable(d_mod)._emit_shape_node = ensure_eager_tensor(dummy_emit)
         assert do.dropout1d(t) == "emitted"
         assert do.dropout2d(t) == "emitted"
         assert do.dropout3d(t) == "emitted"

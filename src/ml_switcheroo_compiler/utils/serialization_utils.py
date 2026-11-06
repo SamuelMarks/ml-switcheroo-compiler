@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import inspect
 import typing
 from collections.abc import Callable
 from types import TracebackType
 
 from ml_switcheroo_ir import AttributeValue
-
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 
 T = typing.TypeVar("T")
 
@@ -26,6 +25,30 @@ class ConfigurableProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
+class _NamedCallableProtocol(typing.Protocol):
+    """Protocol for callables or classes exposing a `__name__` attribute."""
+
+    __name__: str
+
+
+@typing.runtime_checkable
+class _FromConfigClassProtocol(typing.Protocol):
+    """Protocol for classes implementing `from_config(config)`."""
+
+    def from_config(self, config: dict[str, AttributeValue]) -> ConfigurableProtocol | AttributeValue | None:
+        """Construct an instance from a configuration dictionary.
+
+        Args:
+            config (dict[str, AttributeValue]): Configuration dictionary.
+
+        Returns:
+            ConfigurableProtocol | AttributeValue | None: Constructed instance.
+        """
+        ...
+
+
+@typing.runtime_checkable
 class SerializableCallableProtocol(typing.Protocol):
     """Protocol for serializable factory or function objects."""
 
@@ -47,6 +70,19 @@ class SerializableCallableProtocol(typing.Protocol):
 
 
 SerializableType = typing.Union[type, "SerializableCallableProtocol"]
+
+
+def _is_serializable_type(val: T) -> typing.TypeGuard[SerializableType]:
+    """Type guard narrowing a decorated class or callable `val` to `SerializableType`.
+
+    Args:
+        val (T): Decorated class or function.
+
+    Returns:
+        bool: Always True for callable/type targets.
+    """
+    return val is not None
+
 
 _GLOBAL_CUSTOM_OBJECTS: dict[str, SerializableType] = {}
 _REGISTERED_NAMES: dict[SerializableType, str] = {}
@@ -137,7 +173,7 @@ def get_registered_name(obj: SerializableType | None = None) -> str:
         return ""
     if obj in _REGISTERED_NAMES:
         return _REGISTERED_NAMES[obj]
-    if _has_attr(obj, "__name__"):
+    if isinstance(obj, _NamedCallableProtocol):
         return str(obj.__name__)
     return str(type(obj).__name__)
 
@@ -187,12 +223,14 @@ def register_serializable(
         Returns:
             T: The original class or function.
         """
-        registered_name = str(name or _get_attr(cls_or_fn, "__name__", str(cls_or_fn)))
+        fallback_name = cls_or_fn.__name__ if isinstance(cls_or_fn, _NamedCallableProtocol) else str(cls_or_fn)
+        registered_name = str(name or fallback_name)
         full_name = f"{package}>{registered_name}" if package else registered_name
-        serializable_obj = _cast_val(SerializableType, cls_or_fn)
-        _GLOBAL_CUSTOM_OBJECTS[registered_name] = serializable_obj
-        _GLOBAL_CUSTOM_OBJECTS[full_name] = serializable_obj
-        _REGISTERED_NAMES[serializable_obj] = registered_name
+        cand: T = cls_or_fn
+        assert _is_serializable_type(cand)
+        _GLOBAL_CUSTOM_OBJECTS[registered_name] = cand
+        _GLOBAL_CUSTOM_OBJECTS[full_name] = cand
+        _REGISTERED_NAMES[cand] = registered_name
         return cls_or_fn
 
     return decorator
@@ -212,11 +250,13 @@ def serialize_object(
     if obj is None:
         return None
     cls_name = get_registered_name(type(obj))
-    cfg: dict[str, AttributeValue] = obj.get_config() if _has_attr(obj, "get_config") else {}
+    cfg: dict[str, AttributeValue] = obj.get_config() if isinstance(obj, ConfigurableProtocol) else {}
+    mod_obj = inspect.getmodule(type(obj))
+    mod_name: str = mod_obj.__name__ if mod_obj is not None else str(type(obj).__module__)
     return {
         "class_name": cls_name,
         "config": cfg,
-        "module": _get_attr(type(obj), "__module__", ""),
+        "module": mod_name,
         "registered_name": cls_name,
     }
 
@@ -243,11 +283,9 @@ def deserialize_object(
         return identifier
     config_dict = identifier.get("config", {})
     cls_obj = get_registered_object(class_name, custom_objects)
-    if cls_obj is not None and isinstance(cls_obj, type):
-        if _has_attr(cls_obj, "from_config") and isinstance(config_dict, dict):
-            _typed_ret_1: ConfigurableProtocol | AttributeValue | None = _cast_val("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
-            return _typed_ret_1
-        if isinstance(config_dict, dict):
-            _typed_ret_2: ConfigurableProtocol | AttributeValue | None = _cast_val("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
-            return _typed_ret_2
+    if cls_obj is not None and isinstance(config_dict, dict):
+        if isinstance(cls_obj, _FromConfigClassProtocol):
+            return cls_obj.from_config(config_dict)
+        if isinstance(cls_obj, SerializableCallableProtocol):
+            return cls_obj(**config_dict)
     return identifier

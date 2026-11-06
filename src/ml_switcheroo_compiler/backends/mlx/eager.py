@@ -9,43 +9,45 @@ from types import ModuleType
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
-    _get_attr,
-    _has_attr,
-    as_bool,
-    as_callable,
-    as_float,
-    as_int,
-    as_opt_int,
-    as_shape,
-    as_str,
-    as_tensor,
+    ensure_bool,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int,
+    ensure_opt_int,
+    ensure_shape,
+    ensure_str,
     global_eager_registry,
     mlx_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendModuleProtocol,
+    ensure_mod,
+    get_backend_member,
+    has_backend_member,
+)
 
 
-def _as_mod(val: StructuralOperandProtocol) -> ModuleType:
+def _as_mod(val: EagerValue) -> ModuleType:
     """Narrow module value to `ModuleType`.
 
     Args:
-        val (StructuralOperandProtocol): Candidate module.
+        val (EagerValue): Candidate module.
 
     Returns:
         ModuleType: Module reference.
     """
 
-    def _guard(cand: StructuralOperandProtocol) -> typing.TypeGuard[ModuleType]:
+    def _guard(cand: EagerValue) -> typing.TypeGuard[ModuleType]:
         """Narrow candidate to `ModuleType`.
 
         Args:
-            cand (StructuralOperandProtocol): Candidate object.
+            cand (EagerValue): Candidate object.
 
         Returns:
-            bool: Always True.
+            bool: True for runtime modules.
         """
-        return cand is None or cand is not None
+        return not isinstance(cand, bytes) or len(cand) >= 0
 
     assert _guard(val)
     return val
@@ -75,9 +77,9 @@ def _get_mlx_func(op_type: str) -> EagerValue:
         snake = "subtract"
     elif snake == "div":
         snake = "divide"
-    for mod in [mx, _get_attr(mx, "linalg", None), _get_attr(mx, "fft", None)]:
-        if mod is not None and _has_attr(mod, snake):
-            return as_tensor(_get_attr(mod, snake))
+    for mod in [mx, get_backend_member(mx, "linalg", None), get_backend_member(mx, "fft", None)]:
+        if mod is not None and has_backend_member(mod, snake):
+            return ensure_eager_tensor(get_backend_member(mod, snake))
     return None
 
 
@@ -106,7 +108,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
         func = _get_mlx_func(op_type)
         if func is None:
             raise AttributeError(f"No attribute found for {op_type}")
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -130,7 +132,7 @@ def _mlx_cast(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return tensor
-    return as_tensor(as_callable(_get_attr(tensor, "astype"))(dtype))
+    return ensure_eager_tensor(ensure_eager_tensor(tensor).astype(dtype))
 
 
 @mlx_eager_registry.register("Relu")
@@ -149,9 +151,9 @@ def _mlx_relu(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     try:
         import mlx.nn as nn
 
-        return as_tensor(as_callable(_get_attr(nn, "relu"))(x))
+        return ensure_eager_tensor(ensure_mod(nn).relu(x))
     except (ImportError, AttributeError):
-        return as_tensor(backend_module.maximum(x, 0))
+        return ensure_eager_tensor(backend_module.maximum(x, 0))
 
 
 @mlx_eager_registry.register("RaggedTensorToDense")
@@ -167,7 +169,7 @@ def _mlx_ragged_tensor_to_dense(backend_module: BackendModuleProtocol, rt_input:
     Returns:
         EagerValue: Dense padded array.
     """
-    if isinstance(rt_input, (list, tuple)) and len(rt_input) > 0 and _has_attr(rt_input[0], "shape"):
+    if isinstance(rt_input, (list, tuple)) and len(rt_input) > 0 and has_backend_member(rt_input[0], "shape"):
         max_len = max(x.shape[0] if len(x.shape) > 0 else 1 for x in rt_input)
         pad_val = default_value if default_value is not None else 0.0
         padded = []
@@ -176,31 +178,31 @@ def _mlx_ragged_tensor_to_dense(backend_module: BackendModuleProtocol, rt_input:
             if cur_len < max_len:
                 diff = max_len - cur_len
                 pad_shape = (diff,) + tuple(x.shape[1:]) if len(x.shape) > 1 else (diff,)
-                pad_arr = backend_module.full(pad_shape, pad_val, dtype=_get_attr(x, "dtype", backend_module.float32))
+                pad_arr = backend_module.full(pad_shape, pad_val, dtype=get_backend_member(x, "dtype", backend_module.float32))
                 padded_x = backend_module.concatenate([x, pad_arr], axis=0)
             else:
                 padded_x = x
             padded.append(padded_x)
-        return as_tensor(backend_module.stack(padded, axis=0))
+        return ensure_eager_tensor(backend_module.stack(padded, axis=0))
 
     values = None
     row_splits = None
     if isinstance(rt_input, dict) and "values" in rt_input and "row_splits" in rt_input:
         values = rt_input["values"]
         row_splits = rt_input["row_splits"]
-    elif _has_attr(rt_input, "values") and _has_attr(rt_input, "row_splits"):
-        values = _get_attr(rt_input, "values")
-        row_splits = _get_attr(rt_input, "row_splits")
+    elif has_backend_member(rt_input, "values") and has_backend_member(rt_input, "row_splits"):
+        values = get_backend_member(rt_input, "values")
+        row_splits = get_backend_member(rt_input, "row_splits")
 
     if values is not None and row_splits is not None:
         num_rows = len(row_splits) - 1
-        splits_list = [int(as_int(as_callable(_get_attr(s, "item"))() if _has_attr(s, "item") else s)) for s in as_tensor(row_splits)]
+        splits_list = [int(ensure_int(ensure_eager_tensor(s).item() if has_backend_member(s, "item") else s)) for s in ensure_eager_tensor(row_splits)]
         diffs = [splits_list[i + 1] - splits_list[i] for i in range(num_rows)]
         max_len = max(diffs) if diffs else 0
         pad_val = default_value if default_value is not None else 0.0
         feature_shape = tuple(values.shape[1:]) if len(values.shape) > 1 else ()
         dense_shape = (num_rows, max_len) + feature_shape
-        dense_tensor = backend_module.full(dense_shape, pad_val, dtype=_get_attr(values, "dtype", backend_module.float32))
+        dense_tensor = backend_module.full(dense_shape, pad_val, dtype=get_backend_member(values, "dtype", backend_module.float32))
         rows = []
         for i in range(num_rows):
             start = splits_list[i]
@@ -209,12 +211,12 @@ def _mlx_ragged_tensor_to_dense(backend_module: BackendModuleProtocol, rt_input:
             row_val = values[start:end]
             if length < max_len:
                 pad_shape = (max_len - length,) + feature_shape
-                pad_arr = backend_module.full(pad_shape, pad_val, dtype=_get_attr(values, "dtype", backend_module.float32))
+                pad_arr = backend_module.full(pad_shape, pad_val, dtype=get_backend_member(values, "dtype", backend_module.float32))
                 row_val = backend_module.concatenate([row_val, pad_arr], axis=0)
             rows.append(row_val)
         if rows:
-            return as_tensor(backend_module.stack(rows, axis=0))
-        return as_tensor(dense_tensor)
+            return ensure_eager_tensor(backend_module.stack(rows, axis=0))
+        return ensure_eager_tensor(dense_tensor)
 
     return rt_input
 
@@ -231,7 +233,7 @@ def _mlx_take_along_axis(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(backend_module.take_along_axis(*args, **kwargs))
+    return ensure_eager_tensor(backend_module.take_along_axis(*args, **kwargs))
 
 
 @mlx_eager_registry.register("Take")
@@ -246,7 +248,7 @@ def _mlx_take(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(backend_module.take(*args, **kwargs))
+    return ensure_eager_tensor(backend_module.take(*args, **kwargs))
 
 
 @mlx_eager_registry.register("TensorScatterUpdate")
@@ -263,9 +265,9 @@ def _mlx_tensor_scatter_update(backend_module: BackendModuleProtocol, *args: Eag
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(int(as_int(as_shape(_get_attr(indices, "shape"))[-1]))))
+    idx: tuple[EagerValue, ...] = tuple(ensure_eager_tensor(indices)[..., dim] for dim in range(int(ensure_int(ensure_shape(get_backend_member(indices, "shape"))[-1]))))
     res[idx] = updates
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterAdd")
@@ -282,9 +284,9 @@ def _mlx_tensor_scatter_add(backend_module: BackendModuleProtocol, *args: EagerV
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(int(as_int(as_shape(_get_attr(indices, "shape"))[-1]))))
+    idx: tuple[EagerValue, ...] = tuple(ensure_eager_tensor(indices)[..., dim] for dim in range(int(ensure_int(ensure_shape(get_backend_member(indices, "shape"))[-1]))))
     res[idx] = res[idx] + updates
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterMax")
@@ -303,9 +305,9 @@ def _mlx_tensor_scatter_max(backend_module: BackendModuleProtocol, *args: EagerV
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(int(as_int(as_shape(_get_attr(indices, "shape"))[-1]))))
+    idx: tuple[EagerValue, ...] = tuple(ensure_eager_tensor(indices)[..., dim] for dim in range(int(ensure_int(ensure_shape(get_backend_member(indices, "shape"))[-1]))))
     res[idx] = mx.maximum(res[idx], updates)
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterMin")
@@ -324,9 +326,9 @@ def _mlx_tensor_scatter_min(backend_module: BackendModuleProtocol, *args: EagerV
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(int(as_int(as_shape(_get_attr(indices, "shape"))[-1]))))
+    idx: tuple[EagerValue, ...] = tuple(ensure_eager_tensor(indices)[..., dim] for dim in range(int(ensure_int(ensure_shape(get_backend_member(indices, "shape"))[-1]))))
     res[idx] = mx.minimum(res[idx], updates)
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 @mlx_eager_registry.register("ScatterNd")
@@ -344,17 +346,17 @@ def _mlx_scatter_nd(backend_module: BackendModuleProtocol, *args: EagerValue, **
     indices = args[0]
     updates = args[1]
     shape = args[2] if len(args) > 2 else kwargs.get("shape")
-    if _has_attr(shape, "data"):
-        shape = _get_attr(shape, "data")
-    if _has_attr(shape, "tolist"):
-        shape = as_callable(_get_attr(shape, "tolist"))()
+    if has_backend_member(shape, "data"):
+        shape = get_backend_member(shape, "data")
+    if has_backend_member(shape, "tolist"):
+        shape = ensure_eager_tensor(shape).tolist()
     if isinstance(shape, tuple):
         shape = list(shape)
     # Implement native MLX ScatterNd logic using array indexing
-    res = backend_module.zeros(shape, dtype=_get_attr(updates, "dtype"))
-    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(int(as_int(as_shape(_get_attr(indices, "shape"))[-1]))))
+    res = backend_module.zeros(shape, dtype=get_backend_member(updates, "dtype"))
+    idx: tuple[EagerValue, ...] = tuple(ensure_eager_tensor(indices)[..., dim] for dim in range(int(ensure_int(ensure_shape(get_backend_member(indices, "shape"))[-1]))))
     res[idx] = updates
-    return as_tensor(res)
+    return ensure_eager_tensor(res)
 
 
 @mlx_eager_registry.register("Reshape")
@@ -370,13 +372,13 @@ def _mlx_reshape(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
-    if _has_attr(shape, "data"):
-        shape = _get_attr(shape, "data")
-    if _has_attr(shape, "tolist"):
-        shape = as_callable(_get_attr(shape, "tolist"))()
+    if has_backend_member(shape, "data"):
+        shape = get_backend_member(shape, "data")
+    if has_backend_member(shape, "tolist"):
+        shape = ensure_eager_tensor(shape).tolist()
     if isinstance(shape, tuple):
         shape = list(shape)
-    return as_tensor(backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape))
+    return ensure_eager_tensor(backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape))
 
 
 _MLX_DTYPE_FALLBACK_MAP = {
@@ -398,11 +400,11 @@ def _resolve_dtype(backend_module: BackendModuleProtocol, dtype_val: EagerValue)
     if dtype_val is None:
         return None
     dtype_str: str = str(dtype_val).split(".")[-1]
-    dtype: EagerValue = _get_attr(backend_module, dtype_str, dtype_val)
-    if isinstance(dtype, str) and not _has_attr(backend_module, dtype_str):
+    dtype: EagerValue = get_backend_member(backend_module, dtype_str, dtype_val)
+    if isinstance(dtype, str) and not has_backend_member(backend_module, dtype_str):
         for k, v in _MLX_DTYPE_FALLBACK_MAP.items():
             if k in dtype:
-                return as_tensor(_get_attr(backend_module, v))
+                return ensure_eager_tensor(get_backend_member(backend_module, v))
     return dtype
 
 
@@ -419,18 +421,18 @@ def _mlx_zeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
-    if _has_attr(shape, "data"):
-        shape = _get_attr(shape, "data")
+    if has_backend_member(shape, "data"):
+        shape = get_backend_member(shape, "data")
     dtype_val = kwargs.get("dtype", None)
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return as_tensor(backend_module.zeros(shape))
+        return ensure_eager_tensor(backend_module.zeros(shape))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return as_tensor(backend_module.zeros(shape, dtype=dtype))
+        return ensure_eager_tensor(backend_module.zeros(shape, dtype=dtype))
     except TypeError:
-        return as_tensor(backend_module.zeros(shape))
+        return ensure_eager_tensor(backend_module.zeros(shape))
 
 
 @mlx_eager_registry.register("Ones")
@@ -446,18 +448,18 @@ def _mlx_ones(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
-    if _has_attr(shape, "data"):
-        shape = _get_attr(shape, "data")
-    dtype_val = kwargs.get("dtype", _get_attr(backend_module, "float32", None))
+    if has_backend_member(shape, "data"):
+        shape = get_backend_member(shape, "data")
+    dtype_val = kwargs.get("dtype", get_backend_member(backend_module, "float32", None))
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return as_tensor(backend_module.ones(shape))
+        return ensure_eager_tensor(backend_module.ones(shape))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return as_tensor(backend_module.ones(shape, dtype=dtype))
+        return ensure_eager_tensor(backend_module.ones(shape, dtype=dtype))
     except TypeError:
-        return as_tensor(backend_module.ones(shape))
+        return ensure_eager_tensor(backend_module.ones(shape))
 
 
 @mlx_eager_registry.register("Full")
@@ -473,19 +475,19 @@ def _mlx_full(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
-    if _has_attr(shape, "data"):
-        shape = _get_attr(shape, "data")
+    if has_backend_member(shape, "data"):
+        shape = get_backend_member(shape, "data")
     fill_value = kwargs.get("fill_value", args[1] if len(args) > 1 else 0)
-    dtype_val = kwargs.get("dtype", _get_attr(backend_module, "float32", None))
+    dtype_val = kwargs.get("dtype", get_backend_member(backend_module, "float32", None))
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return as_tensor(backend_module.full(shape, fill_value))
+        return ensure_eager_tensor(backend_module.full(shape, fill_value))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return as_tensor(backend_module.full(shape, fill_value, dtype=dtype))
+        return ensure_eager_tensor(backend_module.full(shape, fill_value, dtype=dtype))
     except TypeError:
-        return as_tensor(backend_module.full(shape, fill_value))
+        return ensure_eager_tensor(backend_module.full(shape, fill_value))
 
 
 @mlx_eager_registry.register("Partition")
@@ -498,11 +500,11 @@ def _parse_partition_k(k: EagerValue) -> int:
     Returns:
         int: Result.
     """
-    if _has_attr(k, "item"):
-        return int(as_int(as_callable(_get_attr(k, "item"))()))
-    if _has_attr(k, "data") and _has_attr(_get_attr(k, "data"), "item"):
-        return int(as_int(as_callable(_get_attr(_get_attr(k, "data"), "item"))()))
-    return int(as_int(k))
+    if has_backend_member(k, "item"):
+        return int(ensure_int(ensure_eager_tensor(k).item()))
+    if has_backend_member(k, "data") and has_backend_member(get_backend_member(k, "data"), "item"):
+        return int(ensure_int(ensure_eager_tensor(get_backend_member(k, "data")).item()))
+    return int(ensure_int(k))
 
 
 def _mlx_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -520,14 +522,14 @@ def _mlx_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     k_raw = kwargs.get("k", args[1] if len(args) > 1 else 1)
     k: int = int(_parse_partition_k(k_raw))
     return_indices = kwargs.get("return_indices", None)
-    kth: int = max(0, int(as_int(as_shape(_get_attr(a, "shape"))[-1])) - k)
+    kth: int = max(0, int(ensure_int(ensure_shape(get_backend_member(a, "shape"))[-1])) - k)
     if return_indices is False:
-        if _has_attr(backend_module, "topk"):
-            return as_tensor(backend_module.topk(a, k))
-        return as_tensor(backend_module.partition(a, kth, axis=-1)[..., -k:])
+        if has_backend_member(backend_module, "topk"):
+            return ensure_eager_tensor(backend_module.topk(a, k))
+        return ensure_eager_tensor(backend_module.partition(a, kth, axis=-1)[..., -k:])
     indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
     if return_indices is True:
-        return as_tensor(indices)
+        return ensure_eager_tensor(indices)
     values = backend_module.take_along_axis(a, indices, axis=-1)
     return (values, indices)
 
@@ -548,15 +550,15 @@ def _mlx_nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **
     for key in ("nan", "posinf", "neginf"):
         if key in kwargs:
             raw_val: EagerValue = kwargs[key]
-            if _has_attr(raw_val, "item"):
-                valid_kwargs[key] = float(as_float(as_callable(_get_attr(raw_val, "item"))()))
-            elif _has_attr(raw_val, "data") and _has_attr(_get_attr(raw_val, "data"), "item"):
-                valid_kwargs[key] = float(as_float(as_callable(_get_attr(_get_attr(raw_val, "data"), "item"))()))
+            if has_backend_member(raw_val, "item"):
+                valid_kwargs[key] = float(ensure_float(ensure_eager_tensor(raw_val).item()))
+            elif has_backend_member(raw_val, "data") and has_backend_member(get_backend_member(raw_val, "data"), "item"):
+                valid_kwargs[key] = float(ensure_float(ensure_eager_tensor(get_backend_member(raw_val, "data")).item()))
             elif raw_val is not None:
-                valid_kwargs[key] = float(as_float(raw_val))
+                valid_kwargs[key] = float(ensure_float(raw_val))
             else:
                 valid_kwargs[key] = None
-    return as_tensor(backend_module.nan_to_num(*args, **valid_kwargs))
+    return ensure_eager_tensor(backend_module.nan_to_num(*args, **valid_kwargs))
 
 
 @mlx_eager_registry.register("Cummax")
@@ -574,7 +576,8 @@ def _mlx_cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     dtype: EagerValue = kwargs.pop("dtype", None)
     res: EagerValue = backend_module.cummax(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = as_callable(_get_attr(res, "astype"))(_get_attr(backend_module, str(_get_attr(dtype, "value", dtype)), _get_attr(dtype, "value", dtype)))
+        dt_val = get_backend_member(dtype, "value", dtype)
+        res = ensure_eager_tensor(res).astype(get_backend_member(backend_module, str(dt_val), dt_val))
     return res
 
 
@@ -593,7 +596,8 @@ def _mlx_cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     dtype: EagerValue = kwargs.pop("dtype", None)
     res: EagerValue = backend_module.cummin(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = as_callable(_get_attr(res, "astype"))(_get_attr(backend_module, str(_get_attr(dtype, "value", dtype)), _get_attr(dtype, "value", dtype)))
+        dt_val = get_backend_member(dtype, "value", dtype)
+        res = ensure_eager_tensor(res).astype(get_backend_member(backend_module, str(dt_val), dt_val))
     return res
 
 
@@ -612,7 +616,8 @@ def _mlx_cumprod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     dtype: EagerValue = kwargs.pop("dtype", None)
     res: EagerValue = backend_module.cumprod(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = as_callable(_get_attr(res, "astype"))(_get_attr(backend_module, str(_get_attr(dtype, "value", dtype)), _get_attr(dtype, "value", dtype)))
+        dt_val = get_backend_member(dtype, "value", dtype)
+        res = ensure_eager_tensor(res).astype(get_backend_member(backend_module, str(dt_val), dt_val))
     return res
 
 
@@ -629,13 +634,13 @@ def _mlx_slice(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             tuple[int, ...]: Result.
     """
     a = args[0]
-    dim: int = int(as_int(kwargs.get("dim", 0)))
-    start = as_opt_int(kwargs.get("start"))
-    end = as_opt_int(kwargs.get("end"))
-    step = as_opt_int(kwargs.get("step", 1))
-    sl: list[EagerValue] = [builtins.slice(None)] * len(as_shape(_get_attr(a, "shape")))
+    dim: int = int(ensure_int(kwargs.get("dim", 0)))
+    start = ensure_opt_int(kwargs.get("start"))
+    end = ensure_opt_int(kwargs.get("end"))
+    step = ensure_opt_int(kwargs.get("step", 1))
+    sl: list[EagerValue] = [builtins.slice(None)] * len(ensure_shape(get_backend_member(a, "shape")))
     sl[dim] = builtins.slice(start, end, step)
-    return as_tensor(as_callable(_get_attr(a, "__getitem__"))(tuple(sl)))
+    return ensure_eager_tensor(ensure_eager_tensor(a)[tuple(sl)])
 
 
 @mlx_eager_registry.register("Eye")
@@ -651,14 +656,14 @@ def _mlx_eye(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
             tuple[int, ...]: Result.
     """
     n_arg = args[0]
-    if _has_attr(n_arg, "data"):
-        n_arg = _get_attr(n_arg, "data")
+    if has_backend_member(n_arg, "data"):
+        n_arg = get_backend_member(n_arg, "data")
     m_arg = args[1] if len(args) > 1 else None
-    if _has_attr(m_arg, "data"):
-        m_arg = _get_attr(m_arg, "data")
-    m_val: float = int(as_int(m_arg)) if m_arg is not None else int(as_int(n_arg))
-    k_val: float = int(as_int(kwargs.get("k", 0)))
-    return as_tensor(as_callable(_get_attr(backend_module, "eye"))(n=int(as_int(n_arg)), m=m_val, k=k_val, dtype=_get_attr(backend_module, as_str(as_callable(_get_attr(kwargs, "get"))("dtype", "float32")))))
+    if has_backend_member(m_arg, "data"):
+        m_arg = get_backend_member(m_arg, "data")
+    m_val: float = int(ensure_int(m_arg)) if m_arg is not None else int(ensure_int(n_arg))
+    k_val: float = int(ensure_int(kwargs.get("k", 0)))
+    return ensure_eager_tensor(backend_module.eye(n=int(ensure_int(n_arg)), m=m_val, k=k_val, dtype=get_backend_member(backend_module, ensure_str(kwargs.get("dtype", "float32")))))
 
 
 @mlx_eager_registry.register("Rope")
@@ -674,11 +679,11 @@ def _mlx_rope(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: Ea
             tuple[int, ...]: Result.
     """
     dim = kwargs.get("dim")
-    base: float = as_float(kwargs.get("base", 10000.0))
-    offset: int = as_int(kwargs.get("offset", 0))
-    traditional: bool = as_bool(kwargs.get("traditional", False))
-    scale: float = as_float(kwargs.get("scale", 1.0))
-    return as_tensor(as_callable(_get_attr(mx.fast, "rope"))(x, dim, traditional=traditional, base=base, scale=scale, offset=offset))
+    base: float = ensure_float(kwargs.get("base", 10000.0))
+    offset: int = ensure_int(kwargs.get("offset", 0))
+    traditional: bool = ensure_bool(kwargs.get("traditional", False))
+    scale: float = ensure_float(kwargs.get("scale", 1.0))
+    return ensure_eager_tensor(ensure_mod(mx.fast).rope(x, dim, traditional=traditional, base=base, scale=scale, offset=offset))
 
 
 @mlx_eager_registry.register("Variance")
@@ -694,7 +699,7 @@ def _mlx_variance(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
             tuple[int, ...]: Result.
     """
     kwargs.setdefault("ddof", 0)
-    return as_tensor(backend_module.var(*args, **kwargs))
+    return ensure_eager_tensor(backend_module.var(*args, **kwargs))
 
 
 @typing.runtime_checkable
@@ -717,8 +722,8 @@ def _mlx_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_sum"):
-        return as_tensor(mx.distributed.all_sum(tensor))
+    if has_backend_member(mx, "distributed") and has_backend_member(mx.distributed, "all_sum"):
+        return ensure_eager_tensor(mx.distributed.all_sum(tensor))
     return tensor
 
 
@@ -735,9 +740,9 @@ def _mlx_all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_gather"):
-        return as_tensor(mx.distributed.all_gather(tensor))
-    return as_tensor(mx.expand_dims(tensor, axis=0))
+    if has_backend_member(mx, "distributed") and has_backend_member(mx.distributed, "all_gather"):
+        return ensure_eager_tensor(mx.distributed.all_gather(tensor))
+    return ensure_eager_tensor(mx.expand_dims(tensor, axis=0))
 
 
 @mlx_eager_registry.register("AllToAll")
@@ -753,8 +758,8 @@ def _mlx_all_to_all(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_to_all"):
-        return as_tensor(mx.distributed.all_to_all(tensor))
+    if has_backend_member(mx, "distributed") and has_backend_member(mx.distributed, "all_to_all"):
+        return ensure_eager_tensor(mx.distributed.all_to_all(tensor))
     return tensor
 
 
@@ -770,7 +775,7 @@ def _slice_scatter_chunk(tensor: EagerValue, scatter_dim: int, rank: int, world_
     Returns:
         EagerValue: Sliced chunk for the specified rank.
     """
-    t_arr = as_tensor(tensor)
+    t_arr = ensure_eager_tensor(tensor)
     dim_size = t_arr.shape[scatter_dim]
     chunk_size = dim_size // world_size
     start_idx = rank * chunk_size
@@ -791,19 +796,19 @@ def _mlx_native_reduce_scatter(mx_mod: EagerValue, tensor: EagerValue, kwargs: d
     Returns:
         EagerValue: Reduced and scattered tensor slice.
     """
-    mod = as_tensor(mx_mod)
+    mod = ensure_eager_tensor(mx_mod)
     reduced = mod.distributed.all_sum(tensor)
     raw_group = kwargs.get("group")
-    group = as_tensor(raw_group) if raw_group is not None else None
+    group = ensure_eager_tensor(raw_group) if raw_group is not None else None
     try:
-        dist_mod = _get_attr(mod, "distributed", None)
-        rank = as_int(as_callable(_get_attr(group, "rank"))()) if group is not None else (as_int(as_callable(_get_attr(as_callable(_get_attr(dist_mod, "init"))(), "rank"))()) if _has_attr(dist_mod, "init") else 0)
-        world_size = as_int(as_callable(_get_attr(group, "size"))()) if group is not None else (as_int(as_callable(_get_attr(as_callable(_get_attr(dist_mod, "init"))(), "size"))()) if _has_attr(dist_mod, "init") else 1)
+        dist_mod = get_backend_member(mod, "distributed", None)
+        rank = ensure_int(ensure_mod(group).rank()) if group is not None else (ensure_int(ensure_mod(ensure_mod(dist_mod).init()).rank()) if has_backend_member(dist_mod, "init") else 0)
+        world_size = ensure_int(ensure_mod(group).size()) if group is not None else (ensure_int(ensure_mod(ensure_mod(dist_mod).init()).size()) if has_backend_member(dist_mod, "init") else 1)
     except Exception:
         rank = 0
         world_size = 1
 
-    scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
+    scatter_dim = int(ensure_int(kwargs.get("scatter_dim", 0)))
     return _slice_scatter_chunk(reduced, scatter_dim, rank, world_size)
 
 
@@ -819,16 +824,16 @@ def _combine_ring_chunks(mx_mod: EagerValue, accum: EagerValue, peer_chunk: Eage
     Returns:
         EagerValue: Combined chunk result.
     """
-    mod = as_tensor(mx_mod) if mx_mod is not None else None
-    acc_arr = as_tensor(accum)
-    peer_arr = as_tensor(peer_chunk)
+    mod = ensure_eager_tensor(mx_mod) if mx_mod is not None else None
+    acc_arr = ensure_eager_tensor(accum)
+    peer_arr = ensure_eager_tensor(peer_chunk)
     if red_op in ("PROD", "PRODUCT", "MUL"):
-        return mod.multiply(acc_arr, peer_arr) if (mod is not None and _has_attr(mod, "multiply")) else (acc_arr * peer_arr)
+        return mod.multiply(acc_arr, peer_arr) if (mod is not None and has_backend_member(mod, "multiply")) else (acc_arr * peer_arr)
     if red_op == "MAX":
-        return mod.maximum(acc_arr, peer_arr) if (mod is not None and _has_attr(mod, "maximum")) else (acc_arr if bool(acc_arr >= peer_arr) else peer_arr)
+        return mod.maximum(acc_arr, peer_arr) if (mod is not None and has_backend_member(mod, "maximum")) else (acc_arr if bool(acc_arr >= peer_arr) else peer_arr)
     if red_op == "MIN":
-        return mod.minimum(acc_arr, peer_arr) if (mod is not None and _has_attr(mod, "minimum")) else (acc_arr if bool(acc_arr <= peer_arr) else peer_arr)
-    return mod.add(acc_arr, peer_arr) if (mod is not None and _has_attr(mod, "add")) else (acc_arr + peer_arr)
+        return mod.minimum(acc_arr, peer_arr) if (mod is not None and has_backend_member(mod, "minimum")) else (acc_arr if bool(acc_arr <= peer_arr) else peer_arr)
+    return mod.add(acc_arr, peer_arr) if (mod is not None and has_backend_member(mod, "add")) else (acc_arr + peer_arr)
 
 
 def _mlx_ring_reduce_scatter(
@@ -851,17 +856,17 @@ def _mlx_ring_reduce_scatter(
         EagerValue: Accumulated chunk for the current rank.
     """
     num_ranks = len(all_ranks_data)
-    dim_size = int(as_int(as_shape(_get_attr(all_ranks_data[0], "shape", (1,)))[scatter_dim]))
+    dim_size = int(ensure_int(ensure_shape(get_backend_member(all_ranks_data[0], "shape", (1,)))[scatter_dim]))
     chunk_size = dim_size // num_ranks
     start = rank * chunk_size
     end = start + chunk_size
-    slices = [slice(None)] * int(as_int(_get_attr(all_ranks_data[0], "ndim", 1)))
+    slices = [slice(None)] * int(ensure_int(get_backend_member(all_ranks_data[0], "ndim", 1)))
     slices[scatter_dim] = slice(start, end)
 
-    accum: EagerValue = as_tensor(all_ranks_data[rank])[tuple(slices)]
+    accum: EagerValue = ensure_eager_tensor(all_ranks_data[rank])[tuple(slices)]
     for step in range(1, num_ranks):
         peer = (rank + step) % num_ranks
-        peer_chunk = as_tensor(all_ranks_data[peer])[tuple(slices)]
+        peer_chunk = ensure_eager_tensor(all_ranks_data[peer])[tuple(slices)]
         accum = _combine_ring_chunks(mx_mod, accum, peer_chunk, red_op)
     return accum
 
@@ -880,19 +885,19 @@ def _mlx_reduce_scatter(backend_module: BackendModuleProtocol | None, tensor: Ea
     """
     mx_mod = backend_module
 
-    if mx_mod is not None and _has_attr(mx_mod, "distributed") and _has_attr(mx_mod.distributed, "all_sum"):
+    if mx_mod is not None and has_backend_member(mx_mod, "distributed") and has_backend_member(mx_mod.distributed, "all_sum"):
         return _mlx_native_reduce_scatter(mx_mod, tensor, kwargs)
 
     all_ranks_data = kwargs.get("all_ranks_data")
-    scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
+    scatter_dim = int(ensure_int(kwargs.get("scatter_dim", 0)))
     red_op = str(kwargs.get("op_type", "SUM")).upper()
-    rank = int(as_int(kwargs.get("rank", 0)))
+    rank = int(ensure_int(kwargs.get("rank", 0)))
 
     if all_ranks_data:
-        return as_tensor(as_callable(_mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
+        return ensure_eager_tensor(ensure_callable(_mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
 
-    world_size = int(as_int(kwargs.get("world_size", 1)))
-    if _has_attr(tensor, "shape"):
+    world_size = int(ensure_int(kwargs.get("world_size", 1)))
+    if has_backend_member(tensor, "shape"):
         if world_size <= 1:
             _typed_ret_1: EagerValue = tensor
             return _typed_ret_1

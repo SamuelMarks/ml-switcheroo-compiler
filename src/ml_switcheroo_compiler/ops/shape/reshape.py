@@ -4,12 +4,46 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_int, as_tensor
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@typing.runtime_checkable
+class _ShapedOperandProtocol(typing.Protocol):
+    """Protocol for tensor-like operands exposing an integer `shape` sequence."""
+
+    shape: Sequence[int]
+
+
+def _has_valid_shape(x: TensorOrScalar) -> typing.TypeGuard[_ShapedOperandProtocol]:
+    """Return True if `x` implements `_ShapedOperandProtocol` with a non-None `shape`.
+
+    Args:
+        x (TensorOrScalar): Input operand to check.
+
+    Returns:
+        bool: True if `x` has a non-None `shape` attribute.
+    """
+    return isinstance(x, _ShapedOperandProtocol) and x.shape is not None
+
+
+def _iter_ints(val: TensorOrScalar) -> list[int]:
+    """Convert an iterable or sequence of integers into a list of ints.
+
+    Args:
+        val (TensorOrScalar): Sequence or iterable of integer indices/dimensions.
+
+    Returns:
+        list[int]: Extracted integer list.
+    """
+    if isinstance(val, (tuple, list, Sequence)) and not isinstance(val, (str, bytes)):
+        return [int(ensure_int(v)) for v in val]
+    return [int(ensure_int(val))]
 
 
 def _get_shape_list(x: TensorOrScalar) -> list[int]:
@@ -21,9 +55,9 @@ def _get_shape_list(x: TensorOrScalar) -> list[int]:
     Returns:
         list: Result.
     """
-    s = _get_attr(x, "shape", x)
+    s: Sequence[int] | TensorOrScalar = x.shape if _has_valid_shape(x) else x
     if isinstance(s, (tuple, list)):
-        return [as_int(d) for d in s]
+        return [ensure_int(d) for d in s]
     return [s] if isinstance(s, int) else []
 
 
@@ -38,7 +72,7 @@ def _normalize_axes(axes: TensorOrScalar, length: int) -> list[int]:
         list: Result.
     """
     a = [axes] if isinstance(axes, int) else (list(axes) if isinstance(axes, (list, tuple)) else [])
-    return [as_int(x) + length if as_int(x) < 0 else as_int(x) for x in a]
+    return [ensure_int(x) + length if ensure_int(x) < 0 else ensure_int(x) for x in a]
 
 
 def _resolve_reshape_minus_one(x_shape: Sequence[int | None], newshape: list[int]) -> list[int]:
@@ -77,12 +111,12 @@ class Reshape(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         newshape = args[1] if len(args) > 1 else kwargs["newshape"]
 
-        if not _has_attr(x, "shape") or not isinstance(newshape, (tuple, list)):
+        if not _has_valid_shape(x) or not isinstance(newshape, (tuple, list)):
             return newshape
 
-        out_shape = list(newshape)
+        out_shape = [int(ensure_int(d)) for d in newshape]
         if -1 in out_shape:
-            out_shape = _resolve_reshape_minus_one(_get_attr(x, "shape"), out_shape)
+            out_shape = _resolve_reshape_minus_one(x.shape, out_shape)
 
         return tuple(out_shape)
 
@@ -104,7 +138,7 @@ class Transpose(OpDef):
         x = args[0] if len(args) > 0 else kwargs["x"]
         axes = args[1] if len(args) > 1 else kwargs.get("axes", None)
         if isinstance(x, tuple) and axes is not None:
-            return tuple(x[i] for i in _get_attr(axes, "__iter__")())
+            return tuple(x[i] for i in _iter_ints(axes))
         return tuple(reversed(x)) if isinstance(x, tuple) else None
 
     def _format_args(self, x: str, axes: TensorOrScalar) -> str:
@@ -174,7 +208,7 @@ class BroadcastInDim(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        return tuple(_get_attr(shape, "__iter__")())
+        return tuple(_iter_ints(shape))
 
 
 @register_op("Resize")
@@ -200,14 +234,15 @@ class Resize(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        if not _has_attr(image, "shape") or not image.shape:
+        if not _has_valid_shape(image) or not image.shape:
             return ()
         out_shape = list(image.shape)
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
         if len(out_shape) >= MIN_CONV_RANK:
-            out_shape[-3] = _get_attr(shape, "__getitem__")(0)
-            out_shape[-2] = _get_attr(shape, "__getitem__")(1)
+            shape_dims = _iter_ints(shape)
+            out_shape[-3] = shape_dims[0]
+            out_shape[-2] = shape_dims[1]
         return tuple(out_shape)
 
 
@@ -228,7 +263,7 @@ class Atleast1d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not _has_attr(x, "shape") or _get_attr(x, "shape") is None:
+        if not _has_valid_shape(x):
             return (1,)
         shape = _get_shape_list(x)
         if len(shape) < 1:
@@ -253,7 +288,7 @@ class Atleast2d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not _has_attr(x, "shape") or _get_attr(x, "shape") is None:
+        if not _has_valid_shape(x):
             return (1, 1)
         shape = _get_shape_list(x)
         if len(shape) == 0:
@@ -280,7 +315,7 @@ class Atleast3d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not _has_attr(x, "shape") or _get_attr(x, "shape") is None:
+        if not _has_valid_shape(x):
             return (1, 1, 1)
         shape = _get_shape_list(x)
         if len(shape) == 0:
@@ -310,14 +345,15 @@ class ExpandDims(OpDef):
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
-        if not _has_attr(x, "shape") or _get_attr(x, "shape") is None:
+        if not _has_valid_shape(x):
             return (None,)
         shape = _get_shape_list(x)
         if axis is None:
             return tuple(shape)
-        if int(as_int(axis)) < 0:
-            axis = as_tensor(axis) + as_tensor(len(shape)) + 1
-        _get_attr(shape, "insert")(axis, 1)
+        axis_idx = int(ensure_int(axis))
+        if axis_idx < 0:
+            axis_idx = axis_idx + len(shape) + 1
+        shape.insert(axis_idx, 1)
         return tuple(shape)
 
 
@@ -398,7 +434,7 @@ class Delete(OpDef):
             tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if arr is None or not _has_attr(arr, "shape"):
+        if not _has_valid_shape(arr):
             return None
         return tuple(arr.shape)  # Approximate
 
@@ -421,7 +457,7 @@ class DiagIndices(OpDef):
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
-        return tuple([(n,)] * int(as_int(ndim)))
+        return tuple([(n,)] * int(ensure_int(ndim)))
 
 
 @register_op("DiagIndicesFrom")
@@ -441,9 +477,9 @@ class DiagIndicesFrom(OpDef):
             tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if arr is None or not _has_attr(arr, "shape"):
+        if not _has_valid_shape(arr):
             return None
-        return tuple([(_get_attr(arr.shape, "__getitem__")(0),)] * len(arr.shape))
+        return tuple([(arr.shape[0],)] * len(arr.shape))
 
 
 @register_op("Diagflat")
@@ -463,13 +499,13 @@ class Diagflat(OpDef):
             tuple[int, ...]: Result.
         """
         v = args[0] if args else kwargs.get("v")
-        if not _has_attr(v, "shape"):
+        if not _has_valid_shape(v):
             return None
         import math
 
-        size = math.prod(_get_attr(v, "shape"))
+        size = math.prod(v.shape)
         k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + as_callable(abs)(k)
+        s = size + abs(int(ensure_int(k)))
         return (s, s)
 
 
@@ -490,9 +526,9 @@ class FillDiagonal(OpDef):
             tuple[int, ...]: Result.
         """
         a = args[0] if args else kwargs.get("a")
-        if not _has_attr(a, "shape"):
+        if not _has_valid_shape(a):
             return None
-        return tuple(_get_attr(a, "shape"))
+        return tuple(a.shape)
 
 
 @register_op("Insert")
@@ -512,7 +548,7 @@ class Insert(OpDef):
             tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if arr is None or not _has_attr(arr, "shape"):
+        if not _has_valid_shape(arr):
             return None
         return tuple(arr.shape)  # Approximate
 
@@ -534,7 +570,7 @@ class Moveaxis(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not _has_attr(x, "shape") or _get_attr(x, "shape") is None:
+        if not _has_valid_shape(x):
             return None
         shape = _get_shape_list(x)
         source = args[1] if len(args) > 1 else kwargs.get("source")
@@ -578,13 +614,13 @@ class Permute(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         shape = _get_shape_list(x)
         dims = args[1] if len(args) > 1 else kwargs.get("dims")
         if dims is None:
             return tuple(shape[::-1])
-        return tuple(shape[i] for i in _get_attr(dims, "__iter__")())
+        return tuple(shape[i] for i in _iter_ints(dims))
 
 
 @register_op("Roll")
@@ -604,7 +640,7 @@ class Roll(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         return tuple(_get_shape_list(x))
 
@@ -626,7 +662,7 @@ class Squeeze(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         shape = _get_shape_list(x)
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
@@ -644,8 +680,7 @@ class Squeeze(OpDef):
         """
         if axis is None:
             return tuple(s for s in shape if s != 1)
-        axes = [axis] if isinstance(axis, int) else axis
-        n = {a + len(shape) if a < 0 else a for a in _get_attr(axes, "__iter__")()}
+        n = {a + len(shape) if a < 0 else a for a in _iter_ints(axis)}
         return tuple(shape[i] for i in range(len(shape)) if i not in n)
 
 
@@ -666,11 +701,11 @@ class Swapaxes(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         shape = _get_shape_list(x)
-        axis1 = int(as_int(args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
-        axis2 = int(as_int(args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
+        axis1 = int(ensure_int(args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
+        axis2 = int(ensure_int(args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
         a1 = axis1 + len(shape) if axis1 < 0 else axis1
         a2 = axis2 + len(shape) if axis2 < 0 else axis2
         shape[a1], shape[a2] = shape[a2], shape[a1]
@@ -694,7 +729,7 @@ class Flip(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         return tuple(_get_shape_list(x))
 
@@ -716,7 +751,7 @@ class Fliplr(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         return tuple(_get_shape_list(x))
 
@@ -738,6 +773,6 @@ class Flipud(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not isinstance(x, (tuple, list)) and not _has_attr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         return tuple(_get_shape_list(x))

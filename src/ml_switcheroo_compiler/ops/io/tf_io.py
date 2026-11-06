@@ -9,7 +9,12 @@ import zlib
 from types import TracebackType
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -65,8 +70,8 @@ def decode_csv(
             "select_cols": select_cols,
             "name": name,
         },
-        _get_attr(records, "shape", ()),
-        _get_attr(records, "dtype", "float32"),
+        extract_shape(records),
+        extract_dtype(records),
     )
 
 
@@ -105,8 +110,8 @@ def parse_example(
         "ParseExample",
         [serialized],
         {"features": features, "example_names": example_names, "name": name},
-        _get_attr(serialized, "shape", ()),
-        _get_attr(serialized, "dtype", "float32"),
+        extract_shape(serialized),
+        extract_dtype(serialized),
     )
 
 
@@ -132,8 +137,8 @@ def serialize_tensor(tensor: Tensor, name: TensorOrScalar = None) -> TensorOrSca
         "SerializeTensor",
         [tensor],
         {"name": name},
-        _get_attr(tensor, "shape", ()),
-        _get_attr(tensor, "dtype", "float32"),
+        extract_shape(tensor),
+        extract_dtype(tensor),
     )
 
 
@@ -160,8 +165,8 @@ def parse_tensor(serialized: Tensor, out_type: DType, name: TensorOrScalar = Non
         "ParseTensor",
         [serialized],
         {"out_type": out_type, "name": name},
-        _get_attr(serialized, "shape", ()),
-        _get_attr(serialized, "dtype", "float32"),
+        extract_shape(serialized),
+        extract_dtype(serialized),
     )
 
 
@@ -208,8 +213,8 @@ def parse_single_sequence_example(
             "example_names": example_names,
             "name": name,
         },
-        _get_attr(serialized, "shape", ()),
-        _get_attr(serialized, "dtype", "float32"),
+        extract_shape(serialized),
+        extract_dtype(serialized),
     )
 
 
@@ -429,7 +434,7 @@ class DecodeCsv(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -457,7 +462,7 @@ class ParseExample(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -485,7 +490,7 @@ class SerializeTensor(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -513,7 +518,7 @@ class ParseTensor(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -541,7 +546,7 @@ class ParseSequenceExample(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]

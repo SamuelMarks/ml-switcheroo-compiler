@@ -5,19 +5,18 @@ from __future__ import annotations
 import importlib
 import logging
 import math
-import operator
 import typing
 from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    StructuralOperandProtocol,
-    as_callable,
-    as_float,
-    as_int,
-    as_shape,
-    as_tensor,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int,
+    ensure_shape,
 )
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -145,44 +144,11 @@ class _DunderArrayProtocol(typing.Protocol):
         ...
 
 
-def _has_attr(obj: StructuralOperandProtocol | EagerValue, name: str) -> bool:
-    """Return True if `obj` or its class hierarchy defines `name`.
+@typing.runtime_checkable
+class _ArrayInterfaceProtocol(typing.Protocol):
+    """Protocol for array buffers exposing `__array_interface__`."""
 
-    Args:
-        obj (StructuralOperandProtocol | EagerValue): Target object.
-        name (str): Attribute name.
-
-    Returns:
-        bool: True if present.
-    """
-    if obj is None:
-        return False
-    try:
-        operator.attrgetter(name)(obj)
-        return True
-    except AttributeError:
-        return False
-
-
-def _get_attr(
-    obj: StructuralOperandProtocol | EagerValue,
-    name: str,
-    default: EagerValue = None,
-) -> EagerValue:
-    """Retrieve attribute `name` from `obj` without `getattr`.
-
-    Args:
-        obj (StructuralOperandProtocol | EagerValue): Target object.
-        name (str): Attribute name.
-        default (EagerValue): Default value if not found.
-
-    Returns:
-        EagerValue: Attribute value or bound callable.
-    """
-    try:
-        return as_tensor(operator.attrgetter(name)(obj))
-    except AttributeError:
-        return default
+    __array_interface__: dict[str, EagerValue]
 
 
 def _get_pa_module() -> EagerValue:
@@ -206,8 +172,8 @@ def _unwrap_tensor(val: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Underlying buffer or original value.
     """
-    if _has_attr(val, "config") and _has_attr(val, "data"):
-        return _get_attr(val, "data")
+    if has_backend_member(val, "config") and has_backend_member(val, "data"):
+        return get_backend_member(val, "data")
     return val
 
 
@@ -221,25 +187,24 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
     Returns:
         EagerValue: Buffer array with shape and dtype metadata.
     """
-    if _has_attr(raw_data, "shape") and _has_attr(raw_data, "dtype") and _has_attr(raw_data, "ndim"):
-        if dtype is not None and _has_attr(raw_data, "astype"):
-            return as_tensor(as_callable(_get_attr(raw_data, "astype"))(dtype))
+    if has_backend_member(raw_data, "shape") and has_backend_member(raw_data, "dtype") and has_backend_member(raw_data, "ndim"):
+        if dtype is not None and has_backend_member(raw_data, "astype"):
+            return ensure_eager_tensor(ensure_callable(get_backend_member(raw_data, "astype"))(dtype))
         return raw_data
-
-    if _has_attr(raw_data, "__array__"):
-        return as_tensor(as_callable(_get_attr(raw_data, "__array__"))())
 
     import pyarrow as pa
 
     pa_type = pa.from_numpy_dtype(dtype) if dtype is not None else None
+    if isinstance(raw_data, _DunderArrayProtocol):
+        return ensure_eager_tensor(pa.array(raw_data, type=pa_type).to_numpy(zero_copy_only=False))
     if isinstance(raw_data, (list, tuple)):
         if not raw_data:
             fill_type = pa_type if pa_type is not None else pa.float32()
-            return as_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
-        return as_tensor(pa.array(list(raw_data), type=pa_type).to_numpy(zero_copy_only=False))
+            return ensure_eager_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
+        return ensure_eager_tensor(pa.array(list(raw_data), type=pa_type).to_numpy(zero_copy_only=False))
 
     fill_type = pa_type if pa_type is not None else pa.float32()
-    return as_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
+    return ensure_eager_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
 
 
 def zeros(shape: tuple[int, ...]) -> EagerValue:
@@ -253,18 +218,18 @@ def zeros(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "array"):
+    if has_backend_member(pa_mod, "array"):
         try:
-            return as_tensor(as_callable(_get_attr(pa_mod, "array"))([0.0] * total))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "array"))([0.0] * total))
         except Exception:
             import pyarrow as pa
 
-            base = as_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
-            return as_tensor(base.reshape(shape))
+            base = ensure_eager_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
+            return ensure_eager_tensor(base.reshape(shape))
     import pyarrow as pa
 
-    base = as_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
-    return as_tensor(base.reshape(shape))
+    base = ensure_eager_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
+    return ensure_eager_tensor(base.reshape(shape))
 
 
 def ones(shape: tuple[int, ...]) -> EagerValue:
@@ -278,8 +243,8 @@ def ones(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "repeat"):
-        return as_tensor(as_callable(_get_attr(pa_mod, "repeat"))(1.0, total))
+    if has_backend_member(pa_mod, "repeat"):
+        return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "repeat"))(1.0, total))
     return [1.0] * total
 
 
@@ -294,10 +259,10 @@ def empty(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "nulls"):
+    if has_backend_member(pa_mod, "nulls"):
         import pyarrow as pa
 
-        return as_tensor(as_callable(_get_attr(pa_mod, "nulls"))(total, type=pa.float32()))
+        return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "nulls"))(total, type=pa.float32()))
     return [None] * total
 
 
@@ -313,9 +278,9 @@ def array(data: EagerValue, dtype: str | None = None) -> EagerValue:
     """
     raw_data = _unwrap_tensor(data)
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "array"):
+    if has_backend_member(pa_mod, "array"):
         try:
-            return as_tensor(as_callable(_get_attr(pa_mod, "array"))(raw_data))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "array"))(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data, dtype=dtype)
@@ -332,9 +297,9 @@ def asarray(data: EagerValue) -> EagerValue:
     """
     raw_data = _unwrap_tensor(data)
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "array"):
+    if has_backend_member(pa_mod, "array"):
         try:
-            return as_tensor(as_callable(_get_attr(pa_mod, "array"))(raw_data))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "array"))(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data)
@@ -354,11 +319,11 @@ def chunked_array(
         EagerValue: Constructed pyarrow ChunkedArray or list of chunks fallback.
     """
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "chunked_array"):
+    if has_backend_member(pa_mod, "chunked_array"):
         try:
             chunk_list = chunks if isinstance(chunks, (list, tuple)) else [chunks]
-            conv_chunks = [array(c) if not _has_attr(c, "type") else c for c in chunk_list]
-            return as_tensor(as_callable(_get_attr(pa_mod, "chunked_array"))(conv_chunks, type=dtype))
+            conv_chunks = [array(c) if not has_backend_member(c, "type") else c for c in chunk_list]
+            return ensure_eager_tensor(ensure_callable(get_backend_member(pa_mod, "chunked_array"))(conv_chunks, type=dtype))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(chunks) if isinstance(chunks, (list, tuple)) else [chunks]
@@ -380,12 +345,12 @@ def record_batch(
         EagerValue: Constructed RecordBatch or dict fallback.
     """
     pa_mod = _get_pa_module()
-    rb_cls = _get_attr(pa_mod, "RecordBatch")
-    if _has_attr(rb_cls, "from_arrays"):
+    rb_cls = get_backend_member(pa_mod, "RecordBatch")
+    if has_backend_member(rb_cls, "from_arrays"):
         try:
             data_list = list(data) if isinstance(data, Iterable) else [data]
             name_list = list(names) if names is not None else None
-            return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))(data_list, names=name_list, schema=schema))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(rb_cls, "from_arrays"))(data_list, names=name_list, schema=schema))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if names is not None and isinstance(data, (list, tuple)):
@@ -408,14 +373,14 @@ def slice_record_batch(
     Returns:
         EagerValue: Sliced RecordBatch.
     """
-    raw_batch: StructuralOperandProtocol = batch
-    if isinstance(raw_batch, ArrowRecordBatchProtocol) or _has_attr(batch, "slice"):
-        return as_tensor(as_callable(_get_attr(batch, "slice"))(offset=offset, length=length))
+    raw_batch: EagerValue = batch
+    if isinstance(raw_batch, ArrowRecordBatchProtocol) or has_backend_member(batch, "slice"):
+        return ensure_eager_tensor(ensure_callable(get_backend_member(batch, "slice"))(offset=offset, length=length))
     if isinstance(batch, dict):
         end = offset + length if length is not None else None
-        return {k: as_tensor(v)[offset:end] for k, v in batch.items()}
+        return {k: ensure_eager_tensor(v)[offset:end] for k, v in batch.items()}
     end = offset + length if length is not None else None
-    return as_tensor(batch)[offset:end]
+    return ensure_eager_tensor(batch)[offset:end]
 
 
 def to_table(
@@ -434,19 +399,19 @@ def to_table(
         EagerValue: Constructed pyarrow Table.
     """
     pa_mod = _get_pa_module()
-    if _has_attr(pa_mod, "Table"):
-        table_cls = _get_attr(pa_mod, "Table")
-        if _has_attr(table_cls, "from_batches"):
-            if _has_attr(data, "schema"):
-                return as_tensor(as_callable(_get_attr(table_cls, "from_batches"))([data], schema=schema))
+    if has_backend_member(pa_mod, "Table"):
+        table_cls = get_backend_member(pa_mod, "Table")
+        if has_backend_member(table_cls, "from_batches"):
+            if has_backend_member(data, "schema"):
+                return ensure_eager_tensor(ensure_callable(get_backend_member(table_cls, "from_batches"))([data], schema=schema))
             if isinstance(data, (list, tuple)) and data:
-                if _has_attr(data[0], "schema"):
-                    return as_tensor(as_callable(_get_attr(table_cls, "from_batches"))(list(data), schema=schema))
-        if _has_attr(table_cls, "from_pydict") and isinstance(data, dict):
-            return as_tensor(as_callable(_get_attr(table_cls, "from_pydict"))(data, schema=schema))
-        if _has_attr(table_cls, "from_arrays") and isinstance(data, (list, tuple)):
+                if has_backend_member(data[0], "schema"):
+                    return ensure_eager_tensor(ensure_callable(get_backend_member(table_cls, "from_batches"))(list(data), schema=schema))
+        if has_backend_member(table_cls, "from_pydict") and isinstance(data, dict):
+            return ensure_eager_tensor(ensure_callable(get_backend_member(table_cls, "from_pydict"))(data, schema=schema))
+        if has_backend_member(table_cls, "from_arrays") and isinstance(data, (list, tuple)):
             col_names = list(names) if names else [f"f{i}" for i in range(len(data))]
-            return as_tensor(as_callable(_get_attr(table_cls, "from_arrays"))(list(data), names=col_names, schema=schema))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(table_cls, "from_arrays"))(list(data), names=col_names, schema=schema))
     return data
 
 
@@ -477,23 +442,23 @@ def item(data: EagerValue) -> float:
     Returns:
         float: Extracted scalar value.
     """
-    raw_op: StructuralOperandProtocol = data
-    if isinstance(raw_op, ArrowRecordBatchProtocol) or (_has_attr(data, "num_columns") and _has_attr(data, "column")):
-        if as_int(_get_attr(data, "num_columns", 0)) > 0:
-            return item(as_callable(_get_attr(data, "column"))(0))
+    raw_op: EagerValue = data
+    if isinstance(raw_op, ArrowRecordBatchProtocol) or (has_backend_member(data, "num_columns") and has_backend_member(data, "column")):
+        if ensure_int(get_backend_member(data, "num_columns", 0)) > 0:
+            return item(ensure_callable(get_backend_member(data, "column"))(0))
         return 0.0
-    if isinstance(raw_op, _ArrowScalarProtocol) or _has_attr(data, "as_py"):
-        return float(as_float(as_callable(_get_attr(data, "as_py"))()))
-    if _has_attr(data, "to_pylist"):
-        lst: EagerValue = as_callable(_get_attr(data, "to_pylist"))()
+    if isinstance(raw_op, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
+        return float(ensure_float(ensure_callable(get_backend_member(data, "as_py"))()))
+    if has_backend_member(data, "to_pylist"):
+        lst: EagerValue = ensure_callable(get_backend_member(data, "to_pylist"))()
         if isinstance(lst, (list, tuple)) and lst:
             first = lst[0]
             val = next(iter(first.values())) if isinstance(first, dict) else (first[0] if isinstance(first, (list, tuple)) else first)
-            return float(as_float(val))
-    if _has_attr(data, "item"):
-        return float(as_float(as_callable(_get_attr(data, "item"))()))
+            return float(ensure_float(val))
+    if has_backend_member(data, "item"):
+        return float(ensure_float(ensure_callable(get_backend_member(data, "item"))()))
     arr = _pa_to_ndarray(data)
-    return float(as_float(as_callable(_get_attr(arr, "item"))()))
+    return float(ensure_float(ensure_callable(get_backend_member(arr, "item"))()))
 
 
 def tensor_to_record_batch(
@@ -512,27 +477,27 @@ def tensor_to_record_batch(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
-    rb_cls = _get_attr(pa_mod, "RecordBatch")
+    rb_cls = get_backend_member(pa_mod, "RecordBatch")
 
-    ndim = as_int(_get_attr(arr, "ndim", 1))
+    ndim = ensure_int(get_backend_member(arr, "ndim", 1))
     if ndim <= 1:
         col_names = list(names) if names else ["f0"]
-        if _has_attr(rb_cls, "from_arrays") and _has_attr(pa_mod, "array"):
+        if has_backend_member(rb_cls, "from_arrays") and has_backend_member(pa_mod, "array"):
             try:
-                pa_col = as_callable(_get_attr(pa_mod, "array"))(arr if ndim == 1 else [as_callable(_get_attr(arr, "item"))()])
-                return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))([pa_col], names=col_names))
+                pa_col = ensure_callable(get_backend_member(pa_mod, "array"))(arr if ndim == 1 else [ensure_callable(get_backend_member(arr, "item"))()])
+                return ensure_eager_tensor(ensure_callable(get_backend_member(rb_cls, "from_arrays"))([pa_col], names=col_names))
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return {col_names[0]: arr}
 
-    shape = as_shape(_get_attr(arr, "shape"))
+    shape = ensure_shape(get_backend_member(arr, "shape"))
     num_cols = shape[1]
     col_names = list(names) if names and len(names) == num_cols else [f"f{i}" for i in range(num_cols)]
-    arr_proto = as_tensor(arr)
-    if _has_attr(rb_cls, "from_arrays") and _has_attr(pa_mod, "array"):
+    arr_proto = ensure_eager_tensor(arr)
+    if has_backend_member(rb_cls, "from_arrays") and has_backend_member(pa_mod, "array"):
         try:
-            col_arrays = [as_callable(_get_attr(pa_mod, "array"))(arr_proto[:, i]) for i in range(num_cols)]
-            return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))(col_arrays, names=col_names))
+            col_arrays = [ensure_callable(get_backend_member(pa_mod, "array"))(arr_proto[:, i]) for i in range(num_cols)]
+            return ensure_eager_tensor(ensure_callable(get_backend_member(rb_cls, "from_arrays"))(col_arrays, names=col_names))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return {col_names[i]: arr_proto[:, i] for i in range(num_cols)}
@@ -555,9 +520,9 @@ def _stack_columns_1d(columns: list[EagerValue], dtype: str | None = None) -> Ea
     pa_cols = [pa.array(c) for c in columns]
     num_rows = len(pa_cols[0])
     num_cols = len(pa_cols)
-    concat_buf = as_tensor(pa.concat_arrays(pa_cols).to_numpy(zero_copy_only=False))
+    concat_buf = ensure_eager_tensor(pa.concat_arrays(pa_cols).to_numpy(zero_copy_only=False))
     reshaped = concat_buf.reshape((num_cols, num_rows)).T
-    return as_tensor(reshaped.copy())
+    return ensure_eager_tensor(reshaped.copy())
 
 
 def _dict_to_tensor(
@@ -580,10 +545,10 @@ def _dict_to_tensor(
     col_keys = list(columns) if columns else list(actual_batch.keys())
     if not col_keys:
         empty_arr = _pa_to_ndarray([], dtype=dtype or "float32")
-        return Tensor(empty_arr, TensorConfig(shape=as_shape(_get_attr(empty_arr, "shape")), dtype=str(_get_attr(empty_arr, "dtype")), device="cpu"))
+        return Tensor(empty_arr, TensorConfig(shape=ensure_shape(get_backend_member(empty_arr, "shape")), dtype=str(get_backend_member(empty_arr, "dtype")), device="cpu"))
     arrays = [_pa_to_ndarray(actual_batch[k]) for k in col_keys]
     arr = _stack_columns_1d(arrays, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def _rb_to_tensor(
@@ -603,28 +568,28 @@ def _rb_to_tensor(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    schema_obj = _get_attr(actual_batch, "schema")
-    num_cols = as_int(_get_attr(actual_batch, "num_columns", 0))
-    col_names = list(columns) if columns else [str(_get_attr(as_callable(_get_attr(schema_obj, "field"))(i), "name")) for i in range(num_cols)]
+    schema_obj = get_backend_member(actual_batch, "schema")
+    num_cols = ensure_int(get_backend_member(actual_batch, "num_columns", 0))
+    col_names = list(columns) if columns else [str(get_backend_member(ensure_callable(get_backend_member(schema_obj, "field"))(i), "name")) for i in range(num_cols)]
     if not col_names:
         empty_arr = _pa_to_ndarray([], dtype=dtype or "float32")
-        return Tensor(empty_arr, TensorConfig(shape=as_shape(_get_attr(empty_arr, "shape")), dtype=str(_get_attr(empty_arr, "dtype")), device="cpu"))
+        return Tensor(empty_arr, TensorConfig(shape=ensure_shape(get_backend_member(empty_arr, "shape")), dtype=str(get_backend_member(empty_arr, "dtype")), device="cpu"))
 
     extracted: list[EagerValue] = []
-    col_fn = as_callable(_get_attr(actual_batch, "column"))
+    col_fn = ensure_callable(get_backend_member(actual_batch, "column"))
     for name in col_names:
-        col = col_fn(name) if _has_attr(actual_batch, "column") and isinstance(name, str) else col_fn(int(name))
-        raw_col: StructuralOperandProtocol = col
-        if isinstance(raw_col, ArrowArrayProtocol) or _has_attr(col, "to_numpy"):
+        col = col_fn(name) if has_backend_member(actual_batch, "column") and isinstance(name, str) else col_fn(int(name))
+        raw_col: EagerValue = col
+        if isinstance(raw_col, ArrowArrayProtocol) or has_backend_member(col, "to_numpy"):
             try:
-                extracted.append(as_callable(_get_attr(col, "to_numpy"))(zero_copy_only=False))
+                extracted.append(ensure_callable(get_backend_member(col, "to_numpy"))(zero_copy_only=False))
             except Exception:
-                extracted.append(_pa_to_ndarray(as_callable(_get_attr(col, "to_pylist"))()))
+                extracted.append(_pa_to_ndarray(ensure_callable(get_backend_member(col, "to_pylist"))()))
         else:
             extracted.append(_pa_to_ndarray(col))
 
     arr = _stack_columns_1d(extracted, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def record_batch_to_tensor(
@@ -647,12 +612,12 @@ def record_batch_to_tensor(
     if isinstance(batch, dict):
         return _dict_to_tensor(batch, columns, dtype)
 
-    raw_batch: StructuralOperandProtocol = batch
-    if isinstance(raw_batch, ArrowRecordBatchProtocol) or (_has_attr(batch, "num_columns") and _has_attr(batch, "column")):
+    raw_batch: EagerValue = batch
+    if isinstance(raw_batch, ArrowRecordBatchProtocol) or (has_backend_member(batch, "num_columns") and has_backend_member(batch, "column")):
         return _rb_to_tensor(batch, columns, dtype)
 
     arr = _pa_to_ndarray(batch, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def tensor_to_arrow_tensor(
@@ -669,10 +634,10 @@ def tensor_to_arrow_tensor(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
-    pa_tensor_cls = _get_attr(pa_mod, "Tensor")
-    if _has_attr(pa_tensor_cls, "from_numpy"):
+    pa_tensor_cls = get_backend_member(pa_mod, "Tensor")
+    if has_backend_member(pa_tensor_cls, "from_numpy"):
         try:
-            return as_tensor(as_callable(_get_attr(pa_tensor_cls, "from_numpy"))(arr))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(pa_tensor_cls, "from_numpy"))(arr))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return arr
@@ -705,13 +670,13 @@ def arrow_tensor_to_tensor(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    raw_at: StructuralOperandProtocol = arrow_tensor
+    raw_at: EagerValue = arrow_tensor
     arr: EagerValue
-    if isinstance(raw_at, ArrowTensorProtocol) or _has_attr(arrow_tensor, "to_numpy"):
-        arr = as_callable(_get_attr(arrow_tensor, "to_numpy"))()
+    if isinstance(raw_at, ArrowTensorProtocol) or has_backend_member(arrow_tensor, "to_numpy"):
+        arr = ensure_callable(get_backend_member(arrow_tensor, "to_numpy"))()
     else:
         arr = _pa_to_ndarray(arrow_tensor)
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def _table_to_tensor(actual_data: EagerValue) -> EagerValue:
@@ -725,8 +690,8 @@ def _table_to_tensor(actual_data: EagerValue) -> EagerValue:
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    raw_data: StructuralOperandProtocol = actual_data
-    batches_raw: EagerValue = as_callable(_get_attr(actual_data, "to_batches"))() if (isinstance(raw_data, ArrowTableProtocol) or _has_attr(actual_data, "to_batches")) else []
+    raw_data: EagerValue = actual_data
+    batches_raw: EagerValue = ensure_callable(get_backend_member(actual_data, "to_batches"))() if (isinstance(raw_data, ArrowTableProtocol) or has_backend_member(actual_data, "to_batches")) else []
     batches = list(batches_raw) if isinstance(batches_raw, (list, tuple)) else []
     if batches:
         if len(batches) == 1:
@@ -736,9 +701,9 @@ def _table_to_tensor(actual_data: EagerValue) -> EagerValue:
         sub_tensors = []
         for b in batches:
             rb_t = record_batch_to_tensor(b)
-            sub_tensors.append(rb_t.data if isinstance(rb_t, Tensor) else _get_attr(rb_t, "data", rb_t))
+            sub_tensors.append(rb_t.data if isinstance(rb_t, Tensor) else get_backend_member(rb_t, "data", rb_t))
         combined = pa.concat_arrays([pa.array(s) for s in sub_tensors]).to_numpy(zero_copy_only=False)
-        return Tensor(combined, TensorConfig(shape=as_shape(_get_attr(combined, "shape")), dtype=str(_get_attr(combined, "dtype")), device="cpu"))
+        return Tensor(combined, TensorConfig(shape=ensure_shape(get_backend_member(combined, "shape")), dtype=str(get_backend_member(combined, "dtype")), device="cpu"))
     empty_arr = _pa_to_ndarray([], dtype="float32")
     return Tensor(empty_arr, TensorConfig(shape=(0,), dtype="float32", device="cpu"))
 
@@ -756,10 +721,10 @@ def _chunked_or_array_to_tensor(actual_data: EagerValue) -> EagerValue:
 
     arr: EagerValue
     try:
-        arr = as_callable(_get_attr(actual_data, "to_numpy"))(zero_copy_only=False)
+        arr = ensure_callable(get_backend_member(actual_data, "to_numpy"))(zero_copy_only=False)
     except Exception:
-        arr = _pa_to_ndarray(as_callable(_get_attr(actual_data, "to_pylist"))())
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+        arr = _pa_to_ndarray(ensure_callable(get_backend_member(actual_data, "to_pylist"))())
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def from_arrow(
@@ -776,29 +741,29 @@ def from_arrow(
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     # pyarrow.Tensor
-    if type(data).__name__ == "Tensor" and _has_attr(data, "to_numpy") and not _has_attr(data, "config"):
+    if type(data).__name__ == "Tensor" and has_backend_member(data, "to_numpy") and not has_backend_member(data, "config"):
         return arrow_tensor_to_tensor(data)
 
     # RecordBatch
-    if _has_attr(data, "num_columns") and _has_attr(data, "column") and _has_attr(data, "schema") and not _has_attr(data, "combine_chunks"):
+    if has_backend_member(data, "num_columns") and has_backend_member(data, "column") and has_backend_member(data, "schema") and not has_backend_member(data, "combine_chunks"):
         return record_batch_to_tensor(data)
 
     # Table
-    raw_data: StructuralOperandProtocol = data
-    if isinstance(raw_data, ArrowTableProtocol) or _has_attr(data, "to_batches"):
+    raw_data: EagerValue = data
+    if isinstance(raw_data, ArrowTableProtocol) or has_backend_member(data, "to_batches"):
         return _table_to_tensor(data)
 
     # ChunkedArray / Array
-    if isinstance(raw_data, ArrowArrayProtocol) or _has_attr(data, "to_numpy"):
+    if isinstance(raw_data, ArrowArrayProtocol) or has_backend_member(data, "to_numpy"):
         return _chunked_or_array_to_tensor(data)
 
     # Scalar
-    if isinstance(raw_data, _ArrowScalarProtocol) or _has_attr(data, "as_py"):
-        return as_tensor(as_callable(_get_attr(data, "as_py"))())
+    if isinstance(raw_data, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
+        return ensure_eager_tensor(ensure_callable(get_backend_member(data, "as_py"))())
 
     # Fallback
     arr = _pa_to_ndarray(data)
-    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=ensure_shape(get_backend_member(arr, "shape")), dtype=str(get_backend_member(arr, "dtype")), device="cpu"))
 
 
 def to_arrow(
@@ -859,17 +824,19 @@ def shares_buffer(obj1: EagerValue, obj2: EagerValue) -> bool:
     data1 = _unwrap_tensor(obj1)
     data2 = _unwrap_tensor(obj2)
 
-    buf1 = _get_attr(data1, "buffer")
-    buf2 = _get_attr(data2, "buffer")
-    if buf1 is not None and buf2 is not None and _has_attr(buf1, "address") and _has_attr(buf2, "address"):
-        addr1 = _get_attr(buf1, "address")
-        addr2 = _get_attr(buf2, "address")
+    buf1: EagerValue = get_backend_member(data1, "buffer")
+    buf2: EagerValue = get_backend_member(data2, "buffer")
+    if buf1 is not None and buf2 is not None and has_backend_member(buf1, "address") and has_backend_member(buf2, "address"):
+        addr1: EagerValue = get_backend_member(buf1, "address")
+        addr2: EagerValue = get_backend_member(buf2, "address")
         return bool(addr1 == addr2 and addr1 != 0)
 
-    arr1 = as_callable(_get_attr(data1, "to_numpy"))() if _has_attr(data1, "to_numpy") else data1
-    arr2 = as_callable(_get_attr(data2, "to_numpy"))() if _has_attr(data2, "to_numpy") else data2
-    iface1 = _get_attr(arr1, "__array_interface__")
-    iface2 = _get_attr(arr2, "__array_interface__")
+    arr1 = ensure_callable(get_backend_member(data1, "to_numpy"))() if has_backend_member(data1, "to_numpy") else data1
+    arr2 = ensure_callable(get_backend_member(data2, "to_numpy"))() if has_backend_member(data2, "to_numpy") else data2
+    raw_arr1: EagerValue = arr1
+    raw_arr2: EagerValue = arr2
+    iface1 = raw_arr1.__array_interface__ if isinstance(raw_arr1, _ArrayInterfaceProtocol) else None
+    iface2 = raw_arr2.__array_interface__ if isinstance(raw_arr2, _ArrayInterfaceProtocol) else None
     if isinstance(iface1, dict) and isinstance(iface2, dict):
         data_tup1 = iface1.get("data", (0,))
         data_tup2 = iface2.get("data", (0,))
@@ -896,8 +863,8 @@ def check_parity(
     Returns:
         bool: True if all elements match within tolerance.
     """
-    arr1 = as_tensor(_pa_to_ndarray(_unwrap_tensor(lhs))).reshape(-1)
-    arr2 = as_tensor(_pa_to_ndarray(_unwrap_tensor(rhs))).reshape(-1)
+    arr1 = ensure_eager_tensor(_pa_to_ndarray(_unwrap_tensor(lhs))).reshape(-1)
+    arr2 = ensure_eager_tensor(_pa_to_ndarray(_unwrap_tensor(rhs))).reshape(-1)
     list1 = arr1.tolist()
     list2 = arr2.tolist()
     if len(list1) != len(list2):

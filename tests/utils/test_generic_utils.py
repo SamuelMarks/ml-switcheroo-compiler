@@ -9,7 +9,6 @@ from unittest import mock
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.utils.generic_utils import (
     ArchiveConfig,
     CacheConfig,
@@ -29,15 +28,15 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     set_random_seed,
     standardize_dtype,
 )
-from tests.testing_utils import as_attr_val, as_callable, as_tensor
+from tests.testing_utils import ensure_attr_val, ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
-CustomObjectScope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
-custom_object_scope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
-deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-register_serializable = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
-serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+CustomObjectScope = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).CustomObjectScope)
+custom_object_scope = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).custom_object_scope)
+deserialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).deserialize_object)
+register_serializable = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).register_serializable)
+serialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).serialize_object)
 
 
 def test_configs() -> None:
@@ -55,12 +54,12 @@ def test_set_random_seed() -> None:
     import types
 
     m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
-    _set_attr(m, "set_numpy_seed", mock.Mock())
+    ensure_mutable(m).set_numpy_seed = ensure_eager_tensor(mock.Mock())
     with mock.patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.numpy.utils": m}):
         set_random_seed(42)
     with mock.patch("random.seed", side_effect=ImportError):
         set_random_seed(42)
-    assert _get_attr(m, "set_numpy_seed").called
+    assert ensure_eager_tensor(m).set_numpy_seed.called
 
 
 def test_validate_cache() -> None:
@@ -204,10 +203,10 @@ def test_generic_utils_stubs() -> None:
 
 def test_custom_object_scope_and_serialization() -> None:
     """Test functional custom_object_scope and serialization/deserialization."""
-    deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-    get_custom_objects = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
-    get_registered_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
-    serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+    deserialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).deserialize_object)
+    get_custom_objects = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_custom_objects)
+    get_registered_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_registered_object)
+    serialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).serialize_object)
 
     class CustomDense:
         """CustomDense test class."""
@@ -239,13 +238,13 @@ def test_custom_object_scope_and_serialization() -> None:
         assert id(get_registered_object("CustomDense")) == id(CustomDense)
 
         layer = CustomDense(units=64)
-        serialized = as_callable(serialize_object)(layer)
+        serialized = ensure_callable(serialize_object)(layer)
         assert serialized is not None
         assert serialized["class_name"] == "CustomDense"
         assert serialized["config"] == {"units": 64}
 
         deserialized = deserialize_object(serialized)
-        assert isinstance(deserialized, CustomDense)
+        assert type(deserialized).__name__ == "CustomDense"
         assert deserialized.units == 64
 
     # Restored outside scope
@@ -253,7 +252,7 @@ def test_custom_object_scope_and_serialization() -> None:
 
     # Pass custom_objects explicitly to deserialize
     deserialized_explicit = deserialize_object(serialized, custom_objects={"CustomDense": CustomDense})
-    assert isinstance(deserialized_explicit, CustomDense)
+    assert type(deserialized_explicit).__name__ == "CustomDense"
     assert deserialized_explicit.units == 64
 
     # Class without from_config (uses cls(**config))
@@ -272,7 +271,7 @@ def test_custom_object_scope_and_serialization() -> None:
         {"class_name": "SimpleLayer", "config": {"val": 10}},
         custom_objects={"SimpleLayer": SimpleLayer},
     )
-    assert isinstance(deserialized_simple, SimpleLayer)
+    assert type(deserialized_simple).__name__ == "SimpleLayer"
     assert deserialized_simple.val == 10
 
     # Config not a dict
@@ -280,7 +279,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert deserialize_object(cfg_not_dict, custom_objects={"SimpleLayer": SimpleLayer}) == cfg_not_dict
 
     # Registered name and object lookups
-    get_registered_name = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
+    get_registered_name = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_registered_name)
 
     @register_serializable(package="TestPkg", name="NamedCustomLayer")
     class NamedCustomLayer:
@@ -291,7 +290,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert get_registered_name(NamedCustomLayer) == "NamedCustomLayer"
     assert get_registered_name(None) == ""
     assert get_registered_name(lambda x: x) == "<lambda>"
-    assert as_callable(get_registered_name)(123) == "int"
+    assert ensure_callable(get_registered_name)(123) == "int"
 
     assert get_registered_object(None) is None
     assert get_registered_object("") is None
@@ -319,7 +318,7 @@ def test_is_symbolic_tensor_and_dtype() -> None:
     t = Tensor([1, 2], TensorConfig((2,), "float32", "cpu"))
     assert is_symbolic_tensor(t)
 
-    assert not as_callable(is_symbolic_tensor)(as_callable(DummyObj)())
+    assert not ensure_callable(is_symbolic_tensor)(ensure_callable(DummyObj)())
     assert not is_symbolic_tensor(123)
     assert not is_symbolic_tensor()
 
@@ -347,34 +346,34 @@ def test_bounding_boxes_conversions() -> None:
     # xyxy <-> xywh
     xyxy_boxes = np.array([[10.0, 20.0, 50.0, 80.0]], dtype=np.float32)
     xywh_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xywh")
-    as_callable(np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
+    ensure_callable(np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
 
     # Custom target fallback and custom source validation
     with mock.patch.object(bounding_boxes, "SUPPORTED_FORMATS", ("xyxy", "custom")):
         res_custom = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="custom")
-        as_callable(np.testing.assert_allclose)(res_custom, xyxy_boxes)
+        ensure_callable(np.testing.assert_allclose)(res_custom, xyxy_boxes)
         with pytest.raises(ValueError, match="Unrecognized source format"):
             bounding_boxes.convert_format(xyxy_boxes, source="custom", target="xyxy")
 
     # xywh -> center_xywh
     center_boxes = bounding_boxes.convert_format(xywh_boxes, source="xywh", target="center_xywh")
-    as_callable(np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
+    ensure_callable(np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
 
     # center_xywh -> yxyx
     yxyx_boxes = bounding_boxes.convert_format(center_boxes, source="center_xywh", target="yxyx")
-    as_callable(np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
+    ensure_callable(np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
 
     # yxyx -> rel_xyxy
     rel_boxes = bounding_boxes.convert_format(yxyx_boxes, source="yxyx", target="rel_xyxy", image_shape=(100, 200))
-    as_callable(np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
+    ensure_callable(np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
 
     # rel_xyxy -> xyxy
     back_to_xyxy = bounding_boxes.convert_format(rel_boxes, source="rel_xyxy", target="xyxy", image_shape=(100, 200))
-    as_callable(np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
+    ensure_callable(np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
 
     # Identity conversion
     same_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xyxy")
-    as_callable(np.testing.assert_allclose)(same_boxes, xyxy_boxes)
+    ensure_callable(np.testing.assert_allclose)(same_boxes, xyxy_boxes)
 
     # Validations
     with pytest.raises(ValueError, match="Unsupported bounding box format"):
@@ -431,19 +430,19 @@ def test_framework_agnostic_serialization_separation() -> None:
     assert get_registered_object("AgnosticLayer") is AgnosticLayer
 
     layer = AgnosticLayer(size=256)
-    serialized = serialize_object(as_attr_val(layer))
+    serialized = serialize_object(ensure_attr_val(layer))
     assert serialized is not None
     assert serialized["class_name"] == "AgnosticLayer"
     assert serialized["config"] == {"size": 256}
 
     deserialized = deserialize_object(serialized)
     assert type(deserialized).__name__ == "AgnosticLayer"
-    assert _get_attr(deserialized, "size") == 256
+    assert ensure_eager_tensor(deserialized).size == 256
 
     # Test CustomObjectScope context manager enter and exit
     with CustomObjectScope({"TempLayer": AgnosticLayer}):
         assert get_registered_object("TempLayer") is AgnosticLayer
-    assert as_tensor(get_registered_object("TempLayer")) is None
+    assert ensure_eager_tensor(get_registered_object("TempLayer")) is None
 
     # Test is_symbolic_tensor
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor

@@ -1,15 +1,50 @@
 """Module graph_scheduling.py."""
 
 from __future__ import annotations  # noqa: I001
-from ml_switcheroo_compiler.core.shape import _get_attr
 import typing
 
 
 import os
 import yaml
+from ml_switcheroo_compiler.core.shape import SymbolicDim
 from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+@typing.runtime_checkable
+class _DynamicShapeNodeProtocol(typing.Protocol):
+    """Protocol for nodes exposing an `is_dynamic_shape` boolean attribute."""
+
+    is_dynamic_shape: bool
+
+
+def _is_node_dynamic_shape(node: IRNode) -> bool:
+    """Check whether `node` has `is_dynamic_shape` set to True.
+
+    Args:
+        node (IRNode): Target IR node.
+
+    Returns:
+        bool: True if `is_dynamic_shape` is truthy on `node`.
+    """
+    return bool(node.is_dynamic_shape) if isinstance(node, _DynamicShapeNodeProtocol) else False
+
+
+def _dim_to_int(dim: int | str | float | SymbolicDim | None) -> int:
+    """Convert a shape dimension to a positive integer.
+
+    Args:
+        dim (int | str | float | SymbolicDim | None): Shape dimension value.
+
+    Returns:
+        int: Integer dimension value (at least 1).
+    """
+    if isinstance(dim, (int, float)):
+        return max(1, int(dim))
+    if isinstance(dim, str) and dim.isdigit():
+        return max(1, int(dim))
+    return 1
 
 
 class CostModel(typing.Protocol):
@@ -116,21 +151,21 @@ class DefaultCostModel:
         Returns:
             int | str: Memory size in bytes.
         """
-        dtype = node.attributes.get("dtype", "float32")
+        dtype = str(node.attributes.get("dtype", "float32"))
         sizes = self.config.memory_sizes
-        dtype_size: int = int(_get_attr(sizes, "get")(dtype, 4))
+        dtype_size: int = int(sizes.get(dtype, 4))
 
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         if shape is None:
             return dtype_size
 
-        is_dynamic = _get_attr(node, "is_dynamic_shape", False)
+        is_dynamic = _is_node_dynamic_shape(node)
         has_symbolic_dim = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
             size = 1
             for dim in shape:
-                size *= max(1, int(dim))
+                size *= _dim_to_int(dim)
             return size * dtype_size
 
         dims = [str(d) for d in shape]
@@ -227,17 +262,17 @@ class CpuCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
 
-        shape: tuple[int | str, ...] | list[int | str] | None = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = _is_node_dynamic_shape(node)
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
             size: int = 1
             for dim in shape:
-                size *= max(1, int(dim))
+                size *= _dim_to_int(dim)
             byte_size: int = size * dtype_size
             if byte_size > self.l3_cache_bytes:
                 return int(byte_size * 1.25)
@@ -262,11 +297,11 @@ class CpuCostModel:
         vector_factor: int = max(1, self.simd_width_bytes // dtype_size)
 
         op: str = node.op_type
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
-                elems *= max(1, int(dim))
+                elems *= _dim_to_int(dim)
 
         if op in ("MatMul", "BatchMatMul", "Einsum", "Dot"):
             return max(500, int((elems**1.5) / vector_factor))
@@ -350,17 +385,17 @@ class GpuCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
 
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = _is_node_dynamic_shape(node)
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
             size: int = 1
             for dim in shape:
-                size *= max(1, int(dim))
+                size *= _dim_to_int(dim)
             return size * dtype_size
 
         dims: list[str] = [str(d) for d in shape]
@@ -377,11 +412,11 @@ class GpuCostModel:
         """
         launch_cost: int = int(self.launch_latency_ns / 10)
         op: str = node.op_type
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
-                elems *= max(1, int(dim))
+                elems *= _dim_to_int(dim)
 
         if op in ("MatMul", "BatchMatMul", "Einsum", "Dot"):
             return launch_cost + max(400, int((elems**1.3) / (self.sm_count * 2)))
@@ -459,17 +494,17 @@ class EdgeCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else 4
 
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = _is_node_dynamic_shape(node)
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
             size: int = 1
             for dim in shape:
-                size *= max(1, int(dim))
+                size *= _dim_to_int(dim)
             byte_size: int = size * dtype_size
             if byte_size > self.max_linear_memory_bytes // 2:
                 return int(byte_size * 2) + self.allocation_penalty
@@ -488,11 +523,11 @@ class EdgeCostModel:
             int: Compute cost score.
         """
         op: str = node.op_type
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = node.shape_metadata
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
-                elems *= max(1, int(dim))
+                elems *= _dim_to_int(dim)
 
         if op in ("MatMul", "BatchMatMul", "Conv2D", "Conv"):
             return max(300, int(elems * 2))
@@ -682,8 +717,8 @@ class GraphSchedulingPass:
         stream_counter = 0
         for nid in scheduled_order:
             node = graph.nodes[nid]
-            if _get_attr(node, "stream", None) is None:
-                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and _get_attr(graph.nodes[inp], "stream", None) is not None}
+            if node.stream is None:
+                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and graph.nodes[inp].stream is not None}
                 if len(parent_streams) == 1:
                     node.stream = next(iter(parent_streams))
                     stream_modified = True

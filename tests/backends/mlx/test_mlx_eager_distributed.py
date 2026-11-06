@@ -6,8 +6,7 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -24,7 +23,7 @@ def test_mlx_eager_distributed_all_reduce_fallback() -> None:
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_reduce(mock_mx, mock_tensor)
-            assert as_tensor(_get_attr(res, "tolist"))() == [1.0]
+            assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [1.0]
 
 
 def test_mlx_eager_distributed_all_gather_fallback() -> None:
@@ -40,7 +39,7 @@ def test_mlx_eager_distributed_all_gather_fallback() -> None:
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_gather(mock_mx, mock_tensor)
-            assert as_tensor(_get_attr(res, "shape")) == (1, 1)
+            assert ensure_eager_tensor(res).shape == (1, 1)
             mock_mx.expand_dims.assert_called_once_with(mock_tensor, axis=0)
 
 

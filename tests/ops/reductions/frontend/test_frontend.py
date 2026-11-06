@@ -13,7 +13,6 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions import approx_max_k, approx_min_k, segment_max, segment_mean, segment_min, segment_prod, unsorted_segment_max, unsorted_segment_mean, unsorted_segment_min, unsorted_segment_prod, unsorted_segment_sqrt_n, unsorted_segment_sum
 from ml_switcheroo_compiler.ops.reductions.frontend import max as fe_max
@@ -23,11 +22,11 @@ from ml_switcheroo_compiler.ops.reductions.frontend import sum as fe_sum
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d, unfold
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import _emit_reduction_node, reduce_window
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-WindowConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
+WindowConfig = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils")).WindowConfig)
 
 
 def test_reductions_frontend_coverage_brute() -> None:
@@ -86,9 +85,8 @@ def _test_reductions_frontend_brute_part_1(_state: dict[str, EagerTensorProtocol
     indices = Tensor(np.zeros((2, 3, 8)).astype(np.int64), TensorConfig((2, 3, 8), "int64", "cpu"))
     indices2d = Tensor(np.zeros((2, 3, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8), "int64", "cpu"))
     indices3d = Tensor(np.zeros((2, 3, 8, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8, 8), "int64", "cpu"))
-    _get_attr(_state, "update")({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d})
-    _get_attr(_state, "update")({"t_2d": t_2d, "t_3d": t_3d})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d}))
+    _state.update(ensure_tensor_dict({"t_2d": t_2d, "t_3d": t_3d}))
 
 
 def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -127,26 +125,27 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
         dummy_backend = DummyBackend()
         mock_backend.return_value = dummy_backend
         mock_backend_utils.return_value = dummy_backend
-        as_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
-        as_callable(adaptive_max_pool2d)(t_2d, (4, 4))
-        as_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
-        as_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-        as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
-        as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+        ensure_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
+        ensure_callable(adaptive_max_pool2d)(t_2d, (4, 4))
+        ensure_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
+        ensure_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+        ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
+        ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
         opt1 = UnpoolOptions(kernel_size=2, output_size=(16,))
         opt2 = UnpoolOptions(kernel_size=(2, 2), output_size=(16, 16))
         opt3 = UnpoolOptions(kernel_size=(2, 2, 2), output_size=(16, 16, 16))
-        as_callable(max_unpool1d)(t_1d, indices, opt1)
-        as_callable(max_unpool2d)(t_2d, indices2d, opt2)
-        as_callable(max_unpool3d)(t_3d, indices3d, opt3)
+        ensure_callable(max_unpool1d)(t_1d, indices, opt1)
+        ensure_callable(max_unpool2d)(t_2d, indices2d, opt2)
+        ensure_callable(max_unpool3d)(t_3d, indices3d, opt3)
         w_conf = WindowConfig(window_dimensions=(1, 1, 2), window_strides=(1, 1, 2), padding=((0, 0), (0, 0), (0, 0)), base_dilation=(1, 1, 1), window_dilation=(1, 1, 1))
-        as_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
+        ensure_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
         t_scalar = Tensor(np.array(0.0).astype(np.float32), TensorConfig((), "float32", "cpu"))
-        as_callable(reduce_window)(t_1d, t_scalar, "max", w_conf)
-    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils})
-    _get_attr(_state, "update")({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar})
-    _get_attr(_state, "update")({"w_conf": w_conf})
-    _state.update(_caller_locals())
+        ensure_callable(reduce_window)(t_1d, t_scalar, "max", w_conf)
+    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils}))
+    _state.update(ensure_tensor_dict({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar}))
+    _state.update(ensure_tensor_dict({"w_conf": w_conf}))
+    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d}))
+    _state.update(ensure_tensor_dict({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d}))
 
 
 def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -166,24 +165,27 @@ def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool._emit_reduction_node") as mock_emit, patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node") as mock_emit_u:
             mock_emit.return_value = t_2d
             mock_emit_u.return_value = t_1d
-            as_callable(fractional_max_pool2d)(t_2d, (4, 4))
-            as_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
-            as_callable(adaptive_max_pool2d)(t_2d, (4, 4))
-            as_callable(unfold)(t_2d, (2, 2))
-            as_callable(fold)(t_2d, (8, 8), (2, 2))
-            as_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
-            as_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-            as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
-            as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
-            as_callable(max_unpool1d)(t_1d, indices, opt1)
-            as_callable(max_unpool2d)(t_2d, indices2d, opt2)
-            as_callable(max_unpool3d)(t_3d, indices3d, opt3)
-            as_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
-            as_callable(reduce_window)(t_1d, t_1d, "max", w_conf)
+            ensure_callable(fractional_max_pool2d)(t_2d, (4, 4))
+            ensure_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
+            ensure_callable(adaptive_max_pool2d)(t_2d, (4, 4))
+            ensure_callable(unfold)(t_2d, (2, 2))
+            ensure_callable(fold)(t_2d, (8, 8), (2, 2))
+            ensure_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
+            ensure_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+            ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
+            ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+            ensure_callable(max_unpool1d)(t_1d, indices, opt1)
+            ensure_callable(max_unpool2d)(t_2d, indices2d, opt2)
+            ensure_callable(max_unpool3d)(t_3d, indices3d, opt3)
+            ensure_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
+            ensure_callable(reduce_window)(t_1d, t_1d, "max", w_conf)
     finally:
         global_tracing_state.is_tracing = False
-    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d}))
+    _state.update(ensure_tensor_dict({"opt1": opt1, "opt2": opt2, "opt3": opt3}))
+    _state.update(ensure_tensor_dict({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d}))
+    _state.update(ensure_tensor_dict({"w_conf": w_conf}))
 
 
 def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -193,7 +195,7 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
         _state: Shared test state dictionary.
     """
     global_tracing_state = _state["global_tracing_state"]
-    _set_attr(global_tracing_state, "is_tracing", True)
+    ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(True)
     try:
 
         class DummyData:
@@ -201,12 +203,12 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
 
             id = "dummy"
 
-        t_dummy = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((2,), "float32", "cpu"))
+        t_dummy = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((2,), "float32", "cpu"))
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.global_tracing_state.add_node"):
-            as_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
+            ensure_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
     finally:
-        _set_attr(global_tracing_state, "is_tracing", False)
-    assert _get_attr(global_tracing_state, "is_tracing") is False
+        ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(False)
+    assert bool(ensure_eager_tensor(global_tracing_state).is_tracing) is False
 
 
 def test_reductions_frontend_brute() -> None:
@@ -283,14 +285,14 @@ def test_reductions_frontend_stats_ops() -> None:
     t = Tensor(np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     t2 = Tensor(np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     with patch.object(global_tracing_state, "add_node"):
-        assert isinstance(as_tensor(psum(t, "devices")), Tensor)
-        assert isinstance(as_tensor(pmean(t, "devices")), Tensor)
-        (v1, i1) = as_callable(approx_max_k)(t, k=2)
-        assert isinstance(as_tensor(v1), Tensor)
-        assert isinstance(as_tensor(i1), Tensor)
-        (v2, i2) = as_callable(approx_min_k)(t, k=2)
-        assert isinstance(as_tensor(v2), Tensor)
-        assert isinstance(as_tensor(i2), Tensor)
+        assert isinstance(ensure_eager_tensor(psum(t, "devices")), Tensor)
+        assert isinstance(ensure_eager_tensor(pmean(t, "devices")), Tensor)
+        (v1, i1) = ensure_callable(approx_max_k)(t, k=2)
+        assert isinstance(ensure_eager_tensor(v1), Tensor)
+        assert isinstance(ensure_eager_tensor(i1), Tensor)
+        (v2, i2) = ensure_callable(approx_min_k)(t, k=2)
+        assert isinstance(ensure_eager_tensor(v2), Tensor)
+        assert isinstance(ensure_eager_tensor(i2), Tensor)
         targets = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
         inp_len = Tensor(np.array([4], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
         tgt_len = Tensor(np.array([2], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))

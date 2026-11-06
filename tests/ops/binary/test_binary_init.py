@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -39,6 +39,6 @@ def test_binary_init_missing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.binary)
-        assert as_tensor(ml_switcheroo_compiler.ops.binary.add) is None
+        assert ensure_eager_tensor(ml_switcheroo_compiler.ops.binary.add) is None
 
     importlib.reload(ml_switcheroo_compiler.ops.binary)

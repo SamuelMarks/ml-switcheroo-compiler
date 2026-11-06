@@ -9,7 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.common.mixins.image as img_mix
 from ml_switcheroo_compiler.ir.core import IRNode
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -185,7 +185,7 @@ def test_image_ast_visitor() -> None:
     Returns:
         None
     """
-    vis = as_callable(img_mix.ImageASTVisitor)(generator=as_callable(_DummyGenerator)())
+    vis = ensure_callable(img_mix.ImageASTVisitor)(generator=ensure_callable(_DummyGenerator)())
     node = IRNode("dummy", "Dummy", inputs=[], attributes={})
 
     # With kwargs explicitly supplied

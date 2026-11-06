@@ -2,16 +2,47 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import as_int
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+@typing.runtime_checkable
+class _ScalarIntItemProtocol(typing.Protocol):
+    """Protocol for scalar arrays exposing `.item()`."""
+
+    def item(self) -> int | float | bool | complex | str | bytes:
+        """Return scalar item.
+
+        Returns:
+            int | float | bool | complex | str | bytes: Scalar value.
+        """
+        ...
+
+
+def _extract_array_index(val: TensorOrScalar | _ScalarIntItemProtocol) -> int:
+    """Extract an integer index from a scalar backend array or integer.
+
+    Args:
+        val (TensorOrScalar | _ScalarIntItemProtocol): Scalar array or integer.
+
+    Returns:
+        int: Integer index.
+    """
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, _ScalarIntItemProtocol):
+        item_val = val.item()
+        if isinstance(item_val, (int, float)):
+            return int(item_val)
+    return 0
 
 
 class TensorArray:
@@ -43,7 +74,7 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = as_int(get_active_backend().asarray(index.data))
+            idx = _extract_array_index(get_active_backend().asarray(index.data))
             val = self._data[idx]
             if val is None:
                 val = get_active_backend().execute_op("Zeros", self.element_shape)
@@ -75,7 +106,7 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = as_int(get_active_backend().asarray(index.data))
+            idx = _extract_array_index(get_active_backend().asarray(index.data))
             self._data[idx] = value.data
             return self
 

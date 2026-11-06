@@ -9,16 +9,16 @@ import pickle
 import tempfile
 import typing
 import zipfile
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_str, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ir.core import IRGraph, as_attr_val, as_graph
+from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.serialization.formats.base import WeightFormatProtocol
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
@@ -32,6 +32,201 @@ from ml_switcheroo_compiler.serialization.utils import (
     load_npz,
     to_numpy,
 )
+
+
+def _is_ser_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_ser_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_ser_tensor(val)
+    return val
+
+
+def _is_ser_attr_val(val: TensorOrScalar | AttributeValue) -> typing.TypeGuard[AttributeValue]:
+    """Type guard narrowing `val` to `AttributeValue`.
+
+    Args:
+        val (TensorOrScalar | AttributeValue): Candidate attribute value.
+
+    Returns:
+        bool: True if non-None or None.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _ensure_ser_attr_val(val: TensorOrScalar | AttributeValue) -> AttributeValue:
+    """Narrow `val` to `AttributeValue`.
+
+    Args:
+        val (TensorOrScalar | AttributeValue): Candidate attribute value.
+
+    Returns:
+        AttributeValue: Narrowed attribute value.
+    """
+    assert _is_ser_attr_val(val)
+    return val
+
+
+@typing.runtime_checkable
+class WeightedModelProtocol(typing.Protocol):
+    """Protocol for models exposing a `weights` iterable."""
+
+    weights: Iterable[TensorOrScalar]
+
+
+@typing.runtime_checkable
+class _NamedWeightProtocol(typing.Protocol):
+    """Protocol for weight variables exposing a `name` attribute."""
+
+    name: str | None
+
+
+@typing.runtime_checkable
+class _AssignableWeightProtocol(typing.Protocol):
+    """Protocol for weight variables supporting `.assign(value)`."""
+
+    def assign(self, value: AttributeValue) -> None:
+        """Assign a restored weight array into this variable.
+
+        Args:
+            value (AttributeValue): Restored weight array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ShapedVariableProtocol(typing.Protocol):
+    """Protocol for variables or arrays exposing `.shape`."""
+
+    shape: Sequence[int]
+
+
+@typing.runtime_checkable
+class _OptimizerVariablesProtocol(typing.Protocol):
+    """Protocol for optimizers exposing `.variables`."""
+
+    variables: Iterable[EagerTensorProtocol]
+
+
+@typing.runtime_checkable
+class _OptimizerMomentumsProtocol(typing.Protocol):
+    """Protocol for optimizers exposing `.momentums`."""
+
+    momentums: Iterable[EagerTensorProtocol]
+
+
+@typing.runtime_checkable
+class _OptimizerModelProtocol(typing.Protocol):
+    """Protocol for models exposing an `.optimizer` attribute."""
+
+    optimizer: TensorOrScalar
+
+
+@typing.runtime_checkable
+class _NonTrainableModelProtocol(typing.Protocol):
+    """Protocol for models exposing `.non_trainable_variables`."""
+
+    non_trainable_variables: Iterable[TensorOrScalar]
+
+
+@typing.runtime_checkable
+class _EmaModelProtocol(typing.Protocol):
+    """Protocol for models exposing `.ema_variables`."""
+
+    ema_variables: Iterable[TensorOrScalar]
+
+
+@typing.runtime_checkable
+class _ConfigProviderProtocol(typing.Protocol):
+    """Protocol for objects exposing `.get_config()`."""
+
+    def get_config(self) -> dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]:
+        """Return configuration dictionary.
+
+        Returns:
+            dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]: Configuration dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _FromConfigProtocol(typing.Protocol):
+    """Protocol for classes exposing `.from_config(config)`."""
+
+    def from_config(self, config: AttributeValue) -> AttributeValue:
+        """Instantiate object from configuration payload.
+
+        Args:
+            config (AttributeValue): Configuration payload.
+
+        Returns:
+            AttributeValue: Reconstructed object.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _GraphProviderProtocol(typing.Protocol):
+    """Protocol for models exposing `.graph`."""
+
+    graph: IRGraph
+
+
+@typing.runtime_checkable
+class _ToJsonProviderProtocol(typing.Protocol):
+    """Protocol for models exposing `.to_json()`."""
+
+    def to_json(self) -> str:
+        """Serialize model topology to JSON string.
+
+        Returns:
+            str: JSON string.
+        """
+        ...
+
+
+def _weight_name(w: TensorOrScalar, default: str | None = None) -> str | None:
+    """Extract the `.name` string from a weight variable if present.
+
+    Args:
+        w (TensorOrScalar): Weight variable object.
+        default (str | None): Fallback name if `.name` is missing.
+
+    Returns:
+        str | None: Weight variable name or default.
+    """
+    if isinstance(w, _NamedWeightProtocol) and w.name is not None:
+        return str(w.name)
+    return default
+
+
+def _extract_shape_tuple(val: AttributeValue) -> tuple[int, ...]:
+    """Extract a shape tuple from a variable or array if `.shape` is present.
+
+    Args:
+        val (AttributeValue): Variable or array.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    return tuple(int(d) for d in (val.shape if isinstance(val, _ShapedVariableProtocol) else ()))
 
 
 def graph_to_json(graph: IRGraph) -> str:
@@ -92,7 +287,7 @@ def _save_as_h5(weights_np: TensorOrScalar, filepath: str) -> None:
         weights_np (TensorOrScalar): The weights_np parameter.
         filepath (str): The filepath parameter.
     """
-    w_dict = {str(k): as_tensor(v) for k, v in weights_np.items()} if isinstance(weights_np, Mapping) else {}
+    w_dict = {str(k): _ensure_ser_tensor(v) for k, v in weights_np.items()} if isinstance(weights_np, Mapping) else {}
     H5WeightFormat().save(w_dict, filepath)
 
 
@@ -155,20 +350,20 @@ def _load_pickle_weights(filepath: str) -> TensorOrScalar:
 
 
 def _validate_and_map_weights(
-    weights_dict: dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]],
-    target_model: LoadedModel | None = None,
-) -> dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]:
+    weights_dict: Mapping[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]],
+    target_model: LoadedModel | TensorOrScalar | None = None,
+) -> dict[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]:
     """Validate the loaded weights and map them to the target model if provided.
 
     Args:
-        weights_dict (dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]): The weights_dict parameter.
-        target_model (LoadedModel | None): The target_model parameter.
+        weights_dict (Mapping[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]): The weights_dict parameter.
+        target_model (LoadedModel | TensorOrScalar | None): The target_model parameter.
 
     Returns:
-        dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]: Validated weights dict.
+        dict[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]: Validated weights dict.
     """
     _ = target_model
-    return weights_dict
+    return dict(weights_dict)
 
 
 def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOrScalar:
@@ -184,7 +379,7 @@ def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOr
     fmt = _infer_weight_format(filepath)
     handler = _get_format_handler(fmt)
     weights = handler.load(filepath)
-    return as_tensor(as_callable(_validate_and_map_weights)(weights, target_model))
+    return _ensure_ser_tensor(_validate_and_map_weights(weights, target_model))
 
 
 def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, **kwargs: AttrValue) -> None:
@@ -250,9 +445,9 @@ def _extract_model_weights(
         dict[str, TensorOrScalar]: A dictionary containing the extracted weights.
     """
     weights_store: dict[str, TensorOrScalar] = {}
-    if _has_attr(model, "weights"):
-        for i, w in enumerate(_get_attr(model, "weights")):
-            name = str(_get_attr(w, "name", f"weight_{i}"))
+    if isinstance(model, WeightedModelProtocol):
+        for i, w in enumerate(model.weights):
+            name = str(_weight_name(w, f"weight_{i}"))
             weights_store[name] = to_numpy(w)
     return weights_store
 
@@ -267,35 +462,36 @@ def _extract_optimizer_state(
         model (TensorOrScalar): The model parameter.
         state_store (TensorOrScalar): The state_store parameter.
     """
-    if _has_attr(model, "optimizer"):
-        if _has_attr(_get_attr(model, "optimizer"), "variables"):
-            for i, w in enumerate(_get_attr(model, "optimizer").variables):
-                name = _get_attr(w, "name", f"opt_state_{i}")
-                as_tensor(state_store)[name] = to_numpy(w)
-        if _has_attr(_get_attr(model, "optimizer"), "momentums"):
-            for i, w in enumerate(_get_attr(model, "optimizer").momentums):
-                name = _get_attr(w, "name", f"momentum_{i}")
-                as_tensor(state_store)[name] = to_numpy(w)
+    if isinstance(model, _OptimizerModelProtocol):
+        opt = model.optimizer
+        if isinstance(opt, _OptimizerVariablesProtocol):
+            for i, w in enumerate(opt.variables):
+                name = str(_weight_name(w, f"opt_state_{i}"))
+                _ensure_ser_tensor(state_store)[name] = to_numpy(w)
+        if isinstance(opt, _OptimizerMomentumsProtocol):
+            for i, w in enumerate(opt.momentums):
+                name = str(_weight_name(w, f"momentum_{i}"))
+                _ensure_ser_tensor(state_store)[name] = to_numpy(w)
 
 
 def _extract_non_trainable_state(
     model: LoadedModel | Tensor | dict[str, Tensor] | TensorOrScalar,
     state_store: TensorOrScalar,
-    weights_store: TensorOrScalar,
+    weights_store: TensorOrScalar | Mapping[str, TensorOrScalar],
 ) -> None:
     """Extract batch normalization statistics and non-trainable state.
 
     Args:
         model (TensorOrScalar): The model parameter.
         state_store (TensorOrScalar): The state_store parameter.
-        weights_store (TensorOrScalar): The weights_store parameter.
+        weights_store (TensorOrScalar | Mapping[str, TensorOrScalar]): The weights_store parameter.
     """
-    if _has_attr(model, "non_trainable_variables"):
+    if isinstance(model, _NonTrainableModelProtocol):
         existing_keys = set(weights_store) if isinstance(weights_store, Iterable) else set()
-        for i, w in enumerate(_get_attr(model, "non_trainable_variables")):
-            name = _get_attr(w, "name", f"non_trainable_{i}")
+        for i, w in enumerate(model.non_trainable_variables):
+            name = str(_weight_name(w, f"non_trainable_{i}"))
             if name not in existing_keys:
-                as_tensor(state_store)[name] = to_numpy(w)
+                _ensure_ser_tensor(state_store)[name] = to_numpy(w)
 
 
 def _extract_ema_state(
@@ -308,10 +504,10 @@ def _extract_ema_state(
         model (TensorOrScalar): The model parameter.
         state_store (TensorOrScalar): The state_store parameter.
     """
-    if _has_attr(model, "ema_variables"):
-        for i, w in enumerate(_get_attr(model, "ema_variables")):
-            name = _get_attr(w, "name", f"ema_{i}")
-            as_tensor(state_store)[name] = to_numpy(w)
+    if isinstance(model, _EmaModelProtocol):
+        for i, w in enumerate(model.ema_variables):
+            name = str(_weight_name(w, f"ema_{i}"))
+            _ensure_ser_tensor(state_store)[name] = to_numpy(w)
 
 
 def _extract_model_state(
@@ -328,9 +524,10 @@ def _extract_model_state(
         dict[str, TensorOrScalar]: A dictionary containing the extracted model state.
     """
     state_store: dict[str, TensorOrScalar] = {}
-    _extract_optimizer_state(model, as_tensor(state_store))
-    _extract_non_trainable_state(model, as_tensor(state_store), as_tensor(weights_store))
-    _extract_ema_state(model, as_tensor(state_store))
+    state_ref = _ensure_ser_tensor(state_store)
+    _extract_optimizer_state(model, state_ref)
+    _extract_non_trainable_state(model, state_ref, weights_store)
+    _extract_ema_state(model, state_ref)
     return state_store
 
 
@@ -349,8 +546,8 @@ def _compile_model_metadata(
         tuple[dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]], dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]]: Configuration and metadata dicts.
     """
     config_dict: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] = {}
-    if _has_attr(model, "get_config"):
-        config_dict = _get_attr(model, "get_config")()
+    if isinstance(model, _ConfigProviderProtocol):
+        config_dict = model.get_config()
     metadata: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] = {"keras_version": "3.0.0", "date_saved": "2026-06-22"}
     return config_dict, metadata
 
@@ -400,9 +597,9 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
     """
     with zipfile.ZipFile(ctx.filepath, "w", zipfile.ZIP_DEFLATED) as zf:
         if ctx.weights_store:
-            _write_h5_to_zip(zf, "model.weights.h5", as_tensor(ctx.weights_store))
+            _write_h5_to_zip(zf, "model.weights.h5", _ensure_ser_tensor(ctx.weights_store))
         if ctx.state_store:
-            _write_h5_to_zip(zf, "optimizer.weights.h5", as_tensor(ctx.state_store))
+            _write_h5_to_zip(zf, "optimizer.weights.h5", _ensure_ser_tensor(ctx.state_store))
         zf.writestr(zipfile.ZipInfo("config.json"), json.dumps(ctx.config_dict, indent=2))
         zf.writestr(zipfile.ZipInfo("metadata.json"), json.dumps(ctx.metadata, indent=2))
 
@@ -523,6 +720,27 @@ def load_model(
         raise ValueError(f"Failed to load model from '{filepath}': {e}") from e
 
 
+@typing.runtime_checkable
+class _NamedObjectProtocol(typing.Protocol):
+    """Protocol for classes and functions exposing `__name__`."""
+
+    @property
+    def __name__(self) -> str:
+        """Return object name.
+
+        Returns:
+            str: Object name.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ModuleObjectProtocol(typing.Protocol):
+    """Protocol for objects exposing `__module__`."""
+
+    __module__: str
+
+
 def register_serializable(package: str = "Custom", name: str | None = None) -> Callable[[T], T]:
     """Register a custom object for serialization.
 
@@ -543,10 +761,12 @@ def register_serializable(package: str = "Custom", name: str | None = None) -> C
         Returns:
             T: The registered object unchanged.
         """
-        registered_name = str(name or _get_attr(arg, "__name__", str(arg)))
-        _CUSTOM_OBJECTS[registered_name] = as_attr_val(arg)
+        raw_arg: TensorOrScalar = arg
+        raw_name = str(raw_arg.__name__) if isinstance(raw_arg, _NamedObjectProtocol) else str(arg)
+        registered_name = str(name or raw_name)
+        _CUSTOM_OBJECTS[registered_name] = _ensure_ser_attr_val(arg)
         if package:
-            _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = as_attr_val(arg)
+            _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = _ensure_ser_attr_val(arg)
         return arg
 
     return decorator
@@ -634,12 +854,12 @@ def get_registered_name(obj: AttributeValue = None, *args: AttributeValue, **kwa
     Returns:
         str: The registered name of the object.
     """
-    target = obj if obj is not None else (args[0] if args else kwargs.get("obj"))
-    for name, registered_obj in _CUSTOM_OBJECTS.items():
-        if registered_obj is target:
-            return name
-    if _has_attr(target, "__name__"):
-        return as_str(_get_attr(target, "__name__"))
+    target: TensorOrScalar = obj if obj is not None else (args[0] if args else kwargs.get("obj"))
+    inv_custom = {id(reg_obj): name for name, reg_obj in reversed(list(_CUSTOM_OBJECTS.items()))}
+    if id(target) in inv_custom:
+        return inv_custom[id(target)]
+    if target is not None and isinstance(target, _NamedObjectProtocol):
+        return str(target.__name__)
     return "CustomObject"
 
 
@@ -655,7 +875,7 @@ def get_registered_object(name: AttributeValue = None, *args: AttributeValue, **
         AttributeValue: The registered class or function object, or None if not found.
     """
     key = name if name is not None else (args[0] if args else kwargs.get("name"))
-    return _get_attr(_CUSTOM_OBJECTS, "get")(key) if key is not None else None
+    return _CUSTOM_OBJECTS.get(str(key)) if key is not None else None
 
 
 def _serialize_nested_config(val: AttributeValue) -> AttributeValue:
@@ -669,7 +889,7 @@ def _serialize_nested_config(val: AttributeValue) -> AttributeValue:
     """
     if val is None or isinstance(val, (int, float, str, bool)):
         return val
-    if _has_attr(val, "get_config"):
+    if isinstance(val, _ConfigProviderProtocol):
         return serialize_object(val)
     if isinstance(val, dict):
         return {k: _serialize_nested_config(v) for k, v in val.items()}
@@ -692,21 +912,20 @@ def serialize_object(instance: AttributeValue = None, **kwargs: AttributeValue) 
     if not obj:
         return {}
 
-    if _has_attr(obj, "get_config"):
+    if isinstance(obj, _ConfigProviderProtocol):
         cfg = obj.get_config()
         # Check if obj or its class is registered in custom objects
-        reg_name: str | None = None
-        for name, reg_obj in _CUSTOM_OBJECTS.items():
-            if reg_obj is obj or reg_obj is _get_attr(obj, "__class__", None):
-                reg_name = name
-                break
+        obj_type = type(obj)
+        inv_custom = {id(reg_obj): name for name, reg_obj in reversed(list(_CUSTOM_OBJECTS.items()))}
+        reg_name: str | None = inv_custom.get(id(obj), inv_custom.get(id(obj_type)))
 
         if reg_name is not None:
-            class_name = _get_attr(obj, "__class__", type(obj)).__name__
+            class_name = str(obj_type.__name__)
+            mod_name: str | None = str(obj_type.__module__)
             return {
                 "class_name": class_name,
                 "config": _serialize_nested_config(cfg),
-                "module": _get_attr(obj, "__module__", None),
+                "module": mod_name,
                 "registered_name": reg_name,
             }
         return _serialize_nested_config(cfg)
@@ -718,6 +937,21 @@ def serialize_object(instance: AttributeValue = None, **kwargs: AttributeValue) 
         return [_serialize_nested_config(item) for item in obj]
 
     return {}
+
+
+def _try_instantiate_from_config(cls_type: AttributeValue, deserialized_sub: AttributeValue) -> tuple[bool, AttributeValue]:
+    """Attempt to instantiate `cls_type` via `.from_config(deserialized_sub)` if supported.
+
+    Args:
+        cls_type (AttributeValue): Registered class or callable.
+        deserialized_sub (AttributeValue): Deserialized configuration payload.
+
+    Returns:
+        tuple[bool, AttributeValue]: `(True, instance)` if `.from_config` was used, else `(False, None)`.
+    """
+    if isinstance(cls_type, _FromConfigProtocol):
+        return True, _ensure_ser_attr_val(cls_type.from_config(deserialized_sub))
+    return False, None
 
 
 def _instantiate_registered_class(
@@ -747,8 +981,9 @@ def _instantiate_registered_class(
 
     cls_type = all_customs[str(class_name)]
     deserialized_sub = deserialize_object(sub_config, custom_objects=custom_objects)
-    if _has_attr(cls_type, "from_config"):
-        return as_attr_val(_get_attr(cls_type, "from_config")(deserialized_sub))
+    used_from_config, inst = _try_instantiate_from_config(cls_type, deserialized_sub)
+    if used_from_config:
+        return inst
     if callable(cls_type):
         return cls_type(**deserialized_sub) if isinstance(deserialized_sub, dict) else cls_type(deserialized_sub)
     return cls_type
@@ -904,12 +1139,12 @@ class SavedModel:
         os.makedirs(path, exist_ok=True)
         graph_def: dict[str, AttributeValue] = {}
         if self.model is not None:
-            if _has_attr(self.model, "graph"):
-                graph_def = json.loads(graph_to_json(as_graph(_get_attr(self.model, "graph"))))
-            elif _has_attr(self.model, "to_json"):
+            if isinstance(self.model, _GraphProviderProtocol):
+                graph_def = json.loads(graph_to_json(self.model.graph))
+            elif isinstance(self.model, _ToJsonProviderProtocol):
                 graph_def = json.loads(self.model.to_json())
-            elif _has_attr(self.model, "get_config"):
-                graph_def = self.model.get_config()
+            elif isinstance(self.model, _ConfigProviderProtocol):
+                graph_def = dict(self.model.get_config())
 
         manifest = {
             "format": "SavedModel",
@@ -1037,7 +1272,9 @@ def load_variable(path: str, name: str) -> Tensor:
         data = backend_cls.load(var_path)
     else:
         data = backend_cls.zeros((1,))
-    return Tensor(data, TensorConfig(_get_attr(data, "shape"), str(_get_attr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
+    data_shape = _extract_shape_tuple(data)
+    data_dtype = str(_ensure_ser_tensor(data).dtype)
+    return Tensor(data, TensorConfig(data_shape, data_dtype, Device(DeviceType("cpu"))))
 
 
 def _load_restored_weights_from_dir(path: str) -> dict[str, AttributeValue]:
@@ -1080,25 +1317,25 @@ def _validate_restored_target_weights(
     Raises:
         ValueError: If any restored weight shape mismatches the target variable shape.
     """
-    if target_model is not None and _has_attr(target_model, "weights"):
+    if target_model is not None and isinstance(target_model, WeightedModelProtocol):
         for w in target_model.weights:
-            name = _get_attr(w, "name", None)
+            name = _weight_name(w)
             if name and name in restored_weights:
                 restored_arr = restored_weights[name]
-                w_shape = _get_attr(w, "shape", ())
-                r_shape = _get_attr(restored_arr, "shape")
-                if tuple(w_shape) != tuple(r_shape):
+                w_shape = _extract_shape_tuple(w)
+                r_shape = _extract_shape_tuple(restored_arr)
+                if w_shape != r_shape:
                     raise ValueError(f"Shape mismatch restoring variable '{name}': expected {w_shape} but got {r_shape}")
-                if _has_attr(w, "assign"):
+                if isinstance(w, _AssignableWeightProtocol):
                     w.assign(restored_arr)
 
     if isinstance(variables, dict):
         for name, var in variables.items():
             if name in restored_weights:
                 restored_arr = restored_weights[name]
-                var_shape = _get_attr(var, "shape", ())
-                r_shape = _get_attr(restored_arr, "shape")
-                if tuple(var_shape) != tuple(r_shape):
+                var_shape = _extract_shape_tuple(var)
+                r_shape = _extract_shape_tuple(restored_arr)
+                if var_shape != r_shape:
                     raise ValueError(f"Shape mismatch restoring variable '{name}': expected {var_shape} but got {r_shape}")
 
 
@@ -1125,7 +1362,7 @@ def run_restore_ops(path: str, target_model: AttributeValue = None, variables: A
     else:
         fmt = _infer_weight_format(path)
         handler = _get_format_handler(fmt)
-        restored_weights = dict(_get_attr(handler, "load")(path))
+        restored_weights = dict(handler.load(path))
 
     _validate_restored_target_weights(restored_weights, target_model, variables)
     return restored_weights

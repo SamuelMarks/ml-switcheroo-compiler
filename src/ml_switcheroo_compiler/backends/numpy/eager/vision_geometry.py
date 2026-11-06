@@ -5,18 +5,18 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import as_callable, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("AffineGenerator")
 def _np_affine_generator(
     backend_module: BackendModuleProtocol,
     batch_size: int,
-    angles: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
-    shears: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
-    zooms: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
+    angles: EagerValue,
+    shears: EagerValue,
+    zooms: EagerValue,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Generate affine transformation matrices for a batch.
@@ -41,8 +41,8 @@ def _np_affine_generator(
 @numpy_eager_registry.register("ElasticTransform")
 def _np_elastic_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    displacement: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
+    displacement: EagerValue,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply elastic transformation to an image using displacement.
@@ -56,23 +56,23 @@ def _np_elastic_transform(
     Returns:
         np.ndarray: The transformed images array.
     """
-    arr = np.asarray(images)
+    arr = ensure_ndarray(np.asarray(images))
     disp = np.asarray(displacement)
     if disp.ndim < 1 or disp.size == 0 or disp.all() is None:
         return arr
     if arr.ndim >= 2:
-        shift_y = int(_get_attr(np, "mean")(disp[..., 0])) if disp.size > 0 else 0
-        shift_x = int(_get_attr(np, "mean")(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
-        return np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1))
+        shift_y = int(get_backend_member(np, "mean")(disp[..., 0])) if disp.size > 0 else 0
+        shift_x = int(get_backend_member(np, "mean")(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
+        return ensure_ndarray(np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1)))
     return arr
 
 
 @numpy_eager_registry.register("ExtractBoundingBoxes")
 def _np_extract_bounding_boxes(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    boxes: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    box_indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
+    boxes: EagerValue,
+    box_indices: EagerValue,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Extract bounding box crops from images.
@@ -87,14 +87,14 @@ def _np_extract_bounding_boxes(
     Returns:
         np.ndarray: Cropped images tensor.
     """
-    return images
+    return ensure_ndarray(images)
 
 
 @numpy_eager_registry.register("IoU")
 def _np_iou(
     backend_module: BackendModuleProtocol,
-    boxes1: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    boxes2: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    boxes1: EagerValue,
+    boxes2: EagerValue,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute Intersection-over-Union between two sets of boxes.
@@ -108,14 +108,14 @@ def _np_iou(
     Returns:
         np.ndarray: Pairwise IoU matrix.
     """
-    return np.asarray(as_callable(iou_eager)(backend_module, boxes1, boxes2, **kwargs))
+    return ensure_ndarray(np.asarray(ensure_callable(iou_eager)(backend_module, boxes1, boxes2, **kwargs)))
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
 def _np_nms(
     backend_module: BackendModuleProtocol,
-    boxes: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    scores: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    boxes: EagerValue,
+    scores: EagerValue,
     max_output_size: int,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -131,15 +131,15 @@ def _np_nms(
     Returns:
         np.ndarray: Indices of selected bounding boxes.
     """
-    return np.asarray(as_callable(nms_eager)(backend_module, boxes, scores, **kwargs))
+    return ensure_ndarray(np.asarray(ensure_callable(nms_eager)(backend_module, boxes, scores, **kwargs)))
 
 
 @numpy_eager_registry.register("PerspectiveTransform")
 def _np_perspective_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    start_points: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    end_points: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
+    start_points: EagerValue,
+    end_points: EagerValue,
     config: dict[str, float] | float | None = None,
     **kwargs: float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -156,13 +156,13 @@ def _np_perspective_transform(
     Returns:
         np.ndarray: Perspective transformed images.
     """
-    return images
+    return ensure_ndarray(images)
 
 
 @numpy_eager_registry.register("AffineGrid")
 def _np_affine_grid(
     backend_module: BackendModuleProtocol,
-    theta: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float,
+    theta: EagerValue,
     size: tuple[int, ...],
     align_corners: bool = False,
     **kwargs: bool | None,
@@ -182,16 +182,16 @@ def _np_affine_grid(
     if isinstance(theta, np.ndarray):
         s = list(size)
         if len(s) == 4:
-            return np.zeros((s[0], s[2], s[3], 2), dtype=theta.dtype)
-        return np.zeros(s + [2], dtype=theta.dtype)
-    return theta
+            return ensure_ndarray(np.zeros((s[0], s[2], s[3], 2), dtype=theta.dtype))
+        return ensure_ndarray(np.zeros(s + [2], dtype=theta.dtype))
+    return float(theta) if isinstance(theta, (int, float)) else ensure_ndarray(theta)
 
 
 @numpy_eager_registry.register("AffineTransform")
 def _np_affine_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    transforms: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
+    transforms: EagerValue,
     interpolation: str = "nearest",
     **kwargs: str | float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -207,7 +207,7 @@ def _np_affine_transform(
     Returns:
         np.ndarray: Transformed image tensor.
     """
-    return images
+    return ensure_ndarray(images)
 
 
 __all__ = [

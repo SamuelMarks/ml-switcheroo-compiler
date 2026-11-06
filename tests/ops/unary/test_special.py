@@ -6,7 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.ops.unary.special import Lbeta
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -30,8 +30,8 @@ class MockTensor:
 def test_mvlgamma_infer_shape() -> None:
     """Test function test_mvlgamma_infer_shape."""
     op = Lbeta()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (2,)
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)(())) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (2,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)(())) == ()
 
 
 def test_missing_classes_infer_shape() -> None:

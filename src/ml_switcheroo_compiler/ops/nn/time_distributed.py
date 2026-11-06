@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from ml_switcheroo_compiler.backends.registry import as_shape
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.registry import ensure_shape
+from ml_switcheroo_compiler.core.shape import extract_dtype, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 
@@ -28,7 +28,7 @@ class TimeDistributed(OpDef):
         Returns:
             tuple[int, ...]: Inferred output shape preserving batch and time dimensions.
         """
-        x_shape: tuple[int, ...] = _get_attr(x, "shape", ()) if x is not None else ()
+        x_shape: tuple[int, ...] = extract_shape(x) if x is not None else ()
         if len(x_shape) < 2:
             return x_shape
         batch, time_dim = x_shape[0], x_shape[1]
@@ -42,10 +42,10 @@ class TimeDistributed(OpDef):
                     """Dummy placeholder tensor representation for inner shape deduction."""
 
                     shape: tuple[int, ...] = (batch * time_dim, *feature_shape)
-                    dtype: str | None = _get_attr(x, "dtype", None)
+                    dtype: str | None = str(extract_dtype(x))
 
                 inner_kwargs = {k: v for k, v in kwargs.items() if k != "wrapped_op_name"}
-                inner_out_shape = as_shape(inner_op.infer_shape(_InnerDummy(), **inner_kwargs))
+                inner_out_shape = ensure_shape(inner_op.infer_shape(_InnerDummy(), **inner_kwargs))
                 if inner_out_shape and len(inner_out_shape) >= 1:
                     return (batch, time_dim, *inner_out_shape[1:])
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):

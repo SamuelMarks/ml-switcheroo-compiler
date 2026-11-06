@@ -27,7 +27,7 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     timeseries_dataset_from_array,
     unpack_x_y_sample_weight,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -156,4 +156,4 @@ def test_pad_sequences() -> None:
 
 def test_split_dataset() -> None:
     """Test function test_split_dataset."""
-    assert as_callable(split_dataset)("ds") == ("ds", "ds")
+    assert ensure_callable(split_dataset)("ds") == ("ds", "ds")

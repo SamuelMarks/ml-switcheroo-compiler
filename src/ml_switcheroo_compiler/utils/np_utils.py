@@ -2,8 +2,39 @@
 
 from __future__ import annotations
 
+import typing
+
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
+
+@typing.runtime_checkable
+class _ScalarItemProtocol(typing.Protocol):
+    """Protocol for scalar tensors exposing `.item()`."""
+
+    def item(self) -> int | float:
+        """Return scalar value.
+
+        Returns:
+            int | float: Scalar numeric value.
+        """
+        ...
+
+
+def _extract_scalar_int(val: TensorOrScalar) -> int:
+    """Extract an integer scalar from a tensor or numeric scalar.
+
+    Args:
+        val (TensorOrScalar): Input scalar or 0-D tensor.
+
+    Returns:
+        int: Extracted integer value.
+    """
+    if isinstance(val, _ScalarItemProtocol):
+        return int(val.item())
+    if isinstance(val, (int, float)):
+        return int(val)
+    return 0
 
 
 def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str = "float32") -> TensorOrScalar:
@@ -19,13 +50,14 @@ def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str
     """
     if num_classes is None:
         max_val = ops.max(x)
-        num_classes = int(max_val.item() if _has_attr(max_val, "item") else max_val) + 1
+        num_classes = _extract_scalar_int(max_val) + 1
 
-    x_ops = ops.cast(x, "int32")
+    op_cast = ops.cast
+    x_ops = op_cast(x, "int32")
     indices = ops.arange(num_classes)
     x_expanded = ops.expand_dims(x_ops, -1)
     one_hot = ops.equal(x_expanded, indices)
-    return ops.cast(one_hot, dtype)
+    return op_cast(one_hot, dtype)
 
 
 def normalize(x: TensorOrScalar, axis: int = -1, order: int = 2) -> TensorOrScalar:

@@ -5,9 +5,6 @@ from __future__ import annotations
 import importlib.util
 import sys
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
-
 try:
     _has_pkg = importlib.util.find_spec("keras") is not None
 except ValueError:
@@ -19,4 +16,4 @@ if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
 from .eager import execute_op
 from .generator import KerasCodeGenerator
 
-_obj_set_attr(KerasCodeGenerator, "execute_op", as_callable(classmethod)(execute_op))
+__all__ = ["KerasCodeGenerator", "execute_op"]

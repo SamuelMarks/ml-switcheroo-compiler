@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -66,13 +72,13 @@ def space_to_batch(input: TensorOrScalar, block_size: TensorOrScalar, paddings: 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("SpaceToBatch", _get_attr(input, "data", input), block_size, paddings, **kwargs)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), _get_attr(input, "dtype", "float32"), _get_attr(input, "device", None)))
+        data = get_active_backend().execute_op("SpaceToBatch", extract_data(input), block_size, paddings, **kwargs)
+        return Tensor(data, TensorConfig(extract_shape(data), extract_dtype(input, "float32"), extract_device(input, None)))
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("SpaceToBatch")().infer_shape(input, block_size=block_size, paddings=paddings, **kwargs)
-    return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, out_shape, _get_attr(input, "dtype", "float32"))
+    return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, out_shape, extract_dtype(input, "float32"))
 
 
 def space_to_batch_nd(input: TensorOrScalar, block_shape: TensorOrScalar, paddings: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -92,10 +98,10 @@ def space_to_batch_nd(input: TensorOrScalar, block_shape: TensorOrScalar, paddin
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("SpaceToBatchND", _get_attr(input, "data", input), block_shape, paddings, **kwargs)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), _get_attr(input, "dtype", "float32"), _get_attr(input, "device", None)))
+        data = get_active_backend().execute_op("SpaceToBatchND", extract_data(input), block_shape, paddings, **kwargs)
+        return Tensor(data, TensorConfig(extract_shape(data), extract_dtype(input, "float32"), extract_device(input, None)))
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("SpaceToBatchND")().infer_shape(input, block_shape=block_shape, paddings=paddings, **kwargs)
-    return _emit_shape_node("SpaceToBatchND", [input], {"block_shape": block_shape, "paddings": paddings, **kwargs}, out_shape, _get_attr(input, "dtype", "float32"))
+    return _emit_shape_node("SpaceToBatchND", [input], {"block_shape": block_shape, "paddings": paddings, **kwargs}, out_shape, extract_dtype(input, "float32"))

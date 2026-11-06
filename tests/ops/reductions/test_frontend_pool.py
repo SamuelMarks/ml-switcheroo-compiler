@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.ops.reductions.frontend_pool import (
     fractional_max_pool3d,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -34,22 +34,22 @@ def test_frontend_pool_edge_cases() -> None:
 
             id = "dummy1"
 
-        t1d = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((1,), "float32", None))
+        t1d = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((1,), "float32", None))
 
-        as_callable(fractional_max_pool2d)(t1d, output_size=[1, 1])
-        as_callable(adaptive_avg_pool2d)(t1d, output_size=[1, 1])
-        as_callable(adaptive_max_pool2d)(t1d, output_size=[1, 1])
+        ensure_callable(fractional_max_pool2d)(t1d, output_size=[1, 1])
+        ensure_callable(adaptive_avg_pool2d)(t1d, output_size=[1, 1])
+        ensure_callable(adaptive_max_pool2d)(t1d, output_size=[1, 1])
 
         class DummyData2:
             """Test class DummyData2."""
 
             id = "dummy2"
 
-        t2d = as_callable(Tensor)(as_callable(DummyData2)(), as_callable(TensorConfig)((1, 1), "float32", None))
+        t2d = ensure_callable(Tensor)(ensure_callable(DummyData2)(), ensure_callable(TensorConfig)((1, 1), "float32", None))
 
-        as_callable(fractional_max_pool3d)(t2d, output_size=[1, 1, 1])
-        as_callable(adaptive_avg_pool3d)(t2d, output_size=[1, 1, 1])
-        as_callable(adaptive_max_pool3d)(t2d, output_size=[1, 1, 1])
+        ensure_callable(fractional_max_pool3d)(t2d, output_size=[1, 1, 1])
+        ensure_callable(adaptive_avg_pool3d)(t2d, output_size=[1, 1, 1])
+        ensure_callable(adaptive_max_pool3d)(t2d, output_size=[1, 1, 1])
 
     finally:
         global_tracing_state.is_tracing = False

@@ -27,7 +27,7 @@ from ml_switcheroo_compiler.core.device import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ops.device import DeviceContextOp, DeviceTransferOp, device_transfer, get_peak_memory, synchronize
 from ml_switcheroo_compiler.ops.device import eval as ops_eval
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -166,7 +166,7 @@ def test_ops_device_eval() -> None:
             data = "dummy_data"
 
         d = Dummy()
-        as_callable(ops_eval)(d)
+        ensure_callable(ops_eval)(d)
         assert d.data == "dummy_data"
 
 
@@ -221,7 +221,7 @@ def test_ops_device_device_transfer() -> None:
     with patch("ml_switcheroo_compiler.ops.device._emit_shape_node") as mock_emit:
         mock_emit.return_value = "emitted"
         t = DummyTensor()
-        assert as_callable(device_transfer)(t, "cuda:0") == "emitted"
+        assert ensure_callable(device_transfer)(t, "cuda:0") == "emitted"
         mock_emit.assert_called_once_with(
             "DeviceTransfer",
             [t],

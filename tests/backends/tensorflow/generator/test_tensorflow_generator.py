@@ -7,9 +7,8 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -45,12 +44,12 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     file_npy = tmp_path / "test.npy"
     TensorFlowCodeGenerator.save(str(file_npy), arr)
     res_npy = TensorFlowCodeGenerator.load(str(file_npy))
-    as_callable(np.testing.assert_array_equal)(res_npy, arr)
+    ensure_callable(np.testing.assert_array_equal)(res_npy, arr)
 
     file_npz = tmp_path / "test.npz"
     TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
     res_npz = TensorFlowCodeGenerator.load(str(file_npz))
-    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(res_npz, "__getitem__")("a")), arr)
+    ensure_callable(np.testing.assert_array_equal)(ensure_eager_tensor(res_npz)["a"], arr)
 
     file_comp = tmp_path / "test_comp.npz"
     TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)
@@ -70,8 +69,8 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     assert gen._format_transpose({}) == "tf.transpose({0})"
     assert gen._format_transpose({"axes": [0, 1]}) == "tf.transpose({0}, perm={axes})"
 
-    assert as_callable(gen.visit_RaggedDot)(as_callable(DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
-    assert as_callable(gen.visit_Einsum)(as_callable(DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
+    assert ensure_callable(gen.visit_RaggedDot)(ensure_callable(DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
+    assert ensure_callable(gen.visit_Einsum)(ensure_callable(DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
 
     assert gen.get_fallback_prefix() == "tf.math"
     assert "Zeros" in gen._get_creation_ops({})
@@ -129,7 +128,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
             x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
             cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
             out = runner(Tensor(x_val, cfg_2x2))
-            as_callable(np.testing.assert_allclose)(out, as_callable(np.maximum)(x_val, 0.0))
+            ensure_callable(np.testing.assert_allclose)(out, ensure_callable(np.maximum)(x_val, 0.0))
 
 
 def test_tf_generator_aot_fallback() -> None:
@@ -172,7 +171,7 @@ def test_tf_generator_aot_fallback() -> None:
 
                 g_multi.outputs = ["add"]
                 res_single = fb_runner(a_val)
-                as_callable(np.testing.assert_allclose)(res_single, [2.0, 4.0])
+                ensure_callable(np.testing.assert_allclose)(res_single, [2.0, 4.0])
 
                 g_multi.outputs = []
                 res_dict = fb_runner(a_val)

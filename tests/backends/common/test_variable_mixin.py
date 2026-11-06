@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -25,7 +24,7 @@ class DummyVisitor(VariableASTVisitor):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        _set_attr(self, "_generator", DummyGenerator())
+        ensure_mutable(self)._generator = ensure_eager_tensor(DummyGenerator())
 
 
 class DummyNode:
@@ -39,6 +38,6 @@ def test_variable_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert as_callable(vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
-    assert as_callable(vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
-    assert as_callable(vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"
+    assert ensure_callable(vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
+    assert ensure_callable(vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
+    assert ensure_callable(vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"

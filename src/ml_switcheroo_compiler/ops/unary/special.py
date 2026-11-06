@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -49,7 +49,7 @@ class Cast(OpDef):
             return first
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        return extract_shape(first)
 
 
 @register_op("Bitcast")
@@ -107,7 +107,7 @@ class Frexp(OpDef):
             return first
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        return extract_shape(first)
 
 
 @register_op("Erf")
@@ -231,7 +231,7 @@ class Lbeta(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = tuple(_get_attr(x, "shape", x if isinstance(x, (tuple, list)) else ()))
+        shape = tuple(x) if isinstance(x, (tuple, list)) else extract_shape(x)
         if len(shape) > 0:
             return shape[:-1]
         return ()

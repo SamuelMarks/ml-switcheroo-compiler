@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _ipc_all_gather, _ipc_all_reduce, _ipc_reduce_scatter
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -13,6 +13,6 @@ if typing.TYPE_CHECKING:
 
 def test_numpy_distributed_ipc() -> None:
     """Test function test_numpy_distributed_ipc."""
-    assert as_callable(_ipc_all_gather)("tensor", 0, "mesh") == "tensor"
-    assert as_callable(_ipc_reduce_scatter)("tensor", "sum", 0, "mesh") == "tensor"
-    assert as_callable(_ipc_all_reduce)("tensor", "sum", "mesh") == "tensor"
+    assert ensure_callable(_ipc_all_gather)("tensor", 0, "mesh") == "tensor"
+    assert ensure_callable(_ipc_reduce_scatter)("tensor", "sum", 0, "mesh") == "tensor"
+    assert ensure_callable(_ipc_all_reduce)("tensor", "sum", "mesh") == "tensor"

@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from ml_switcheroo_compiler.core.tensor import as_tensor_obj
+from ml_switcheroo_compiler.core.tensor import ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
@@ -74,10 +73,11 @@ def generate_sobol(dim: int, num_results: int, skip: int = 0) -> Tensor | IRNode
     Returns:
         Tensor | IRNode: The generated sequence of shape (num_results, dim).
     """
-    from ml_switcheroo_compiler import ops
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.creation import array
 
     rows: list[list[float]] = []
     for n in range(skip + 1, skip + num_results + 1):
         row: list[float] = [_radical_inverse(n, _PRIMES[d % len(_PRIMES)]) for d in range(dim)]
         rows.append(row)
-    return as_tensor_obj(_get_attr(ops, "array")(rows, dtype="float32"))
+    return ensure_tensor(array(rows, dtype=DType.Float32))

@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
-import typing  # noqa: F401
+import typing
 from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TracedDataProtocol,
+    extract_dtype,
+    extract_shape,
+)
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
     TensorConfig,
     as_opt_tensor_obj,
-    as_tensor_obj,
+    ensure_tensor,
 )
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops import (
     maximum,
     multiply,
@@ -35,6 +40,36 @@ from ml_switcheroo_compiler.ops.reductions import (
 )
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.unary import sqrt
+
+
+@typing.runtime_checkable
+class _BatchNormGlobalConfigProtocol(typing.Protocol):
+    """Protocol for global batch normalization configurations."""
+
+    scale_after_normalization: bool
+    variance_epsilon: float
+
+
+@typing.runtime_checkable
+class _LRNConfigProtocol(typing.Protocol):
+    """Protocol for LRN configurations."""
+
+    depth_radius: int
+    bias: float
+    alpha: float
+    beta: float
+
+
+def _node_input_id(obj: TensorOrScalar) -> str:
+    """Resolve tracing node input identifier string from `obj`.
+
+    Args:
+        obj (TensorOrScalar): Input tensor or proxy.
+
+    Returns:
+        str: String node identifier.
+    """
+    return str(obj.id if isinstance(obj, TracedDataProtocol) else obj)
 
 
 class LRNConfig(pydantic.BaseModel):
@@ -181,18 +216,23 @@ def batch_norm_with_global_normalization(
     Returns:
             tuple[int, ...]: Result.
     """
-    config = kwargs.get("config", BatchNormGlobalConfig())
-    bn_config = BatchNormConfig(offset=as_opt_tensor_obj(beta), scale=as_opt_tensor_obj(gamma if _get_attr(config, "scale_after_normalization") else None), epsilon=_get_attr(config, "variance_epsilon"))
+    raw_cfg = kwargs.get("config")
+    cfg = raw_cfg if isinstance(raw_cfg, BatchNormGlobalConfig) else BatchNormGlobalConfig()
+    bn_config = BatchNormConfig(
+        offset=as_opt_tensor_obj(beta),
+        scale=as_opt_tensor_obj(gamma if cfg.scale_after_normalization else None),
+        epsilon=cfg.variance_epsilon,
+    )
     return batch_normalization(
-        as_tensor_obj(t),
-        as_tensor_obj(m),
-        as_tensor_obj(v),
+        ensure_tensor(t),
+        ensure_tensor(m),
+        ensure_tensor(v),
         axis=-1,  # Default to last axis if not provided
         config=bn_config,
     )
 
 
-def lrn(input: TensorOrScalar, config: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
+def lrn(input: TensorOrScalar, config: LRNConfig | TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the lrn tensor operation.
 
     Args:
@@ -203,13 +243,8 @@ def lrn(input: TensorOrScalar, config: TensorOrScalar = None, name: TensorOrScal
     Returns:
             tuple[int, ...]: Result.
     """
-    config = config or LRNConfig()
-    depth_radius = _get_attr(config, "depth_radius")
-    bias = _get_attr(config, "bias")
-    alpha = _get_attr(config, "alpha")
-    beta = _get_attr(config, "beta")
-
-    return local_response_normalization(as_tensor_obj(input), depth_radius, bias, alpha, beta)
+    cfg = config if isinstance(config, LRNConfig) else LRNConfig()
+    return local_response_normalization(ensure_tensor(input), cfg.depth_radius, cfg.bias, cfg.alpha, cfg.beta)
 
 
 def l2_normalize(
@@ -280,22 +315,24 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
 
     out_id_mean = str(uuid.uuid4())
     out_id_variance = str(uuid.uuid4())
+    c_shape = extract_shape(counts)
+    c_dtype = extract_dtype(counts, "float32")
 
     node = LogicalNode(
         id=out_id_mean,
         op_type="NormalizeMoments",
-        inputs=[str(_get_attr(counts, "id", counts)), str(_get_attr(mean_ss, "id", mean_ss)), str(_get_attr(variance_ss, "id", variance_ss)), str(_get_attr(shift, "id", shift))],
-        attributes=as_attrs({"name": name, "secondary_id": out_id_variance}),
-        shape_metadata=_get_attr(counts, "shape", ()),
+        inputs=[_node_input_id(counts), _node_input_id(mean_ss), _node_input_id(variance_ss), _node_input_id(shift)],
+        attributes=ensure_attrs({"name": name, "secondary_id": out_id_variance}),
+        shape_metadata=c_shape,
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean = ProxyTensor(id=out_id_mean, shape=_get_attr(counts, "shape", ()), dtype=_get_attr(counts, "dtype", "float32"))
-    proxy_variance = ProxyTensor(id=out_id_variance, shape=_get_attr(counts, "shape", ()), dtype=_get_attr(counts, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=c_shape, dtype=c_dtype)
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=c_shape, dtype=c_dtype)
 
     return (
-        Tensor(proxy_mean, TensorConfig(_get_attr(counts, "shape", ()), _get_attr(counts, "dtype", "float32"), "cpu")),
-        Tensor(proxy_variance, TensorConfig(_get_attr(counts, "shape", ()), _get_attr(counts, "dtype", "float32"), "cpu")),
+        Tensor(proxy_mean, TensorConfig(c_shape, c_dtype, "cpu")),
+        Tensor(proxy_variance, TensorConfig(c_shape, c_dtype, "cpu")),
     )
 
 
@@ -330,22 +367,24 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
     out_id_mean_ss = str(uuid.uuid4())
     out_id_variance_ss = str(uuid.uuid4())
     out_id_shift = str(uuid.uuid4())
+    x_shape = extract_shape(x)
+    x_dtype = extract_dtype(x, "float32")
 
     node = LogicalNode(
         id=out_id_counts,
         op_type="SufficientStatistics",
-        inputs=[str(_get_attr(x, "id", x)), str(_get_attr(axes, "id", axes))],
-        attributes=as_attrs({"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]}),
-        shape_metadata=_get_attr(x, "shape", ()),
+        inputs=[_node_input_id(x), _node_input_id(axes)],
+        attributes=ensure_attrs({"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]}),
+        shape_metadata=x_shape,
     )
     global_tracing_state.add_node(node)
 
-    config_tensor = TensorConfig(_get_attr(x, "shape", ()), _get_attr(x, "dtype", "float32"), "cpu")
+    config_tensor = TensorConfig(x_shape, x_dtype, "cpu")
     return (
-        Tensor(ProxyTensor(id=out_id_counts, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32")), config_tensor),
-        Tensor(ProxyTensor(id=out_id_mean_ss, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32")), config_tensor),
-        Tensor(ProxyTensor(id=out_id_variance_ss, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32")), config_tensor),
-        Tensor(ProxyTensor(id=out_id_shift, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32")), config_tensor),
+        Tensor(ProxyTensor(id=out_id_counts, shape=x_shape, dtype=x_dtype), config_tensor),
+        Tensor(ProxyTensor(id=out_id_mean_ss, shape=x_shape, dtype=x_dtype), config_tensor),
+        Tensor(ProxyTensor(id=out_id_variance_ss, shape=x_shape, dtype=x_dtype), config_tensor),
+        Tensor(ProxyTensor(id=out_id_shift, shape=x_shape, dtype=x_dtype), config_tensor),
     )
 
 
@@ -384,22 +423,24 @@ def weighted_moments(
 
     out_id_mean = str(uuid.uuid4())
     out_id_variance = str(uuid.uuid4())
+    x_shape = extract_shape(x)
+    x_dtype = extract_dtype(x, "float32")
 
     node = LogicalNode(
         id=out_id_mean,
         op_type="WeightedMoments",
-        inputs=[str(_get_attr(x, "id", x)), str(_get_attr(axes, "id", axes)), str(_get_attr(frequency_weights, "id", frequency_weights))],
-        attributes=as_attrs({"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
-        shape_metadata=_get_attr(x, "shape", ()),
+        inputs=[_node_input_id(x), _node_input_id(axes), _node_input_id(frequency_weights)],
+        attributes=ensure_attrs({"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
+        shape_metadata=x_shape,
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean = ProxyTensor(id=out_id_mean, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32"))
-    proxy_variance = ProxyTensor(id=out_id_variance, shape=_get_attr(x, "shape", ()), dtype=_get_attr(x, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=x_shape, dtype=x_dtype)
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=x_shape, dtype=x_dtype)
 
     return (
-        Tensor(proxy_mean, TensorConfig(_get_attr(x, "shape", ()), _get_attr(x, "dtype", "float32"), "cpu")),
-        Tensor(proxy_variance, TensorConfig(_get_attr(x, "shape", ()), _get_attr(x, "dtype", "float32"), "cpu")),
+        Tensor(proxy_mean, TensorConfig(x_shape, x_dtype, "cpu")),
+        Tensor(proxy_variance, TensorConfig(x_shape, x_dtype, "cpu")),
     )
 
 

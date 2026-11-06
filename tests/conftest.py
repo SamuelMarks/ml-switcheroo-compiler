@@ -10,6 +10,8 @@ import numpy as np
 import pytest
 import yaml
 
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+
 yaml.safe_load("dummy: 1")
 sys.modules.setdefault("dpnp", np)
 
@@ -17,7 +19,6 @@ for _opt_pkg in ("scipy.linalg", "jax", "dask", "jinja2", "torch", "numba", "spa
     if importlib.util.find_spec(_opt_pkg.split(".")[0]) is not None:
         __import__(_opt_pkg)
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _set_attr  # noqa: E402
 
 if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
@@ -38,6 +39,7 @@ def reset_global_tracing_state() -> Iterator[None]:
     import ml_switcheroo_compiler.backends.numpy.eager.distributed as np_dist
     import ml_switcheroo_compiler.backends.registry as reg
     import ml_switcheroo_compiler.tracing.state as state
+    from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
     from ml_switcheroo_compiler.core.config import config
 
     old_is_tracing = state.global_tracing_state.is_tracing
@@ -46,8 +48,8 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     old_backend = config.backend
     old_eager = config.eager_mode
-    had_active_backend = _has_attr(reg, "_ACTIVE_BACKEND")
-    old_active_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
+    had_active_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
+    old_active_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
     np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()
 
     import os
@@ -94,13 +96,13 @@ def reset_global_tracing_state() -> Iterator[None]:
     ) = orig_caches
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
-    _set_attr(state.global_tracing_state, "add_node", old_add_node)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(old_add_node)
 
     config.backend = old_backend
     config.eager_mode = old_eager
 
     if had_active_backend:
-        _set_attr(reg, "_ACTIVE_BACKEND", old_active_backend)
-    elif _has_attr(reg, "_ACTIVE_BACKEND"):
-        del reg._ACTIVE_BACKEND
+        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(old_active_backend)
+    elif has_backend_member(reg, "_ACTIVE_BACKEND"):
+        del ensure_mutable(reg)._ACTIVE_BACKEND
     np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()

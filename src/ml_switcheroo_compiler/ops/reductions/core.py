@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if typing.TYPE_CHECKING:
@@ -38,7 +38,7 @@ class ReductionOp(OpDef):
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return as_tensor_obj(dispatch_op(self.op_type, *args, **kwargs))
+        return ensure_tensor(dispatch_op(self.op_type, *args, **kwargs))
 
     def infer_shape(
         self,
@@ -54,7 +54,7 @@ class ReductionOp(OpDef):
         Returns:
             tuple[int, ...]: Inferred output shape.
         """
-        if not args or not _has_attr(args[0], "shape"):
+        if not args or not isinstance(args[0], ShapeProtocol):
             return ()
         in_shape = tuple(int(d) for d in args[0].shape)
         ndim = len(in_shape)

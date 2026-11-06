@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+import typing
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float
 from ml_switcheroo_compiler.backends.numba import kernels
-from ml_switcheroo_compiler.core.shape import _get_attr
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for dtype objects exposing `.value`."""
+
+    value: EagerValue
 
 
 def zeros(shape: tuple[int, ...]) -> EagerValue:
@@ -21,7 +29,7 @@ def zeros(shape: tuple[int, ...]) -> EagerValue:
 
 def array(
     data: EagerValue,
-    dtype: str | None = None,
+    dtype: str | EagerValue | None = None,
 ) -> EagerValue:
     """Create a tensor from data for Numba execution.
 
@@ -33,7 +41,9 @@ def array(
         EagerValue: The created array buffer.
     """
     if dtype is not None:
-        return kernels.array(data, dtype=_get_attr(dtype, "value", dtype))
+        raw_dt: EagerValue = dtype
+        dt_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else dtype
+        return kernels.array(data, dtype=dt_val)
     return kernels.array(data)
 
 
@@ -60,4 +70,4 @@ def item(data: EagerValue) -> float:
     Returns:
         float: The extracted scalar float value.
     """
-    return float(_get_attr(kernels.asarray(data), "item")())
+    return float(ensure_float(ensure_eager_tensor(kernels.asarray(data)).item()))

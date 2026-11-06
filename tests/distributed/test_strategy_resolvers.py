@@ -6,8 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_set_attr, _set_attr
-from tests.testing_utils import as_callable, as_node_dict, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -32,9 +31,9 @@ def test_strategy_resolvers() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     c = Coordinator()
-    assert not as_tensor(c.joined)
+    assert not ensure_eager_tensor(c.joined)
     c.join()
-    assert as_tensor(c.joined)
+    assert ensure_eager_tensor(c.joined)
 
     # Cluster topology and distributed topologies
     cluster_top = load_cluster_topology()
@@ -58,16 +57,16 @@ def test_strategy_resolvers() -> None:
     m = SPMDShardingStrategy(layout_map={"n_out": "spec"})
     g_mesh = IRGraph()
     n_in_mesh = IRNode(id="n_in_mesh", op_type="Input")
-    _obj_set_attr(n_in_mesh, "sharding", "in_spec")
+    ensure_mutable(n_in_mesh).sharding = ensure_eager_tensor("in_spec")
     n_out_mesh = IRNode(id="n_out_mesh", op_type="Add", inputs=["n_in_mesh"])
     g_mesh.nodes = NodeDict({"n_in_mesh": n_in_mesh, "n_out_mesh": n_out_mesh})
     m.propagate_layouts(g_mesh)
-    assert as_tensor(g_mesh.nodes["n_out_mesh"].sharding) == "in_spec"
+    assert ensure_eager_tensor(g_mesh.nodes["n_out_mesh"].sharding) == "in_spec"
 
     n_out_mesh2 = IRNode(id="n_out", op_type="Add", inputs=["n_in_mesh"])
     g_mesh.nodes["n_out"] = n_out_mesh2
     m.propagate_layouts(g_mesh)
-    assert as_tensor(g_mesh.nodes["n_out"].sharding) == "spec"
+    assert ensure_eager_tensor(g_mesh.nodes["n_out"].sharding) == "spec"
 
     with patch("ml_switcheroo_compiler.transforms.passes.spmd.inject_spmd_communication_pass", return_value=True):
         assert m.lower_sharding(g_mesh) is True
@@ -106,12 +105,11 @@ def _test_strategy_more_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     import os
     import tempfile
 
-    _get_attr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock, "ModelParallelStrategy": ModelParallelStrategy})
-    _get_attr(_state, "update")({"PerWorkerValue": PerWorkerValue, "PipelineParallelismStrategy": PipelineParallelismStrategy, "PreemptionCheckpointHandler": PreemptionCheckpointHandler, "RemoteValue": RemoteValue})
-    _get_attr(_state, "update")({"g_mp": g_mp, "mp": mp, "n_act": n_act, "n_in": n_in})
-    _get_attr(_state, "update")({"n_lin": n_lin, "os": os, "patch": patch, "pytest": pytest})
-    _get_attr(_state, "update")({"tempfile": tempfile})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock, "ModelParallelStrategy": ModelParallelStrategy}))
+    _state.update(ensure_tensor_dict({"PerWorkerValue": PerWorkerValue, "PipelineParallelismStrategy": PipelineParallelismStrategy, "PreemptionCheckpointHandler": PreemptionCheckpointHandler, "RemoteValue": RemoteValue}))
+    _state.update(ensure_tensor_dict({"g_mp": g_mp, "mp": mp, "n_act": n_act, "n_in": n_in}))
+    _state.update(ensure_tensor_dict({"n_lin": n_lin, "os": os, "patch": patch, "pytest": pytest}))
+    _state.update(ensure_tensor_dict({"tempfile": tempfile}))
 
 
 def _test_strategy_more_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -148,9 +146,10 @@ def _test_strategy_more_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
         assert p_empty.restore_latest_checkpoint() is None
 
     p_nonexist = PreemptionCheckpointHandler("res", "/non/existent/dir/for/testing")
-    _get_attr(_state, "update")({"cp_path": cp_path, "empty_dir": empty_dir, "latest": latest, "p": p})
-    _get_attr(_state, "update")({"p_empty": p_empty, "p_nonexist": p_nonexist, "restored": restored, "tmp_cp_dir": tmp_cp_dir})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"cp_path": cp_path, "empty_dir": empty_dir, "latest": latest, "p": p}))
+    _state.update(ensure_tensor_dict({"p_empty": p_empty, "p_nonexist": p_nonexist, "restored": restored, "tmp_cp_dir": tmp_cp_dir}))
+    _state.update(ensure_tensor_dict({"PreemptionCheckpointHandler": PreemptionCheckpointHandler, "os": os, "patch": patch}))
+    _state.update(ensure_tensor_dict({"tempfile": tempfile}))
 
 
 def _test_strategy_more_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -161,42 +160,44 @@ def _test_strategy_more_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
     """
     IRGraph, PerWorkerValue, PipelineParallelismStrategy, RemoteValue = _state["IRGraph"], _state["PerWorkerValue"], _state["PipelineParallelismStrategy"], _state["RemoteValue"]
     os, p_nonexist, patch, pytest = _state["os"], _state["p_nonexist"], _state["patch"], _state["pytest"]
-    assert as_tensor(p_nonexist.restore_latest_checkpoint()) is None
+    assert ensure_eager_tensor(p_nonexist.restore_latest_checkpoint()) is None
 
     from ml_switcheroo_compiler.distributed.config_models import (
         load_distributed_topologies,
     )
 
     dt_cfg = load_distributed_topologies()
-    assert as_tensor("mesh_dp_tp") in dt_cfg.cluster_meshes
-    assert as_tensor("host_0") in dt_cfg.device_topologies
-    assert as_tensor("default_webrtc") in dt_cfg.signaling_topologies
+    assert ensure_eager_tensor("mesh_dp_tp") in dt_cfg.cluster_meshes
+    assert ensure_eager_tensor("host_0") in dt_cfg.device_topologies
+    assert ensure_eager_tensor("default_webrtc") in dt_cfg.signaling_topologies
 
     explicit_dt_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "distributed", "distributed_topologies.yaml")
     if os.path.exists(explicit_dt_path):
-        dt_cfg2 = as_callable(load_distributed_topologies)(path=explicit_dt_path)
+        dt_cfg2 = ensure_callable(load_distributed_topologies)(path=explicit_dt_path)
         assert "mesh_dp_tp" in dt_cfg2.cluster_meshes
 
     # PerWorkerValue
     pwv = PerWorkerValue([1, 2])
-    assert as_tensor(pwv.values) == [1, 2]
+    assert ensure_eager_tensor(pwv.values) == [1, 2]
 
     # RemoteValue
     rv = RemoteValue()
-    assert as_tensor(rv.value) is None
+    assert ensure_eager_tensor(rv.value) is None
 
     # PipelineParallelismStrategy
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig") as mock_conf:
-        _set_attr(mock_conf.return_value.get, "return_value", None)
+        ensure_mutable(mock_conf.return_value.get).return_value = ensure_eager_tensor(None)
         with pytest.raises(ValueError):
             PipelineParallelismStrategy(topology_name="missing_topology")
 
     p = PipelineParallelismStrategy(num_microbatches=1)
     g = IRGraph()
     p.generate_microbatch_loop(g)  # returns early
-    _get_attr(_state, "update")({"dt_cfg": dt_cfg, "explicit_dt_path": explicit_dt_path, "g": g, "load_distributed_topologies": load_distributed_topologies})
-    _get_attr(_state, "update")({"mock_conf": mock_conf, "p": p, "pwv": pwv, "rv": rv})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dt_cfg": dt_cfg, "explicit_dt_path": explicit_dt_path, "g": g, "load_distributed_topologies": load_distributed_topologies}))
+    _state.update(ensure_tensor_dict({"mock_conf": mock_conf, "p": p, "pwv": pwv, "rv": rv}))
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "PerWorkerValue": PerWorkerValue, "PipelineParallelismStrategy": PipelineParallelismStrategy}))
+    _state.update(ensure_tensor_dict({"RemoteValue": RemoteValue, "os": os, "p_nonexist": p_nonexist}))
+    _state.update(ensure_tensor_dict({"patch": patch, "pytest": pytest}))
 
 
 def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -205,12 +206,14 @@ def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     Args:
         _state: Shared test state dictionary.
     """
+    from unittest.mock import patch
+
     IRNode, MagicMock, g, p = _state["IRNode"], _state["MagicMock"], _state["g"], _state["p"]
-    patch, pytest = _state["patch"], _state["pytest"]
+    pytest = _state["pytest"]
     with pytest.raises(ValueError):
         p.split_into_stages(g, 0)
 
-    _set_attr(p, "num_microbatches", 2)
+    ensure_mutable(p).num_microbatches = ensure_eager_tensor(2)
     n = IRNode(id="n1", op_type="Add")
     g.nodes["n1"] = n
     # Make sure we hit the "continue" in unroll_pipeline
@@ -220,24 +223,24 @@ def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     strategy = PipelineParallelismStrategy(num_microbatches=4)
-    g = as_tensor(IRGraph())
+    g = ensure_eager_tensor(IRGraph())
     # Add input and compute nodes for microbatch loop
     n_in = IRNode(id="n_in", op_type="Input")
     n_out = IRNode(id="n_out", op_type="Add", inputs=["n_in"])
-    _set_attr(g, "nodes", NodeDict(as_node_dict({"n_in": n_in, "n_out": n_out})))
-    _set_attr(g, "inputs", ["n_in"])
-    _set_attr(g, "outputs", ["n_out"])
+    ensure_mutable(g).nodes = ensure_eager_tensor(NodeDict(ensure_node_dict({"n_in": n_in, "n_out": n_out})))
+    ensure_mutable(g).inputs = ensure_eager_tensor(["n_in"])
+    ensure_mutable(g).outputs = ensure_eager_tensor(["n_out"])
 
     # Needs to not have 'schedule' in config
-    _set_attr(strategy, "config", MagicMock())
+    ensure_mutable(strategy).config = ensure_eager_tensor(MagicMock())
     strategy.config.schedule = None
 
-    as_callable(strategy.generate_microbatch_loop)(g)
+    ensure_callable(strategy.generate_microbatch_loop)(g)
     assert "microbatch_loop" in g.nodes
-    _get_attr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "PipelineParallelismStrategy": PipelineParallelismStrategy, "g": g})
-    _get_attr(_state, "update")({"n": n, "n_in": n_in, "n_out": n_out, "patch": patch})
-    _get_attr(_state, "update")({"pytest": pytest, "strategy": strategy})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode, "PipelineParallelismStrategy": PipelineParallelismStrategy, "g": g}))
+    _state.update(ensure_tensor_dict({"n": n, "n_in": n_in, "n_out": n_out, "patch": patch}))
+    _state.update(ensure_tensor_dict({"pytest": pytest, "strategy": strategy}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "p": p}))
 
 
 def _test_strategy_more_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -258,17 +261,17 @@ def _test_strategy_more_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     n_in2 = IRNode(id="n_in2", op_type="Input")
     n_grad = IRNode(id="n_grad", op_type="Grad", inputs=["n_in2"])
     n_opt = IRNode(id="n_opt", op_type="OptimizerStep", inputs=["n_grad"])
-    _set_attr(g2, "nodes", NodeDict(as_node_dict({"n_in2": n_in2, "n_grad": n_grad, "n_opt": n_opt})))
+    ensure_mutable(g2).nodes = ensure_eager_tensor(NodeDict(ensure_node_dict({"n_in2": n_in2, "n_grad": n_grad, "n_opt": n_opt})))
     strategy.track_gradient_accumulation(g2)
     assert "n_grad_accum" in g2.nodes
 
     # Coverage for get_communication_protocol
-    _set_attr(strategy, "target_env", "browser")
+    ensure_mutable(strategy).target_env = ensure_eager_tensor("browser")
     assert strategy.get_communication_protocol() == "webrtc"
-    _set_attr(strategy, "target_env", "host")
+    ensure_mutable(strategy).target_env = ensure_eager_tensor("host")
     assert strategy.get_communication_protocol() == "tcp"
-    _get_attr(_state, "update")({"g2": g2, "n_grad": n_grad, "n_in2": n_in2, "n_opt": n_opt})
-    _get_attr(_state, "update")({"schedule": schedule})
+    _state.update(ensure_tensor_dict({"g2": g2, "n_grad": n_grad, "n_in2": n_in2, "n_opt": n_opt}))
+    _state.update(ensure_tensor_dict({"schedule": schedule}))
 
 
 def test_strategy_more_coverage() -> None:

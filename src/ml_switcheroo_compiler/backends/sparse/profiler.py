@@ -5,18 +5,61 @@ from __future__ import annotations
 import resource
 import sys
 import time
+import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_shape
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
     COOTensor,
     CSCTensor,
     CSRTensor,
 )
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TypedVariadicCallable,
+)
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+@typing.runtime_checkable
+class _SparseCoordsProtocol(typing.Protocol):
+    """Protocol for external COO sparse arrays exposing `coords`, `data`, and `shape`."""
+
+    coords: EagerValue
+    data: EagerValue
+    shape: tuple[int, ...]
+
+
+@typing.runtime_checkable
+class _TodenseProtocol(typing.Protocol):
+    """Protocol for sparse arrays exposing `.todense()`."""
+
+    def todense(self) -> EagerValue:
+        """Convert sparse array to dense representation.
+
+        Returns:
+            EagerValue: Dense array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _AddableOperandProtocol(typing.Protocol):
+    """Protocol for operands supporting `+`."""
+
+    def __add__(self, other: EagerValue) -> EagerValue:
+        """Add two operands.
+
+        Args:
+            other (EagerValue): Right-hand operand.
+
+        Returns:
+            EagerValue: Sum result.
+        """
+        ...
+
 
 sparse: ModuleType | None = None
 try:
@@ -59,16 +102,17 @@ class SparseProfiler:
         """
         arr_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
+            raw_val: EagerValue = val
             if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
-            elif _has_attr(val, "coords") and _has_attr(val, "data") and _has_attr(val, "shape"):
+            elif isinstance(raw_val, _SparseCoordsProtocol):
                 arr_dict[k] = COOTensor(
-                    indices=_SP_BACKEND.asarray(_get_attr(val, "coords")),
-                    values=_SP_BACKEND.asarray(_get_attr(val, "data")),
-                    shape=as_shape(_get_attr(val, "shape")),
+                    indices=_SP_BACKEND.asarray(raw_val.coords),
+                    values=_SP_BACKEND.asarray(raw_val.data),
+                    shape=ensure_shape(raw_val.shape),
                 )
-            elif _has_attr(val, "shape") and not isinstance(val, (list, tuple)):
-                dense_val = _get_attr(val, "todense")() if _has_attr(val, "todense") else val
+            elif isinstance(raw_val, ShapeProtocol) and not isinstance(val, (list, tuple)):
+                dense_val = raw_val.todense() if isinstance(raw_val, _TodenseProtocol) else val
                 arr_dict[k] = COOTensor.from_dense(dense_val)
             elif isinstance(val, (list, tuple)):
                 np_arr = _SP_BACKEND.asarray(val, dtype=_SP_BACKEND.float32)
@@ -76,8 +120,8 @@ class SparseProfiler:
             else:
                 arr_dict[k] = val
 
-        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if graph.nodes else []
+        input_keys = [n.id for n in sorted_nodes if n.op_type == "Input"]
         if input_keys and all(k in arr_dict for k in input_keys):
             return [arr_dict[k] for k in input_keys]
         return list(arr_dict.values())
@@ -123,7 +167,7 @@ class SparseProfiler:
         del device
 
         sparse_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
@@ -142,12 +186,13 @@ class SparseProfiler:
                 return compiled_fn(sparse_inputs)
 
             if not sparse_inputs:
-                return as_tensor(_SP_BACKEND.zeros((1,), dtype=_SP_BACKEND.float32))
+                return ensure_eager_tensor(_SP_BACKEND.zeros((1,), dtype=_SP_BACKEND.float32))
 
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:
-                if _has_attr(accum, "__add__"):
-                    accum = as_tensor(accum) + as_tensor(t)
+                raw_accum: EagerValue = accum
+                if isinstance(raw_accum, _AddableOperandProtocol):
+                    accum = ensure_eager_tensor(accum) + ensure_eager_tensor(t)
             return accum
 
         for _ in range(max(1, warmup_iters)):

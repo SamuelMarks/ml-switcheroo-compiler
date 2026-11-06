@@ -6,10 +6,9 @@ from collections.abc import Callable, Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 from .math_string_io import _parse_scanop_args
 
@@ -92,7 +91,7 @@ def _np_customroot(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     initial_guess = args[1]
     solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
     if solve:
-        return as_tensor(as_callable(solve)(f, initial_guess))
+        return ensure_eager_tensor(ensure_callable(solve)(f, initial_guess))
     return initial_guess
 
 
@@ -312,9 +311,9 @@ def _np_rawmatmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
         tuple[int, ...]: Result.
     """
-    if _has_attr(backend_module, "rawmatmul"):
-        return as_tensor(backend_module.rawmatmul(*args, **kwargs))
-    return as_tensor(_get_attr(np, "matmul")(args[0], args[1]))
+    if has_backend_member(backend_module, "rawmatmul"):
+        return ensure_eager_tensor(backend_module.rawmatmul(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("RawMerge")
@@ -391,7 +390,7 @@ def _np_scanop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         out[0] = acc
     start_idx = 0 if has_acc else 1
     for i in range(start_idx, elems_arr.shape[0]):
-        acc = as_callable(fn)(acc, elems_arr[i])
+        acc = ensure_callable(fn)(acc, elems_arr[i])
         out[i] = acc
     return out
 
@@ -429,7 +428,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     handle = args[0]
     index = args[1]
-    return as_tensor(_get_attr(handle, "__getitem__")(index))
+    return ensure_eager_tensor(ensure_eager_tensor(handle)[index])
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
@@ -444,13 +443,15 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
+
     handle = args[0]
     index = args[1]
     value = args[2]
-    new_handle = list(_get_attr(handle, "__iter__")())
-    if int(as_int(index)) >= len(new_handle):
-        new_handle.extend([None] * int(as_tensor(index) - as_tensor(len(new_handle)) + 1))
-    as_tensor(new_handle)[index] = value
+    new_handle = ensure_eager_list(handle)
+    if int(ensure_int(index)) >= len(new_handle):
+        new_handle.extend([None] * int(ensure_eager_tensor(index) - ensure_eager_tensor(len(new_handle)) + 1))
+    ensure_eager_tensor(new_handle)[index] = value
     return new_handle
 
 
@@ -468,4 +469,4 @@ def _np_tensorconfig(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-    return as_tensor(as_callable(TensorConfig)(*args, **kwargs))
+    return ensure_eager_tensor(ensure_callable(TensorConfig)(*args, **kwargs))

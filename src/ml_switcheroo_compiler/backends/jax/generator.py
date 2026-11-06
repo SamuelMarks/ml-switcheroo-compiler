@@ -9,17 +9,27 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    as_callable,
-    as_tensor,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_int,
 )
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
     JaxMathVisitor,
 )
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+@typing.runtime_checkable
+class _DistributedBackendConfigProtocol(typing.Protocol):
+    """Protocol for distributed backend configuration objects."""
+
+    options: dict[str, EagerValue] | None
+    world_size: int | None
+    rank: int | None
 
 
 @register_backend("jax")
@@ -40,10 +50,10 @@ class JAXCodeGenerator(BaseGenerator):
 
         try:
             dev = jax.local_devices()[0]
-            stats = dev.memory_stats()
+            stats = ensure_mod(dev.memory_stats())
             return {
-                "current": int(_get_attr(stats, "get")("bytes_in_use", 0)),
-                "peak": int(_get_attr(stats, "get")("peak_bytes_in_use", 0)),
+                "current": int(ensure_int(stats.get("bytes_in_use", 0))),
+                "peak": int(ensure_int(stats.get("peak_bytes_in_use", 0))),
             }
         except Exception:
             import resource
@@ -61,11 +71,17 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.distributed
 
-        backend_config = kwargs.get("backend_config")
-        if backend_config:
-            _get_attr(jax.distributed, "initialize")(coordinator_address=_get_attr(backend_config, "options").get("coordinator_address") if _get_attr(backend_config, "options") else None, num_processes=_get_attr(backend_config, "world_size"), process_id=_get_attr(backend_config, "rank"))
+        backend_config: EagerValue = kwargs.get("backend_config")
+        dist_mod = ensure_mod(jax.distributed)
+        if isinstance(backend_config, _DistributedBackendConfigProtocol):
+            coord = backend_config.options.get("coordinator_address") if backend_config.options else None
+            dist_mod.initialize(
+                coordinator_address=coord,
+                num_processes=backend_config.world_size,
+                process_id=backend_config.rank,
+            )
         else:
-            _get_attr(jax.distributed, "initialize")()
+            dist_mod.initialize()
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
@@ -82,7 +98,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        return as_tensor(jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding))
+        return ensure_eager_tensor(jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -96,7 +112,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        _get_attr(jnp, "save")(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        ensure_mod(jnp).save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
     def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -109,7 +125,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        _get_attr(jnp, "savez")(file, *args, **kwds)
+        ensure_mod(jnp).savez(file, *args, **kwds)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -122,7 +138,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        _get_attr(jnp, "savez_compressed")(file, *args, **kwds)
+        ensure_mod(jnp).savez_compressed(file, *args, **kwds)
 
     def __init__(self, graph: IRGraph) -> None:
         """Init.
@@ -266,14 +282,14 @@ class JAXCodeGenerator(BaseGenerator):
             Returns:
                 EagerValue: Evaluated output tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if _has_attr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
@@ -304,8 +320,8 @@ class JAXCodeGenerator(BaseGenerator):
                 EagerValue: Result from the JAX callable.
             """
             del w_kwargs
-            jax_args = [_get_attr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return as_callable(target_fn)(*jax_args)
+            jax_args = [ensure_mod(jnp_mod).asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            return ensure_callable(target_fn)(*jax_args)
 
         return executable
 
@@ -382,7 +398,7 @@ class JAXCodeGenerator(BaseGenerator):
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return as_callable(_get_attr(dc, "jax_all_reduce"))(*args, **kwargs)
+        return ensure_mod(dc).jax_all_reduce(*args, **kwargs)
 
     @staticmethod
     def all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -398,7 +414,7 @@ class JAXCodeGenerator(BaseGenerator):
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return as_callable(_get_attr(dc, "jax_all_gather"))(*args, **kwargs)
+        return ensure_mod(dc).jax_all_gather(*args, **kwargs)
 
     @staticmethod
     def broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -414,7 +430,7 @@ class JAXCodeGenerator(BaseGenerator):
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return as_callable(_get_attr(dc, "jax_broadcast"))(*args, **kwargs)
+        return ensure_mod(dc).jax_broadcast(*args, **kwargs)
 
 
 JaxGenerator = JAXCodeGenerator

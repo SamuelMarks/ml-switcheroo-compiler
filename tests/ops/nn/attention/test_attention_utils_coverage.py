@@ -10,7 +10,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.attention_utils as attn_utils_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -39,8 +39,8 @@ class DummyWithoutShape:
 def test_attention_utils_full_coverage() -> None:
     """Test full coverage for attention mechanism utilities."""
     rope_op = attn_utils_mod.RopeOp()
-    assert as_callable(rope_op.infer_shape)(as_callable(DummyWithShape)((2, 4, 8))) == (2, 4, 8)
-    assert as_callable(rope_op.infer_shape)(as_callable(DummyWithoutShape)()) == ()
+    assert ensure_callable(rope_op.infer_shape)(ensure_callable(DummyWithShape)((2, 4, 8))) == (2, 4, 8)
+    assert ensure_callable(rope_op.infer_shape)(ensure_callable(DummyWithoutShape)()) == ()
 
     t_in = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
 

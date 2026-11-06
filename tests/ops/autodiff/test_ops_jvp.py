@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _has_attr
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
+from tests.testing_utils import has_backend_member
 
 
 def test_all_ops_coverage() -> None:
@@ -13,7 +13,7 @@ def test_all_ops_coverage() -> None:
         if op_name in ["ReadVariable", "AssignVariable", "Input", "Constant", "Call"]:
             continue
         op = op_cls()
-        assert _has_attr(op, "infer_shape")
-        assert _has_attr(op, "eager_eval")
+        assert has_backend_member(op, "infer_shape")
+        assert has_backend_member(op, "eager_eval")
         checked += 1
     assert checked > 0

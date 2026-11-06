@@ -49,6 +49,23 @@ def _has_non_none_return(returns: ast.expr | None) -> bool:
     return not (isinstance(returns, ast.Name) and returns.id == "None")
 
 
+def _is_overload_decorated(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Return True if the function has an `@overload` or `@typing.overload` decorator.
+
+    Args:
+        node (ast.FunctionDef | ast.AsyncFunctionDef): Function AST node.
+
+    Returns:
+        bool: True if decorated with `@overload`.
+    """
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Name) and dec.id == "overload":
+            return True
+        if isinstance(dec, ast.Attribute) and dec.attr == "overload":
+            return True
+    return False
+
+
 def _check_function_node(path: str, node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
     """Check that a function or method AST node has a complete docstring.
 
@@ -59,6 +76,8 @@ def _check_function_node(path: str, node: ast.FunctionDef | ast.AsyncFunctionDef
     Returns:
         list[str]: List of violation messages for the function.
     """
+    if _is_overload_decorated(node):
+        return []
     doc = ast.get_docstring(node)
     if not doc or not doc.strip():
         return [f"{path}:{node.lineno}: missing docstring on '{node.name}'"]

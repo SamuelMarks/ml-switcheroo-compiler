@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_rawmatmul
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -35,7 +36,7 @@ def test_mock(monkeypatch: EagerTensorProtocol) -> None:
     monkeypatch.setattr(ops, "RawMatMul", FakeOp, raising=False)
 
     try:
-        res = _np_rawmatmul(np, 1, 2)
+        res = _np_rawmatmul(ensure_eager_tensor(np), 1, 2)
         print("RES:", res)
     except Exception as e:
         print("EXCEPTION:", repr(e))

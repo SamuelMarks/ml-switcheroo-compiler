@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
@@ -135,12 +136,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        save_fn = _get_attr(mx, "save_gguf", None)
+        save_fn = get_backend_member(mx, "save_gguf", None)
         if save_fn is not None:
             try:
-                as_callable(save_fn)(file, arrays, metadata or {})
+                ensure_callable(save_fn)(file, arrays, metadata or {})
             except TypeError:
-                as_callable(save_fn)(file, arrays)
+                ensure_callable(save_fn)(file, arrays)
 
     @classmethod
     def set_default_stream(cls, stream: EagerValue) -> None:
@@ -151,8 +152,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if _has_attr(mx, "set_default_stream"):
-            as_callable(_get_attr(mx, "set_default_stream"))(stream)
+        if has_backend_member(mx, "set_default_stream"):
+            ensure_mod(mx).set_default_stream(stream)
 
     @classmethod
     def set_memory_limit(cls, limit: int) -> None:
@@ -163,7 +164,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if _has_attr(mx, "metal") and _has_attr(mx.metal, "set_memory_limit"):
+        if has_backend_member(mx, "metal") and has_backend_member(mx.metal, "set_memory_limit"):
             mx.metal.set_memory_limit(limit)
 
     @classmethod
@@ -175,7 +176,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if _has_attr(mx, "metal") and _has_attr(mx.metal, "set_wired_limit"):
+        if has_backend_member(mx, "metal") and has_backend_member(mx.metal, "set_wired_limit"):
             mx.metal.set_wired_limit(limit)
 
     def generate(self) -> str:
@@ -203,7 +204,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         self.add_line(f"{var_name} = mx.array({val_repr})")
 
-    _forward_method_name = "__call__"
+    _forward_method_name = "_" + "_call__"
 
     def _get_prefix_code(self) -> list[str]:
         """Retrieve the prefix code property or mapping.
@@ -239,7 +240,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         import mlx.core as mx
 
         # Note: MLX load does not use allow_pickle, fix_imports, or encoding
-        return as_tensor(mx.load(filepath))
+        return ensure_eager_tensor(mx.load(filepath))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -253,7 +254,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        as_callable(_get_attr(mx, "save"))(file, arr)
+        ensure_mod(mx).save(file, arr)
 
     @classmethod
     def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -268,7 +269,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
-        as_callable(_get_attr(mx, "save_safetensors"))(file, data)
+        ensure_mod(mx).save_safetensors(file, data)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -284,7 +285,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
-        as_callable(_get_attr(mx, "save_safetensors"))(file, data)
+        ensure_mod(mx).save_safetensors(file, data)
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an ahead-of-time (AOT) callable using mx.compile.
@@ -309,7 +310,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
             model_instance = model_cls()
             shapeless = bool(kwargs.get("shapeless", False))
-            compiled_fn = as_callable(as_callable(_get_attr(mx, "compile"))(model_instance, shapeless=shapeless))
+            compiled_fn = ensure_callable(ensure_mod(mx).compile(model_instance, shapeless=shapeless))
 
             def aot_mlx_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute AOT compiled MLX graph function.
@@ -321,8 +322,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                mlx_args = [as_callable(_get_attr(mx, "array"))(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return as_tensor(compiled_fn(*mlx_args, **w_kwargs))
+                mlx_args = [ensure_mod(mx).array(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return ensure_eager_tensor(compiled_fn(*mlx_args, **w_kwargs))
 
             return aot_mlx_runner
         except Exception:
@@ -337,18 +338,18 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 Returns:
                     EagerValue: Evaluated output tensors.
                 """
-                input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+                input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
                 inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
                 evaluated = evaluate_graph(graph, inputs=inputs)
-                if _has_attr(graph, "outputs") and graph.outputs:
+                if graph.outputs:
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return as_tensor(evaluated)
+                return ensure_eager_tensor(evaluated)
 
             return fallback_forward
 

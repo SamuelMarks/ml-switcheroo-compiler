@@ -7,16 +7,16 @@ import random
 import sys
 import tarfile
 import time
+import typing
 import urllib.request
 import zipfile
-from collections.abc import Iterable
 from types import ModuleType
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core import config
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.utils.serialization_utils import (
     CustomObjectScope,
     custom_object_scope,
@@ -27,6 +27,68 @@ from ml_switcheroo_compiler.utils.serialization_utils import (
     register_serializable,
     serialize_object,
 )
+
+
+def _is_generic_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_generic_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_generic_tensor(val)
+    return val
+
+
+def _to_generic_float(val: TensorOrScalar) -> float:
+    """Coerce a metric value to float.
+
+    Args:
+        val (TensorOrScalar): Metric value.
+
+    Returns:
+        float: Coerced float value.
+    """
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        return float(val)
+    return 0.0
+
+
+@typing.runtime_checkable
+class _TtyStreamProtocol(typing.Protocol):
+    """Protocol for output streams supporting `.isatty()`."""
+
+    def isatty(self) -> bool:
+        """Return True if the stream is interactive/TTY.
+
+        Returns:
+            bool: True if stream is a TTY.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _NamedDTypeProtocol(typing.Protocol):
+    """Protocol for dtype objects exposing a `.name` attribute."""
+
+    name: str
+
 
 __all__ = [
     "ArchiveConfig",
@@ -251,7 +313,7 @@ class Progbar:
         self._last_update = 0.0
 
         self.state = ProgbarState(
-            dynamic_display=_has_attr(sys.stdout, "isatty") and sys.stdout.isatty(),
+            dynamic_display=bool(sys.stdout.isatty()),
             total_width=0,
             seen_so_far=0,
             values=self._values,
@@ -267,10 +329,11 @@ class Progbar:
             current (int): Current step index.
             values (TensorOrScalar): Iterable of `(metric_name, metric_value)` pairs.
         """
-        pairs: Iterable[tuple[TensorOrScalar, TensorOrScalar]] = _cast_val("Iterable[tuple[TensorOrScalar, TensorOrScalar]]", values) if isinstance(values, Iterable) else ()
-        for item in pairs:
+        assert isinstance(values, (list, tuple, set))
+        for item in values:
+            assert isinstance(item, (tuple, list))
             k = str(item[0])
-            v = float(as_float(item[1]))
+            v = _to_generic_float(item[1])
             if k not in self._values_order:
                 self._values_order.append(k)
             if k in self.stateful_metrics:
@@ -386,8 +449,7 @@ def is_interactive_logging_enabled(*args: str | int | bool | None, **kwargs: str
         bool: True if interactive logging is enabled, else False.
     """
     del args, kwargs
-    _typed_ret_1: bool = _get_attr(config._state.env, "interactive_logging", False)
-    return _typed_ret_1
+    return bool(config._state.env.interactive_logging)
 
 
 def is_symbolic_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> bool:
@@ -439,7 +501,7 @@ def standardize_dtype(*args: TensorOrScalar, **kwargs: AttrValue) -> str | None:
     if not args or args[0] is None:
         return None
     dtype = args[0]
-    if _has_attr(dtype, "name"):
+    if isinstance(dtype, _NamedDTypeProtocol):
         return str(dtype.name).lower()
     val_str = str(dtype).lower()
     if val_str.startswith("<class '") and val_str.endswith("'>"):
@@ -484,7 +546,7 @@ class bounding_boxes:
         source: str,
         src_lower: str,
         image_shape: tuple[int, int] | None,
-    ) -> TensorOrScalar:
+    ) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
         """Unpack bounding box array from `source` format into `(x1, y1, x2, y2)` coordinate arrays.
 
         Args:
@@ -494,15 +556,15 @@ class bounding_boxes:
             image_shape (tuple[int, int] | None): Optional `(height, width)` for relative coordinates.
 
         Returns:
-            TensorOrScalar: 4-tuple of `(x1, y1, x2, y2)` coordinate arrays.
+            tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]: 4-tuple of `(x1, y1, x2, y2)` coordinate arrays.
 
         Raises:
             ValueError: If relative coordinates are used without `image_shape` or format is unknown.
         """
-        c0 = as_tensor(arr)[..., 0]
-        c1 = as_tensor(arr)[..., 1]
-        c2 = as_tensor(arr)[..., 2]
-        c3 = as_tensor(arr)[..., 3]
+        c0 = _ensure_generic_tensor(arr)[..., 0]
+        c1 = _ensure_generic_tensor(arr)[..., 1]
+        c2 = _ensure_generic_tensor(arr)[..., 2]
+        c3 = _ensure_generic_tensor(arr)[..., 3]
         if src_lower == "xyxy":
             return c0, c1, c2, c3
         if src_lower == "xywh":
@@ -545,19 +607,19 @@ class bounding_boxes:
         """
         x1, y1, x2, y2 = coords
         if tgt_lower == "xyxy":
-            return as_tensor(backend_mod.stack([x1, y1, x2, y2], axis=-1))
+            return _ensure_generic_tensor(backend_mod.stack([x1, y1, x2, y2], axis=-1))
         if tgt_lower == "xywh":
-            return as_tensor(backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
+            return _ensure_generic_tensor(backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "center_xywh":
-            return as_tensor(backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
+            return _ensure_generic_tensor(backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "yxyx":
-            return as_tensor(backend_mod.stack([y1, x1, y2, x2], axis=-1))
+            return _ensure_generic_tensor(backend_mod.stack([y1, x1, y2, x2], axis=-1))
         if tgt_lower == "rel_xyxy":
             if image_shape is None:
                 msg = "image_shape (height, width) is required to convert to relative bounding box format."
                 raise ValueError(msg)
             h_img, w_img = image_shape
-            return as_tensor(backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
+            return _ensure_generic_tensor(backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
         return arr
 
     @classmethod
@@ -597,10 +659,7 @@ class bounding_boxes:
         src_lower = source.lower()
         tgt_lower = target.lower()
         if src_lower == tgt_lower:
-            return as_tensor(arr)
+            return _ensure_generic_tensor(arr)
 
-        coords = _cast_val(
-            "tuple[EagerTensorProtocol, ...]",
-            cls._unpack_to_xyxy(arr, source, src_lower, image_shape),
-        )
+        coords = cls._unpack_to_xyxy(arr, source, src_lower, image_shape)
         return cls._pack_from_xyxy(backend_mod, arr, coords, tgt_lower, image_shape)

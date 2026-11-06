@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 import builtins
-import operator
-import sys
 import typing
 from collections.abc import Callable, Mapping, Sequence
 from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
 
-from ml_switcheroo_ir import AttributeValue
+import pydantic as _pydantic_rt
+from ml_switcheroo_ir import (
+    AttributeValue,
+    TensorShape,
+    TensorSpec,
+)
+from ml_switcheroo_ir import DType as IRDType
+from ml_switcheroo_ir import SymInt as IRSymInt
+from ml_switcheroo_ir import SymNode as IRSymNode
+from ml_switcheroo_ir.types import _AttributeValuePydanticAnnotation
 
 DimT = typing.TypeVar("DimT", int, typing.Union[int, "str"])
 _R_co = typing.TypeVar("_R_co", covariant=True)
-
-
-class StructuralOperandProtocol(typing.Protocol):
-    """Structural protocol matching arbitrary runtime or mock operand instances."""
 
 
 class CallableObjectProtocol(typing.Protocol):
@@ -113,6 +116,20 @@ class BackendBufferProtocol(typing.Protocol):
 
 
 @typing.runtime_checkable
+class ShapeProtocol(typing.Protocol):
+    """Protocol for any array-like object exposing a shape tuple."""
+
+    @property
+    def shape(self) -> Sequence[int | str]:
+        """Get the shape of the array.
+
+        Returns:
+            Sequence[Union[int, str]]: Array shape sequence.
+        """
+        ...
+
+
+@typing.runtime_checkable
 class _IdMemberProtocol(typing.Protocol):
     """Protocol for objects exposing an `id` attribute."""
 
@@ -152,28 +169,463 @@ class _SizeMemberProtocol(typing.Protocol):
     size: int
 
 
-def is_traced_data(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
+@typing.runtime_checkable
+class ShapeMetadataProtocol(typing.Protocol):
+    """Protocol for IR nodes or descriptors exposing `shape_metadata`."""
+
+    shape_metadata: Sequence[int | str | None] | None
+
+
+@typing.runtime_checkable
+class DTypeHolderProtocol(typing.Protocol):
+    """Protocol for tensor/array objects exposing a `dtype` attribute."""
+
+    dtype: DType | str | TensorOrScalar
+
+
+@typing.runtime_checkable
+class DeviceHolderProtocol(typing.Protocol):
+    """Protocol for tensor/array objects exposing a `device` attribute."""
+
+    device: Device | str | None
+
+
+@typing.runtime_checkable
+class DataHolderProtocol(typing.Protocol):
+    """Protocol for wrapper tensors exposing a `.data` attribute."""
+
+    data: TensorOrScalar
+
+
+@typing.runtime_checkable
+class TensorOperandProtocol(typing.Protocol):
+    """Shared structural protocol for tensor/array operator operands."""
+
+    shape: tuple[int, ...]
+    dtype: DType | str
+    ndim: int
+    size: int
+    data: TensorOrScalar
+
+    def to_numpy(self) -> EagerTensorProtocol:
+        """Convert operand to a NumPy array.
+
+        Returns:
+            EagerTensorProtocol: NumPy array representation.
+        """
+        ...
+
+    def numpy(self) -> EagerTensorProtocol:
+        """Return NumPy array representation.
+
+        Returns:
+            EagerTensorProtocol: NumPy array representation.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class RaggedOperandProtocol(typing.Protocol):
+    """Shared structural protocol for ragged tensor operator operands."""
+
+    values: TensorOrScalar
+    row_splits: TensorOrScalar
+    nested_row_splits: Sequence[TensorOrScalar]
+    shape: tuple[int | None, ...]
+    dtype: DType | str
+
+
+@typing.runtime_checkable
+class SparseOperandProtocol(typing.Protocol):
+    """Shared structural protocol for sparse tensor operator operands."""
+
+    indices: TensorOrScalar
+    values: TensorOrScalar
+    dense_shape: tuple[int, ...]
+    shape: tuple[int, ...]
+    dtype: DType | str
+
+    def tocoo(self) -> SparseOperandProtocol:
+        """Convert sparse operand to COO format.
+
+        Returns:
+            SparseOperandProtocol: COO sparse representation.
+        """
+        ...
+
+    def toarray(self) -> EagerTensorProtocol:
+        """Convert sparse operand to dense array.
+
+        Returns:
+            EagerTensorProtocol: Dense array representation.
+        """
+        ...
+
+    def todense(self) -> EagerTensorProtocol:
+        """Convert sparse operand to dense tensor.
+
+        Returns:
+            EagerTensorProtocol: Dense tensor representation.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class TensorArrayOperandProtocol(typing.Protocol):
+    """Shared structural protocol for dynamic TensorArray operator operands."""
+
+    def size(self) -> int | TensorOrScalar:
+        """Return number of elements in the TensorArray.
+
+        Returns:
+            int | TensorOrScalar: TensorArray size.
+        """
+        ...
+
+    def read(self, index: int | TensorOrScalar) -> TensorOrScalar:
+        """Read element at `index`.
+
+        Args:
+            index (int | TensorOrScalar): Target slot index.
+
+        Returns:
+            TensorOrScalar: Element tensor.
+        """
+        ...
+
+    def write(self, index: int | TensorOrScalar, value: TensorOrScalar) -> TensorArrayOperandProtocol:
+        """Write `value` at `index`.
+
+        Args:
+            index (int | TensorOrScalar): Target slot index.
+            value (TensorOrScalar): Element tensor to write.
+
+        Returns:
+            TensorArrayOperandProtocol: Updated TensorArray.
+        """
+        ...
+
+    def stack(self) -> TensorOrScalar:
+        """Stack all elements in the TensorArray along axis 0.
+
+        Returns:
+            TensorOrScalar: Stacked tensor.
+        """
+        ...
+
+    def unstack(self, value: TensorOrScalar) -> TensorArrayOperandProtocol:
+        """Unstack `value` along axis 0 into the TensorArray.
+
+        Args:
+            value (TensorOrScalar): Tensor to unstack.
+
+        Returns:
+            TensorArrayOperandProtocol: Populated TensorArray.
+        """
+        ...
+
+    def gather(self, indices: TensorOrScalar) -> TensorOrScalar:
+        """Gather elements at `indices`.
+
+        Args:
+            indices (TensorOrScalar): Slot indices to gather.
+
+        Returns:
+            TensorOrScalar: Gathered tensor.
+        """
+        ...
+
+    def scatter(self, indices: TensorOrScalar, value: TensorOrScalar) -> TensorArrayOperandProtocol:
+        """Scatter `value` into `indices`.
+
+        Args:
+            indices (TensorOrScalar): Target slot indices.
+            value (TensorOrScalar): Values to scatter.
+
+        Returns:
+            TensorArrayOperandProtocol: Updated TensorArray.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class LinearOperatorOperandProtocol(typing.Protocol):
+    """Shared structural protocol for structured LinearOperator operands."""
+
+    shape: tuple[int, ...]
+    dtype: DType | str
+    H: TensorOrScalar
+    T: TensorOrScalar
+    A: TensorOrScalar
+
+    def matmul(self, x: TensorOrScalar, adjoint: bool = False, adjoint_arg: bool = False) -> TensorOrScalar:
+        """Multiply operator by matrix `x`.
+
+        Args:
+            x (TensorOrScalar): Right-hand matrix operand.
+            adjoint (bool): Take adjoint of this operator.
+            adjoint_arg (bool): Take adjoint of `x`.
+
+        Returns:
+            TensorOrScalar: Matrix product result.
+        """
+        ...
+
+    def matvec(self, x: TensorOrScalar, adjoint: bool = False) -> TensorOrScalar:
+        """Multiply operator by vector `x`.
+
+        Args:
+            x (TensorOrScalar): Right-hand vector operand.
+            adjoint (bool): Take adjoint of this operator.
+
+        Returns:
+            TensorOrScalar: Matrix-vector product result.
+        """
+        ...
+
+    def solve(self, rhs: TensorOrScalar, adjoint: bool = False, adjoint_arg: bool = False) -> TensorOrScalar:
+        """Solve linear system `Op @ X = rhs`.
+
+        Args:
+            rhs (TensorOrScalar): Right-hand side matrix.
+            adjoint (bool): Solve with adjoint of this operator.
+            adjoint_arg (bool): Take adjoint of `rhs`.
+
+        Returns:
+            TensorOrScalar: Solution tensor.
+        """
+        ...
+
+    def solvevec(self, rhs: TensorOrScalar, adjoint: bool = False) -> TensorOrScalar:
+        """Solve linear system `Op @ x = rhs` for vector `rhs`.
+
+        Args:
+            rhs (TensorOrScalar): Right-hand side vector.
+            adjoint (bool): Solve with adjoint of this operator.
+
+        Returns:
+            TensorOrScalar: Solution vector.
+        """
+        ...
+
+    def to_dense(self) -> TensorOrScalar:
+        """Materialize dense matrix representation.
+
+        Returns:
+            TensorOrScalar: Dense matrix tensor.
+        """
+        ...
+
+    def adjoint(self) -> LinearOperatorOperandProtocol:
+        """Return conjugate transpose LinearOperator.
+
+        Returns:
+            LinearOperatorOperandProtocol: Adjoint operator.
+        """
+        ...
+
+    def diag_part(self) -> TensorOrScalar:
+        """Extract main diagonal part.
+
+        Returns:
+            TensorOrScalar: Diagonal vector tensor.
+        """
+        ...
+
+    def trace(self) -> TensorOrScalar:
+        """Compute matrix trace.
+
+        Returns:
+            TensorOrScalar: Trace scalar tensor.
+        """
+        ...
+
+    def det(self) -> TensorOrScalar:
+        """Compute matrix determinant.
+
+        Returns:
+            TensorOrScalar: Determinant scalar tensor.
+        """
+        ...
+
+    def log_abs_determinant(self) -> TensorOrScalar:
+        """Compute log absolute determinant.
+
+        Returns:
+            TensorOrScalar: Log abs determinant tensor.
+        """
+        ...
+
+    def eigvals(self) -> TensorOrScalar:
+        """Compute eigenvalues of operator.
+
+        Returns:
+            TensorOrScalar: Eigenvalues tensor.
+        """
+        ...
+
+    def cond(self) -> TensorOrScalar:
+        """Compute condition number of operator.
+
+        Returns:
+            TensorOrScalar: Condition number tensor.
+        """
+        ...
+
+    def cholesky(self) -> LinearOperatorOperandProtocol:
+        """Compute Cholesky factor LinearOperator.
+
+        Returns:
+            LinearOperatorOperandProtocol: Cholesky factor operator.
+        """
+        ...
+
+    def inverse(self) -> LinearOperatorOperandProtocol:
+        """Compute inverse LinearOperator.
+
+        Returns:
+            LinearOperatorOperandProtocol: Inverse operator.
+        """
+        ...
+
+
+def _is_int_shape_tuple(val: tuple[int | str | None, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a shape tuple to `tuple[int, ...]`.
+
+    Args:
+        val (tuple[int | str | None, ...]): Shape tuple.
+
+    Returns:
+        bool: Always True for shape tuples.
+    """
+    return isinstance(val, tuple)
+
+
+def extract_shape(
+    val: TensorOrScalar,
+    default: tuple[int, ...] = (),
+) -> tuple[int, ...]:
+    """Safely extract `.shape` or `.shape_metadata` from `val`, falling back to `default`.
+
+    Args:
+        val (TensorOrScalar): Tensor, IRNode, or shape-bearing object.
+        default (tuple[int, ...]): Default shape tuple if `val` has no shape.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    if isinstance(val, ShapeProtocol) and val.shape is not None:
+        res_shape = tuple(val.shape)
+        assert _is_int_shape_tuple(res_shape)
+        return res_shape
+    if isinstance(val, ShapeMetadataProtocol) and val.shape_metadata is not None:
+        res_meta = tuple(val.shape_metadata)
+        assert _is_int_shape_tuple(res_meta)
+        return res_meta
+    return default
+
+
+def _is_dtype_or_str(val: TensorOrScalar) -> typing.TypeGuard[DType | str]:
+    """Type guard narrowing `val` to `DType | str`.
+
+    Args:
+        val (TensorOrScalar): Candidate dtype value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def extract_dtype(
+    val: TensorOrScalar,
+    default: DType | str = "float32",
+) -> DType | str:
+    """Safely extract `.dtype` from `val`, falling back to `default`.
+
+    Args:
+        val (TensorOrScalar): Tensor or array object.
+        default (DType | str): Fallback dtype if `val` has no `.dtype`.
+
+    Returns:
+        DType | str: Extracted dtype or fallback.
+    """
+    if isinstance(val, DTypeHolderProtocol) and val.dtype is not None:
+        raw_dt: TensorOrScalar = val.dtype
+        assert _is_dtype_or_str(raw_dt)
+        return raw_dt
+    return default
+
+
+def extract_device(
+    val: TensorOrScalar,
+    default: Device | str | None = None,
+) -> Device | str | None:
+    """Safely extract `.device` from `val`, falling back to `default`.
+
+    Args:
+        val (TensorOrScalar): Tensor or array object.
+        default (Device | str | None): Fallback device if `val` has no `.device`.
+
+    Returns:
+        Device | str | None: Extracted device or fallback.
+    """
+    if isinstance(val, DeviceHolderProtocol) and val.device is not None:
+        dev: Device | str = val.device
+        return dev
+    return default
+
+
+def _is_tensor_or_scalar(val: TensorOrScalar) -> typing.TypeGuard[TensorOrScalar]:
+    """Type guard narrowing `val` to `TensorOrScalar`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True for valid tensor or scalar values.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def extract_data(val: TensorOrScalar) -> TensorOrScalar:
+    """Safely unwrap `.data` from `val` if present, otherwise return `val`.
+
+    Args:
+        val (TensorOrScalar): Tensor or raw value.
+
+    Returns:
+        TensorOrScalar: Unwrapped `.data` or `val`.
+    """
+    if isinstance(val, DataHolderProtocol):
+        raw_d: TensorOrScalar = val.data
+        return raw_d
+    assert _is_tensor_or_scalar(val)
+    return val
+
+
+def is_traced_data(val: TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
     """Check whether `val` satisfies `TracedDataProtocol` or exposes `.id`.
 
     Args:
-        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime object.
+        val (TensorOrScalar): Candidate runtime object.
 
     Returns:
         bool: True if `val` is a traced proxy data object.
     """
-    return _has_attr(val, "id")
+    return isinstance(val, _IdMemberProtocol)
 
 
-def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
+def is_backend_buffer(val: TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
     """Check whether `val` satisfies `BackendBufferProtocol`.
 
     Args:
-        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime buffer.
+        val (TensorOrScalar): Candidate runtime buffer.
 
     Returns:
         bool: True if `val` is a backend array buffer.
     """
-    return _has_attr(val, "tolist") or _has_attr(val, "item") or _has_attr(val, "size")
+    return isinstance(val, (_TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
 
 
 @typing.runtime_checkable
@@ -222,7 +674,11 @@ def _is_variadic_callable(fn: TensorOrScalar) -> typing.TypeGuard[VariadicCallab
     return callable(fn) and not isinstance(fn, ModuleType)
 
 
-def invoke_callable(fn: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def invoke_callable(
+    fn: TensorOrScalar,
+    *args: TensorOrScalar,
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Invoke a callable `TensorOrScalar` operand with positional and keyword arguments.
 
     Args:
@@ -240,22 +696,33 @@ def invoke_callable(fn: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorO
     return fn(*args, **kwargs)
 
 
-if typing.TYPE_CHECKING:
-    import builtins
-    import ctypes
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    BackendModuleProtocol = int
+    COOTensor = int
+    DType = int
+    Device = int
+    EagerCallableProtocol = int
+    EagerTensorProtocol = int
+    GradTensorProtocol = int
+    IRGraph = int
+    LogicalGraph = int
+    LogicalNode = int
+    SymInt = int
+    SymNode = int
+    SymVar = int
+    Tensor = int
+    TensorLike = int
+    pydantic = _pydantic_rt
+    _EllipsisType = type(Ellipsis)
 
+if typing.TYPE_CHECKING:
     import pydantic
-    from ml_switcheroo_ir import DType as IRDType
-    from ml_switcheroo_ir import SymInt as IRSymInt
-    from ml_switcheroo_ir import SymNode as IRSymNode
-    from ml_switcheroo_ir import TensorShape, TensorSpec
 
     from ml_switcheroo_compiler.backends.registry import (
         BackendModuleProtocol,
         COOTensor,
         EagerCallableProtocol,
         EagerTensorProtocol,
-        ShapeProtocol,
     )
     from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.core.dtype import DType
@@ -265,31 +732,74 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalGraph, LogicalNode
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
 
-    SliceType = slice[int | float | str | None, int | float | str | None, int | float | str | None]
-    CallableLike = typing.Union[  # noqa: UP007
-        Callable[[], _R_co],
-        Callable[[typing.NoReturn], _R_co],
-        Callable[[typing.NoReturn, typing.NoReturn], _R_co],
-        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
-        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
-        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
-        TypedVariadicCallable[_R_co],
-    ]
-    SymbolicDim = typing.Union[str, SymNode, SymInt, SymVar, IRSymNode, IRSymInt]  # noqa: UP007
-    ShapeLike = typing.Union[  # noqa: UP007
-        tuple[int | SymbolicDim | None, ...],
-        Sequence[int | SymbolicDim | None],
-        int,
-        SymbolicDim,
-        TensorShape,
-        Tensor,
-        EagerTensorProtocol,
-        ShapeProtocol,
-        None,
-    ]
-    AxesLike = typing.Union[int, Sequence[int], Tensor, EagerTensorProtocol | None]  # noqa: UP007
-    ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
-    TensorOrScalar = typing.Union[  # noqa: UP007
+    _EllipsisType = builtins.ellipsis
+
+
+@typing.runtime_checkable
+class SliceProtocol(typing.Protocol):
+    """Structural protocol matching Python `slice` objects."""
+
+    @property
+    def start(self) -> int | float | str | None:
+        """Return slice start bound.
+
+        Returns:
+            int | float | str | None: Slice start.
+        """
+        ...
+
+    @property
+    def stop(self) -> int | float | str | None:
+        """Return slice stop bound.
+
+        Returns:
+            int | float | str | None: Slice stop.
+        """
+        ...
+
+    @property
+    def step(self) -> int | float | str | None:
+        """Return slice step bound.
+
+        Returns:
+            int | float | str | None: Slice step.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class CtypesArrayProtocol(typing.Protocol):
+    """Structural protocol matching `ctypes.Array` instances."""
+
+    _length_: int
+
+
+SliceType = SliceProtocol
+CallableLike = typing.Union[  # noqa: UP007
+    Callable[[], _R_co],
+    Callable[[typing.NoReturn], _R_co],
+    Callable[[typing.NoReturn, typing.NoReturn], _R_co],
+    Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+    Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+    Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+    TypedVariadicCallable[_R_co],
+]
+SymbolicDim = typing.Union[str, SymNode, SymInt, SymVar, IRSymNode, IRSymInt]  # noqa: UP007
+ShapeLike = typing.Union[  # noqa: UP007
+    tuple[typing.Union[int, SymbolicDim, None], ...],  # noqa: UP007
+    Sequence[typing.Union[int, SymbolicDim, None]],  # noqa: UP007
+    int,
+    SymbolicDim,
+    TensorShape,
+    Tensor,
+    EagerTensorProtocol,
+    ShapeProtocol,
+    None,
+]
+AxesLike = typing.Union[int, Sequence[int], Tensor, EagerTensorProtocol, None]  # noqa: UP007
+ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
+TensorOrScalar = typing.Annotated[
+    typing.Union[  # noqa: UP007
         int,
         float,
         complex,
@@ -315,10 +825,13 @@ if typing.TYPE_CHECKING:
         SliceType,
         type,
         ModuleType,
-        "builtins.ellipsis",
-        "ctypes.Array[ctypes.c_char]",
-        "ctypes.Array[ctypes.c_void_p]",
+        _EllipsisType,
+        CtypesArrayProtocol,
         ShapeProtocol,
+        ShapeMetadataProtocol,
+        DTypeHolderProtocol,
+        DeviceHolderProtocol,
+        DataHolderProtocol,
         EagerTensorProtocol,
         BackendModuleProtocol,
         TensorLike,
@@ -333,19 +846,12 @@ if typing.TYPE_CHECKING:
         Sequence["TensorOrScalar"],
         Mapping["TensorOrScalar", "TensorOrScalar"],
         Mapping[str, "TensorOrScalar"],
-        Mapping[str | int, "TensorOrScalar"],
+        Mapping[typing.Union[str, int], "TensorOrScalar"],  # noqa: UP007
         set["TensorOrScalar"],
-    ]
-    AttrValue = TensorOrScalar
-else:
-    SliceType = slice
-    CallableLike = TypedVariadicCallable
-    SymbolicDim = AttributeValue
-    ShapeLike = AttributeValue
-    AxesLike = AttributeValue
-    ScalarLike = AttributeValue
-    TensorOrScalar = AttributeValue
-    AttrValue = AttributeValue
+    ],
+    _AttributeValuePydanticAnnotation,
+]
+AttrValue = TensorOrScalar
 
 
 def _broadcast_dim(
@@ -498,135 +1004,3 @@ def validate_matrix_multiply_shapes(
         return _validate_strict_2d_matmul(shape_a, shape_b)
 
     return _validate_vector_or_batched_matmul(shape_a, shape_b)
-
-
-if typing.TYPE_CHECKING:
-    from cdd import _DynamicAttrType
-else:
-    _DynamicAttrType = TensorOrScalar
-
-_MISSING_ATTR_SENTINEL: StructuralOperandProtocol = builtins.object()
-
-
-def _has_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> typing.TypeGuard[_DynamicAttrType]:
-    """Return True if `obj` defines attribute `name`.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
-        name (str): Attribute name.
-
-    Returns:
-        bool: True if attribute exists.
-    """
-    return bool(operator.attrgetter("hasattr")(builtins)(obj, name))
-
-
-def _get_attr(
-    obj: StructuralOperandProtocol | TensorOrScalar,
-    name: str,
-    default: StructuralOperandProtocol | TensorOrScalar = _MISSING_ATTR_SENTINEL,
-) -> _DynamicAttrType:
-    """Retrieve attribute `name` from `obj`, or `default` if provided.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
-        name (str): Attribute name.
-        default (StructuralOperandProtocol | TensorOrScalar): Optional fallback value.
-
-    Returns:
-        _DynamicAttrType: Attribute value or fallback.
-    """
-    getter = operator.attrgetter("getattr")(builtins)
-    if default is _MISSING_ATTR_SENTINEL:
-        return getter(obj, name)
-    return getter(obj, name, default)
-
-
-def _set_attr(
-    obj: StructuralOperandProtocol | TensorOrScalar,
-    name: str,
-    value: StructuralOperandProtocol | TensorOrScalar,
-) -> None:
-    """Set attribute `name` on `obj` to `value`.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
-        name (str): Attribute name.
-        value (StructuralOperandProtocol | TensorOrScalar): Attribute value.
-    """
-    operator.attrgetter("setattr")(builtins)(obj, name, value)
-
-
-def _del_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> None:
-    """Delete attribute `name` from `obj`.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
-        name (str): Attribute name.
-    """
-    operator.attrgetter("delattr")(builtins)(obj, name)
-
-
-def _obj_set_attr(
-    obj: StructuralOperandProtocol | TensorOrScalar,
-    name: str,
-    value: StructuralOperandProtocol | TensorOrScalar,
-) -> None:
-    """Set attribute `name` on `obj` using base object or type descriptor semantics.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object or class.
-        name (str): Attribute name.
-        value (StructuralOperandProtocol | TensorOrScalar): Attribute value.
-    """
-    target_base = type if isinstance(obj, type) else builtins.object
-    operator.attrgetter("__setattr__")(target_base)(obj, name, value)
-
-
-def _obj_del_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> None:
-    """Delete attribute `name` on `obj` using base object or type descriptor semantics.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object or class.
-        name (str): Attribute name.
-    """
-    target_base = type if isinstance(obj, type) else builtins.object
-    operator.attrgetter("__delattr__")(target_base)(obj, name)
-
-
-def _obj_vars(obj: StructuralOperandProtocol | TensorOrScalar) -> _DynamicAttrType:
-    """Return attribute dictionary for `obj`.
-
-    Args:
-        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
-
-    Returns:
-        _DynamicAttrType: Attribute mapping of `obj`.
-    """
-    return operator.attrgetter("vars")(builtins)(obj)
-
-
-def _caller_locals() -> _DynamicAttrType:
-    """Return local symbol dictionary of the immediate caller frame.
-
-    Returns:
-        _DynamicAttrType: Caller frame local bindings.
-    """
-    return sys._getframe(1).f_locals
-
-
-def _cast_val(
-    target_type: StructuralOperandProtocol | TensorOrScalar,
-    value: StructuralOperandProtocol | TensorOrScalar,
-) -> _DynamicAttrType:
-    """Return `value` narrowed to the requested static target type.
-
-    Args:
-        target_type (StructuralOperandProtocol | TensorOrScalar): Target type descriptor.
-        value (StructuralOperandProtocol | TensorOrScalar): Runtime value.
-
-    Returns:
-        _DynamicAttrType: Narrowed runtime value.
-    """
-    del target_type
-    return value

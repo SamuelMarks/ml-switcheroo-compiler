@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -25,4 +25,4 @@ def _np_mvlgamma(
     Returns:
         np.ndarray: Log multivariate gamma evaluation.
     """
-    return as_ndarray(backend_module.mvlgamma(*args, **kwargs))
+    return ensure_ndarray(backend_module.mvlgamma(*args, **kwargs))

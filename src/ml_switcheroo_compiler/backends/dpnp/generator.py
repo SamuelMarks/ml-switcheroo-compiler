@@ -44,7 +44,7 @@ from ml_switcheroo_compiler.backends.dpnp.types import (
 from ml_switcheroo_compiler.backends.dpnp.types import (
     zeros as _zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -227,7 +227,7 @@ class DPNPGenerator(PythonStringGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return as_tensor(evaluated)
+            return ensure_eager_tensor(evaluated)
 
         return aot_dpnp_runner
 

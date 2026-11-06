@@ -11,9 +11,8 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
-from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-from tests.testing_utils import as_attrs, as_callable, as_tensor
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -29,7 +28,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
 
         self.input_node = LogicalNode(id="in1", op_type="Input")
         self.input_node.shape_metadata = (2, 3)
-        _set_attr(self.input_node, "dtype", "float32")
+        ensure_mutable(self.input_node).dtype = ensure_eager_tensor("float32")
 
         self.graph.nodes = NodeDict({"in1": self.input_node})
 
@@ -39,14 +38,14 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Exp", "Log", "Negative", "Neg", "Other"]:
             n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "missing_node"])
             n.shape_metadata = (2, 3)
-            _set_attr(n, "dtype", "float32")
+            ensure_mutable(n).dtype = ensure_eager_tensor("float32")
             if op == "Constant":
                 n.attributes = {"value": 1.0}
             self.gen.sorted_nodes.append(n)
 
         n_none = LogicalNode(id="n_NoneShape", op_type="Add", inputs=["in1"])
         n_none.shape_metadata = None
-        _set_attr(n_none, "dtype", "float32")
+        ensure_mutable(n_none).dtype = ensure_eager_tensor("float32")
         self.gen.sorted_nodes.append(n_none)
 
         n_const_none = LogicalNode(id="n_ConstNoneShape", op_type="Constant", inputs=[])
@@ -58,7 +57,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test fallback when edge_stablehlo exists but lacks opcode/generator."""
         from unittest.mock import patch
 
-        mock_registry = as_tensor({"EmptyVariantOp": {"variants": {"edge_stablehlo": {}}}})
+        mock_registry = ensure_eager_tensor({"EmptyVariantOp": {"variants": {"edge_stablehlo": {}}}})
 
         n = LogicalNode(id="n_empty", op_type="EmptyVariantOp", inputs=["in1"])
         self.gen.sorted_nodes.append(n)
@@ -145,7 +144,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
 
     def test_generate_no_outputs(self) -> None:
         """Test generate no outputs."""
-        _obj_set_attr(self.gen.graph, "outputs", None)
+        ensure_mutable(self.gen.graph).outputs = ensure_eager_tensor(None)
         code = self.gen.generate()
         self.assertIn("return", code)
 
@@ -179,7 +178,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test dynamic dimension formatting with wildcard ? symbol."""
         gen = StableHLOCodeGenerator(IRGraph())
         self.assertEqual(gen._map_type(("batch", 16), "float32"), "tensor<?x16xf32>")
-        as_callable(self.assertEqual)(as_callable(gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
+        ensure_callable(self.assertEqual)(ensure_callable(gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
         self.assertEqual(gen._map_type((-1, 32), "float64"), "tensor<?x32xf64>")
 
     def test_stablehlo_control_flow_if(self) -> None:
@@ -193,21 +192,21 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         t_node = LogicalNode(id="t_add", op_type="Add", inputs=["x", "x"], shape_metadata=(2, 2))
         then_g.nodes = NodeDict({"inp_t": inp_t, "t_add": t_node})
         then_g.outputs = ["t_add"]
-        _obj_set_attr(then_g, "sorted_nodes", [inp_t, t_node])
+        ensure_mutable(then_g).sorted_nodes = ensure_eager_tensor([inp_t, t_node])
 
         else_g = IRGraph()
         inp_e = LogicalNode(id="inp_e", op_type="Input")
         e_node = LogicalNode(id="e_sub", op_type="Subtract", inputs=["x", "x"], shape_metadata=(2, 2))
         else_g.nodes = NodeDict({"inp_e": inp_e, "e_sub": e_node})
         else_g.outputs = ["e_sub"]
-        _obj_set_attr(else_g, "sorted_nodes", [inp_e, e_node])
+        ensure_mutable(else_g).sorted_nodes = ensure_eager_tensor([inp_e, e_node])
 
         if_node = LogicalNode(
             id="if_res",
             op_type="If",
             inputs=["cond"],
             shape_metadata=(2, 2),
-            attributes=as_attrs({"then_branch": then_g, "else_branch": else_g}),
+            attributes=ensure_attrs({"then_branch": then_g, "else_branch": else_g}),
         )
 
         g.nodes = NodeDict({"cond": in_cond, "x": in_x, "if_res": if_node})
@@ -230,21 +229,21 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         c_node = LogicalNode(id="c_lt", op_type="Other", inputs=["x"], shape_metadata=(), attributes={"dtype": "bool"})
         cond_g.nodes = NodeDict({"inp_c": inp_c, "c_lt": c_node})
         cond_g.outputs = ["c_lt"]
-        _obj_set_attr(cond_g, "sorted_nodes", [inp_c, c_node])
+        ensure_mutable(cond_g).sorted_nodes = ensure_eager_tensor([inp_c, c_node])
 
         body_g = IRGraph()
         inp_b = LogicalNode(id="inp_b", op_type="Input")
         b_node = LogicalNode(id="b_add", op_type="Add", inputs=["x", "x"], shape_metadata=(1,))
         body_g.nodes = NodeDict({"inp_b": inp_b, "b_add": b_node})
         body_g.outputs = ["b_add"]
-        _obj_set_attr(body_g, "sorted_nodes", [inp_b, b_node])
+        ensure_mutable(body_g).sorted_nodes = ensure_eager_tensor([inp_b, b_node])
 
         while_node = LogicalNode(
             id="while_res",
             op_type="While",
             inputs=["x"],
             shape_metadata=(1,),
-            attributes=as_attrs({"cond": cond_g, "body": body_g}),
+            attributes=ensure_attrs({"cond": cond_g, "body": body_g}),
         )
 
         g.nodes = NodeDict({"x": in_x, "while_res": while_node})
@@ -318,13 +317,13 @@ def test_verify_stablehlo_mlir_with_opt_binary(monkeypatch: EagerTensorProtocol)
 
     # Success case
     mock_res_success = subprocess.CompletedProcess(args=["mlir-opt"], returncode=0, stdout=b"", stderr=b"")
-    as_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
+    ensure_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
     monkeypatch.setattr("os.path.exists", lambda path: True)
     assert verify_stablehlo_mlir("some mlir", mlir_opt_path="/usr/bin/mlir-opt") is True
 
     # Failure case
     mock_res_fail = subprocess.CompletedProcess(args=["mlir-opt"], returncode=1, stdout=b"", stderr=b"parse error")
-    as_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
+    ensure_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
     with pytest.raises(ValueError, match="mlir-opt verification failed"):
         verify_stablehlo_mlir("bad mlir", mlir_opt_path="/usr/bin/mlir-opt")
 
@@ -626,7 +625,7 @@ def test_stablehlo_while_extra_block_inputs() -> None:
     c_node = LogicalNode(id="c_op", op_type="Other", inputs=["c1"], shape_metadata=(), attributes={"dtype": "bool"})
     cond_g.nodes = NodeDict({"c1": inp_c1, "c2": inp_c2, "c_op": c_node})
     cond_g.outputs = ["c_op"]
-    _obj_set_attr(cond_g, "sorted_nodes", [inp_c1, inp_c2, c_node])
+    ensure_mutable(cond_g).sorted_nodes = ensure_eager_tensor([inp_c1, inp_c2, c_node])
 
     body_g = IRGraph()
     inp_b1 = LogicalNode(id="b1", op_type="Input")
@@ -634,14 +633,14 @@ def test_stablehlo_while_extra_block_inputs() -> None:
     b_node = LogicalNode(id="b_op", op_type="Add", inputs=["b1", "b1"], shape_metadata=(1,))
     body_g.nodes = NodeDict({"b1": inp_b1, "b2": inp_b2, "b_op": b_node})
     body_g.outputs = ["b_op"]
-    _obj_set_attr(body_g, "sorted_nodes", [inp_b1, inp_b2, b_node])
+    ensure_mutable(body_g).sorted_nodes = ensure_eager_tensor([inp_b1, inp_b2, b_node])
 
     while_node = LogicalNode(
         id="while_res",
         op_type="While",
         inputs=["x"],
         shape_metadata=(1,),
-        attributes=as_attrs({"cond": cond_g, "body": body_g}),
+        attributes=ensure_attrs({"cond": cond_g, "body": body_g}),
     )
 
     g.nodes = NodeDict({"x": in_x, "while_res": while_node})
@@ -669,12 +668,12 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     g.nodes = NodeDict({"in1": inp1, "in2": inp2, "out1": out1, "out2": out2})
     g.inputs = ["in1", "in2"]
     g.outputs = ["out1"]
-    _obj_set_attr(g, "sorted_nodes", [inp1, inp2, out1, out2])
+    ensure_mutable(g).sorted_nodes = ensure_eager_tensor([inp1, inp2, out1, out2])
 
     # Test 1: Normal schema existence and single output return
     gen1 = StableHLOCodeGenerator(g)
     artifact1 = gen1._compile_aot_impl(g)
-    res_single = as_callable(artifact1)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(np.array)([2.0], dtype=np.float32))
+    res_single = ensure_callable(artifact1)(ensure_callable(np.array)([1.0], dtype=np.float32), ensure_callable(np.array)([2.0], dtype=np.float32))
     assert res_single is not None
 
     # Test 2: Schema fallback when schema yaml does not exist, and multi-output
@@ -695,14 +694,14 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     gen2 = StableHLOCodeGenerator(g)
     artifact2 = gen2._compile_aot_impl(g)
 
-    res = as_callable(artifact2)(as_callable(np.array)([1.0], dtype=np.float32), in2=as_callable(np.array)([2.0], dtype=np.float32))
-    assert isinstance(as_tensor(res), tuple)
+    res = ensure_callable(artifact2)(ensure_callable(np.array)([1.0], dtype=np.float32), in2=ensure_callable(np.array)([2.0], dtype=np.float32))
+    assert isinstance(ensure_eager_tensor(res), tuple)
     assert len(res) == 2
 
     # Test 3: Graph has no outputs
     g.outputs = []
-    res_dict = as_callable(artifact2)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(np.array)([2.0], dtype=np.float32))
-    assert isinstance(as_tensor(res_dict), dict)
+    res_dict = ensure_callable(artifact2)(ensure_callable(np.array)([1.0], dtype=np.float32), ensure_callable(np.array)([2.0], dtype=np.float32))
+    assert isinstance(ensure_eager_tensor(res_dict), dict)
 
 
 def test_stablehlo_mlir_text_compliance() -> None:
@@ -712,14 +711,14 @@ def test_stablehlo_mlir_text_compliance() -> None:
     g = IRGraph()
     inp1 = LogicalNode(id="in1", op_type="Input")
     inp1.shape_metadata = (2, 2)
-    _set_attr(inp1, "dtype", "float32")
+    ensure_mutable(inp1).dtype = ensure_eager_tensor("float32")
     out1 = LogicalNode(id="out1", op_type="Add", inputs=["in1", "in1"])
     out1.shape_metadata = (2, 2)
-    _set_attr(out1, "dtype", "float32")
+    ensure_mutable(out1).dtype = ensure_eager_tensor("float32")
     g.nodes = NodeDict({"in1": inp1, "out1": out1})
     g.inputs = ["in1"]
     g.outputs = ["out1"]
-    _obj_set_attr(g, "sorted_nodes", [inp1, out1])
+    ensure_mutable(g).sorted_nodes = ensure_eager_tensor([inp1, out1])
 
     gen = StableHLOCodeGenerator(g)
     code = gen.generate()

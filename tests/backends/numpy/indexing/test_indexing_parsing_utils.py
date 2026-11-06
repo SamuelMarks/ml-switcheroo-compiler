@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.backends.numpy.eager._indexing_parsing_utils import 
     _is_np_array_call,
     _safe_parse_key,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -55,7 +55,7 @@ def test_eval_slice_call() -> None:
         Args:
             n: Test parameter `n`.
         """
-        _typed_ret_1: EagerValue = _get_attr(n, "value", None)
+        _typed_ret_1: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_1
 
     s = _eval_slice_call(node, dummy_eval)
@@ -83,7 +83,7 @@ def test_eval_array_call() -> None:
         Args:
             n: Test parameter `n`.
         """
-        _typed_ret_2: EagerValue = _get_attr(n, "value", None)
+        _typed_ret_2: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_2
 
     arr = _eval_array_call(node, dummy_eval)
@@ -121,7 +121,7 @@ def test_eval_call() -> None:
         Args:
             n: Test parameter `n`.
         """
-        _typed_ret_3: EagerValue = _get_attr(n, "value", None)
+        _typed_ret_3: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_3
 
     node_slice = ast.Call(func=ast.Name(id="slice", ctx=ast.Load()), args=[ast.Constant(value=1)], keywords=[])
@@ -172,7 +172,7 @@ def test_eval_unary_op() -> None:
         Args:
             n: Test parameter `n`.
         """
-        _typed_ret_4: EagerValue = _get_attr(n, "value", None)
+        _typed_ret_4: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_4
 
     node = ast.UnaryOp(op=ast.USub(), operand=ast.Constant(value=5))

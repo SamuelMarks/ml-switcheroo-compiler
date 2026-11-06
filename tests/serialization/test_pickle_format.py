@@ -7,7 +7,7 @@ import tempfile
 import typing
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,6 +19,6 @@ def test_pickle_format() -> None:
     data = {"a": 1, "b": "test"}
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights.pkl")
-        as_callable(fmt.save)(data, filepath)
+        ensure_callable(fmt.save)(data, filepath)
         loaded = fmt.load(filepath)
         assert loaded == data

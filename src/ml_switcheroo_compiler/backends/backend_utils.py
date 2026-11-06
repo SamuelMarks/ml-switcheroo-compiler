@@ -4,10 +4,20 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol,
+    TensorOrScalar,
+)
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRNode
+
+
+@typing.runtime_checkable
+class _DimWithIdProtocol(typing.Protocol):
+    """Protocol for symbolic dimension objects exposing `.id`."""
+
+    id: str | TensorOrScalar
 
 
 def resolve_input_vars(node: IRNode, var_names: dict[str, str]) -> list[str]:
@@ -33,12 +43,14 @@ def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> str | None
     Returns:
         str | None: Formatted shape tuple representation or None if not present.
     """
-    if not (_has_attr(node, "shape_metadata") and node.shape_metadata):
+    raw_node: TensorOrScalar = node
+    if not (isinstance(raw_node, ShapeMetadataProtocol) and raw_node.shape_metadata):
         return None
     formatted_shape: list[str] = []
-    for dim in node.shape_metadata:
-        if _has_attr(dim, "id"):
-            dim_id = str(dim.id)
+    for dim in raw_node.shape_metadata:
+        raw_dim: TensorOrScalar = dim
+        if isinstance(raw_dim, _DimWithIdProtocol):
+            dim_id = str(raw_dim.id)
             formatted_shape.append(var_names.get(dim_id, dim_id))
         elif isinstance(dim, str):
             formatted_shape.append(f"'{dim}'")

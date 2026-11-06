@@ -2,14 +2,76 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+import typing
 
-from ml_switcheroo_compiler.backends.registry import BackendRegistry, as_callable, get_active_backend
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+
+def _is_attr_dict(val: dict[str, AttributeValue]) -> typing.TypeGuard[dict[str, EvalValue | AttributeValue]]:
+    """Type guard narrowing node attributes dict to accept `EvalValue`.
+
+    Args:
+        val (dict[str, AttributeValue]): Attributes dict.
+
+    Returns:
+        bool: True if val is a dict.
+    """
+    return isinstance(val, dict)
+
+
+@typing.runtime_checkable
+class _SizeOneProtocol(typing.Protocol):
+    """Protocol for tensor/array values exposing a `size` attribute."""
+
+    size: int
+
+
+@typing.runtime_checkable
+class _NumelProtocol(typing.Protocol):
+    """Protocol for tensor values exposing a `.numel()` method."""
+
+    def numel(self) -> int:
+        """Return total element count.
+
+        Returns:
+            int: Element count.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _BackendItemProtocol(typing.Protocol):
+    """Protocol for backend classes/modules exposing `.item(val)`."""
+
+    def item(self, val: EvalValue) -> EvalValue:
+        """Extract scalar item from a 1-element array.
+
+        Args:
+            val (EvalValue): Array value.
+
+        Returns:
+            EvalValue: Extracted scalar value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ScalarItemProtocol(typing.Protocol):
+    """Protocol for array values exposing `.item()`."""
+
+    def item(self) -> EvalValue:
+        """Extract scalar item.
+
+        Returns:
+            EvalValue: Extracted scalar value.
+        """
+        ...
 
 
 def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> bool:
@@ -59,11 +121,11 @@ def _evaluate_constant_node(
     )
     outputs = evaluate_graph(subgraph, {}, backend=backend)
     val = outputs[node.id]
-    if (_has_attr(val, "size") and _get_attr(val, "size") == 1) or (_has_attr(val, "numel") and _get_attr(val, "numel")() == 1):
-        if _has_attr(backend, "item"):
-            val = _get_attr(backend, "item")(val)
-        elif _has_attr(val, "item"):
-            val = _get_attr(val, "item")()
+    if (isinstance(val, _SizeOneProtocol) and val.size == 1) or (isinstance(val, _NumelProtocol) and val.numel() == 1):
+        if isinstance(backend, _BackendItemProtocol):
+            val = backend.item(val)
+        elif isinstance(val, _ScalarItemProtocol):
+            val = val.item()
     return val
 
 
@@ -105,9 +167,13 @@ def _try_fold_single_node(
         return False
 
     try:
-        val = as_callable(_evaluate_constant_node)(node, canonical_inputs, graph, backend)
+        assert backend is not None
+        val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
-        graph.nodes[node.id].attributes = as_attrs({"value": val})
+        new_attrs: dict[str, AttributeValue] = {}
+        graph.nodes[node.id].attributes = new_attrs
+        assert _is_attr_dict(new_attrs)
+        new_attrs["value"] = val
         graph.nodes[node.id].inputs = []
         return True
     except (ValueError, TypeError, RuntimeError) as e:
@@ -131,10 +197,11 @@ def _fold_nested_subgraphs(graph: IRGraph) -> bool:
     """
     modified = False
     for node in graph.nodes.values():
-        for sub in _get_attr(node, "subgraphs", {}).values():
+        for sub in node.subgraphs.values():
             if isinstance(sub, LogicalGraph) and constant_folding_pass(sub):
                 modified = True
-        for attr_val in _cast_val("dict[str, TensorOrScalar]", node.attributes).values():
+        for raw_attr_val in node.attributes.values():
+            attr_val: LogicalGraph | AttributeValue = raw_attr_val
             if isinstance(attr_val, LogicalGraph) and constant_folding_pass(attr_val):
                 modified = True
     return modified

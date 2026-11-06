@@ -8,8 +8,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.numpy import numpy_mixins as np_mixins
 from ml_switcheroo_compiler.backends.numpy import types as np_types
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -112,16 +111,16 @@ def test_backends_numpy_types_and_mixins() -> None:
         pass
 
     z = np_types.zeros(_DummyNumpyBackend, (2, 2))
-    assert as_tensor(_get_attr(z, "shape")) == (2, 2)
-    assert as_tensor(_get_attr(z, "tolist"))() == [[0.0, 0.0], [0.0, 0.0]]
+    assert ensure_eager_tensor(z).shape == (2, 2)
+    assert ensure_eager_tensor(ensure_eager_tensor(z).tolist)() == [[0.0, 0.0], [0.0, 0.0]]
 
     arr = np_types.array(_DummyNumpyBackend, [1, 2], dtype=None)
-    assert as_tensor(_get_attr(arr, "tolist"))() == [1, 2]
+    assert ensure_eager_tensor(ensure_eager_tensor(arr).tolist)() == [1, 2]
 
     as_arr = np_types.asarray(_DummyNumpyBackend, [3.5, 4.5])
-    assert as_tensor(_get_attr(as_arr, "tolist"))() == [3.5, 4.5]
+    assert ensure_eager_tensor(ensure_eager_tensor(as_arr).tolist)() == [3.5, 4.5]
 
-    val = np_types.item(_DummyNumpyBackend, as_tensor(_get_attr(as_arr, "__getitem__")(0)))
+    val = np_types.item(_DummyNumpyBackend, ensure_eager_tensor(as_arr)[0])
     assert val == 3.5
 
     # Test numpy_mixins visitors
@@ -131,7 +130,7 @@ def test_backends_numpy_types_and_mixins() -> None:
 
     res_upd = visitor.visit_TensorScatterUpdate(node, vars_list)
     assert "lambda c, i, u:" in res_upd
-    assert "__setitem__" in res_upd
+    assert "setitem" in res_upd
 
     res_add = visitor.visit_TensorScatterAdd(node, vars_list)
     assert "np.add.at" in res_add

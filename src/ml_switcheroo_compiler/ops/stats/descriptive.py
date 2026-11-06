@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ml_switcheroo_compiler.backends.registry import _get_attr, _has_attr, as_eager_list, as_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list, ensure_int
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
@@ -49,7 +53,7 @@ class ApplyOverAxes(OpDef):
                 "a",
                 kwargs.get(
                     "x",
-                    func if not callable(func) and (_has_attr(func, "shape") or isinstance(func, (list, tuple))) else None,
+                    func if not callable(func) and isinstance(func, (ShapeProtocol, list, tuple)) else None,
                 ),
             )
         )
@@ -65,21 +69,17 @@ class ApplyOverAxes(OpDef):
             Returns:
                 tuple[int, ...]: Extracted shape tuple.
             """
-            if _has_attr(obj, "shape"):
-                raw_shape = _get_attr(obj, "shape")
-                return tuple(int(as_int(d)) for d in raw_shape) if isinstance(raw_shape, Iterable) else ()
-            if _has_attr(obj, "shape_metadata"):
-                sm = _get_attr(obj, "shape_metadata")
-                if isinstance(sm, Iterable) and sm:
-                    return tuple(int(as_int(d)) for d in sm)
+            extracted = extract_shape(obj)
+            if extracted:
+                return tuple(int(ensure_int(d)) for d in extracted)
             if isinstance(obj, (list, tuple)):
-                return tuple(int(d) for d in obj)
+                return tuple(int(ensure_int(d)) for d in obj)
             return ()
 
         shape = list(_get_shape(inp_a))
         ax = axes if axes is not None else kwargs.get("axes")
         if ax is not None and shape:
-            axes_list = [int(ax)] if isinstance(ax, int) else [int(as_int(x)) for x in (as_eager_list(ax) if isinstance(ax, Iterable) else ())]
+            axes_list = [int(ax)] if isinstance(ax, int) else [int(ensure_int(x)) for x in (ensure_eager_list(ax) if isinstance(ax, Iterable) else ())]
             for a_idx in axes_list:
                 norm_idx = a_idx + len(shape) if a_idx < 0 else a_idx
                 if 0 <= norm_idx < len(shape):
@@ -210,7 +210,7 @@ class TrapezoidalIntegral(OpDef):
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
         shape = list(y) if isinstance(y, Iterable) else []
-        axis = int(as_int(kwargs.get("axis", -1)))
+        axis = int(ensure_int(kwargs.get("axis", -1)))
         if axis < 0:
             axis += len(shape)
         shape.pop(axis)
@@ -309,8 +309,8 @@ class Descriptive(OpDef):
             TensorOrScalar: 4-tuple of reduced shape tuples.
         """
         a = args[0]
-        raw_a_shape = _get_attr(a, "shape", _get_attr(a, "shape_metadata", ()))
-        shape = tuple(int(as_int(d)) for d in raw_a_shape) if isinstance(raw_a_shape, Iterable) else ()
+        raw_a_shape = extract_shape(a)
+        shape = tuple(int(ensure_int(d)) for d in raw_a_shape)
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
 
@@ -322,10 +322,10 @@ class Descriptive(OpDef):
         if keepdims:
             out_shape_list = list(shape)
             for d in axes_seq:
-                out_shape_list[int(d)] = 1
+                out_shape_list[int(ensure_int(d))] = 1
             out_shape = tuple(out_shape_list)
         else:
-            dim_indices = [int(d) if int(d) >= 0 else len(shape) + int(d) for d in axes_seq]
+            dim_indices = [int(ensure_int(d)) if int(ensure_int(d)) >= 0 else len(shape) + int(ensure_int(d)) for d in axes_seq]
             out_shape = tuple(s for i, s in enumerate(shape) if i not in dim_indices)
 
         return (out_shape, out_shape, out_shape, out_shape)
@@ -361,13 +361,13 @@ class Distributions(OpDef):
             TensorOrScalar: Concatenated `(sample_shape + event_shape)` tuple.
         """
         a = args[0]
-        raw_a_shape = _get_attr(a, "shape", _get_attr(a, "shape_metadata", ()))
-        shape = tuple(int(as_int(d)) for d in raw_a_shape) if isinstance(raw_a_shape, Iterable) else ()
+        raw_a_shape = extract_shape(a)
+        shape = tuple(int(ensure_int(d)) for d in raw_a_shape)
         sample_shape = kwargs.get("sample_shape", ())
         if isinstance(sample_shape, int):
             sample_shape_tuple: tuple[int, ...] = (sample_shape,)
         else:
-            sample_shape_tuple = tuple(int(as_int(d)) for d in as_eager_list(sample_shape or ()))
+            sample_shape_tuple = tuple(int(ensure_int(d)) for d in ensure_eager_list(sample_shape or ()))
         return sample_shape_tuple + shape
 
 

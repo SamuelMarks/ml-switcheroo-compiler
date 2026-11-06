@@ -9,20 +9,46 @@ import sys
 import time
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 if typing.TYPE_CHECKING:
     import jax
     import jax.numpy as jnp
-else:
-    _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+
+_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
     jax = importlib.import_module("jax") if _has_jax else None
     jnp = importlib.import_module("jax.numpy") if _has_jax else None
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
-from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
+
+@typing.runtime_checkable
+class _MemoryStatsDeviceProtocol(typing.Protocol):
+    """Protocol for JAX device objects exposing `memory_stats()`."""
+
+    def memory_stats(self) -> dict[str, int | float] | None:
+        """Return device memory statistics dictionary.
+
+        Returns:
+            dict[str, int | float] | None: Memory stats mapping.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _BlockUntilReadyProtocol(typing.Protocol):
+    """Protocol for JAX array objects exposing `block_until_ready()`."""
+
+    def block_until_ready(self) -> EagerValue:
+        """Block until asynchronous device computation completes.
+
+        Returns:
+            EagerValue: Synchronized array.
+        """
+        ...
 
 
 def _get_process_memory_mb() -> float:
@@ -49,7 +75,7 @@ def _extract_jax_peak_memory_mb() -> float:
         default_backend = jax.default_backend()
         if default_backend in ("gpu", "tpu", "cuda"):
             devs = jax.devices()
-            if devs and _has_attr(devs[0], "memory_stats"):
+            if devs and isinstance(devs[0], _MemoryStatsDeviceProtocol):
                 stats = devs[0].memory_stats()
                 if stats and "peak_bytes_in_use" in stats:
                     peak_mem = float(stats["peak_bytes_in_use"]) / (1024.0 * 1024.0)
@@ -86,11 +112,11 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
     Args:
         result (Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]): Single or multi-output array evaluation result.
     """
-    if _has_attr(jax, "tree_util") and _has_attr(jax.tree_util, "tree_leaves"):
+    if has_backend_member(jax, "tree_util") and has_backend_member(jax.tree_util, "tree_leaves"):
         try:
             leaves = jax.tree_util.tree_leaves(result)
             for leaf in leaves:
-                if _has_attr(leaf, "block_until_ready") and callable(leaf.block_until_ready):
+                if isinstance(leaf, _BlockUntilReadyProtocol) and callable(leaf.block_until_ready):
                     leaf.block_until_ready()
             return
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -101,8 +127,8 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_jax_result(item)
-    elif _has_attr(result, "block_until_ready") and callable(_get_attr(result, "block_until_ready")):
-        _get_attr(result, "block_until_ready")()
+    elif isinstance(result, _BlockUntilReadyProtocol) and callable(result.block_until_ready):
+        result.block_until_ready()
 
 
 class JAXProfiler:
@@ -141,9 +167,9 @@ class JAXProfiler:
             return native_apply_model({}, *args)
 
         try:
-            return as_callable(jax.jit(_raw_forward_step))
+            return ensure_callable(jax.jit(_raw_forward_step))
         except Exception:
-            return as_callable(_raw_forward_step)
+            return ensure_callable(_raw_forward_step)
 
     def _order_inputs(
         self,
@@ -159,8 +185,8 @@ class JAXProfiler:
         Returns:
             list[jax.Array]: Topologically ordered list of JAX arrays.
         """
-        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
-        input_keys: list[str] = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if graph.nodes else []
+        input_keys: list[str] = [n.id for n in sorted_nodes if n.op_type == "Input"]
         if input_keys and all(k in jax_inputs_dict for k in input_keys):
             return [jax_inputs_dict[k] for k in input_keys]
         return list(jax_inputs_dict.values())
@@ -187,7 +213,7 @@ class JAXProfiler:
         """
         del device
 
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
         jax_inputs_dict, _ = _prepare_jax_inputs(inputs)
         jax_input_list: list[jax.Array] = self._order_inputs(graph, jax_inputs_dict)
         compiled_fn: TypedVariadicCallable[EagerValue] | None = self._compile_graph(graph) if has_ops else None
@@ -201,11 +227,11 @@ class JAXProfiler:
             if has_ops and compiled_fn is not None:
                 return compiled_fn(*jax_input_list)
             if not jax_input_list:
-                return as_tensor(jnp.zeros((1,), dtype=jnp.float32))
+                return ensure_eager_tensor(jnp.zeros((1,), dtype=jnp.float32))
             accum = jnp.zeros_like(jax_input_list[0])
             for t in jax_input_list:
                 accum = jnp.add(accum, t)
-            return as_tensor(accum)
+            return ensure_eager_tensor(accum)
 
         for _ in range(max(1, warmup_iters)):
             _sync_jax_result(_execute_step())

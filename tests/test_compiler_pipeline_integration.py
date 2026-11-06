@@ -14,7 +14,6 @@ from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.utils.graph_utils import _TopologicalSorter, topological_sort
 from ml_switcheroo_compiler.export.export_api import (
@@ -43,12 +42,12 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     ProgbarConfig,
     get_file,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-GradOptions = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad.utils"), "GradOptions"))
+GradOptions = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.grad.utils")).GradOptions)
 
 device = Device(DeviceType.CPU, 0)
 
@@ -176,11 +175,11 @@ def test_grad_api_features() -> None:
         return x, "aux_info"
 
     vg_fn = value_and_grad(aux_fn, options=GradOptions(has_aux=True))
-    val_aux, g_val = as_callable(vg_fn)(t_in)
-    assert as_tensor(_get_attr(val_aux, "__getitem__")(1)) == "aux_info"
+    val_aux, g_val = ensure_callable(vg_fn)(t_in)
+    assert ensure_eager_tensor(val_aux)[1] == "aux_info"
 
-    g_aux_fn = as_callable(grad)(aux_fn, options=as_callable(GradOptions)(has_aux=True))
-    grads_aux, aux_val = as_callable(g_aux_fn)(t_in)
+    g_aux_fn = ensure_callable(grad)(aux_fn, options=ensure_callable(GradOptions)(has_aux=True))
+    grads_aux, aux_val = ensure_callable(g_aux_fn)(t_in)
     assert aux_val == "aux_info"
 
     # hook_gradient backward pass with hook returning None (line 293)
@@ -246,12 +245,12 @@ def test_grad_utils_branches() -> None:
     bool_arr = np.array([True, False], dtype=bool)
     orig_t = Tensor(np.array([1, 0]), TensorConfig((2,), DType.Int32, device))
     t_res_bool = _to_original_type(bool_arr, orig_t)
-    assert as_tensor(_get_attr(t_res_bool, "dtype")) == DType.Bool
+    assert ensure_eager_tensor(ensure_eager_tensor(t_res_bool).dtype) == DType.Bool
 
     # 7. _compute_grad_and_value with active tracing (lines 314-319)
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph", g):
-            val, grads = as_callable(_compute_grad_and_value)(lambda x: x, as_callable(GradOptions)(), (t_valid,))
+            val, grads = ensure_callable(_compute_grad_and_value)(lambda x: x, ensure_callable(GradOptions)(), (t_valid,))
             assert val is not None
 
 
@@ -277,7 +276,7 @@ def test_graph_utils_topological_sort_branches() -> None:
             self.nodes = [n2, n1]
 
     g_list = MockGraphList()
-    sorter = as_callable(_TopologicalSorter)(g_list)
+    sorter = ensure_callable(_TopologicalSorter)(g_list)
     sorter.visit("node_absent_from_list")  # triggers lines 42->48 and 43->48
     sorted_nodes = sorter.sort()
     assert len(sorted_nodes) == 2
@@ -292,7 +291,7 @@ def test_graph_utils_topological_sort_branches() -> None:
             self.nodes = (n1,)
 
     g_tuple = MockGraphTuple()
-    sorter2 = as_callable(_TopologicalSorter)(g_tuple)
+    sorter2 = ensure_callable(_TopologicalSorter)(g_tuple)
     sorted_tuple = sorter2.sort()
     assert len(sorted_tuple) == 0
 
@@ -329,7 +328,7 @@ def test_backends_registry_lazy_loader_branches() -> None:
     try:
         # Line 146: name in _LAZY_MODULES but NOT in _LOADERS
         assert dummy_key not in _LOADERS
-        as_callable(BackendRegistry._try_load_lazy)(dummy_key)
+        ensure_callable(BackendRegistry._try_load_lazy)(dummy_key)
 
         # Line 197: inside get_all() where name not in _LOADERS
         all_b = BackendRegistry.get_all()
@@ -359,12 +358,12 @@ def test_loop_tiling_symbolic_shapes_and_no_split() -> None:
     # 1. Matmul with non-integer symbolic dimensions (line 93)
     shape_sym_matmul = (4, "M", "N")
     op_config_matmul = {"TILE_M": 16, "TILE_N": 16}
-    assert as_callable(_split_shape)("matmul", shape_sym_matmul, op_config_matmul) == shape_sym_matmul
+    assert ensure_callable(_split_shape)("matmul", shape_sym_matmul, op_config_matmul) == shape_sym_matmul
 
     # 2. Conv2D with non-integer symbolic dimensions (line 105)
     shape_sym_conv = (1, "H", "W", 3)
     op_config_conv = {"TILE_H": 16, "TILE_W": 16}
-    assert as_callable(_split_shape)("conv2d", shape_sym_conv, op_config_conv) == shape_sym_conv
+    assert ensure_callable(_split_shape)("conv2d", shape_sym_conv, op_config_conv) == shape_sym_conv
 
     # 3. loop_tiling_pass where new_shape == shape (line 144)
     g = IRGraph()

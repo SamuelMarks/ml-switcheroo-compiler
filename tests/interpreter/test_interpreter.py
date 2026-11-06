@@ -16,7 +16,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.interpreter import evaluate_graph
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -34,9 +34,9 @@ def test_evaluate_graph() -> None:
     g.nodes["add"] = LogicalNode(id="add", op_type="Add", inputs=["in", "c"])
     g.nodes["out"] = LogicalNode(id="out", op_type="Relu", inputs=["add"])
     inputs = {"in": np.array([-3.0, 1.0])}
-    outputs = as_callable(evaluate_graph)(g, inputs)
+    outputs = ensure_callable(evaluate_graph)(g, inputs)
     assert "out" in outputs
-    as_callable(np.testing.assert_allclose)(outputs["out"], as_callable(np.array)([0.0, 3.0]))
+    ensure_callable(np.testing.assert_allclose)(outputs["out"], ensure_callable(np.array)([0.0, 3.0]))
 
 
 def test_missing_input() -> None:
@@ -61,7 +61,7 @@ def test_not_implemented() -> None:
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="UnknownOp", inputs=["in"])
     with pytest.raises(Exception, match=r".*"):
-        as_callable(evaluate_graph)(g, {"in": as_callable(np.array)([1.0])})
+        ensure_callable(evaluate_graph)(g, {"in": ensure_callable(np.array)([1.0])})
 
 
 def test_missing_output() -> None:
@@ -73,7 +73,7 @@ def test_missing_output() -> None:
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     with pytest.raises(RuntimeError, match="never evaluated"):
-        as_callable(evaluate_graph)(g, {"in": as_callable(np.array)([1.0])})
+        ensure_callable(evaluate_graph)(g, {"in": ensure_callable(np.array)([1.0])})
 
 
 def test_all_ops() -> None:
@@ -103,6 +103,6 @@ def test_all_ops() -> None:
     g.nodes["expand"] = LogicalNode(id="expand", op_type="Expand", inputs=["min"], shape_metadata=(2,))
     g.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["expand", "expand"])
     inputs = {"in1": np.array([2.0, 3.0]), "in2": np.array([1.0, 1.0]), "in3": np.array([[1.0, 2.0], [3.0, 4.0]])}
-    res = as_callable(evaluate_graph)(g, inputs)
+    res = ensure_callable(evaluate_graph)(g, inputs)
     assert "out" in res
-    as_callable(np.testing.assert_allclose)(res["out"], as_callable(np.array)([-12.0, -12.0]))
+    ensure_callable(np.testing.assert_allclose)(res["out"], ensure_callable(np.array)([-12.0, -12.0]))

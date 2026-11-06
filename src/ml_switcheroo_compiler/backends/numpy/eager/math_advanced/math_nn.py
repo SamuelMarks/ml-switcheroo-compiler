@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 ArrayInput = EagerValue
@@ -27,7 +27,7 @@ def _np_convolve(
     Returns:
         np.ndarray: The computed result.
     """
-    return as_ndarray(backend_module.convolve(*args, **kwargs))
+    return ensure_ndarray(backend_module.convolve(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedLocal")
@@ -48,7 +48,7 @@ def _np_convgeneraldilatedlocal(
     """
     import scipy.signal
 
-    return as_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
+    return ensure_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedPatches")
@@ -69,7 +69,7 @@ def _np_convgeneraldilatedpatches(
     """
     import scipy.signal
 
-    return as_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
+    return ensure_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("ConvWithGeneralPadding")
@@ -90,7 +90,7 @@ def _np_convwithgeneralpadding(
     """
     import scipy.signal
 
-    return as_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
+    return ensure_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("RawConv2D")
@@ -111,4 +111,4 @@ def _np_rawconv2d(
     """
     import scipy.signal
 
-    return as_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
+    return ensure_ndarray(scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))

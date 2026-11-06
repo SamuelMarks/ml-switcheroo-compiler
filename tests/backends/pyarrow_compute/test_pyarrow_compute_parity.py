@@ -23,10 +23,9 @@ from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
     to_arrow,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     import pyarrow as pa
@@ -45,11 +44,11 @@ def test_zero_copy_buffer_views_between_arrow_and_tensor() -> None:
 
     arrow_tensor = tensor_to_arrow_tensor(ir_tensor)
     assert arrow_tensor is not None
-    assert as_tensor(_get_attr(arrow_tensor, "shape")) == (2, 3)
+    assert ensure_eager_tensor(arrow_tensor).shape == (2, 3)
 
     back_tensor = arrow_tensor_to_tensor(arrow_tensor)
     assert isinstance(back_tensor, Tensor)
-    as_callable(np.testing.assert_allclose)(back_tensor.data, raw_np)
+    ensure_callable(np.testing.assert_allclose)(back_tensor.data, raw_np)
 
     # Verify zero-copy buffer sharing
     assert shares_buffer(ir_tensor, arrow_tensor) is True
@@ -59,20 +58,18 @@ def test_zero_copy_buffer_views_between_arrow_and_tensor() -> None:
     # Mutating raw_np mutates back_tensor view
     raw_np[0, 0] = 99.0
     assert (
-        as_tensor(
-            _get_attr(back_tensor.data, "__getitem__")(
-                (
-                    0,
-                    0,
-                )
+        ensure_eager_tensor(back_tensor.data)[
+            (
+                0,
+                0,
             )
-        )
+        ]
         == 99.0
     )
 
     # 2. Classmethod variants
-    arrow_t_cls = as_tensor(_get_attr(PyArrowComputeGenerator, "tensor_to_arrow_tensor"))(ir_tensor)
-    back_t_cls = as_tensor(_get_attr(PyArrowComputeGenerator, "arrow_tensor_to_tensor"))(arrow_t_cls)
+    arrow_t_cls = ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).tensor_to_arrow_tensor)(ir_tensor)
+    back_t_cls = ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).arrow_tensor_to_tensor)(arrow_t_cls)
     assert shares_buffer(ir_tensor, back_t_cls) is True
 
 
@@ -84,32 +81,32 @@ def test_record_batch_and_tensor_conversions() -> None:
     t2d = Tensor(mat, cfg)
 
     rb = tensor_to_record_batch(t2d, names=["col_x", "col_y"])
-    assert as_tensor(_get_attr(rb, "num_rows")) == 3
-    assert as_tensor(_get_attr(rb, "num_columns")) == 2
-    assert as_tensor(_get_attr(rb, "schema")).field(0).name == "col_x"
-    assert as_tensor(_get_attr(rb, "schema")).field(1).name == "col_y"
+    assert ensure_eager_tensor(ensure_eager_tensor(rb).num_rows) == 3
+    assert ensure_eager_tensor(ensure_eager_tensor(rb).num_columns) == 2
+    assert ensure_eager_tensor(ensure_eager_tensor(rb).schema).field(0).name == "col_x"
+    assert ensure_eager_tensor(ensure_eager_tensor(rb).schema).field(1).name == "col_y"
 
     # RecordBatch back to Tensor
     t_reconstructed = record_batch_to_tensor(rb)
     assert isinstance(t_reconstructed, Tensor)
-    as_callable(np.testing.assert_allclose)(t_reconstructed.data, mat)
+    ensure_callable(np.testing.assert_allclose)(t_reconstructed.data, mat)
 
     # 1D Tensor to RecordBatch
     vec = np.array([1.5, 2.5, 3.5], dtype=np.float32)
     t1d = Tensor(vec, TensorConfig(vec.shape, "float32", "cpu"))
     rb1d = tensor_to_record_batch(t1d, names=["single"])
-    assert as_tensor(_get_attr(rb1d, "num_columns")) == 1
+    assert ensure_eager_tensor(ensure_eager_tensor(rb1d).num_columns) == 1
     t1d_rec = record_batch_to_tensor(rb1d)
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(t1d_rec, "data")), vec)
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(ensure_eager_tensor(t1d_rec).data), vec)
 
     # Subset of columns extraction
     t_subset = record_batch_to_tensor(rb, columns=["col_y"])
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(t_subset, "data")), mat[:, 1])
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(ensure_eager_tensor(t_subset).data), mat[:, 1])
 
     # Classmethod invocation
-    rb_cls = as_tensor(_get_attr(PyArrowComputeGenerator, "tensor_to_record_batch"))(t2d)
-    t_cls = as_tensor(_get_attr(PyArrowComputeGenerator, "record_batch_to_tensor"))(rb_cls)
-    as_callable(np.testing.assert_allclose)(t_cls.data, mat)
+    rb_cls = ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).tensor_to_record_batch)(t2d)
+    t_cls = ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).record_batch_to_tensor)(rb_cls)
+    ensure_callable(np.testing.assert_allclose)(t_cls.data, mat)
 
 
 def test_from_arrow_and_to_arrow_universal_dispatch() -> None:
@@ -134,17 +131,17 @@ def test_from_arrow_and_to_arrow_universal_dispatch() -> None:
     assert isinstance(arrow_ca, pa.ChunkedArray)
 
     # Convert back via from_arrow
-    assert np.all(as_tensor(_get_attr(from_arrow(arrow_t), "data")) == raw)
-    assert np.all(as_tensor(_get_attr(from_arrow(arrow_rb), "data")) == raw)
-    assert np.all(as_tensor(_get_attr(from_arrow(arrow_tbl), "data")) == raw)
-    assert np.all(as_tensor(_get_attr(from_arrow(arrow_arr), "data")) == raw)
+    assert np.all(ensure_eager_tensor(ensure_eager_tensor(from_arrow(arrow_t)).data) == raw)
+    assert np.all(ensure_eager_tensor(ensure_eager_tensor(from_arrow(arrow_rb)).data) == raw)
+    assert np.all(ensure_eager_tensor(ensure_eager_tensor(from_arrow(arrow_tbl)).data) == raw)
+    assert np.all(ensure_eager_tensor(ensure_eager_tensor(from_arrow(arrow_arr)).data) == raw)
 
     # Multi-batch Table
     b1 = pa.RecordBatch.from_arrays([pa.array([10, 20])], names=["x"])
     b2 = pa.RecordBatch.from_arrays([pa.array([30, 40])], names=["x"])
     multi_tbl = pa.Table.from_batches([b1, b2])
     t_multi = from_arrow(multi_tbl)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(t_multi, "data")).shape, "__getitem__")(0)) == 4
+    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(t_multi).data).shape)[0] == 4
 
     # Arrow Scalar
     scalar = pa.scalar(42)
@@ -155,8 +152,8 @@ def test_from_arrow_and_to_arrow_universal_dispatch() -> None:
         to_arrow(t, target_type="invalid_type")
 
     # Classmethods
-    assert bool(as_tensor(_get_attr(PyArrowComputeGenerator, "is_arrow_object"))(arrow_tbl)) is True
-    assert bool(as_tensor(_get_attr(PyArrowComputeGenerator, "is_arrow_object"))(raw)) is False
+    assert bool(ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).is_arrow_object)(arrow_tbl)) is True
+    assert bool(ensure_eager_tensor(ensure_eager_tensor(PyArrowComputeGenerator).is_arrow_object)(raw)) is False
     assert is_arrow_object(arrow_arr) is True
 
 
@@ -166,32 +163,32 @@ def test_tabular_and_columnar_array_kernels() -> None:
     data_arr = pa.array([10, 20, 30, 40])
     mask = pa.array([True, False, True, False])
     filtered = execute_op("filter", data_arr, mask)
-    assert as_tensor(_get_attr(filtered, "to_pylist"))() == [10, 30]
+    assert ensure_eager_tensor(ensure_eager_tensor(filtered).to_pylist)() == [10, 30]
 
     # Take
     indices = pa.array([3, 0, 1])
     taken = execute_op("take", data_arr, indices)
-    assert as_tensor(_get_attr(taken, "to_pylist"))() == [40, 10, 20]
+    assert ensure_eager_tensor(ensure_eager_tensor(taken).to_pylist)() == [40, 10, 20]
 
     # Drop null
     with_nulls = pa.array([1, None, 2, None, 3])
     dropped = execute_op("drop_null", with_nulls)
-    assert as_tensor(_get_attr(dropped, "to_pylist"))() == [1, 2, 3]
+    assert ensure_eager_tensor(ensure_eager_tensor(dropped).to_pylist)() == [1, 2, 3]
 
     # Fill null
     filled = execute_op("fill_null", with_nulls, 0)
-    assert as_tensor(_get_attr(filled, "to_pylist"))() == [1, 0, 2, 0, 3]
+    assert ensure_eager_tensor(ensure_eager_tensor(filled).to_pylist)() == [1, 0, 2, 0, 3]
 
     # Fill null forward and backward
     fwd = execute_op("fill_null_forward", with_nulls)
-    assert as_tensor(_get_attr(fwd, "to_pylist"))() == [1, 1, 2, 2, 3]
+    assert ensure_eager_tensor(ensure_eager_tensor(fwd).to_pylist)() == [1, 1, 2, 2, 3]
     bwd = execute_op("fill_null_backward", with_nulls)
-    assert as_tensor(_get_attr(bwd, "to_pylist"))() == [1, 2, 2, 3, 3]
+    assert ensure_eager_tensor(ensure_eager_tensor(bwd).to_pylist)() == [1, 2, 2, 3, 3]
 
     # Unique & Value Counts
     dup_arr = pa.array([5, 5, 2, 8, 2])
     uniq = execute_op("unique", dup_arr)
-    assert set(as_tensor(_get_attr(uniq, "to_pylist"))()) == {5, 2, 8}
+    assert set(ensure_eager_tensor(ensure_eager_tensor(uniq).to_pylist)()) == {5, 2, 8}
 
     vc = execute_op("value_counts", dup_arr)
     assert vc is not None
@@ -199,10 +196,10 @@ def test_tabular_and_columnar_array_kernels() -> None:
     # Sort indices & rank
     unordered = pa.array([30, 10, 20])
     s_idx = execute_op("sort_indices", unordered)
-    assert as_tensor(_get_attr(s_idx, "to_pylist"))() == [1, 2, 0]
+    assert ensure_eager_tensor(ensure_eager_tensor(s_idx).to_pylist)() == [1, 2, 0]
 
     ranked = execute_op("rank", unordered)
-    assert as_tensor(_get_attr(ranked, "to_pylist"))() == [3, 1, 2]
+    assert ensure_eager_tensor(ensure_eager_tensor(ranked).to_pylist)() == [3, 1, 2]
 
     # Partition nth indices
     part = execute_op("partition_nth_indices", unordered, pivot=1)
@@ -211,7 +208,7 @@ def test_tabular_and_columnar_array_kernels() -> None:
     # Indices nonzero
     nz_arr = pa.array([0, 5, 0, 9])
     nz = execute_op("indices_nonzero", nz_arr)
-    assert as_tensor(_get_attr(nz, "to_pylist"))() == [1, 3]
+    assert ensure_eager_tensor(ensure_eager_tensor(nz).to_pylist)() == [1, 3]
 
     # Dictionary encode
     cat_arr = pa.array(["a", "b", "a"])
@@ -224,13 +221,13 @@ def test_structural_and_nested_columnar_kernels() -> None:
     # List flatten, slice, element
     list_arr = pa.array([[1, 2], [3], [4, 5, 6]])
     flat = execute_op("list_flatten", list_arr)
-    assert as_tensor(_get_attr(flat, "to_pylist"))() == [1, 2, 3, 4, 5, 6]
+    assert ensure_eager_tensor(ensure_eager_tensor(flat).to_pylist)() == [1, 2, 3, 4, 5, 6]
 
     elem = execute_op("list_element", list_arr, 0)
-    assert as_tensor(_get_attr(elem, "to_pylist"))() == [1, 3, 4]
+    assert ensure_eager_tensor(ensure_eager_tensor(elem).to_pylist)() == [1, 3, 4]
 
     sliced_list = execute_op("list_slice", list_arr, 0, 1)
-    assert as_tensor(_get_attr(sliced_list, "to_pylist"))() == [[1], [3], [4]]
+    assert ensure_eager_tensor(ensure_eager_tensor(sliced_list).to_pylist)() == [[1], [3], [4]]
 
     # Make struct & struct field
     f1 = pa.array([10, 20])
@@ -239,7 +236,7 @@ def test_structural_and_nested_columnar_kernels() -> None:
     assert struct_arr is not None
 
     extracted_field = execute_op("struct_field", struct_arr, [0])
-    assert as_tensor(_get_attr(extracted_field, "to_pylist"))() == [10, 20]
+    assert ensure_eager_tensor(ensure_eager_tensor(extracted_field).to_pylist)() == [10, 20]
 
 
 def test_columnar_string_kernels() -> None:
@@ -248,25 +245,25 @@ def test_columnar_string_kernels() -> None:
 
     # Lower & Upper
     low = execute_op("lower", s_arr)
-    assert as_tensor(_get_attr(low, "to_pylist"))() == ["hello world", "apache arrow"]
+    assert ensure_eager_tensor(ensure_eager_tensor(low).to_pylist)() == ["hello world", "apache arrow"]
 
     up = execute_op("upper", s_arr)
-    assert as_tensor(_get_attr(up, "to_pylist"))() == ["HELLO WORLD", "APACHE ARROW"]
+    assert ensure_eager_tensor(ensure_eager_tensor(up).to_pylist)() == ["HELLO WORLD", "APACHE ARROW"]
 
     # String length
     length = execute_op("string_length", s_arr)
-    assert as_tensor(_get_attr(length, "to_pylist"))() == [11, 12]
+    assert ensure_eager_tensor(ensure_eager_tensor(length).to_pylist)() == [11, 12]
 
     # Replace substring & match substring
     replaced = execute_op("replace_substring", s_arr, pattern="World", replacement="Compiler")
-    assert as_tensor(_get_attr(replaced, "to_pylist"))() == ["Hello Compiler", "Apache Arrow"]
+    assert ensure_eager_tensor(ensure_eager_tensor(replaced).to_pylist)() == ["Hello Compiler", "Apache Arrow"]
 
     matched = execute_op("match_substring", s_arr, pattern="Arrow")
-    assert as_tensor(_get_attr(matched, "to_pylist"))() == [False, True]
+    assert ensure_eager_tensor(ensure_eager_tensor(matched).to_pylist)() == [False, True]
 
     # Capitalize & Title
     cap = execute_op("capitalize", pa.array(["hello", "world"]))
-    assert as_tensor(_get_attr(cap, "to_pylist"))() == ["Hello", "World"]
+    assert ensure_eager_tensor(ensure_eager_tensor(cap).to_pylist)() == ["Hello", "World"]
 
 
 def test_reductions_stats_and_extra_math() -> None:
@@ -282,23 +279,23 @@ def test_reductions_stats_and_extra_math() -> None:
     np.testing.assert_allclose(np.array(cbrt_res), [2.0, 3.0])
 
     shl = execute_op("shift_left", pa.array([1, 2]), 2)
-    assert as_tensor(_get_attr(shl, "to_pylist"))() == [4, 8]
+    assert ensure_eager_tensor(ensure_eager_tensor(shl).to_pylist)() == [4, 8]
 
     shr = execute_op("shift_right", pa.array([8, 16]), 2)
-    assert as_tensor(_get_attr(shr, "to_pylist"))() == [2, 4]
+    assert ensure_eager_tensor(ensure_eager_tensor(shr).to_pylist)() == [2, 4]
 
     # Cumulative ops
     c_sum = execute_op("cumsum", arr)
-    assert as_tensor(_get_attr(c_sum, "to_pylist"))() == [2, 5, 9]
+    assert ensure_eager_tensor(ensure_eager_tensor(c_sum).to_pylist)() == [2, 5, 9]
 
     c_prod = execute_op("cumprod", arr)
-    assert as_tensor(_get_attr(c_prod, "to_pylist"))() == [2, 6, 24]
+    assert ensure_eager_tensor(ensure_eager_tensor(c_prod).to_pylist)() == [2, 6, 24]
 
     c_max = execute_op("cummax", pa.array([3, 1, 5, 2]))
-    assert as_tensor(_get_attr(c_max, "to_pylist"))() == [3, 3, 5, 5]
+    assert ensure_eager_tensor(ensure_eager_tensor(c_max).to_pylist)() == [3, 3, 5, 5]
 
     c_min = execute_op("cummin", pa.array([3, 1, 5, 2]))
-    assert as_tensor(_get_attr(c_min, "to_pylist"))() == [3, 1, 1, 1]
+    assert ensure_eager_tensor(ensure_eager_tensor(c_min).to_pylist)() == [3, 1, 1, 1]
 
     # Approximate median & mode
     med = execute_op("median", pa.array([1.0, 3.0, 5.0]))
@@ -357,14 +354,14 @@ def test_aot_execution_with_arrow_inputs_and_zero_copy() -> None:
     # Execute with Arrow arrays
     pa_x = pa.array([1.0, 2.0, 3.0], type=pa.float32())
     pa_y = pa.array([10.0, 20.0, 30.0], type=pa.float32())
-    out_zc = as_callable(runner_zc)(pa_x, y=pa_y)
+    out_zc = ensure_callable(runner_zc)(pa_x, y=pa_y)
     assert out_zc is not None
     assert type(out_zc).__name__ == "Tensor"
 
     # Execute without zero_copy
     gen_no_zc = PyArrowComputeGenerator(g, zero_copy=False)
     runner_no_zc = gen_no_zc._compile_aot_impl(g)
-    out_no_zc = as_callable(runner_no_zc)(pa_x, pa_y)
+    out_no_zc = ensure_callable(runner_no_zc)(pa_x, pa_y)
     assert out_no_zc is not None
 
 
@@ -414,16 +411,16 @@ def _test_fallback_and_edge_branches_part_1(_state: dict[str, EagerTensorProtoco
     """
     d = {"c1": [1.0, 2.0], "c2": [3.0, 4.0]}
     t_from_dict = record_batch_to_tensor(d)
-    assert as_tensor(_get_attr(t_from_dict, "data")).shape == (2, 2)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_from_dict).data).shape == (2, 2)
 
     # Empty dictionary
     t_empty = record_batch_to_tensor({})
-    assert as_tensor(_get_attr(t_empty, "data")).shape == (0,)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_empty).data).shape == (0,)
 
     # Empty columns on RecordBatch
     empty_rb = pa.RecordBatch.from_arrays([], names=[])
     t_empty_rb = record_batch_to_tensor(empty_rb)
-    assert as_tensor(_get_attr(t_empty_rb, "data")).shape == (0,)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_empty_rb).data).shape == (0,)
 
     # tensor_to_record_batch with 0D scalar
     t_scalar = Tensor(np.array(42), TensorConfig((), "int64", "cpu"))
@@ -442,10 +439,9 @@ def _test_fallback_and_edge_branches_part_1(_state: dict[str, EagerTensorProtoco
     # tensor_to_arrow_tensor fallback when Tensor.from_numpy fails
     mock_pa_t_fail = mock.MagicMock()
     mock_pa_t_fail.Tensor.from_numpy.side_effect = RuntimeError("tensor fail")
-    _get_attr(_state, "update")({"d": d, "empty_rb": empty_rb, "mock_pa_fail": mock_pa_fail, "mock_pa_t_fail": mock_pa_t_fail})
-    _get_attr(_state, "update")({"rb_dict": rb_dict, "rb_dict2d": rb_dict2d, "rb_scalar": rb_scalar, "t_empty": t_empty})
-    _get_attr(_state, "update")({"t_empty_rb": t_empty_rb, "t_from_dict": t_from_dict, "t_scalar": t_scalar})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"d": d, "empty_rb": empty_rb, "mock_pa_fail": mock_pa_fail, "mock_pa_t_fail": mock_pa_t_fail}))
+    _state.update(ensure_tensor_dict({"rb_dict": rb_dict, "rb_dict2d": rb_dict2d, "rb_scalar": rb_scalar, "t_empty": t_empty}))
+    _state.update(ensure_tensor_dict({"t_empty_rb": t_empty_rb, "t_from_dict": t_from_dict, "t_scalar": t_scalar}))
 
 
 def _test_fallback_and_edge_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -466,7 +462,7 @@ def _test_fallback_and_edge_branches_part_2(_state: dict[str, EagerTensorProtoco
 
     # from_arrow with single-batch Table
     single_tbl = pa.Table.from_batches([pa.RecordBatch.from_arrays([pa.array([1, 2])], names=["a"])])
-    assert as_tensor(_get_attr(from_arrow(single_tbl), "data")).shape == (2,)
+    assert ensure_eager_tensor(ensure_eager_tensor(from_arrow(single_tbl)).data).shape == (2,)
 
     # from_arrow with Table having empty to_batches
     mock_empty_batches_tbl = mock.MagicMock()
@@ -478,7 +474,7 @@ def _test_fallback_and_edge_branches_part_2(_state: dict[str, EagerTensorProtoco
     mock_ca_err.to_numpy.side_effect = RuntimeError("no numpy")
     mock_ca_err.to_pylist.return_value = [10, 20]
     t_ca_err = from_arrow(mock_ca_err)
-    assert as_tensor(_get_attr(t_ca_err, "data")).shape == (2,)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_ca_err).data).shape == (2,)
 
     # from_arrow with fallback python list
     t_list_fallback = from_arrow([100, 200])
@@ -486,15 +482,15 @@ def _test_fallback_and_edge_branches_part_2(_state: dict[str, EagerTensorProtoco
 
     # record_batch_to_tensor with explicit dtype and single column
     t_single_col = record_batch_to_tensor(pa.RecordBatch.from_arrays([pa.array([1, 2])], names=["a"]), dtype="float64")
-    assert as_tensor(_get_attr(t_single_col, "data")).dtype == np.float64
+    assert ensure_eager_tensor(ensure_eager_tensor(t_single_col).data).dtype == np.float64
 
     # record_batch_to_tensor with integer column indexing and col.to_numpy failure
     mock_col = mock.MagicMock()
     mock_col.to_numpy.side_effect = RuntimeError("to_numpy fail")
-    _get_attr(_state, "update")({"mock_ca_err": mock_ca_err, "mock_col": mock_col, "mock_empty_batches_tbl": mock_empty_batches_tbl, "single_tbl": single_tbl})
-    _get_attr(_state, "update")({"t_ca_err": t_ca_err, "t_conv": t_conv, "t_fallback": t_fallback, "t_list_fallback": t_list_fallback})
-    _get_attr(_state, "update")({"t_mock_no_np": t_mock_no_np, "t_single_col": t_single_col})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_ca_err": mock_ca_err, "mock_col": mock_col, "mock_empty_batches_tbl": mock_empty_batches_tbl, "single_tbl": single_tbl}))
+    _state.update(ensure_tensor_dict({"t_ca_err": t_ca_err, "t_conv": t_conv, "t_fallback": t_fallback, "t_list_fallback": t_list_fallback}))
+    _state.update(ensure_tensor_dict({"t_mock_no_np": t_mock_no_np, "t_single_col": t_single_col}))
+    _state.update(ensure_tensor_dict({"mock_pa_t_fail": mock_pa_t_fail}))
 
 
 def _test_fallback_and_edge_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -504,21 +500,21 @@ def _test_fallback_and_edge_branches_part_3(_state: dict[str, EagerTensorProtoco
         _state: Shared test state dictionary.
     """
     mock_col = _state["mock_col"]
-    _set_attr(mock_col.to_pylist, "return_value", [5, 6])
+    ensure_mutable(mock_col.to_pylist).return_value = ensure_eager_tensor([5, 6])
     mock_rb_int = mock.MagicMock()
     mock_rb_int.num_columns = 1
     mock_rb_int.schema.field.return_value.name = "0"
     mock_rb_int.column.side_effect = lambda idx: mock_col
     t_int_col = record_batch_to_tensor(mock_rb_int, columns=["0"], dtype="float32")
-    assert as_tensor(_get_attr(t_int_col, "data")).shape == (2,)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_int_col).data).shape == (2,)
 
     # record_batch_to_tensor dict fallback with explicit dtype
     d_typed = record_batch_to_tensor({"a": [1, 2]}, dtype="float64")
-    assert as_tensor(_get_attr(d_typed, "data")).dtype == np.float64
+    assert ensure_eager_tensor(ensure_eager_tensor(d_typed).data).dtype == np.float64
 
     # tensor_to_record_batch with mismatched names length on 2D array
     rb_mismatched = tensor_to_record_batch(np.array([[1, 2], [3, 4]]), names=["only_one"])
-    assert as_tensor(_get_attr(rb_mismatched, "num_columns")) == 2
+    assert ensure_eager_tensor(ensure_eager_tensor(rb_mismatched).num_columns) == 2
 
     # item with zero-column table
     zero_col_tbl = mock.MagicMock()
@@ -534,10 +530,10 @@ def _test_fallback_and_edge_branches_part_3(_state: dict[str, EagerTensorProtoco
     obj_with_buf1.buffer = mock_buf1
     obj_with_buf2 = mock.MagicMock(spec=["buffer"])
     obj_with_buf2.buffer = mock_buf2
-    _get_attr(_state, "update")({"d_typed": d_typed, "mock_buf1": mock_buf1, "mock_buf2": mock_buf2, "mock_rb_int": mock_rb_int})
-    _get_attr(_state, "update")({"obj_with_buf1": obj_with_buf1, "obj_with_buf2": obj_with_buf2, "rb_mismatched": rb_mismatched, "t_int_col": t_int_col})
-    _get_attr(_state, "update")({"zero_col_tbl": zero_col_tbl})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"d_typed": d_typed, "mock_buf1": mock_buf1, "mock_buf2": mock_buf2, "mock_rb_int": mock_rb_int}))
+    _state.update(ensure_tensor_dict({"obj_with_buf1": obj_with_buf1, "obj_with_buf2": obj_with_buf2, "rb_mismatched": rb_mismatched, "t_int_col": t_int_col}))
+    _state.update(ensure_tensor_dict({"zero_col_tbl": zero_col_tbl}))
+    _state.update(ensure_tensor_dict({"mock_col": mock_col}))
 
 
 def _test_fallback_and_edge_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -549,14 +545,14 @@ def _test_fallback_and_edge_branches_part_4(_state: dict[str, EagerTensorProtoco
     mock_buf2, obj_with_buf1, obj_with_buf2 = _state["mock_buf2"], _state["obj_with_buf1"], _state["obj_with_buf2"]
     with mock.patch("numpy.shares_memory", side_effect=TypeError("no shares memory")):
         assert shares_buffer(obj_with_buf1, obj_with_buf2) is True
-        _set_attr(mock_buf2, "address", 0)
+        ensure_mutable(mock_buf2).address = ensure_eager_tensor(0)
         assert shares_buffer(obj_with_buf1, obj_with_buf2) is False
 
     # record_batch_to_tensor on raw non-dict non-RecordBatch data with explicit dtype
     raw_typed_t = record_batch_to_tensor([1.0, 2.0, 3.0], dtype="float64")
-    assert as_tensor(_get_attr(raw_typed_t, "data")).dtype == np.float64
+    assert ensure_eager_tensor(ensure_eager_tensor(raw_typed_t).data).dtype == np.float64
     raw_t = record_batch_to_tensor([4.0, 5.0])
-    assert as_tensor(_get_attr(raw_t, "data")).shape == (2,)
+    assert ensure_eager_tensor(ensure_eager_tensor(raw_t).data).shape == (2,)
 
     # record_batch_to_tensor when column lacks to_numpy
     col_no_to_numpy = mock.MagicMock(spec=[])
@@ -566,7 +562,7 @@ def _test_fallback_and_edge_branches_part_4(_state: dict[str, EagerTensorProtoco
     rb_col_no_to_numpy.schema.field.return_value.name = "col"
     rb_col_no_to_numpy.column.return_value = col_no_to_numpy
     t_no_to_np = record_batch_to_tensor(rb_col_no_to_numpy)
-    assert as_tensor(_get_attr(t_no_to_np, "data")).shape == (2,)
+    assert ensure_eager_tensor(ensure_eager_tensor(t_no_to_np).data).shape == (2,)
 
     # item with object having num_columns but no column
     obj_num_cols_only = mock.MagicMock(spec=["num_columns", "item"])
@@ -576,9 +572,9 @@ def _test_fallback_and_edge_branches_part_4(_state: dict[str, EagerTensorProtoco
 
     # tensor_to_record_batch and tensor_to_arrow_tensor when pa lacks attributes
     mock_pa_no_rb = mock.MagicMock(spec=[])
-    _get_attr(_state, "update")({"col_no_to_numpy": col_no_to_numpy, "mock_pa_no_rb": mock_pa_no_rb, "obj_num_cols_only": obj_num_cols_only, "raw_t": raw_t})
-    _get_attr(_state, "update")({"raw_typed_t": raw_typed_t, "rb_col_no_to_numpy": rb_col_no_to_numpy, "t_no_to_np": t_no_to_np})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"col_no_to_numpy": col_no_to_numpy, "mock_pa_no_rb": mock_pa_no_rb, "obj_num_cols_only": obj_num_cols_only, "raw_t": raw_t}))
+    _state.update(ensure_tensor_dict({"raw_typed_t": raw_typed_t, "rb_col_no_to_numpy": rb_col_no_to_numpy, "t_no_to_np": t_no_to_np}))
+    _state.update(ensure_tensor_dict({"mock_buf2": mock_buf2, "obj_with_buf1": obj_with_buf1, "obj_with_buf2": obj_with_buf2}))
 
 
 def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -601,7 +597,7 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
             """Test function __array__."""
             raise TypeError("fail")
 
-    assert bool(as_callable(shares_buffer)(as_callable(FailArrayObj)(), as_callable(np.array)([1]))) is False
+    assert bool(ensure_callable(shares_buffer)(ensure_callable(FailArrayObj)(), ensure_callable(np.array)([1]))) is False
 
     # shares_buffer fallback with non-array objects
     class DummyObj:
@@ -609,8 +605,8 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
 
         pass
 
-    assert bool(as_callable(shares_buffer)(as_callable(DummyObj)(), as_callable(DummyObj)())) is False
-    _get_attr(_state, "update")({"DummyObj": DummyObj, "FailArrayObj": FailArrayObj})
+    assert bool(ensure_callable(shares_buffer)(ensure_callable(DummyObj)(), ensure_callable(DummyObj)())) is False
+    _state.update(ensure_tensor_dict({"DummyObj": DummyObj, "FailArrayObj": FailArrayObj}))
 
 
 def test_fallback_and_edge_branches() -> None:
@@ -632,9 +628,12 @@ def test_eager_and_generator_coverage_branches() -> None:
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         execute_op("hash_sum", pa.table({"a": [1]}))
 
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     # hash_sum with non-table object without group_by
     with pytest.raises(BackendNotSupportedError, match="not supported"):
-        as_callable(execute_op)("hash_sum", as_callable(object)(), "dept", "salary")
+        ensure_callable(execute_op)("hash_sum", ensure_callable(_BareDummy)(), "dept", "salary")
 
     # cbrt with no arguments
     with pytest.raises(BackendNotSupportedError, match="not supported"):
@@ -680,7 +679,7 @@ def test_eager_and_generator_coverage_branches() -> None:
 
     # group_by on object without group_by method
     with pytest.raises(BackendNotSupportedError, match="not supported"):
-        as_callable(execute_op)("group_by", as_callable(object)())
+        ensure_callable(execute_op)("group_by", ensure_callable(_BareDummy)())
 
     # AOT runner with raw scalar inputs and keyword Tensor inputs
     g = IRGraph()
@@ -696,5 +695,5 @@ def test_eager_and_generator_coverage_branches() -> None:
 
     # Raw list/ndarray as positional, Tensor as keyword
     t_kw = Tensor(np.array([10.0, 20.0]), TensorConfig((2,), "float32", "cpu"))
-    res_kw = as_callable(runner)(as_callable(np.array)([1.0, 2.0]), b=t_kw)
+    res_kw = ensure_callable(runner)(ensure_callable(np.array)([1.0, 2.0]), b=t_kw)
     assert res_kw is not None

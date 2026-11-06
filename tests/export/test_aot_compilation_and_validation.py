@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.export.export_api import (
     validate_stablehlo_binary,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -51,7 +51,7 @@ def test_webgpu_compile_aot() -> None:
 
     gen = WebGPUCodeGenerator(g)
     bundle = gen.compile_aot()
-    assert isinstance(as_tensor(bundle), dict)
+    assert isinstance(ensure_eager_tensor(bundle), dict)
     assert bundle["format"] == "webgpu_wgsl_bundle"
     assert bundle["status"] == "ready_to_dispatch"
     assert "shaderCode" in str(bundle["code"])
@@ -78,8 +78,8 @@ def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
     with patch.object(shutil, "which", return_value="/usr/bin/emcc"):
         with patch("subprocess.run"):
             res = gen.compile_aot(output_dir=str(tmp_path))
-            assert isinstance(as_tensor(res), tuple)
-            assert len(as_tensor(res)) == 2
+            assert isinstance(ensure_eager_tensor(res), tuple)
+            assert len(ensure_eager_tensor(res)) == 2
 
 
 def test_compile_function_strict_diagnostics() -> None:
@@ -103,7 +103,7 @@ def test_compile_function_strict_diagnostics() -> None:
     t = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     c = compile_function(f, backend="non_existent_backend", strict=True)
     with pytest.raises(CompilationError, match="Target backend 'non_existent_backend' not found"):
-        as_callable(c)(t)
+        ensure_callable(c)(t)
 
 
 def test_binary_validation_utilities(tmp_path: EagerTensorProtocol) -> None:

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import as_shape
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.registry import ensure_shape
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _infer_group_stat_shape(
-    args: tuple[tuple[int, ...] | int | None, ...],
+    args: tuple[tuple[int, ...] | int | ShapeProtocol | None, ...],
     kwargs: dict[str, tuple[int, ...] | int | float | str | bool | None],
 ) -> tuple[int, ...]:
     """Infer output shape for GroupMean and GroupVariance operations.
@@ -23,11 +23,14 @@ def _infer_group_stat_shape(
     if not args:
         return ()
 
-    shape = args[0]
-    if isinstance(shape, int):
-        shape = (shape,)
-    elif _has_attr(shape, "shape"):
-        shape = tuple(d for d in _get_attr(shape, "shape", _get_attr(shape, "shape_metadata", ())))
+    first: tuple[int, ...] | int | ShapeProtocol | None = args[0]
+    shape: tuple[int, ...] | None
+    if isinstance(first, int):
+        shape = (first,)
+    elif isinstance(first, ShapeProtocol):
+        shape = extract_shape(first)
+    else:
+        shape = first if isinstance(first, tuple) else None
 
     if not isinstance(shape, tuple) or len(shape) <= 1:
         return tuple(d for d in shape) if isinstance(shape, tuple) else ()
@@ -36,10 +39,10 @@ def _infer_group_stat_shape(
     keepdims = kwargs.get("keepdims", True)
 
     if not keepdims:
-        return as_shape((shape[0], num_groups))
+        return ensure_shape((shape[0], num_groups))
 
     out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
-    return as_shape(tuple(out_shape))
+    return ensure_shape(tuple(out_shape))
 
 
 @register_op("GroupMean")
@@ -50,7 +53,7 @@ class GroupMean(OpDef):
 
     def infer_shape(
         self,
-        *args: tuple[int, ...] | int | None,
+        *args: tuple[int, ...] | int | ShapeProtocol | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
         """Infer shape.
@@ -73,7 +76,7 @@ class GroupVariance(OpDef):
 
     def infer_shape(
         self,
-        *args: tuple[int, ...] | int | None,
+        *args: tuple[int, ...] | int | ShapeProtocol | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
         """Infer shape.
@@ -96,7 +99,7 @@ class GroupNorm(OpDef):
 
     def infer_shape(
         self,
-        *args: tuple[int, ...] | int | None,
+        *args: tuple[int, ...] | int | ShapeProtocol | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
         """Infer shape.
@@ -111,9 +114,9 @@ class GroupNorm(OpDef):
         if not args:
             return ()
 
-        shape = args[0]
-        if isinstance(shape, int):
-            return (shape,)
-        if _has_attr(shape, "shape"):
-            shape = tuple(d for d in _get_attr(shape, "shape", _get_attr(shape, "shape_metadata", ())))
-        return tuple(d for d in _get_attr(shape, "__iter__")())
+        first: tuple[int, ...] | int | ShapeProtocol | None = args[0]
+        if isinstance(first, int):
+            return (first,)
+        if isinstance(first, ShapeProtocol):
+            return extract_shape(first)
+        return ensure_shape(first)

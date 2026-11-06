@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ops.random_ops import (
     Ball,
     Beta,
@@ -58,7 +57,7 @@ from ml_switcheroo_compiler.ops.random_ops import (
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 from ml_switcheroo_compiler.ops.random_ops.frontend import sobol_sample
 from ml_switcheroo_compiler.ops.random_ops.sobol import SobolSample, generate_sobol
-from tests.testing_utils import as_callable, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -139,8 +138,8 @@ def test_random_ops_coverage() -> None:
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="dispatched_rademacher"):
         assert rademacher(5) == "dispatched_rademacher"
 
-    assert as_callable(RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
-    assert as_callable(RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
+    assert ensure_callable(RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
+    assert ensure_callable(RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
     assert SobolSample().infer_shape(2, 10, skip=0) == (10, 2)
 
     assert generate_sobol(2, 10, 0).shape == (10, 2)
@@ -158,7 +157,7 @@ def test_random_ops_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = as_tensor_dict({})
+            nodes = ensure_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -168,7 +167,7 @@ def test_random_ops_coverage() -> None:
                 """
                 pass
 
-        _set_attr(global_tracing_state, "active_graph", DummyGraph())
+        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
 
         assert sobol_sample(2, 10, 0) is not None
 

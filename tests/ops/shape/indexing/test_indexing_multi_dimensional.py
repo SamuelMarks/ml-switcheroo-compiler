@@ -35,7 +35,7 @@ from ml_switcheroo_compiler.ops.shape.indexing_advanced import (
     Where,
     _normalize_k,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -56,7 +56,7 @@ class MockTensor:
 def test_normalize_k() -> None:
     """Test function test_normalize_k."""
     assert _normalize_k(3) == 3
-    assert as_callable(_normalize_k)("3") == 3
+    assert ensure_callable(_normalize_k)("3") == 3
 
     class FakeItem:
         """Test class FakeItem."""
@@ -65,7 +65,7 @@ def test_normalize_k() -> None:
             """Test function item."""
             return 5
 
-    assert as_callable(_normalize_k)(as_callable(FakeItem)()) == 5
+    assert ensure_callable(_normalize_k)(ensure_callable(FakeItem)()) == 5
 
     class FakeArray:
         """Test class FakeArray."""
@@ -74,23 +74,23 @@ def test_normalize_k() -> None:
             """Test function __array__."""
             return 7
 
-    assert as_callable(_normalize_k)(as_callable(FakeArray)()) == 7
-    assert as_callable(_normalize_k)("abc") == "abc"
+    assert ensure_callable(_normalize_k)(ensure_callable(FakeArray)()) == 7
+    assert ensure_callable(_normalize_k)("abc") == "abc"
 
 
 def test_topk_infer_shape() -> None:
     """Test function test_topk_infer_shape."""
     op = TopK()
-    assert as_callable(op.infer_shape)(None) == (None,)
+    assert ensure_callable(op.infer_shape)(None) == (None,)
     t = MockTensor((2, 3))
-    assert as_callable(op.infer_shape)(t, k=2) == (2, 2)
-    assert as_callable(op.infer_shape)(t, k=None) == (2, 1)
+    assert ensure_callable(op.infer_shape)(t, k=2) == (2, 2)
+    assert ensure_callable(op.infer_shape)(t, k=None) == (2, 1)
 
 
 def test_argsort_infer_shape() -> None:
     """Test function test_argsort_infer_shape."""
     op = Argsort()
-    assert as_callable(op.infer_shape)(None) == ()
+    assert ensure_callable(op.infer_shape)(None) == ()
 
     class MockTuple(tuple[int, ...]):
         """Test class MockTuple."""
@@ -101,14 +101,14 @@ def test_argsort_infer_shape() -> None:
             return (2, 3)
 
     t1 = MockTuple((1, 2))
-    assert as_callable(op.infer_shape)(t1) == (2, 3)
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (2, 3)
+    assert ensure_callable(op.infer_shape)(t1) == (2, 3)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (2, 3)
 
 
 def test_sort_infer_shape() -> None:
     """Test function test_sort_infer_shape."""
     op = Sort()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (2, 3)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (2, 3)
 
 
 def test_where_infer_shape() -> None:
@@ -138,39 +138,39 @@ def test_empty_infer_shapes() -> None:
 def test_tensor_scatter_update_infer_shape() -> None:
     """Test function test_tensor_scatter_update_infer_shape."""
     op = TensorScatterUpdate()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), None, None) == (2, 3)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
 
 
 def test_argpartition_infer_shape() -> None:
     """Test function test_argpartition_infer_shape."""
     op = Argpartition()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), 1) == (2, 3)
-    assert as_callable(op.infer_shape)(None, 1) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3)), 1) == (2, 3)
+    assert ensure_callable(op.infer_shape)(None, 1) == ()
 
 
 def test_partition_infer_shape() -> None:
     """Test function test_partition_infer_shape."""
     op = Partition()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), 1) == (2, 3)
-    assert as_callable(op.infer_shape)(None, 1) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3)), 1) == (2, 3)
+    assert ensure_callable(op.infer_shape)(None, 1) == ()
 
 
 def test_compress_infer_shape() -> None:
     """Test function test_compress_infer_shape."""
     op = Compress()
-    assert as_callable(op.infer_shape)(None, as_callable(MockTensor)((2, 3))) == (None,)
+    assert ensure_callable(op.infer_shape)(None, ensure_callable(MockTensor)((2, 3))) == (None,)
 
 
 def test_diagonal_infer_shape() -> None:
     """Test function test_diagonal_infer_shape."""
     op = Diagonal()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (None,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (None,)
 
 
 def test_diagflat_infer_shape() -> None:
     """Test function test_diagflat_infer_shape."""
     op = Diagflat()
-    assert as_callable(op.infer_shape)(None) == (None, None)
+    assert ensure_callable(op.infer_shape)(None) == (None, None)
 
 
 def test_diag_indices_infer_shape() -> None:
@@ -182,16 +182,16 @@ def test_diag_indices_infer_shape() -> None:
 def test_diag_indices_from_infer_shape() -> None:
     """Test function test_diag_indices_from_infer_shape."""
     op = DiagIndicesFrom()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (None,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (None,)
 
 
 def test_boolean_mask_infer_shape() -> None:
     """Test function test_boolean_mask_infer_shape."""
     op = BooleanMask()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)((2, 3))) == (None,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((2, 3))) == (None,)
 
 
 def test_invert_permutation_infer_shape() -> None:
     """Test function test_invert_permutation_infer_shape."""
     op = InvertPermutation()
-    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3))) == (2, 3)
+    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3))) == (2, 3)

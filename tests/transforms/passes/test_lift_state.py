@@ -7,7 +7,7 @@ import typing
 # ruff: noqa: E501
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.lift_state import _get_nodes, _lift_block_ir, _lift_node, flatten_state_dict, lift_state_pass, unflatten_state_dict
-from tests.testing_utils import as_attrs, as_callable, as_ndarray, as_tensor
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_ndarray
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,16 +21,16 @@ def test_lift_state_branches() -> None:
 
         nodes = {"n1": IRNode(id="n1", op_type="Add", inputs=[], attributes={"some_attr": "no_nodes"})}
 
-    as_callable(_lift_block_ir)(as_callable(Block)())
+    ensure_callable(_lift_block_ir)(ensure_callable(Block)())
     assert callable(_lift_block_ir)
 
 
 def test_flatten_unflatten_state_dict() -> None:
     """Test function test_flatten_unflatten_state_dict."""
     nested = {"a": 1, "b": {"c": 2, "d": {"e": 3}}}
-    flat = as_callable(flatten_state_dict)(nested)
+    flat = ensure_callable(flatten_state_dict)(nested)
     assert flat == {"a": 1, "b.c": 2, "b.d.e": 3}
-    assert as_callable(unflatten_state_dict)(flat) == nested
+    assert ensure_callable(unflatten_state_dict)(flat) == nested
 
 
 def test_get_nodes() -> None:
@@ -41,21 +41,21 @@ def test_get_nodes() -> None:
 
         nodes = {"n1": IRNode(id="n1", op_type="Input", inputs=[])}
 
-    assert as_callable(list)(as_callable(_get_nodes)(as_callable(DummyBlock)()))[0].id == "n1"
+    assert ensure_callable(list)(ensure_callable(_get_nodes)(ensure_callable(DummyBlock)()))[0].id == "n1"
 
     class DummyBlock2:
         """Test class DummyBlock2."""
 
         nodes = [IRNode(id="n2", op_type="Input", inputs=[])]
 
-    assert as_callable(list)(as_callable(_get_nodes)(as_callable(DummyBlock2)()))[0].id == "n2"
+    assert ensure_callable(list)(ensure_callable(_get_nodes)(ensure_callable(DummyBlock2)()))[0].id == "n2"
 
     class DummyBlock3:
         """Test class DummyBlock3."""
 
         pass
 
-    assert as_callable(list)(as_callable(_get_nodes)(as_callable(DummyBlock3)())) == []
+    assert ensure_callable(list)(ensure_callable(_get_nodes)(ensure_callable(DummyBlock3)())) == []
 
 
 def test_lift_node() -> None:
@@ -68,21 +68,21 @@ def test_lift_node() -> None:
 
     block = DummyBlock()
     node1 = IRNode(id="n1", op_type="ReadVariable", inputs=[])
-    assert bool(as_callable(_lift_node)(node1, block)) is True
+    assert bool(ensure_callable(_lift_node)(node1, block)) is True
     assert node1.op_type == "Input"
     node2 = IRNode(id="n2", op_type="AssignVariable", inputs=["in1"])
-    assert bool(as_callable(_lift_node)(node2, block)) is True
+    assert bool(ensure_callable(_lift_node)(node2, block)) is True
     assert node2.op_type == "Output"
     assert node2.inputs == ["in1"]
     assert "n2" in block.outputs
     node3 = IRNode(id="n3", op_type="Assign", inputs=["var", "val"])
-    assert bool(as_callable(_lift_node)(node3, block)) is True
+    assert bool(ensure_callable(_lift_node)(node3, block)) is True
     assert node3.op_type == "Output"
     assert node3.inputs == ["val"]
     assert "n3" in block.outputs
     node4 = IRNode(id="n4", op_type="Assign", inputs=["var2", "val2"])
     block.outputs = ["n4"]
-    assert bool(as_callable(_lift_node)(node4, block)) is True
+    assert bool(ensure_callable(_lift_node)(node4, block)) is True
     assert node4.op_type == "Output"
     assert block.outputs == ["n4"]
 
@@ -92,10 +92,10 @@ def test_lift_node() -> None:
         pass
 
     node5 = IRNode(id="n5", op_type="Assign", inputs=["var3", "val3"])
-    assert bool(as_callable(_lift_node)(node5, as_callable(BlockNoOutputs)())) is True
+    assert bool(ensure_callable(_lift_node)(node5, ensure_callable(BlockNoOutputs)())) is True
     assert node5.op_type == "Output"
     node6 = IRNode(id="n6", op_type="Add", inputs=[])
-    assert bool(as_callable(_lift_node)(node6, block)) is False
+    assert bool(ensure_callable(_lift_node)(node6, block)) is False
 
 
 def test_lift_block_ir() -> None:
@@ -106,14 +106,14 @@ def test_lift_block_ir() -> None:
 
         nodes = {"n1": IRNode(id="n1", op_type="ReadVariable", inputs=[])}
 
-    node1 = IRNode(id="n2", op_type="Cond", inputs=[], attributes=as_attrs({"body": SubBlock()}))
+    node1 = IRNode(id="n2", op_type="Cond", inputs=[], attributes=ensure_attrs({"body": SubBlock()}))
 
     class Block:
         """Test class Block."""
 
         nodes = {"n2": node1}
 
-    assert bool(as_callable(_lift_block_ir)(as_callable(Block)())) is True
+    assert bool(ensure_callable(_lift_block_ir)(ensure_callable(Block)())) is True
     assert SubBlock.nodes["n1"].op_type == "Input"
 
 
@@ -145,20 +145,20 @@ def test_lift_module_state_and_functionalize() -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return as_ndarray((as_tensor(x) @ as_tensor(self.w.T)) + as_tensor(self.b))
+            return ensure_ndarray((ensure_eager_tensor(x) @ ensure_eager_tensor(self.w.T)) + ensure_eager_tensor(self.b))
 
     mod = MockVariableContainer()
-    params, g = lift_module_state(as_tensor(mod))
+    params, g = lift_module_state(ensure_eager_tensor(mod))
     assert "w" in params
     assert "b" in params
     assert "param_w" in g.nodes
-    assert g.nodes["param_w"].attributes["is_state"] is True
+    assert bool(g.nodes["param_w"].attributes["is_state"]) is True
 
-    params_lifted, pure_fn = lift_state(as_callable(mod))
+    params_lifted, pure_fn = lift_state(ensure_callable(mod))
     x = np.array([[2.0, 3.0]], dtype=np.float32)
     out, updated_params = pure_fn(params_lifted, x)
     expected = x @ mod.w.T + mod.b
-    assert as_callable(np.allclose)(out, expected)
+    assert ensure_callable(np.allclose)(out, expected)
     assert "w" in updated_params
 
     class NonCallableContainer:
@@ -169,9 +169,9 @@ def test_lift_module_state_and_functionalize() -> None:
             self.weight = np.ones((2, 2), dtype=np.float32)
 
     mod2 = NonCallableContainer()
-    params2, _ = as_callable(lift_module_state)(mod2)
+    params2, _ = ensure_callable(lift_module_state)(mod2)
     assert "weight" in params2
-    _, pure_fn2 = as_callable(lift_state)(mod2)
+    _, pure_fn2 = ensure_callable(lift_state)(mod2)
     with pytest.raises(TypeError, match="is not callable"):
         pure_fn2(params2, x)
 
@@ -180,7 +180,7 @@ def test_lift_module_state_and_functionalize() -> None:
 
         __slots__ = ()
 
-    params4, _ = as_callable(lift_module_state)(as_callable(SlotsModule)())
+    params4, _ = ensure_callable(lift_module_state)(ensure_callable(SlotsModule)())
     assert params4 == {}
 
 

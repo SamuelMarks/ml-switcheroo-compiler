@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     import tensorflow as tf
@@ -54,15 +54,15 @@ def test_tensorflow_generator_coverage() -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises((NotImplementedError, BackendNotSupportedError)):
-        as_callable(execute_op)(None, "UnknownFakeOp", 1)
-    as_callable(execute_op)(None, "Add", 1, 1)
-    assert as_callable(zeros)(None, (2,)) is not None
+        ensure_callable(execute_op)(None, "UnknownFakeOp", 1)
+    ensure_callable(execute_op)(None, "Add", 1, 1)
+    assert ensure_callable(zeros)(None, (2,)) is not None
     with pytest.raises(AttributeError):
-        as_callable(array)(None, [1, 2])
+        ensure_callable(array)(None, [1, 2])
     with pytest.raises(AttributeError):
-        as_callable(asarray)(None, [3, 4])
+        ensure_callable(asarray)(None, [3, 4])
     with pytest.raises(AttributeError):
-        as_callable(item)(None, as_callable(tf.constant)([5]))
+        ensure_callable(item)(None, ensure_callable(tf.constant)([5]))
 
 
 def test_tensorflow_generator_methods(tmp_path: EagerTensorProtocol) -> None:

@@ -13,9 +13,9 @@ import ml_switcheroo_compiler.benchmarks.orchestrator as orch_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _caller_locals, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -228,11 +228,11 @@ def test_build_ir_graph_from_workload() -> None:
 
 def test_orchestrator_isolated_worker_and_helpers() -> None:
     """Verify _isolated_worker execution and error queue paths."""
-    q = as_tensor(multiprocessing.Queue())
+    q = ensure_eager_tensor(multiprocessing.Queue())
     graph = IRGraph(name="iso_graph")
 
     # 1. Successful worker run
-    as_callable(orch_mod._isolated_worker)(
+    ensure_callable(orch_mod._isolated_worker)(
         ("ml_switcheroo_compiler.backends.edge.profiler", "EdgeProfiler"),
         graph,
         {},
@@ -243,10 +243,10 @@ def test_orchestrator_isolated_worker_and_helpers() -> None:
     )
     status, payload = q.get()
     assert status == "ok"
-    assert isinstance(as_tensor(payload), dict)
+    assert isinstance(ensure_eager_tensor(payload), dict)
 
     # 2. Failing worker run
-    as_callable(orch_mod._isolated_worker)(
+    ensure_callable(orch_mod._isolated_worker)(
         ("nonexistent.module", "FakeClass"),
         graph,
         {},
@@ -295,7 +295,7 @@ def _test_orchestrator_profiler_and_isolated_branches_part_1(_state: dict[str, E
         assert "no_mod_be" not in specs
 
     with pytest.MonkeyPatch.context() as mp:
-        as_callable(mp.setattr)(as_tensor(_get_attr(orch_mod, "pathlib")).Path, "exists", lambda self: False)
+        ensure_callable(mp.setattr)(ensure_eager_tensor(ensure_eager_tensor(orch_mod).pathlib).Path, "exists", lambda self: False)
         assert orch_mod.BenchmarkOrchestrator._load_manifest_profiles() == {}
 
     with pytest.MonkeyPatch.context() as mp:
@@ -304,13 +304,12 @@ def _test_orchestrator_profiler_and_isolated_branches_part_1(_state: dict[str, E
 
     # 2. _get_profiler for numpy and unsupported and import error
     p_numpy = orchestrator._get_profiler("numpy")
-    assert _has_attr(p_numpy, "profile_graph")
+    assert has_backend_member(p_numpy, "profile_graph")
 
     with pytest.raises(BackendNotSupportedError, match="does not have a supported profiler"):
         orchestrator._get_profiler("unsupported_backend_xyz")
-    _get_attr(_state, "update")({"manifest_specs": manifest_specs, "mp": mp, "no_module_profile": no_module_profile, "orchestrator": orchestrator})
-    _get_attr(_state, "update")({"p_numpy": p_numpy, "plan": plan, "specs": specs})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"manifest_specs": manifest_specs, "mp": mp, "no_module_profile": no_module_profile, "orchestrator": orchestrator}))
+    _state.update(ensure_tensor_dict({"p_numpy": p_numpy, "plan": plan, "specs": specs}))
 
 
 def _test_orchestrator_profiler_and_isolated_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -343,7 +342,7 @@ def _test_orchestrator_profiler_and_isolated_branches_part_2(_state: dict[str, E
     weight_node = IRNode(id="w", op_type="Input", inputs=[], attributes={"shape": [10, 5], "is_weight": True})
     graph.nodes["w"] = weight_node
     graph.inputs = ["w"]
-    as_callable(BackendRegistry.register)("mock_be", MockBackendClass)
+    ensure_callable(BackendRegistry.register)("mock_be", MockBackendClass)
 
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(orchestrator, "_get_profiler", lambda be: MockSimpleProfiler())
@@ -354,9 +353,9 @@ def _test_orchestrator_profiler_and_isolated_branches_part_2(_state: dict[str, E
         empty_graph = IRGraph(name="empty_inputs")
         res_empty = orchestrator._run_single(empty_graph, "mock_be", batch_size=2, num_iters=1, warmup_iters=1)
         assert res_empty["peak_memory_mb"] == 10.0
-    _get_attr(_state, "update")({"empty_graph": empty_graph, "graph": graph, "mock_prof_model": mock_prof_model, "mp": mp})
-    _get_attr(_state, "update")({"res": res, "res_empty": res_empty, "weight_node": weight_node})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"empty_graph": empty_graph, "graph": graph, "mock_prof_model": mock_prof_model, "mp": mp}))
+    _state.update(ensure_tensor_dict({"res": res, "res_empty": res_empty, "weight_node": weight_node}))
+    _state.update(ensure_tensor_dict({"orchestrator": orchestrator}))
 
 
 def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -367,10 +366,10 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
     """
     graph, orchestrator = _state["graph"], _state["orchestrator"]
     with pytest.MonkeyPatch.context() as mp:
-        as_callable(mp.setattr)(as_tensor(_get_attr(orch_mod, "multiprocessing")), "get_context", lambda: as_tensor(_get_attr(orch_mod, "multiprocessing")))
-        as_callable(mp.setattr)(as_tensor(_get_attr(orch_mod, "multiprocessing")), "Process", MockProcessOk)
-        as_callable(mp.setattr)(
-            as_tensor(_get_attr(orch_mod, "multiprocessing")),
+        ensure_callable(mp.setattr)(ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing), "get_context", lambda: ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing))
+        ensure_callable(mp.setattr)(ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing), "Process", MockProcessOk)
+        ensure_callable(mp.setattr)(
+            ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing),
             "Queue",
             lambda: MockDeterministicQueue([("ok", {"latencies": [1.0], "peak_memory_mb": 5.0})]),
         )
@@ -382,8 +381,8 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
         assert single_isolated["latencies"] == [1.0]
 
         # Mock isolated run with error payload
-        as_callable(mp.setattr)(
-            as_tensor(_get_attr(orch_mod, "multiprocessing")),
+        ensure_callable(mp.setattr)(
+            ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing),
             "Queue",
             lambda: MockDeterministicQueue([("error", "subprocess failed")]),
         )
@@ -391,15 +390,15 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
             orchestrator._run_isolated(graph, "numpy", {})
 
         # Mock isolated run with empty queue
-        as_callable(mp.setattr)(as_tensor(_get_attr(orch_mod, "multiprocessing")), "Queue", lambda: as_callable(MockDeterministicQueue)([]))
+        ensure_callable(mp.setattr)(ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing), "Queue", lambda: ensure_callable(MockDeterministicQueue)([]))
         with pytest.raises(RuntimeError, match="terminated unexpectedly"):
             orchestrator._run_isolated(graph, "numpy", {})
 
         # Mock isolated run with timeout
-        as_callable(mp.setattr)(as_tensor(_get_attr(orch_mod, "multiprocessing")), "Process", MockProcessTimeout)
+        ensure_callable(mp.setattr)(ensure_eager_tensor(ensure_eager_tensor(orch_mod).multiprocessing), "Process", MockProcessTimeout)
         with pytest.raises(RuntimeError, match="timed out"):
             orchestrator._run_isolated(graph, "numpy", {})
-    _get_attr(_state, "update")({"metrics": metrics, "mp": mp, "single_isolated": single_isolated})
+    _state.update(ensure_tensor_dict({"metrics": metrics, "mp": mp, "single_isolated": single_isolated}))
 
 
 def test_orchestrator_profiler_and_isolated_branches() -> None:

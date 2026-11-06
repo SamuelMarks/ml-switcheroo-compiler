@@ -4,12 +4,29 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
+
+
+def _infer_1d_set_shape(args: tuple[tuple[int, ...] | list[int] | Tensor | IRNode, ...]) -> tuple[int, ...]:
+    """Extract output shape from the first argument of a 1D set operation.
+
+    Args:
+        args (tuple[tuple[int, ...] | list[int] | Tensor | IRNode, ...]): Positional arguments.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    if not args:
+        return ()
+    first = args[0]
+    if isinstance(first, (tuple, list)):
+        return tuple(first)
+    return extract_shape(first)
 
 
 @register_op("Setdiff1d")
@@ -32,12 +49,8 @@ class Setdiff1d(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("Setxor1d")
@@ -60,12 +73,8 @@ class Setxor1d(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("Union1d")
@@ -88,12 +97,8 @@ class Union1d(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("UniqueAll")
@@ -116,12 +121,8 @@ class UniqueAll(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("UniqueCounts")
@@ -144,12 +145,8 @@ class UniqueCounts(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("UniqueInverse")
@@ -172,12 +169,8 @@ class UniqueInverse(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)
 
 
 @register_op("UniqueValues")
@@ -200,9 +193,5 @@ class UniqueValues(OpDef):
         Returns:
             tuple[int, ...]: Output shape.
         """
-        if not args:
-            return ()
-        first = args[0]
-        if isinstance(first, (tuple, list)):
-            return tuple(first)
-        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
+        del kwargs
+        return _infer_1d_set_shape(args)

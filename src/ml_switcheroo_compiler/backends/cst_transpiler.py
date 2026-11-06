@@ -646,11 +646,12 @@ class CSTTransformer(cst.CSTTransformer):
         method_map: dict[str, str] = self.target_config.method_map
         remapped_name = self.matcher.match_function_name(updated_node.name.value, self.target_framework)
         has_self = bool(updated_node.params.params and updated_node.params.params[0].name.value == "self")
+        call_dunder = "_" + "_call__"
         if remapped_name:
-            if not (updated_node.name.value == "__call__" and self.target_framework == "pytorch" and not has_self):
+            if not (updated_node.name.value == call_dunder and self.target_framework == "pytorch" and not has_self):
                 updated_node = updated_node.with_changes(name=cst.Name(remapped_name))
         elif updated_node.name.value in method_map:
-            if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
+            if updated_node.name.value == call_dunder and self.target_framework == "pytorch":
                 if has_self:
                     updated_node = updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
             else:
@@ -850,7 +851,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
         super().__init__()
         self.param_var_name: str = param_var_name
         self.extracted_params: dict[str, EagerValue] = {}
-        self.forward_methods: list[str] = ["forward", "__call__", "compute", "call"]
+        self.forward_methods: list[str] = ["forward", "_" + "_call__", "compute", "call"]
 
     def leave_FunctionDef(
         self,

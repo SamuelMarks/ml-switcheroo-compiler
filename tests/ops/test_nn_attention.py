@@ -9,10 +9,9 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -37,7 +36,7 @@ def test_dot_product_attention_eager_branch() -> None:
     with pytest.MonkeyPatch.context() as m:
         m.setattr("ml_switcheroo_compiler.ops.nn.attention.get_active_backend", lambda: mock_b)
         res = scaled_dot_product_attention(q, k, v, sf)
-        assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+        assert ensure_eager_tensor(res).shape == (2, 2)
 
     config.eager_mode = False
 
@@ -54,7 +53,7 @@ def test_dot_product_attention_trace_branch() -> None:
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
 
     res = scaled_dot_product_attention(q, k, v, sf)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
 
 def test_dot_product_attention_infer_shape() -> None:
@@ -64,7 +63,7 @@ def test_dot_product_attention_infer_shape() -> None:
     k = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     v = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
-    assert as_callable(op.infer_shape)(q, k, v, sf) == (2, 2)
+    assert ensure_callable(op.infer_shape)(q, k, v, sf) == (2, 2)
 
 
 def test_quantized_trace() -> None:
@@ -84,5 +83,5 @@ def test_quantized_trace() -> None:
 
     sf2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
     zp2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
-    res2 = as_callable(fake_quantize_per_tensor_affine)(q, sf2, zp2, quant_min=0, quant_max=255)
+    res2 = ensure_callable(fake_quantize_per_tensor_affine)(q, sf2, zp2, quant_min=0, quant_max=255)
     assert res2 is not None

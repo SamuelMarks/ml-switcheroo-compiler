@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import re
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.protocols import get_backend_member
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import _obj_vars
 
 RESERVED_WGSL_KEYWORDS: set[str] = {
     "array",
@@ -146,13 +147,17 @@ class WGSLNode:
         Raises:
             WGSLValidationError: If node structure violates specifications.
         """
-        for attr_val in _obj_vars(self).values():
+        for attr_name in dir(self):
+            if attr_name.startswith("_") or attr_name == "validate":
+                continue
+            attr_val: WGSLNode | EagerValue = get_backend_member(self, attr_name, None)
             if isinstance(attr_val, WGSLNode):
                 attr_val.validate()
             elif isinstance(attr_val, (list, tuple)):
                 for item in attr_val:
-                    if isinstance(item, WGSLNode):
-                        item.validate()
+                    raw_item: WGSLNode | EagerValue = item
+                    if isinstance(raw_item, WGSLNode):
+                        raw_item.validate()
 
 
 class WGSLRaw(WGSLNode):

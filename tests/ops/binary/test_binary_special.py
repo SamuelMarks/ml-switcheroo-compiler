@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.binary.special import Allclose, Atan2, Divmod, Isclose
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -51,13 +50,13 @@ def test_binary_special() -> None:
 
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    orig_evaluator = as_tensor(_get_attr(sp, "EagerEvaluator"))
+    orig_evaluator = ensure_eager_tensor(ensure_eager_tensor(sp).EagerEvaluator)
 
     try:
-        _set_attr(sp, "EagerEvaluator", DummyEval())
-        assert as_tensor(d(1, 2)) == as_tensor("eager_eval")
+        ensure_mutable(sp).EagerEvaluator = ensure_eager_tensor(DummyEval())
+        assert ensure_eager_tensor(d(1, 2)) == ensure_eager_tensor("eager_eval")
     finally:
-        _set_attr(sp, "EagerEvaluator", orig_evaluator)
+        ensure_mutable(sp).EagerEvaluator = ensure_eager_tensor(orig_evaluator)
 
     config.eager_mode = False
 
@@ -86,17 +85,17 @@ def test_binary_special() -> None:
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops.binary": DummyBinary()}):
-        assert as_tensor(d(1, 2)) == as_tensor(("fd", "r"))
+        assert ensure_eager_tensor(d(1, 2)) == ensure_eager_tensor(("fd", "r"))
     config.eager_mode = True
 
 
 def test_binary_special_coverage() -> None:
     """Test function test_binary_special_coverage."""
     a = Atan2()
-    assert as_tensor(a.infer_shape(1)) == as_tensor(1)
+    assert ensure_eager_tensor(a.infer_shape(1)) == ensure_eager_tensor(1)
 
     d = Divmod()
-    assert as_tensor(d.infer_shape(1)) == as_tensor(1)
+    assert ensure_eager_tensor(d.infer_shape(1)) == ensure_eager_tensor(1)
 
     i = Isclose()
-    assert as_tensor(i.infer_shape(1)) == as_tensor(1)
+    assert ensure_eager_tensor(i.infer_shape(1)) == ensure_eager_tensor(1)

@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_set import (
     _np_uniquevalues,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import as_callable, as_mod
+from tests.testing_utils import ensure_callable, ensure_mod
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -86,12 +86,12 @@ def test_math_set_coverage() -> None:
             return "uniquevalues_val"
 
     sb = SetBackend()
-    assert _intersect1d(as_mod(sb), [1, 2], [2, 3]) == "intersect1d_val"
-    assert _np_union1d(as_mod(sb), [1], [2]) == "union1d_val"
-    assert _np_unique(as_mod(sb), [1, 1, 2]) == "unique_val"
-    assert _np_uniqueall(as_mod(sb), [1, 1, 2]) == "uniqueall_val"
-    assert _np_uniquecounts(as_mod(sb), [1, 1, 2]) == "uniquecounts_val"
-    assert _np_uniquevalues(as_mod(sb), [1, 1, 2]) == "uniquevalues_val"
+    assert _intersect1d(ensure_mod(sb), [1, 2], [2, 3]) == "intersect1d_val"
+    assert _np_union1d(ensure_mod(sb), [1], [2]) == "union1d_val"
+    assert _np_unique(ensure_mod(sb), [1, 1, 2]) == "unique_val"
+    assert _np_uniqueall(ensure_mod(sb), [1, 1, 2]) == "uniqueall_val"
+    assert _np_uniquecounts(ensure_mod(sb), [1, 1, 2]) == "uniquecounts_val"
+    assert _np_uniquevalues(ensure_mod(sb), [1, 1, 2]) == "uniquevalues_val"
 
     # Fallback to NumPy when backend lacks the methods
     class EmptyBackend:
@@ -100,21 +100,21 @@ def test_math_set_coverage() -> None:
         pass
 
     eb = EmptyBackend()
-    assert as_callable(list)(as_callable(_np_union1d)(eb, [1, 2], [2, 3])) == [1, 2, 3]
-    assert as_callable(list)(as_callable(_np_unique)(eb, [3, 1, 2, 1])) == [1, 2, 3]
+    assert ensure_callable(list)(ensure_callable(_np_union1d)(eb, [1, 2], [2, 3])) == [1, 2, 3]
+    assert ensure_callable(list)(ensure_callable(_np_unique)(eb, [3, 1, 2, 1])) == [1, 2, 3]
 
-    vals, idx, inv, counts = as_callable(_np_uniqueall)(eb, as_callable(np.array)([2, 1, 2]))
-    assert as_callable(list)(vals) == [1, 2]
-    assert as_callable(len)(idx) == 2
-    assert as_callable(len)(inv) == 3
-    assert as_callable(list)(counts) == [1, 2]
+    vals, idx, inv, counts = ensure_callable(_np_uniqueall)(eb, ensure_callable(np.array)([2, 1, 2]))
+    assert ensure_callable(list)(vals) == [1, 2]
+    assert ensure_callable(len)(idx) == 2
+    assert ensure_callable(len)(inv) == 3
+    assert ensure_callable(list)(counts) == [1, 2]
 
-    u_vals, u_counts = as_callable(_np_uniquecounts)(eb, as_callable(np.array)([5, 5, 6]))
-    assert as_callable(list)(u_vals) == [5, 6]
-    assert as_callable(list)(u_counts) == [2, 1]
+    u_vals, u_counts = ensure_callable(_np_uniquecounts)(eb, ensure_callable(np.array)([5, 5, 6]))
+    assert ensure_callable(list)(u_vals) == [5, 6]
+    assert ensure_callable(list)(u_counts) == [2, 1]
 
-    val_only = _np_uniquevalues(as_mod(eb), np.array([7, 8, 7]))
-    assert as_callable(list)(val_only) == [7, 8]
+    val_only = _np_uniquevalues(ensure_mod(eb), np.array([7, 8, 7]))
+    assert ensure_callable(list)(val_only) == [7, 8]
 
     # Registry verification
     for name in ["Intersect1d", "Union1d", "Unique", "UniqueAll", "UniqueCounts", "UniqueValues"]:

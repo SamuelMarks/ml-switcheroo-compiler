@@ -9,8 +9,8 @@ import yaml
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 
 _WGSL_TEMPLATES: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
 _WGSL_KERNELS: dict[str, EagerValue] = {}
@@ -85,7 +85,7 @@ def _merge_modular_templates(
                         mod_data = yaml.safe_load(f)
                     if isinstance(mod_data, dict):
                         mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-                        _get_attr(loaded_templates.setdefault("templates", {}), "update")(mod_dump.get("templates") or {})
+                        ensure_mod(loaded_templates.setdefault("templates", {})).update(mod_dump.get("templates") or {})
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -98,8 +98,8 @@ def _merge_modular_templates(
         return
 
     mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-    _get_attr(loaded_templates.setdefault("templates", {}), "update")(mod_dump.get("templates") or {})
-    _get_attr(loaded_templates.setdefault("js_orchestration", {}), "update")(mod_dump.get("js_orchestration") or {})
+    ensure_mod(loaded_templates.setdefault("templates", {})).update(mod_dump.get("templates") or {})
+    ensure_mod(loaded_templates.setdefault("js_orchestration", {})).update(mod_dump.get("js_orchestration") or {})
     if mod_dump.get("global_bindings"):
         loaded_templates["global_bindings"] = mod_dump["global_bindings"]
 
@@ -128,7 +128,7 @@ def _load_templates() -> None:
         if isinstance(kernels, dict):
             k_templates = kernels.get("templates")
             if isinstance(k_templates, dict):
-                _get_attr(loaded.setdefault("templates", {}), "update")(k_templates)
+                ensure_mod(loaded.setdefault("templates", {})).update(k_templates)
             k_bindings = kernels.get("bindings")
             if isinstance(k_bindings, dict) and k_bindings.get("global_bindings") and not loaded.get("global_bindings"):
                 loaded["global_bindings"] = k_bindings["global_bindings"]
@@ -149,7 +149,7 @@ def get_wgsl_template(name: str) -> dict[str, AttributeValue]:
     if isinstance(templates_dict, dict):
         tpl = templates_dict.get(name, {})
         if isinstance(tpl, dict):
-            return as_attrs(tpl)
+            return ensure_attrs(tpl)
     return {}
 
 

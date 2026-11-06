@@ -11,8 +11,7 @@ from unittest.mock import mock_open, patch
 import yaml
 
 import scripts.build_registry as br
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
-from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -75,7 +74,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     tmp_path = _state["tmp_path"]
-    empty_maps = as_callable(as_tensor(_get_attr(br, "load_backend_mappings")))(as_callable(str)(tmp_path / "nonexistent"))
+    empty_maps = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(br).load_backend_mappings))(ensure_callable(str)(tmp_path / "nonexistent"))
     assert empty_maps == {}
 
     # Setup dummy backends directory
@@ -94,7 +93,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
     (numpy_map_dir / "not_yaml.txt").write_text("ignore", encoding="utf-8")
     (numpy_map_dir / "z_another.yaml").write_text("Z:\n  target_api: np.z\n", encoding="utf-8")
 
-    loaded_maps = as_callable(as_tensor(_get_attr(br, "load_backend_mappings")))(as_callable(str)(backends_dir))
+    loaded_maps = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(br).load_backend_mappings))(ensure_callable(str)(backends_dir))
     assert "numpy" in loaded_maps
     assert loaded_maps["numpy"].get("Add") == "np.add"
 
@@ -108,12 +107,12 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
             "custom": {"generator": "emit_custom"},
         },
     }
-    norm_add = as_callable(as_tensor(_get_attr(br, "_normalize_and_validate_op")))("Add", op_add, loaded_maps)
+    norm_add = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(br)._normalize_and_validate_op))("Add", op_add, loaded_maps)
     variants = norm_add["variants"]
-    assert isinstance(as_tensor(variants), dict)
-    _get_attr(_state, "update")({"backends_dir": backends_dir, "empty_maps": empty_maps, "loaded_maps": loaded_maps, "norm_add": norm_add})
-    _get_attr(_state, "update")({"numpy_map_dir": numpy_map_dir, "op_add": op_add, "variants": variants})
-    _state.update(_caller_locals())
+    assert isinstance(ensure_eager_tensor(variants), dict)
+    _state.update(ensure_tensor_dict({"backends_dir": backends_dir, "empty_maps": empty_maps, "loaded_maps": loaded_maps, "norm_add": norm_add}))
+    _state.update(ensure_tensor_dict({"numpy_map_dir": numpy_map_dir, "op_add": op_add, "variants": variants}))
+    _state.update(ensure_tensor_dict({"tmp_path": tmp_path}))
 
 
 def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -123,9 +122,9 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     loaded_maps, op_add, tmp_path, variants = _state["loaded_maps"], _state["op_add"], _state["tmp_path"], _state["variants"]
-    assert as_tensor(variants["numpy"]) == {"target_api": "np.add", "supported": True}
-    assert as_tensor(variants["cupy"]) == {"supported": False}
-    assert as_tensor(variants["llvm_cpp"]["scalar_expr"]) == "in0_val + in1_val"
+    assert ensure_eager_tensor(variants["numpy"]) == {"target_api": "np.add", "supported": True}
+    assert ensure_eager_tensor(variants["cupy"]) == {"supported": False}
+    assert ensure_eager_tensor(variants["llvm_cpp"]["scalar_expr"]) == "in0_val + in1_val"
     assert bool(variants["llvm_cpp"]["supported"]) is True
     assert bool(variants["custom"]["supported"]) is True
 
@@ -137,11 +136,11 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         },
         "math_semantics": {"differentiable": False},
     }
-    norm_unk = as_callable(_get_attr(br, "_normalize_and_validate_op"))("UnknownOp", op_unknown, loaded_maps)
+    norm_unk = ensure_callable(ensure_eager_tensor(br)._normalize_and_validate_op)("UnknownOp", op_unknown, loaded_maps)
     unk_variants = norm_unk["variants"]
-    assert isinstance(as_tensor(unk_variants), dict)
-    assert as_tensor(unk_variants["llvm_cpp"]) == {"supported": False}
-    assert as_tensor(norm_unk["math_semantics"]) == {"differentiable": False}
+    assert isinstance(ensure_eager_tensor(unk_variants), dict)
+    assert ensure_eager_tensor(unk_variants["llvm_cpp"]) == {"supported": False}
+    assert ensure_eager_tensor(norm_unk["math_semantics"]) == {"differentiable": False}
 
     # Test normalization of Identity op preserving in0_val
     op_ident = {
@@ -150,10 +149,10 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
             "llvm_cpp": {"template": "unary", "scalar_expr": "in0_val"},
         },
     }
-    norm_ident = as_callable(_get_attr(br, "_normalize_and_validate_op"))("Identity", op_ident, loaded_maps)
+    norm_ident = ensure_callable(ensure_eager_tensor(br)._normalize_and_validate_op)("Identity", op_ident, loaded_maps)
     ident_variants = norm_ident["variants"]
-    assert isinstance(as_tensor(ident_variants), dict)
-    llvm_cpp_var = as_attrs(ident_variants["llvm_cpp"])
+    assert isinstance(ensure_eager_tensor(ident_variants), dict)
+    llvm_cpp_var = ensure_attrs(ident_variants["llvm_cpp"])
     assert llvm_cpp_var["scalar_expr"] == "in0_val"
     assert llvm_cpp_var["supported"] is True
 
@@ -164,10 +163,11 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         yaml.dump(op_add, f)
 
     out_file = tmp_path / "custom_gen.py"
-    _get_attr(_state, "update")({"def_dir": def_dir, "f": f, "ident_variants": ident_variants, "norm_ident": norm_ident})
-    _get_attr(_state, "update")({"norm_unk": norm_unk, "op_ident": op_ident, "op_unknown": op_unknown, "out_file": out_file})
-    _get_attr(_state, "update")({"unk_variants": unk_variants})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"def_dir": def_dir, "f": f, "ident_variants": ident_variants, "norm_ident": norm_ident}))
+    _state.update(ensure_tensor_dict({"norm_unk": norm_unk, "op_ident": op_ident, "op_unknown": op_unknown, "out_file": out_file}))
+    _state.update(ensure_tensor_dict({"unk_variants": unk_variants}))
+    _state.update(ensure_tensor_dict({"loaded_maps": loaded_maps, "op_add": op_add, "tmp_path": tmp_path}))
+    _state.update(ensure_tensor_dict({"variants": variants}))
 
 
 def _test_load_backend_mappings_and_normalization_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -196,7 +196,7 @@ def _test_load_backend_mappings_and_normalization_part_3(_state: dict[str, Eager
         backends_dir=str(backends_dir),
     )
     assert out_file_no_yaml.exists()
-    _get_attr(_state, "update")({"out_file_no_yaml": out_file_no_yaml, "out_yaml": out_yaml})
+    _state.update(ensure_tensor_dict({"out_file_no_yaml": out_file_no_yaml, "out_yaml": out_yaml}))
 
 
 def test_load_backend_mappings_and_normalization(tmp_path: Path) -> None:
@@ -205,7 +205,7 @@ def test_load_backend_mappings_and_normalization(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Pytest fixture for temporary directory.
     """
-    _state: dict[str, EagerTensorProtocol] = as_tensor_dict({"tmp_path": tmp_path})
+    _state: dict[str, EagerTensorProtocol] = ensure_tensor_dict({"tmp_path": tmp_path})
     _test_load_backend_mappings_and_normalization_part_1(_state)
     _test_load_backend_mappings_and_normalization_part_2(_state)
     _test_load_backend_mappings_and_normalization_part_3(_state)

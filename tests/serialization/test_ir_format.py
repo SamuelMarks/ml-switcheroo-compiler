@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt
 from ml_switcheroo_compiler.serialization.ir_format import (
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.serialization.ir_format import (
     json_to_graph,
     yaml_to_graph,
 )
-from tests.testing_utils import as_attrs, as_callable, as_tensor_dict
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -70,13 +69,13 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
 
     # Node with single int shape
     n_int_shape = IRNode(id="n_int", op_type="Const", shape_metadata=(42,))
-    _obj_set_attr(n_int_shape, "shape_metadata", 42)
+    ensure_mutable(n_int_shape).shape_metadata = ensure_eager_tensor(42)
     # Node with single digit str shape
     n_str_digit_shape = IRNode(id="n_str_digit", op_type="Const", shape_metadata=("128",))
-    _obj_set_attr(n_str_digit_shape, "shape_metadata", "128")
+    ensure_mutable(n_str_digit_shape).shape_metadata = ensure_eager_tensor("128")
     # Node with single non-digit str shape
     n_str_sym_shape = IRNode(id="n_str_sym", op_type="Const", shape_metadata=("batch",))
-    _obj_set_attr(n_str_sym_shape, "shape_metadata", "batch")
+    ensure_mutable(n_str_sym_shape).shape_metadata = ensure_eager_tensor("batch")
     # Node with tuple containing digit str and non-digit str
     n_tuple_mixed = IRNode(
         id="n_mixed",
@@ -86,7 +85,7 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
     )
     # Node with shape_metadata = None and non-dict attributes
     n_none_shape = IRNode(id="n_none", op_type="Op", shape_metadata=None)
-    _obj_set_attr(n_none_shape, "attributes", "invalid_attr")
+    ensure_mutable(n_none_shape).attributes = ensure_eager_tensor("invalid_attr")
 
     g.nodes["n_int"] = n_int_shape
     g.nodes["n_str_digit"] = n_str_digit_shape
@@ -94,7 +93,7 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
     g.nodes["n_mixed"] = n_tuple_mixed
     g.nodes["n_none"] = n_none_shape
 
-    data = as_tensor_dict(_build_serialization_dict(g))
+    data = ensure_tensor_dict(_build_serialization_dict(g))
     assert data["nodes"]["n_int"]["shape_metadata"] == [42]
     assert data["nodes"]["n_str_digit"]["shape_metadata"] == [128]
     assert data["nodes"]["n_str_sym"]["shape_metadata"] == ["batch"]
@@ -126,11 +125,10 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
         },
     }
 
-    parsed_g = _parse_serialization_dict(as_attrs(raw_dict))
-    _get_attr(_state, "update")({"data": data, "g": g, "n_int_shape": n_int_shape, "n_none_shape": n_none_shape})
-    _get_attr(_state, "update")({"n_str_digit_shape": n_str_digit_shape, "n_str_sym_shape": n_str_sym_shape, "n_tuple_mixed": n_tuple_mixed, "parsed_g": parsed_g})
-    _get_attr(_state, "update")({"raw_dict": raw_dict})
-    _state.update(_caller_locals())
+    parsed_g = _parse_serialization_dict(ensure_attrs(raw_dict))
+    _state.update(ensure_tensor_dict({"data": data, "g": g, "n_int_shape": n_int_shape, "n_none_shape": n_none_shape}))
+    _state.update(ensure_tensor_dict({"n_str_digit_shape": n_str_digit_shape, "n_str_sym_shape": n_str_sym_shape, "n_tuple_mixed": n_tuple_mixed, "parsed_g": parsed_g}))
+    _state.update(ensure_tensor_dict({"raw_dict": raw_dict}))
 
 
 def _test_ir_format_serialization_edge_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -156,15 +154,15 @@ def _test_ir_format_serialization_edge_branches_part_2(_state: dict[str, EagerTe
 
     # 3. Test _parse_serialization_dict when nodes is not a dict
     empty_nodes_dict: dict[str, EagerValue] = {"nodes": "not_a_dict"}
-    g_empty_nodes = _parse_serialization_dict(as_attrs(empty_nodes_dict))
+    g_empty_nodes = _parse_serialization_dict(ensure_attrs(empty_nodes_dict))
     assert len(g_empty_nodes.nodes) == 0
 
     # 4. Test yaml_to_graph with empty / whitespace string
     g_empty_yaml = yaml_to_graph("")
     assert g_empty_yaml.name == "graph"
     assert len(g_empty_nodes.nodes) == 0
-    _get_attr(_state, "update")({"empty_nodes_dict": empty_nodes_dict, "g_empty_nodes": g_empty_nodes, "g_empty_yaml": g_empty_yaml})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"empty_nodes_dict": empty_nodes_dict, "g_empty_nodes": g_empty_nodes, "g_empty_yaml": g_empty_yaml}))
+    _state.update(ensure_tensor_dict({"parsed_g": parsed_g}))
 
 
 def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -182,23 +180,21 @@ def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTe
             return "custom_str_repr"
 
     g_init_edge = IRGraph(name="init_edge")
-    _obj_set_attr(
-        g_init_edge,
-        "initializers",
+    ensure_mutable(g_init_edge).initializers = ensure_eager_tensor(
         {
             "int_val": 123,
             "custom_obj": CustomInitValue(),
-        },
+        }
     )
     # Node with subgraphs containing non-graph item
     n_with_bad_sub = IRNode(
         id="n_bad_sub",
         op_type="CustomOp",
     )
-    _obj_set_attr(n_with_bad_sub, "subgraphs", {"invalid_sub": "not_a_subgraph_with_nodes"})
+    ensure_mutable(n_with_bad_sub).subgraphs = ensure_eager_tensor({"invalid_sub": "not_a_subgraph_with_nodes"})
     g_init_edge.nodes["n_bad_sub"] = n_with_bad_sub
-    _obj_set_attr(g_init_edge, "inputs", None)  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
-    init_edge_data = as_tensor_dict(_build_serialization_dict(g_init_edge))
+    ensure_mutable(g_init_edge).inputs = ensure_eager_tensor(None)  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
+    init_edge_data = ensure_tensor_dict(_build_serialization_dict(g_init_edge))
     assert init_edge_data["initializers"]["int_val"] == 123
     assert init_edge_data["initializers"]["custom_obj"] == "custom_str_repr"
     assert "invalid_sub" not in init_edge_data["nodes"]["n_bad_sub"].get("subgraphs", {})
@@ -221,12 +217,12 @@ def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTe
             },
         },
     }
-    g_parsed_bad_sub = _parse_serialization_dict(as_attrs(raw_bad_sub_data))
+    g_parsed_bad_sub = _parse_serialization_dict(ensure_attrs(raw_bad_sub_data))
     assert "node_sub" in g_parsed_bad_sub.nodes
     assert len(g_parsed_bad_sub.nodes["node_sub"].subgraphs) == 0
     assert "node_sub_not_dict" in g_parsed_bad_sub.nodes
-    _get_attr(_state, "update")({"CustomInitValue": CustomInitValue, "g_init_edge": g_init_edge, "g_parsed_bad_sub": g_parsed_bad_sub, "init_edge_data": init_edge_data})
-    _get_attr(_state, "update")({"n_with_bad_sub": n_with_bad_sub, "raw_bad_sub_data": raw_bad_sub_data})
+    _state.update(ensure_tensor_dict({"CustomInitValue": CustomInitValue, "g_init_edge": g_init_edge, "g_parsed_bad_sub": g_parsed_bad_sub, "init_edge_data": init_edge_data}))
+    _state.update(ensure_tensor_dict({"n_with_bad_sub": n_with_bad_sub, "raw_bad_sub_data": raw_bad_sub_data}))
 
 
 def test_ir_format_serialization_edge_branches() -> None:
@@ -257,12 +253,12 @@ def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
         }
     }
 
-    resolved_shapes = as_callable(ShapeTracker.update_from_feedback)(telemetry, tracker)
+    resolved_shapes = ensure_callable(ShapeTracker.update_from_feedback)(telemetry, tracker)
     assert resolved_shapes["x"] == (4, 16)
     assert resolved_shapes["dense"] == (4, 32)
 
     # Resolve dynamic bounds across graph
-    resolved_bounds = as_callable(ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
+    resolved_bounds = ensure_callable(ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
     assert "batch_dim" in resolved_bounds
     assert resolved_bounds["batch_dim"] == 4
 
@@ -283,7 +279,7 @@ def test_ir_format_initializers_and_subgraphs() -> None:
 
     graph = IRGraph(name="init_subgraph_net")
     graph.inputs = ["x"]
-    _get_attr(graph.initializers, "__setitem__")("weight", np.array([1.5, 2.5]))
+    ensure_eager_tensor(graph.initializers)["weight"] = np.array([1.5, 2.5])
     graph.nodes["x"] = IRNode(id="x", op_type="Input")
     graph.nodes["if_node"] = IRNode(id="if_node", op_type="If", inputs=["x"], subgraphs={"then_branch": sub})
     graph.outputs = ["if_node"]
@@ -299,6 +295,6 @@ def test_ir_format_initializers_and_subgraphs() -> None:
     assert "weight" in deserialized.initializers
     assert deserialized.initializers["weight"] == [1.5, 2.5]
     assert "then_branch" in deserialized.nodes["if_node"].subgraphs
-    sub_deserialized = _cast_val("IRGraph", deserialized.nodes["if_node"].subgraphs["then_branch"])
+    sub_deserialized = ensure_eager_tensor(deserialized.nodes["if_node"].subgraphs["then_branch"])
     assert sub_deserialized.name == "then_branch"
-    assert "sub_out" in sub_deserialized.nodes
+    assert "sub_out" in ensure_eager_tensor(sub_deserialized.nodes)

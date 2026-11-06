@@ -2,16 +2,29 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_tensor, get_active_backend
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_shape,
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.products import Adjoint, MatrixRank, MatrixTranspose, Trace
 from ml_switcheroo_compiler.ops.linalg.solvers import EighTridiagonal, Sqrtm
 from ml_switcheroo_compiler.ops.registry import get_op
 
-from .utils import _emit_linalg_node
+from .utils import _emit_linalg_node, _extract_linalg_dtype
 
 
 def band_part(input: Tensor, num_lower: int, num_upper: int) -> TensorOrScalar:
@@ -50,13 +63,13 @@ def diag(input: Tensor, k: int = 0) -> TensorOrScalar:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Diag", _get_attr(input, "data", input), k=k)
+        data = backend.execute_op("Diag", extract_data(input), k=k)
         return Tensor(
             backend.array(data),
             TensorConfig(
-                _get_attr(backend.array(data), "shape"),
-                _get_attr(input, "dtype", "float32"),
-                _get_attr(input, "device", None),
+                extract_shape(backend.array(data)),
+                extract_dtype(input, "float32"),
+                extract_device(input, None),
             ),
         )
     return _emit_linalg_node("Diag", [input], {"k": k}, [()], [input.dtype])
@@ -81,10 +94,10 @@ def cross(
         backend = get_active_backend()
         kw = axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None}
         data = backend.execute_op("Cross", a.data, b.data, **kw)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
     out_shape = a.shape
-    return as_tensor_obj(
-        as_callable(_emit_linalg_node)(
+    return ensure_tensor(
+        ensure_callable(_emit_linalg_node)(
             "Cross",
             [a, b],
             axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None},
@@ -108,9 +121,9 @@ def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> TensorO
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Trace", a.data, offset=offset, axis1=axis1, axis2=axis2)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
 
-    out_shape = _get_attr(Trace(), "infer_shape")(a, offset=offset, axis1=axis1, axis2=axis2)
+    out_shape = ensure_shape(Trace().infer_shape(ensure_eager_tensor(a), offset=offset, axis1=axis1, axis2=axis2))
     return _emit_linalg_node(
         "Trace",
         [a],
@@ -133,9 +146,9 @@ def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) 
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("MatrixRank", M.data, tol=tol, hermitian=hermitian)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), M.dtype, M.device))
+        return Tensor(data, TensorConfig(extract_shape(data), M.dtype, M.device))
 
-    out_shape = _get_attr(MatrixRank(), "infer_shape")(M, tol=tol, hermitian=hermitian)
+    out_shape = ensure_shape(MatrixRank().infer_shape(ensure_eager_tensor(M), tol=tol, hermitian=hermitian))
     return _emit_linalg_node("MatrixRank", [M], {"tol": tol, "hermitian": hermitian}, [tuple(out_shape)], [M.dtype])
 
 
@@ -150,9 +163,9 @@ def matrix_transpose(a: Tensor) -> TensorOrScalar:
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("MatrixTranspose", a.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
 
-    out_shape = _get_attr(MatrixTranspose(), "infer_shape")(a)
+    out_shape = ensure_shape(MatrixTranspose().infer_shape(ensure_eager_tensor(a)))
     return _emit_linalg_node("MatrixTranspose", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
@@ -167,9 +180,9 @@ def sqrtm(a: Tensor) -> TensorOrScalar:
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Sqrtm", a.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
 
-    out_shape = _get_attr(Sqrtm(), "infer_shape")(a)
+    out_shape = ensure_shape(Sqrtm().infer_shape(ensure_eager_tensor(a)))
     return _emit_linalg_node("Sqrtm", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
@@ -227,9 +240,9 @@ def adjoint(matrix: Tensor) -> TensorOrScalar:
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Adjoint", matrix.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), matrix.dtype, matrix.device))
+        return Tensor(data, TensorConfig(extract_shape(data), matrix.dtype, matrix.device))
 
-    out_shape = _get_attr(Adjoint(), "infer_shape")(matrix)
+    out_shape = ensure_shape(Adjoint().infer_shape(ensure_eager_tensor(matrix)))
     return _emit_linalg_node("Adjoint", [matrix], {}, [tuple(out_shape)], [matrix.dtype])
 
 
@@ -249,13 +262,13 @@ def eigh_tridiagonal(
         Tensor: The eigenvalues.
     """
     if config.eager_mode:
-        kw = kwargs or {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
-        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **_cast_val("dict[str, TensorOrScalar]", kw))
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), alpha.dtype, alpha.device))
+        kw = kwargs if isinstance(kwargs, dict) and kwargs else {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
+        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **kw)
+        return Tensor(data, TensorConfig(extract_shape(data), alpha.dtype, alpha.device))
 
-    out_shape = _get_attr(EighTridiagonal(), "infer_shape")(alpha, beta)
-    return as_tensor(
-        as_callable(_emit_linalg_node)(
+    out_shape = ensure_eager_list(EighTridiagonal().infer_shape(ensure_eager_tensor(alpha), ensure_eager_tensor(beta)))
+    return ensure_eager_tensor(
+        ensure_callable(_emit_linalg_node)(
             "EighTridiagonal",
             [alpha, beta],
             kwargs or {},
@@ -286,7 +299,7 @@ def global_norm(t_list: TensorOrScalar, name: TensorOrScalar = None) -> TensorOr
 
     Returns: Tensor: The global norm.
     """
-    return _get_attr(t_list, "__getitem__")(0) if t_list else 0.0
+    return ensure_eager_list(t_list)[0] if t_list else 0.0
 
 
 def logdet(matrix: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -354,9 +367,9 @@ def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOr
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("TridiagonalMatmul", dl.data, d.data, du.data, b.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), b.dtype, b.device))
+        return Tensor(data, TensorConfig(extract_shape(data), b.dtype, b.device))
 
-    out_shape = _get_attr(TridiagonalMatmul(), "infer_shape")(dl, d, du, b)
+    out_shape = ensure_shape(TridiagonalMatmul().infer_shape(ensure_eager_tensor(dl), ensure_eager_tensor(d), ensure_eager_tensor(du), ensure_eager_tensor(b)))
     return _emit_linalg_node("TridiagonalMatmul", [dl, d, du, b], {}, [tuple(out_shape)], [b.dtype])
 
 
@@ -374,7 +387,7 @@ def matrix_norm(x: Tensor, keepdims: TensorOrScalar = False, name: TensorOrScala
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("MatrixNorm", x.data, keepdims=keepdims)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), x.dtype, x.device))
+        return Tensor(data, TensorConfig(extract_shape(data), x.dtype, x.device))
     return _emit_linalg_node("MatrixNorm", [x], {"keepdims": keepdims}, [()], [x.dtype])
 
 
@@ -392,9 +405,9 @@ def vector_norm(x: TensorOrScalar, axis: TensorOrScalar = None, keepdims: Tensor
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("VectorNorm", _get_attr(x, "data"), axis=axis, keepdims=keepdims, ord=ord)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), _get_attr(x, "dtype"), _get_attr(x, "device")))
-    return _emit_linalg_node("VectorNorm", [x], {"axis": axis, "keepdims": keepdims, "ord": ord}, [()], [_get_attr(x, "dtype")])
+        data = backend.execute_op("VectorNorm", extract_data(x), axis=axis, keepdims=keepdims, ord=ord)
+        return Tensor(data, TensorConfig(extract_shape(data), _extract_linalg_dtype(x, None), extract_device(x, None)))
+    return _emit_linalg_node("VectorNorm", [x], {"axis": axis, "keepdims": keepdims, "ord": ord}, [()], [_extract_linalg_dtype(x, None)])
 
 
 @register_op("Svdvals")
@@ -412,7 +425,7 @@ class Svdvals(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0]
-        shape: tuple[int, ...] = _get_attr(x, "shape", ())
+        shape: tuple[int, ...] = extract_shape(x)
         if len(shape) < 2:
             return shape
         return shape[:-2] + (min(shape[-2], shape[-1]),)
@@ -431,8 +444,8 @@ def svdvals(x: Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Svdvals", x.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), x.dtype, x.device))
-    out_shape = _get_attr(Svdvals(), "infer_shape")(x)
+        return Tensor(data, TensorConfig(extract_shape(data), x.dtype, x.device))
+    out_shape = ensure_shape(Svdvals().infer_shape(x))
     return _emit_linalg_node("Svdvals", [x], {}, [tuple(out_shape)], [x.dtype])
 
 
@@ -457,7 +470,7 @@ def diagonal(
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Diagonal", x.data, offset=offset, axis1=axis1, axis2=axis2)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), x.dtype, x.device))
+        return Tensor(data, TensorConfig(extract_shape(data), x.dtype, x.device))
     return _emit_linalg_node("Diagonal", [x], {"offset": offset, "axis1": axis1, "axis2": axis2}, [()], [x.dtype])
 
 
@@ -515,5 +528,5 @@ def cond(input: Tensor, p: (str | float | None) = None) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Cond", input.data, p=p)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), input.dtype, input.device))
+        return Tensor(data, TensorConfig(extract_shape(data), input.dtype, input.device))
     return _emit_linalg_node("Cond", [input], {"p": p}, [input.shape[:-2]], [input.dtype])

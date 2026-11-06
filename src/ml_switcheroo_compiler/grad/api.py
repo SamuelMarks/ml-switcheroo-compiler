@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol, _get_attr, _has_attr, _obj_set_attr, _set_attr, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TypedVariadicCallable,
+    VariadicCallableProtocol,
+    invoke_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ops.registry import register_util
@@ -16,7 +22,102 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import VJPRul
 
 from .custom_vjp_ops import custom_vjp
 from .options import GradOptions
-from .utils import GradValue, _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
+from .utils import (
+    GradValue,
+    _check_scalar,
+    _compute_grad_and_value,
+    _ensure_grad_tensor,
+    _find_wrt_tensors,
+    _get_inputs_dict,
+    _IdDataProtocol,
+)
+
+
+@typing.runtime_checkable
+class _ExecuteGraphBackendProtocol(typing.Protocol):
+    """Protocol for backends implementing `execute_graph(graph, inputs_dict)`."""
+
+    def execute_graph(self, graph: LogicalGraph, inputs_dict: dict[str, GradValue]) -> dict[str, GradValue]:
+        """Execute a computation graph with concrete inputs.
+
+        Args:
+            graph (LogicalGraph): Target graph.
+            inputs_dict (dict[str, GradValue]): Concrete input mapping.
+
+        Returns:
+            dict[str, GradValue]: Output mapping.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _CompileGraphBackendProtocol(typing.Protocol):
+    """Protocol for backends implementing `compile_graph(graph)`."""
+
+    def compile_graph(self, graph: LogicalGraph) -> TypedVariadicCallable[dict[str, GradValue]]:
+        """Compile a computation graph into a callable.
+
+        Args:
+            graph (LogicalGraph): Target graph.
+
+        Returns:
+            TypedVariadicCallable[dict[str, GradValue]]: Compiled graph callable.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _AddableProtocol(typing.Protocol):
+    """Protocol for operands supporting addition (`__add__`)."""
+
+    def __add__(self, other: GradValue) -> GradValue:
+        """Add `other` to `self`.
+
+        Args:
+            other (GradValue): Right-hand operand.
+
+        Returns:
+            GradValue: Sum result.
+        """
+        ...
+
+
+class _MutableGradTargetProtocol(typing.Protocol):
+    """Protocol for tensor objects supporting `.grad` assignment."""
+
+    grad: GradValue
+
+
+class _MutableOpTypeDecoratorProtocol(typing.Protocol):
+    """Protocol for decorator callables supporting `.op_type` assignment."""
+
+    op_type: str
+
+
+def _is_mutable_grad_target(val: GradValue) -> typing.TypeGuard[_MutableGradTargetProtocol]:
+    """Type guard narrowing `val` to `_MutableGradTargetProtocol`.
+
+    Args:
+        val (GradValue): Target tensor object.
+
+    Returns:
+        bool: Always True for runtime tensor instances.
+    """
+    return val is not None
+
+
+def _is_mutable_op_type_decorator(
+    val: Callable[[VJPRuleCallable], VJPRuleCallable],
+) -> typing.TypeGuard[_MutableOpTypeDecoratorProtocol]:
+    """Type guard narrowing `val` to `_MutableOpTypeDecoratorProtocol`.
+
+    Args:
+        val (Callable[[VJPRuleCallable], VJPRuleCallable]): Decorator function.
+
+    Returns:
+        bool: Always True for function objects.
+    """
+    return callable(val)
 
 
 @register_util("backward")
@@ -42,9 +143,8 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     graph = global_tracing_state.active_graph
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
-    loss_id = _get_attr(tensor.data, "id", None)
-    if loss_id is None:
-        loss_id = str(tensor.data)
+    raw_data: TensorOrScalar = tensor.data
+    loss_id = str(raw_data.id) if isinstance(raw_data, _IdDataProtocol) and raw_data.id is not None else str(tensor.data)
 
     if not wrt_ids:
         tensor.grad = 1.0
@@ -55,10 +155,10 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     grad_graph = graph_grad(graph, wrt_ids, loss_id)
     inputs_dict = _get_inputs_dict(graph)
 
-    backend = get_active_backend()
-    if _has_attr(backend, "execute_graph"):
+    backend: TensorOrScalar = get_active_backend()
+    if isinstance(backend, _ExecuteGraphBackendProtocol):
         outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
-    elif _has_attr(backend, "compile_graph"):
+    elif isinstance(backend, _CompileGraphBackendProtocol):
         compiled_fn = backend.compile_graph(grad_graph)
         outputs_dict = compiled_fn(inputs_dict)
     else:
@@ -72,7 +172,8 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
         if grad_node_id in outputs_dict:
             grad_val = outputs_dict[grad_node_id]
             t = wrt_tensors[i]
-            _set_attr(t, "grad", grad_val)
+            assert _is_mutable_grad_target(t)
+            t.grad = grad_val
 
 
 def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
@@ -85,8 +186,8 @@ def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallabl
         Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator registering the VJP rule function.
     """
     dec = register_vjp(op_type)
-    if callable(dec):
-        _obj_set_attr(dec, "op_type", op_type)
+    if _is_mutable_op_type_decorator(dec):
+        dec.op_type = op_type
     return dec
 
 
@@ -156,7 +257,10 @@ def ir_grad(fun: GradValue, options: GradOptions | GradValue = None) -> Variadic
     """
     opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+    def wrapped(
+        *args: GradValue,
+        **kwargs: GradValue,
+    ) -> GradValue:
         """Compute gradient of `fun` at `*args`.
 
         Args:
@@ -188,7 +292,10 @@ def grad(
     """
     options = options or GradOptions()
 
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+    def wrapped(
+        *args: GradValue,
+        **kwargs: GradValue,
+    ) -> GradValue:
         """Evaluate the gradient of `fun` at `*args`.
 
         Args:
@@ -222,7 +329,10 @@ def value_and_grad(
     """
     opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> tuple[GradValue, GradValue]:
+    def wrapped(
+        *args: GradValue,
+        **kwargs: GradValue,
+    ) -> GradValue:
         """Evaluate both primal value and gradient of `fun` at `*args`.
 
         Args:
@@ -230,11 +340,11 @@ def value_and_grad(
             **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[GradValue, GradValue]: Tuple of `(value, grads)`.
+            GradValue: Tuple of `(value, grads)`.
         """
         _ = kwargs
         val, grads = _compute_grad_and_value(fun, opts, args)
-        if _get_attr(opts, "has_aux"):
+        if opts.has_aux:
             return val, grads
         return val, grads
 
@@ -317,9 +427,10 @@ def jvp(
     eps = 1e-5
     perturbed: list[GradValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
-        if _has_attr(p, "__add__"):
+        raw_p: TensorOrScalar = p
+        if isinstance(raw_p, _AddableProtocol):
             try:
-                perturbed.append(_get_attr(p, "__add__")(_get_attr(t, "__mul__")(eps)))
+                perturbed.append(_ensure_grad_tensor(p) + _ensure_grad_tensor(t) * eps)
             except Exception:
                 perturbed.append(p)
         else:
@@ -327,7 +438,7 @@ def jvp(
 
     out_eps = invoke_callable(fun, *perturbed)
     try:
-        tangent_out: GradValue = _get_attr(_get_attr(out_eps, "__sub__")(primal_out), "__truediv__")(eps)
+        tangent_out: GradValue = (_ensure_grad_tensor(out_eps) - _ensure_grad_tensor(primal_out)) / eps
     except Exception:
         tangent_out = primal_out
     return primal_out, tangent_out

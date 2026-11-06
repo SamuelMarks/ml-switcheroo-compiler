@@ -24,10 +24,9 @@ from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -130,7 +129,7 @@ def test_advanced_hardware_kernel_patterns() -> None:
         g.nodes["p_op"] = node
         g.inputs = ["in0"]
         g.outputs = ["p_op"]
-        _obj_set_attr(g, "sorted_nodes", [in0, node])
+        ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
 
         cuda_code = CudaCodeGenerator(g).generate()
         assert pattern in cuda_code or "kernel" in cuda_code
@@ -210,9 +209,8 @@ def _test_all_registered_operations_hardware_codegen_parity_part_1(_state: dict[
     clang_comp = ClangCompiler()
 
     binary_ops = {"Add", "Sub", "Mul", "Div", "Pow", "Minimum", "Maximum", "MatMul", "BatchMatMul", "Einsum", "Conv2D", "Conv3D"}
-    _get_attr(_state, "update")({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp, "hip_comp": hip_comp})
-    _get_attr(_state, "update")({"metal_comp": metal_comp, "supported_ops": supported_ops})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp, "hip_comp": hip_comp}))
+    _state.update(ensure_tensor_dict({"metal_comp": metal_comp, "supported_ops": supported_ops}))
 
 
 def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -230,15 +228,15 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
         if op_name in binary_ops:
             in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
             g.nodes["in1"] = in1
-            node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
             g.inputs = ["in0", "in1"]
-            _obj_set_attr(g, "sorted_nodes", [in0, in1, node])
+            ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, in1, node])
         else:
-            node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
             g.inputs = ["in0"]
-            _obj_set_attr(g, "sorted_nodes", [in0, node])
-        _get_attr(g.nodes, "__setitem__")(node.id, node)
-        _set_attr(g, "outputs", [node.id])
+            ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
+        ensure_eager_tensor(g.nodes)[node.id] = node
+        ensure_mutable(g).outputs = ensure_eager_tensor([node.id])
 
         cuda_src = CudaCodeGenerator(g).generate()
         assert cuda_comp.validate_syntax(cuda_src)
@@ -251,7 +249,8 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
 
         cpp_src = CppGenerator(g).generate()
         assert clang_comp.validate_syntax(cpp_src)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp}))
+    _state.update(ensure_tensor_dict({"hip_comp": hip_comp, "metal_comp": metal_comp, "supported_ops": supported_ops}))
 
 
 def _test_all_registered_operations_hardware_codegen_parity_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -263,8 +262,7 @@ def _test_all_registered_operations_hardware_codegen_parity_part_3(_state: dict[
     all_ops = list(_YAML_REGISTRY.keys())
     assert len(all_ops) >= 4000
     sample_ops = all_ops[::80]  # ~50 representative operations covering the spectrum
-    _get_attr(_state, "update")({"all_ops": all_ops, "sample_ops": sample_ops})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"all_ops": all_ops, "sample_ops": sample_ops}))
 
 
 def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -278,12 +276,12 @@ def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
-        node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+        node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
         g.nodes["in0"] = in0
-        _get_attr(g.nodes, "__setitem__")(node.id, node)
+        ensure_eager_tensor(g.nodes)[node.id] = node
         g.inputs = ["in0"]
-        _set_attr(g, "outputs", [node.id])
-        _obj_set_attr(g, "sorted_nodes", [in0, node])
+        ensure_mutable(g).outputs = ensure_eager_tensor([node.id])
+        ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
 
         # CUDA code generation and syntax validation
         try:

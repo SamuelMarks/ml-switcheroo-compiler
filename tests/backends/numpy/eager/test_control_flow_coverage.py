@@ -8,7 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import control_flow as cf_module
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -21,8 +21,8 @@ def test_control_flow_ops() -> None:
         None
     """
     # len(args) < 2
-    res_single = cf_module._np_associative_scan(np, np.array([1, 2, 3]))
-    assert as_callable(np.array_equal)(res_single, as_callable(np.array)([1, 2, 3]))
+    res_single = cf_module._np_associative_scan(ensure_eager_tensor(np), np.array([1, 2, 3]))
+    assert ensure_callable(np.array_equal)(res_single, ensure_callable(np.array)([1, 2, 3]))
 
     # len(args) >= 2 with axis 0
     def fn(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -32,28 +32,28 @@ def test_control_flow_ops() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_tensor(a) + as_tensor(b)
+        return ensure_eager_tensor(a) + ensure_eager_tensor(b)
 
     elems = [np.array([1, 2]), np.array([3, 4]), np.array([5, 6])]
-    res_scan = cf_module._np_associative_scan(np, fn, elems, axis=0)
+    res_scan = cf_module._np_associative_scan(ensure_eager_tensor(np), fn, elems, axis=0)
     expected_scan = np.array([[1, 2], [4, 6], [9, 12]])
-    assert as_callable(np.array_equal)(res_scan, expected_scan)
+    assert ensure_callable(np.array_equal)(res_scan, expected_scan)
 
     # len(args) >= 2 with axis 1
     elems_2d = np.array([[1, 2, 3], [4, 5, 6]])
-    res_scan_axis1 = cf_module._np_associative_scan(np, fn, elems_2d, axis=1)
+    res_scan_axis1 = cf_module._np_associative_scan(ensure_eager_tensor(np), fn, elems_2d, axis=1)
     expected_scan_axis1 = np.array([[1, 3, 6], [4, 9, 15]])
-    assert as_callable(np.array_equal)(res_scan_axis1, expected_scan_axis1)
+    assert ensure_callable(np.array_equal)(res_scan_axis1, expected_scan_axis1)
 
     # registry AssociativeScan
     reg_scan = numpy_eager_registry.get("AssociativeScan")
-    reg_res = as_callable(reg_scan)(np, fn, elems, axis=0)
-    assert as_callable(np.array_equal)(reg_res, expected_scan)
+    reg_res = ensure_callable(reg_scan)(np, fn, elems, axis=0)
+    assert ensure_callable(np.array_equal)(reg_res, expected_scan)
 
     # StopGradient
     x = np.array([1.0, 2.0])
-    res_stop = cf_module._stop_gradient(np, x)
-    assert as_callable(np.array_equal)(res_stop, x)
+    res_stop = cf_module._stop_gradient(ensure_eager_tensor(np), x)
+    assert ensure_callable(np.array_equal)(res_stop, x)
 
     reg_stop = numpy_eager_registry.get("StopGradient")
-    assert as_callable(np.array_equal)(as_callable(reg_stop)(np, x), x)
+    assert ensure_callable(np.array_equal)(ensure_callable(reg_stop)(np, x), x)

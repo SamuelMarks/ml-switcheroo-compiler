@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.distributed.layout_map import LayoutMap, ShardingSpec
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -24,7 +24,7 @@ def test_sharding_spec() -> None:
 
     s3 = ShardingSpec("mesh", ["y", None])
     assert s != s3
-    assert as_tensor(s) != as_tensor("string")
+    assert ensure_eager_tensor(s) != ensure_eager_tensor("string")
 
     assert repr(s) == "ShardingSpec(mesh=mesh, mapping=('x', None))"
 

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor, as_tensor_pair, as_tensor_triple
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int, ensure_tensor_pair, ensure_tensor_triple
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -33,8 +33,8 @@ class TriangularSolve(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("rhs", kwargs.get("b"))
         if a is None or b is None:
             return ()
-        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(a)
+        shape_b = _extract_linalg_shape(b)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -71,7 +71,7 @@ class Lu(OpDef):
         inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = _extract_linalg_shape(inp)
         if len(shape) < 2:
             return (shape, shape, shape)
         m, n = shape[-2], shape[-1]
@@ -109,8 +109,8 @@ class LuSolve(OpDef):
         if lu is None or rhs is None:
             return ()
 
-        shape_a = tuple(int(d) for d in _get_attr(lu, "shape", _get_attr(lu, "shape_metadata", lu if isinstance(lu, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(rhs, "shape", _get_attr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(lu)
+        shape_b = _extract_linalg_shape(rhs)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -163,7 +163,7 @@ class MatrixExponential(OpDef):
             return ()
 
         a = args[0]
-        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
+        shape = extract_shape(a)
         if len(shape) < 2:
             raise ValueError("MatrixExponential requires at least 2 dimensions")
         if shape[-1] != shape[-2]:
@@ -189,9 +189,9 @@ class Cross(OpDef):
 
         a = args[0]
         b = args[1]
-        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
-        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", ())))
-        axis = int(as_int(kwargs.get("axis", -1)))
+        shape_a = extract_shape(a)
+        shape_b = extract_shape(b)
+        axis = int(ensure_int(kwargs.get("axis", -1)))
         if shape_a[axis] != 3 or shape_b[axis] != 3:
             raise ValueError("Cross requires dimension size 3")
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -266,7 +266,7 @@ def lu(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        p, l_mat, u = as_tensor_triple(backend.execute_op("Lu", a.data))
+        p, l_mat, u = ensure_tensor_triple(backend.execute_op("Lu", a.data))
         return (
             Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
             Tensor(l_mat, TensorConfig(l_mat.shape, a.dtype, a.device)),
@@ -290,7 +290,7 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(backend.execute_op("LuSolve", lu.data, piv.data, b.data))
+        data = ensure_eager_tensor(backend.execute_op("LuSolve", lu.data, piv.data, b.data))
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
     return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
 
@@ -309,7 +309,7 @@ def polar(a: Tensor, side: str = "right") -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        u, p = as_tensor_pair(backend.execute_op("Polar", a.data, side=side))
+        u, p = ensure_tensor_pair(backend.execute_op("Polar", a.data, side=side))
         return (
             Tensor(u, TensorConfig(u.shape, a.dtype, a.device)),
             Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
@@ -333,7 +333,7 @@ def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOrS
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data))
+        data = ensure_eager_tensor(backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data))
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
     return _emit_linalg_node("TridiagonalSolve", [dl, d, du, b], {}, [b.shape], [b.dtype])
 

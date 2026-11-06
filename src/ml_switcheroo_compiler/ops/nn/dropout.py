@@ -9,7 +9,13 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -125,7 +131,7 @@ class ActivityRegularization(OpDef):
         """
         if isinstance(x, (tuple, list)):
             return x
-        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(x)
         return _typed_ret_1
 
 
@@ -166,7 +172,7 @@ class Dropout1d(OpDef):
         Returns:
             The inferred shape, matching the input.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_2: TensorOrScalar = extract_shape(x)
         return _typed_ret_2
 
 
@@ -189,7 +195,13 @@ def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
         backend = get_active_backend()
         data = backend.execute_op("Dropout1d", x.data, p=p, training=training)
         return Tensor(data, TensorConfig(x.shape, x.dtype, x.device))
-    return _emit_shape_node("Dropout1d", [x], {"p": p, "training": training}, _get_attr(x, "shape", ()), _get_attr(x, "dtype", None))
+    return _emit_shape_node(
+        "Dropout1d",
+        [x],
+        {"p": p, "training": training},
+        extract_shape(x),
+        extract_dtype(x, DType.Float32),
+    )
 
 
 @register_op("Dropout2d")
@@ -208,7 +220,7 @@ class Dropout2d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_3: TensorOrScalar = extract_shape(x)
         return _typed_ret_3
 
 
@@ -227,15 +239,22 @@ def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Dropout2d", _get_attr(x, "data", x), p=p, training=training)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), _get_attr(x, "dtype", None), _get_attr(x, "device", None)))
+        data = backend.execute_op("Dropout2d", extract_data(x), p=p, training=training)
+        return Tensor(
+            data,
+            TensorConfig(
+                extract_shape(data),
+                extract_dtype(x, DType.Float32),
+                extract_device(x, None),
+            ),
+        )
 
     return _emit_shape_node(
         "Dropout2d",
         [x],
         {"p": p, "training": training},
-        _get_attr(x, "shape", ()),
-        _get_attr(x, "dtype", DType.Float32),
+        extract_shape(x),
+        extract_dtype(x, DType.Float32),
     )
 
 
@@ -255,7 +274,7 @@ class Dropout3d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(x, "shape", ())
+        _typed_ret_4: TensorOrScalar = extract_shape(x)
         return _typed_ret_4
 
 
@@ -274,12 +293,12 @@ def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
     """
     if config.eager_mode:
         backend = get_active_backend()
-        return backend.execute_op("Dropout3d", _get_attr(x, "data", x), p=p, training=training)
+        return backend.execute_op("Dropout3d", extract_data(x), p=p, training=training)
 
     return _emit_shape_node(
         "Dropout3d",
         [x],
         {"p": p, "training": training},
-        _get_attr(x, "shape", ()),
-        _get_attr(x, "dtype", DType.Float32),
+        extract_shape(x),
+        extract_dtype(x, DType.Float32),
     )

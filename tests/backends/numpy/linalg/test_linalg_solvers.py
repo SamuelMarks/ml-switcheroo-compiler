@@ -22,8 +22,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _np_trace,
     _parse_dot_dimension_numbers,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -41,7 +40,7 @@ def test_get_uncontracted_dims() -> None:
 def test_parse_dot_dimension_numbers() -> None:
     """Test parse dot dimension numbers."""
     dimension_numbers = (((1,), (0,)), ((2,), (3,)))
-    res = as_callable(_parse_dot_dimension_numbers)(dimension_numbers)
+    res = ensure_callable(_parse_dot_dimension_numbers)(dimension_numbers)
     assert res == ((1,), (0,), (2,), (3,))
 
 
@@ -63,91 +62,91 @@ def test_dot_general() -> None:
     dimension_numbers = (((1,), (0,)), ((), ()))
     res = _dot_general(a, b, dimension_numbers)
     expected = np.dot(a, b)
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_trace() -> None:
     """Test trace."""
     a = np.array([[1, 2], [3, 4]])
-    res = _np_trace(np, a)
+    res = _np_trace(ensure_eager_tensor(np), a)
     assert res == 5
 
 
 def test_matrix_rank() -> None:
     """Test matrix rank."""
     a = np.array([[1, 2], [3, 4]])
-    res = _np_matrix_rank(np, a)
+    res = _np_matrix_rank(ensure_eager_tensor(np), a)
     assert res == 2
 
 
 def test_matrix_transpose() -> None:
     """Test matrix transpose."""
     a = np.array([[1, 2], [3, 4]])
-    res = _np_matrix_transpose(np, a)
+    res = _np_matrix_transpose(ensure_eager_tensor(np), a)
     expected = a.T
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_sqrtm() -> None:
     """Test sqrtm."""
     a = np.array([1, 2])
     res = _np_sqrtm(a)
-    assert as_callable(np.array_equal)(res, a)
+    assert ensure_callable(np.array_equal)(res, a)
 
 
 def test_adjoint() -> None:
     """Test adjoint."""
     a = np.array([[1 + 1j, 2], [3, 4]])
-    res = _np_adjoint(np, a)
+    res = _np_adjoint(ensure_eager_tensor(np), a)
     expected = np.conj(a.T)
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_cholesky_solve() -> None:
     """Test cholesky solve."""
     a = np.array([1, 2])
-    res = _np_cholesky_solve(np, a)
-    assert as_callable(np.array_equal)(res, a)
+    res = _np_cholesky_solve(ensure_eager_tensor(np), a)
+    assert ensure_callable(np.array_equal)(res, a)
 
 
 def test_eigh_tridiagonal() -> None:
     """Test eigh tridiagonal."""
     a = np.array([1, 2])
-    res = _np_eigh_tridiagonal(np, a)
-    assert as_callable(np.array_equal)(res, a)
+    res = _np_eigh_tridiagonal(ensure_eager_tensor(np), a)
+    assert ensure_callable(np.array_equal)(res, a)
 
 
 def test_qr() -> None:
     """Test qr."""
     a = np.array([[1, 2], [3, 4]])
-    res = _np_qr(np, a)
+    res = _np_qr(ensure_eager_tensor(np), a)
     expected = np.linalg.qr(a)
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), as_tensor(_get_attr(expected, "__getitem__")(0)))
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(1)), as_tensor(_get_attr(expected, "__getitem__")(1)))
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(res)[0], ensure_eager_tensor(expected)[0])
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(res)[1], ensure_eager_tensor(expected)[1])
 
 
 def test_cross() -> None:
     """Test cross."""
     a = np.array([1, 0, 0])
     b = np.array([0, 1, 0])
-    res1 = _np_cross(np, a, b)
+    res1 = _np_cross(ensure_eager_tensor(np), a, b)
     expected = np.cross(a, b)
-    as_callable(np.testing.assert_allclose)(res1, expected)
+    ensure_callable(np.testing.assert_allclose)(res1, expected)
 
-    res2 = _np_cross(np, a, b, axes={"axis": None})
-    as_callable(np.testing.assert_allclose)(res2, expected)
+    res2 = _np_cross(ensure_eager_tensor(np), a, b, axes={"axis": None})
+    ensure_callable(np.testing.assert_allclose)(res2, expected)
 
-    res3 = _np_cross(np, a, b, axis=None)
-    as_callable(np.testing.assert_allclose)(res3, expected)
+    res3 = _np_cross(ensure_eager_tensor(np), a, b, axis=None)
+    ensure_callable(np.testing.assert_allclose)(res3, expected)
 
 
 def test_slogdet() -> None:
     """Test slogdet."""
     a = np.array([[1, 2], [3, 4]])
-    res = _np_slogdet(np, a)
+    res = _np_slogdet(ensure_eager_tensor(np), a)
     expected = np.linalg.slogdet(a)
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), as_tensor(_get_attr(expected, "__getitem__")(0)))
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(1)), as_tensor(_get_attr(expected, "__getitem__")(1)))
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(res)[0], ensure_eager_tensor(expected)[0])
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(res)[1], ensure_eager_tensor(expected)[1])
 
 
 def test_dynamically_registered_ops() -> None:
@@ -159,15 +158,15 @@ def test_dynamically_registered_ops() -> None:
     # test solve
     solve_fn = numpy_eager_registry.get("Solve")
     b = np.array([1, 2])
-    res_solve = as_callable(solve_fn)(np, a, b)
-    as_callable(np.testing.assert_allclose)(res_solve, as_callable(np.linalg.solve)(a, b))
+    res_solve = ensure_callable(solve_fn)(np, a, b)
+    ensure_callable(np.testing.assert_allclose)(res_solve, ensure_callable(np.linalg.solve)(a, b))
 
     # test eig
     eig_fn = numpy_eager_registry.get("Eig")
-    res_eig = as_callable(eig_fn)(np, a)
-    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res_eig, "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.linalg.eig)(a), "__getitem__")(0)))
+    res_eig = ensure_callable(eig_fn)(np, a)
+    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(res_eig)[0], ensure_eager_tensor(ensure_callable(np.linalg.eig)(a))[0])
 
     # test norm
     norm_fn = numpy_eager_registry.get("Norm")
-    res_norm = as_callable(norm_fn)(np, a)
-    as_callable(np.testing.assert_allclose)(res_norm, as_callable(np.linalg.norm)(a))
+    res_norm = ensure_callable(norm_fn)(np, a)
+    ensure_callable(np.testing.assert_allclose)(res_norm, ensure_callable(np.linalg.norm)(a))

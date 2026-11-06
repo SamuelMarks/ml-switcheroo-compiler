@@ -12,8 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_filters import (
     _np_random_gaussian_blur,
     _np_random_sharpness,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -29,8 +28,8 @@ def test_random_gaussian_blur(monkeypatch: pytest.MonkeyPatch) -> None:
     images = np.ones((1, 5, 5, 3))
     kernel_size = (3, 3)
     sigma = (1.0, 1.0)
-    res = _np_random_gaussian_blur(np, images, kernel_size, sigma)
-    assert as_tensor(_get_attr(res, "shape")) == (1, 5, 5, 3)
+    res = _np_random_gaussian_blur(ensure_eager_tensor(np), images, kernel_size, sigma)
+    assert ensure_eager_tensor(res).shape == (1, 5, 5, 3)
 
 
 def test_random_sharpness() -> None:
@@ -41,5 +40,5 @@ def test_random_sharpness() -> None:
     """
     images = np.ones((1, 5, 5, 3))
     factor = 1.5
-    res = _np_random_sharpness(np, images, factor)
-    assert as_tensor(_get_attr(res, "shape")) == (1, 5, 5, 3)
+    res = _np_random_sharpness(ensure_eager_tensor(np), images, factor)
+    assert ensure_eager_tensor(res).shape == (1, 5, 5, 3)

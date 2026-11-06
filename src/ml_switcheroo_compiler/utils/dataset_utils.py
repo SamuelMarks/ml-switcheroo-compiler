@@ -9,10 +9,34 @@ from collections.abc import Iterable, Iterator, Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+DatasetElement = typing.Union[
+    int,
+    float,
+    str,
+    bool,
+    list[int],
+    list[float],
+    list[str],
+    tuple[int, ...],
+    "tuple[float, ...]",
+    Sequence["DatasetElement"],
+]
 
-DatasetElement = typing.Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], "tuple[float, ...]"]
+
+def _normalize_dataset_elements(
+    data: Iterable[DatasetElement] | DatasetElement,
+) -> list[DatasetElement]:
+    """Normalize scalar or iterable dataset input into a list of dataset elements.
+
+    Args:
+        data (Iterable[DatasetElement] | DatasetElement): Input feature or target data.
+
+    Returns:
+        list[DatasetElement]: Normalized list of dataset elements.
+    """
+    if isinstance(data, (int, float, str, bool)):
+        return [data]
+    return list(data)
 
 
 class TimeseriesConfig(pydantic.BaseModel):
@@ -102,8 +126,8 @@ class NumpyDataset:
             config (BatchConfig | None): Optional batching and shuffling configuration.
         """
         conf = config if config is not None else BatchConfig()
-        self.x = list(x) if _has_attr(x, "__iter__") else [x]
-        self.y = list(_get_attr(y, "__iter__")()) if _has_attr(y, "__iter__") else [y] if y is not None else None
+        self.x: list[DatasetElement] = _normalize_dataset_elements(x)
+        self.y: list[DatasetElement] | None = _normalize_dataset_elements(y) if y is not None else None
         self.batch_size = conf.batch_size
         self.shuffle = conf.shuffle
         self.seed = conf.seed
@@ -346,7 +370,7 @@ def _extract_timeseries_windows(
     targets: Sequence[DatasetElement] | None,
     params: dict[str, int],
     bounds: tuple[int, int, int],
-) -> tuple[list[Sequence[DatasetElement]], list[DatasetElement] | None]:
+) -> tuple[list[DatasetElement], list[DatasetElement] | None]:
     """Extract sliding windows and optional aligned targets from a timeseries sequence.
 
     Args:
@@ -356,14 +380,14 @@ def _extract_timeseries_windows(
         bounds (tuple[int, int, int]): Tuple of (start, stop, stride) indices.
 
     Returns:
-        tuple[list[Sequence[DatasetElement]], list[DatasetElement] | None]: Extracted windows and targets.
+        tuple[list[DatasetElement], list[DatasetElement] | None]: Extracted windows and targets.
     """
-    x: list[Sequence[DatasetElement]] = []
+    x: list[DatasetElement] = []
     y: list[DatasetElement] | None = [] if targets is not None else None
     start, stop, stride = bounds
     seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
     for i in range(start, stop, stride):
-        x.append(data[i : i + seq_len * samp_rate : samp_rate])
+        x.append(list(data[i : i + seq_len * samp_rate : samp_rate]))
         if y is not None and targets is not None:
             y.append(targets[i + seq_len * samp_rate - 1])
     return x, y
@@ -405,19 +429,15 @@ def timeseries_dataset_from_array(
         {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
         (start, stop, stride),
     )
-    _typed_ret_1: NumpyDataset = _cast_val(
-        NumpyDataset,
-        as_callable(NumpyDataset)(
-            x,
-            y,
-            config=BatchConfig(
-                batch_size=conf.batch_config.batch_size,
-                shuffle=conf.batch_config.shuffle,
-                seed=conf.batch_config.seed,
-            ),
+    return NumpyDataset(
+        x,
+        y,
+        config=BatchConfig(
+            batch_size=conf.batch_config.batch_size,
+            shuffle=conf.batch_config.shuffle,
+            seed=conf.batch_config.seed,
         ),
     )
-    return _typed_ret_1
 
 
 def pack_x_y_sample_weight(
@@ -484,7 +504,7 @@ def pad_sequences(
             else:
                 padded.append(seq_list + pad_vals)
         else:
-            padded.append(seq.copy() if _has_attr(seq, "copy") else seq_list)
+            padded.append(seq_list)
     return padded
 
 

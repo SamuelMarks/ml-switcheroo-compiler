@@ -11,7 +11,17 @@ import struct
 import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_bytes, as_callable, as_eager_list, as_int, as_int_list, as_shape, as_str, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_bytes,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_int_list,
+    ensure_shape,
+    ensure_str,
+)
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -19,10 +29,10 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
     load_hardware_templates,
     query_optimal_launch_geometry,
 )
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -66,7 +76,7 @@ def _calculate_node_bytes(node: IRNode | None) -> tuple[int, int]:
     """
     if node is None:
         return 1024, 4096
-    shape = as_shape(_get_attr(node, "shape_metadata", None)) if _get_attr(node, "shape_metadata", None) else None
+    shape = ensure_shape(get_backend_member(node, "shape_metadata", None)) if get_backend_member(node, "shape_metadata", None) else None
     if shape:
         num_elements = 1
         for d in shape:
@@ -74,7 +84,7 @@ def _calculate_node_bytes(node: IRNode | None) -> tuple[int, int]:
     else:
         num_elements = 1024
     bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if _has_attr(node, "attributes") else "float32"
+    dtype = node.attributes.get("dtype", "float32") if has_backend_member(node, "attributes") else "float32"
     if dtype in ("float64", "int64", "double"):
         bytes_per_elem = 8
     elif dtype in ("float16", "int16", "bfloat16"):
@@ -99,12 +109,12 @@ def _resolve_metal_grid_sizes(
     Returns:
         tuple[str, str, str]: (grid_x, grid_y, grid_z).
     """
-    op_type_lower = str(_get_attr(node, "op_type", "")).lower()
+    op_type_lower = str(get_backend_member(node, "op_type", "")).lower()
     if op_type_lower in ("matmul", "dot"):
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
         in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-        in0_shape = as_shape(_get_attr(in0_node, "shape_metadata", None) or (1, 1))
-        in1_shape = as_shape(_get_attr(in1_node, "shape_metadata", None) or (1, 1))
+        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1))
+        in1_shape = ensure_shape(get_backend_member(in1_node, "shape_metadata", None) or (1, 1))
         m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
         n_dim = in1_shape[-1] if len(in1_shape) >= 1 else 1
         return str(n_dim), str(m_dim), "1"
@@ -112,8 +122,8 @@ def _resolve_metal_grid_sizes(
     if op_type_lower == "batchmatmul":
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
         in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-        in0_shape = as_shape(_get_attr(in0_node, "shape_metadata", None) or (1, 1, 1))
-        in1_shape = as_shape(_get_attr(in1_node, "shape_metadata", None) or (1, 1, 1))
+        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1, 1))
+        in1_shape = ensure_shape(get_backend_member(in1_node, "shape_metadata", None) or (1, 1, 1))
         b_sz = in0_shape[0] if len(in0_shape) > 2 else 1
         m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
         n_dim = in1_shape[-1] if len(in1_shape) >= 1 else 1
@@ -121,8 +131,8 @@ def _resolve_metal_grid_sizes(
 
     if op_type_lower == "conv2d":
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
-        in0_shape = as_shape(_get_attr(in0_node, "shape_metadata", None) or (1, 1, 1, 1))
-        out_shape = as_shape(_get_attr(node, "shape_metadata", None) or (1, 1, 1, 1))
+        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1, 1, 1))
+        out_shape = ensure_shape(get_backend_member(node, "shape_metadata", None) or (1, 1, 1, 1))
         n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
         c_out = out_shape[1] if len(out_shape) > 1 else 1
         h_out = out_shape[2] if len(out_shape) > 2 else 1
@@ -145,14 +155,14 @@ def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -
     input_buffers: dict[str, bytes] = {}
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if _has_attr(arg, "tobytes"):
-            input_buffers[input_name] = as_bytes(as_callable(_get_attr(arg, "tobytes"))())
+        if has_backend_member(arg, "tobytes"):
+            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(arg, "tobytes"))())
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif _has_attr(arg, "data") and _has_attr(_get_attr(arg, "data"), "tobytes"):
-            input_buffers[input_name] = as_bytes(as_callable(_get_attr(_get_attr(arg, "data"), "tobytes"))())
+        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
+            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(get_backend_member(arg, "data"), "tobytes"))())
         else:
-            input_buffers[input_name] = as_bytes(arg)
+            input_buffers[input_name] = ensure_bytes(arg)
     return input_buffers
 
 
@@ -168,7 +178,7 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Ea
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: _get_attr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
@@ -225,13 +235,13 @@ def _as_metal_dev_fn(val: EagerValue) -> _MetalDeviceFuncProtocol:
     Returns:
         _MetalDeviceFuncProtocol: Narrowed function object.
     """
-    raw: StructuralOperandProtocol = val
+    raw: EagerValue = val
 
-    def _guard(cand: StructuralOperandProtocol) -> typing.TypeGuard[_MetalDeviceFuncProtocol]:
+    def _guard(cand: EagerValue) -> typing.TypeGuard[_MetalDeviceFuncProtocol]:
         """Narrow candidate to `_MetalDeviceFuncProtocol`.
 
         Args:
-            cand (StructuralOperandProtocol): Candidate function.
+            cand (EagerValue): Candidate function.
 
         Returns:
             bool: True when non-None.
@@ -344,7 +354,7 @@ class MetalCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph inputs.
             msl (list[str]): Output MSL source lines.
         """
-        for inp in [str(x) for x in as_eager_list(_get_attr(node, "inputs", []))]:
+        for inp in [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []))]:
             if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
                 buf_to_free = node_buffers.get(inp)
                 if buf_to_free:
@@ -395,7 +405,7 @@ class MetalCodeGenerator(BaseGenerator):
         Returns:
             Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
         """
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         if op_type.lower() in ("input", "output", "fusedelementwise"):
             return None
         if "unsupported" in op_type.lower():
@@ -403,8 +413,8 @@ class MetalCodeGenerator(BaseGenerator):
         tpl = self.config.templates.get(op_type.lower())
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = [str(x) for x in as_eager_list(_get_attr(node, "inputs", []) or [])]
-            raw_se = _as_eager_dict(_get_attr(node, "attributes", {})).get("scalar_expr")
+            inps = [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []) or [])]
+            raw_se = _as_eager_dict(get_backend_member(node, "attributes", {})).get("scalar_expr")
             scalar_expr = str(raw_se) if raw_se is not None else None
             body = _synthesize_metal_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
@@ -436,7 +446,7 @@ class MetalCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             msl (list[str]): Output MSL source lines.
         """
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         if op_type.lower() == "fusedelementwise":
             self._emit_fused_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, msl)
             return
@@ -449,7 +459,7 @@ class MetalCodeGenerator(BaseGenerator):
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         msl.append(f"    {out_name} = device.newBufferWithLength_options_({bytes_alloc}, 0)")
-        wg: list[int] = as_int_list(as_callable(_get_attr(tpl, "get"))("workgroup_size", [1, 1, 1])) or [1, 1, 1]
+        wg: list[int] = ensure_int_list(ensure_callable(get_backend_member(tpl, "get"))("workgroup_size", [1, 1, 1])) or [1, 1, 1]
 
         gx, gy, gz = _resolve_metal_grid_sizes(node, num_elements, self.graph)
         msl.append(f"    grid_size_{node_idx} = MTLSize({gx}, {gy}, {gz})")
@@ -468,8 +478,8 @@ class MetalCodeGenerator(BaseGenerator):
         Args:
             msl (list[str]): MSL string lines to append to.
         """
-        for node_idx, node in enumerate(self.graph.nodes.values() if _get_attr(self.graph, "nodes", None) else ()):
-            op_type: str = str(_get_attr(node, "op_type", ""))
+        for node_idx, node in enumerate(self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()):
+            op_type: str = str(get_backend_member(node, "op_type", ""))
             if op_type.lower() == "fusedelementwise":
                 scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
                 in_params = ", ".join([f"device const float* in_{k} [[buffer({k})]]" for k in range(len(node.inputs))])
@@ -487,7 +497,7 @@ class MetalCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    body: str = as_str(as_callable(_get_attr(tpl, "get"))("body", "")).replace("#include <metal_stdlib>\nusing namespace metal;", "")
+                    body: str = ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")).replace("#include <metal_stdlib>\nusing namespace metal;", "")
                     msl.append(body)
 
     def generate_msl(self) -> str:
@@ -533,14 +543,14 @@ class MetalCodeGenerator(BaseGenerator):
             "",
         ]
 
-        node_buffers: dict[str, str] = {str(inp_name): f"input_buffers[{i}]" for i, inp_name in enumerate(as_eager_list(_get_attr(self.graph, "inputs", [])))}
+        node_buffers: dict[str, str] = {str(inp_name): f"input_buffers[{i}]" for i, inp_name in enumerate(ensure_eager_list(get_backend_member(self.graph, "inputs", [])))}
         last_consumer = compute_liveness(self.graph)
-        outputs_set = {str(x) for x in as_eager_list(_get_attr(self.graph, "outputs", []))}
-        inputs_set = {str(x) for x in as_eager_list(_get_attr(self.graph, "inputs", []))}
+        outputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "outputs", []))}
+        inputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "inputs", []))}
 
         node_idx: int = 0
-        for node in self.graph.nodes.values() if _get_attr(self.graph, "nodes", None) else ():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ():
+            if get_backend_member(node, "op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, dispatch_lines)
             node_idx += 1
@@ -584,9 +594,9 @@ class MetalCodeGenerator(BaseGenerator):
                     runner_inst = MetalRunner()
                     if runner_inst.device is not None:
                         input_buffers = _prepare_metal_input_buffers(graph, args)
-                        out_dict = _as_eager_dict(as_callable(_get_attr(runner_inst, "execute_graph"))(graph, input_buffers))
+                        out_dict = _as_eager_dict(ensure_callable(get_backend_member(runner_inst, "execute_graph"))(graph, input_buffers))
                         if len(graph.outputs) == 1:
-                            return as_tensor(out_dict.get(graph.outputs[0]))
+                            return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
                         return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -645,7 +655,7 @@ class MetalRunner:
         try:
             metal_path = ctypes.util.find_library("Metal") or "/System/Library/Frameworks/Metal.framework/Metal"
             metal_lib = ctypes.cdll.LoadLibrary(metal_path)
-            func = _get_attr(metal_lib, "MTLCreateSystemDefaultDevice", None)
+            func = get_backend_member(metal_lib, "MTLCreateSystemDefaultDevice", None)
             if func is not None:
                 c_fn = _as_metal_dev_fn(func)
                 c_fn.restype = ctypes.c_void_p
@@ -700,7 +710,7 @@ class MetalRunner:
 
         if buffers:
             for idx, buf_ptr in enumerate(buffers):
-                if buf_ptr is not None and _get_attr(buf_ptr, "value", None):
+                if buf_ptr is not None and get_backend_member(buf_ptr, "value", None):
                     metal_buf = self.device.newBufferWithBytesNoCopy_length_options_deallocator_(
                         buf_ptr.value,
                         4096,
@@ -730,11 +740,11 @@ class MetalRunner:
             Optional[ctypes.c_void_p]: Pointer to buffer.
         """
         if self.device is not None:
-            if _has_attr(self.device, "newBufferWithLength_options_"):
+            if has_backend_member(self.device, "newBufferWithLength_options_"):
                 buf = self.device.newBufferWithLength_options_(size, 0)
-                if buf is not None and _has_attr(buf, "contents"):
+                if buf is not None and has_backend_member(buf, "contents"):
                     return ctypes.c_void_p(int(buf.contents()))
-            elif self.objc is not None and (isinstance(self.device, int) or _get_attr(self.device, "value", None)):
+            elif self.objc is not None and (isinstance(self.device, int) or get_backend_member(self.device, "value", None)):
                 dev_ptr = self.device if isinstance(self.device, int) else self.device.value
                 sel_reg = self.objc.sel_registerName
                 sel_reg.restype = ctypes.c_void_p
@@ -751,7 +761,7 @@ class MetalRunner:
                     contents_ptr = msg_send_contents(buf_ptr, sel_contents)
                     return ctypes.c_void_p(contents_ptr)
         if self.metal is not None and self.objc is not None:
-            func = _get_attr(self.metal, "MTLCreateSystemDefaultDevice", None)
+            func = get_backend_member(self.metal, "MTLCreateSystemDefaultDevice", None)
             if func is not None:
                 c_fn = _as_metal_dev_fn(func)
                 c_fn.restype = ctypes.c_void_p
@@ -858,7 +868,7 @@ class MetalRunner:
             encoder.setBuffer_offset_atIndex_(buf, 0, i)
 
         first_in = inputs[0] if inputs else None
-        out_shape = as_shape(_get_attr(first_in, "shape", (1,)))
+        out_shape = ensure_shape(get_backend_member(first_in, "shape", (1,)))
         num_elements = 1
         for dim_val in out_shape:
             num_elements *= int(dim_val)
@@ -876,7 +886,8 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         out_ptr = out_buf.contents()
-        c_floats = ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float))
+        addr = ensure_int(get_backend_member(out_ptr, "value", out_ptr)) if isinstance(out_ptr, int) or has_backend_member(out_ptr, "value") else ctypes.addressof(out_ptr.contents)
+        c_floats = (ctypes.c_float * num_elements).from_address(addr)
         return [float(c_floats[idx]) for idx in range(num_elements)]
 
     @staticmethod
@@ -894,7 +905,7 @@ class MetalRunner:
         if isinstance(data, (list, tuple)):
             float_arr = (ctypes.c_float * len(data))(*(float(x) for x in data))
             return bytes(float_arr)
-        return as_bytes(as_callable(_get_attr(as_callable(_get_attr(data, "astype"))("float32"), "tobytes"))())
+        return ensure_bytes(ensure_callable(get_backend_member(ensure_callable(get_backend_member(data, "astype"))("float32"), "tobytes"))())
 
     def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, EagerValue]:
         """Allocate and populate input Metal buffers from host inputs.
@@ -937,10 +948,10 @@ class MetalRunner:
         """
         import Metal
 
-        op_type = str(_get_attr(node, "op_type", ""))
+        op_type = str(get_backend_member(node, "op_type", ""))
         func_name = f"fused_elementwise_{node_idx}" if op_type.lower() == "fusedelementwise" else f"kernel_{op_type.lower()}"
-        fn_maker = _get_attr(library, "newFunctionWithName_", None)
-        func = as_callable(fn_maker)(func_name) if fn_maker is not None else None
+        fn_maker = get_backend_member(library, "newFunctionWithName_", None)
+        func: EagerValue = ensure_callable(fn_maker)(func_name) if fn_maker is not None else None
         if func is None:
             return
 
@@ -948,22 +959,22 @@ class MetalRunner:
         if pipeline_state is None:
             return
 
-        as_callable(_get_attr(encoder, "setComputePipelineState_"))(pipeline_state)
+        ensure_callable(get_backend_member(encoder, "setComputePipelineState_"))(pipeline_state)
         for in_i, inp in enumerate(node.inputs):
             b = device_buffers.get(inp)
             if b is not None:
-                as_callable(_get_attr(encoder, "setBuffer_offset_atIndex_"))(b, 0, in_i)
+                ensure_callable(get_backend_member(encoder, "setBuffer_offset_atIndex_"))(b, 0, in_i)
         elem_count, byte_size = _calculate_node_bytes(node)
         out_buf = self.device.newBufferWithLength_options_(byte_size, Metal.MTLResourceStorageModeShared)
-        as_callable(_get_attr(encoder, "setBuffer_offset_atIndex_"))(out_buf, 0, len(node.inputs))
+        ensure_callable(get_backend_member(encoder, "setBuffer_offset_atIndex_"))(out_buf, 0, len(node.inputs))
         device_buffers[node.id] = out_buf
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
-            as_shape(_get_attr(node, "shape_metadata", None) or (elem_count,)),
+            ensure_shape(get_backend_member(node, "shape_metadata", None) or (elem_count,)),
         )
         threads_per_grid = Metal.MTLSize(grid_cfg[0] * block_cfg[0], grid_cfg[1] * block_cfg[1], grid_cfg[2] * block_cfg[2])
         threads_per_group = Metal.MTLSize(block_cfg[0], block_cfg[1], block_cfg[2])
-        as_callable(_get_attr(encoder, "dispatchThreads_threadsPerThreadgroup_"))(threads_per_grid, threads_per_group)
+        ensure_callable(get_backend_member(encoder, "dispatchThreads_threadsPerThreadgroup_"))(threads_per_grid, threads_per_group)
 
     def execute_graph(
         self,
@@ -999,8 +1010,8 @@ class MetalRunner:
         encoder = cmd_buf.computeCommandEncoder()
 
         node_idx: int = 0
-        for node in graph.nodes.values() if _get_attr(graph, "nodes", None) else ():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in graph.nodes.values() if get_backend_member(graph, "nodes", None) else ():
+            if get_backend_member(node, "op_type", "") == "Input":
                 continue
             self._dispatch_compute_node(node, node_idx, library, encoder, device_buffers)
             node_idx += 1
@@ -1010,12 +1021,12 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         results: dict[str, bytes] = {}
-        for out_id in [str(x) for x in as_eager_list(_get_attr(graph, "outputs", []))]:
+        for out_id in [str(x) for x in ensure_eager_list(get_backend_member(graph, "outputs", []))]:
             buf = device_buffers.get(out_id)
-            if buf is not None and _has_attr(buf, "contents"):
+            if buf is not None and has_backend_member(buf, "contents"):
                 out_node = graph.nodes.get(out_id)
                 _, byte_size = _calculate_node_bytes(out_node)
-                ptr = int(as_int(as_callable(_get_attr(buf, "contents"))()))
+                ptr = int(ensure_int(ensure_callable(get_backend_member(buf, "contents"))()))
                 results[out_id] = bytes(ctypes.string_at(ptr, byte_size))
 
         return results
@@ -1126,7 +1137,8 @@ class MetalRunner:
 
             if num_tgs == 1:
                 ptr = out_buf.contents()
-                return float(ctypes.cast(ptr, ctypes.POINTER(ctypes.c_float))[0])
+                addr = ensure_int(get_backend_member(ptr, "value", ptr)) if isinstance(ptr, int) or has_backend_member(ptr, "value") else ctypes.addressof(ptr.contents)
+                return float(ctypes.c_float.from_address(addr).value)
 
             curr_n = num_tgs
             curr_buf = out_buf

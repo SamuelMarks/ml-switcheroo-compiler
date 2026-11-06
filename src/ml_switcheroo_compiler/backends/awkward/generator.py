@@ -65,7 +65,7 @@ from ml_switcheroo_compiler.backends.awkward.types import (
 )
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -418,7 +418,7 @@ class AwkwardGenerator(PythonStringGenerator):
             Returns:
                 EagerValue: Output results.
             """
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(w_args):
@@ -426,11 +426,11 @@ class AwkwardGenerator(PythonStringGenerator):
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             inputs.update(w_kw)
             evaluated = evaluate_graph(graph, inputs=inputs, backend=generator_cls)
-            if _has_attr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return as_tensor(evaluated)
+            return ensure_eager_tensor(evaluated)
 
         return aot_awkward_runner
 

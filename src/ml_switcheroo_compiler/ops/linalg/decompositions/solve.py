@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -33,8 +33,8 @@ class Solve(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("b")
         if a is None or b is None:
             return ()
-        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(a)
+        shape_b = _extract_linalg_shape(b)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -74,8 +74,8 @@ class SolveEx(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("b")
         if a is None or b is None:
             return ()
-        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(a)
+        shape_b = _extract_linalg_shape(b)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return (shape_b, ())
@@ -112,11 +112,11 @@ def solve(a: Tensor, b: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(
+        data = ensure_eager_tensor(
             backend.execute_op(
                 "Solve",
-                (a.data if _has_attr(a, "device") else a),
-                (b.data if _has_attr(b, "device") else b),
+                extract_data(a),
+                extract_data(b),
             )
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -138,11 +138,11 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> TensorOrScalar
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sol, info = as_tensor_pair(
+        sol, info = ensure_tensor_pair(
             backend.execute_op(
                 "SolveEx",
-                (a.data if _has_attr(a, "device") else a),
-                (b.data if _has_attr(b, "device") else b),
+                extract_data(a),
+                extract_data(b),
                 check_errors=check_errors,
             )
         )
@@ -174,7 +174,7 @@ def solve_triangular(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(
+        data = ensure_eager_tensor(
             backend.execute_op(
                 "TriangularSolve",
                 a.data,

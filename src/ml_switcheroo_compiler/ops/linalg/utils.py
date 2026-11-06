@@ -8,18 +8,51 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.backends.registry import ensure_int
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import (
+    DTypeHolderProtocol,
+    TensorOrScalar,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import ensure_attrs
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
-from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+
+def _extract_linalg_shape(inp: TensorOrScalar) -> tuple[int, ...]:
+    """Extract integer shape tuple from `.shape`, `.shape_metadata`, or a sequence.
+
+    Args:
+        inp (TensorOrScalar): Input tensor, node, or shape sequence.
+
+    Returns:
+        tuple[int, ...]: Extracted integer shape tuple.
+    """
+    return extract_shape(inp, tuple(ensure_int(d) for d in inp) if isinstance(inp, (list, tuple)) else ())
+
+
+def _extract_linalg_dtype(
+    obj: TensorOrScalar,
+    default: DType | str | None = None,
+) -> DType | str | None:
+    """Safely extract `.dtype` from `obj`, falling back to `default`.
+
+    Args:
+        obj (TensorOrScalar): Input tensor or array.
+        default (DType | str | None): Default dtype if `obj` has no dtype.
+
+    Returns:
+        DType | str | None: Extracted dtype or `default`.
+    """
+    return extract_dtype(obj) if isinstance(obj, DTypeHolderProtocol) and obj.dtype is not None else default
 
 
 def _build_linalg_output_tensors(
@@ -75,16 +108,16 @@ def _emit_linalg_node(
         raise RuntimeError(msg)
 
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    shape_meta = tuple("?" if d is None else d for d in out_shapes[0]) if out_shapes else ()
+    shape_meta: tuple[int | str, ...] = tuple("?" if d is None else (d if isinstance(d, int) else str(d)) for d in out_shapes[0]) if out_shapes else ()
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
-    node = _cast_val("TypedVariadicCallable[LogicalNode]", LogicalNode)(
+    node = LogicalNode(
         id=out_ids[0],
         op_type=op_type,
-        inputs=input_ids,
-        attributes=as_attrs(attrs or {}),
+        inputs=[str(i) for i in input_ids],
+        attributes=ensure_attrs(attrs or {}),
         shape_metadata=shape_meta,
     )
     global_tracing_state.add_node(node)
-    device = _get_attr(inputs[0], "device", "cpu") if inputs else "cpu"
+    device = extract_device(inputs[0], "cpu") if inputs else "cpu"
     tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
     return tensors[0] if len(tensors) == 1 else tuple(tensors)

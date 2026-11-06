@@ -39,8 +39,7 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_zoom_eager,
 )
 from ml_switcheroo_compiler.backends.eager.vision_utils import GeometricGridConfig
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -71,22 +70,22 @@ def test_flips(mock_prepare: EagerTensorProtocol) -> None:
     """
     img = np.array([[[1, 2], [3, 4]]])
     rng_high = random.Random()
-    _set_attr(rng_high, "random", lambda: 0.6)
-    res = as_callable(_flip_horizontal)(img, rng_high)
+    ensure_mutable(rng_high).random = ensure_eager_tensor(lambda: 0.6)
+    res = ensure_callable(_flip_horizontal)(img, rng_high)
     assert id(res) != id(img)
 
     rng_low = random.Random()
-    _set_attr(rng_low, "random", lambda: 0.4)
-    res = as_callable(_flip_horizontal)(img, rng_low)
+    ensure_mutable(rng_low).random = ensure_eager_tensor(lambda: 0.4)
+    res = ensure_callable(_flip_horizontal)(img, rng_low)
     assert id(res) == id(img)
 
-    res = as_callable(_flip_vertical)(img, rng_high)
+    res = ensure_callable(_flip_vertical)(img, rng_high)
     assert id(res) != id(img)
-    res = as_callable(_flip_vertical)(img, rng_low)
+    res = ensure_callable(_flip_vertical)(img, rng_low)
     assert id(res) == id(img)
 
-    as_callable(_flip_both)(img, rng_high)
-    as_callable(_flip_both)(img, rng_low)
+    ensure_callable(_flip_both)(img, rng_high)
+    ensure_callable(_flip_both)(img, rng_low)
 
     imgs = np.ones((1, 4, 4, 3))
     random_flip_eager(np, imgs, mode="horizontal", seed=42)
@@ -102,18 +101,18 @@ def test_rotation_utils() -> None:
     params = AffineTransformParams(cos_a=1.0, sin_a=0.0, cx=2.0, cy=2.0)
     _apply_affine_transform(np.array([[1]]), np.array([[1]]), params)
 
-    cfg = as_callable(RotationConfig)(factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None)
-    as_callable(_interpolate_pixels)(np, as_callable(np.ones)((1, 4, 4, 3)), as_callable(np.array)([[1]]), as_callable(np.array)([[1]]), cfg)
+    cfg = ensure_callable(RotationConfig)(factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None)
+    ensure_callable(_interpolate_pixels)(np, ensure_callable(np.ones)((1, 4, 4, 3)), ensure_callable(np.array)([[1]]), ensure_callable(np.array)([[1]]), cfg)
 
-    as_callable(_compute_rotation_grid)(np, 4, 4, as_callable(random.Random)(), 0.1)
+    ensure_callable(_compute_rotation_grid)(np, 4, 4, ensure_callable(random.Random)(), 0.1)
 
-    as_callable(random_rotation_eager)(np, as_callable(np.ones)((1, 4, 4, 3)), cfg)
+    ensure_callable(random_rotation_eager)(np, ensure_callable(np.ones)((1, 4, 4, 3)), cfg)
     assert cfg is not None
 
 
 def test_crop_utils() -> None:
     """Test function test_crop_utils."""
-    as_callable(_crop_and_pad_single)(np, as_callable(np.ones)((4, 4, 3)), as_callable(random.Random)(), (2, 2, 1, 1))
+    ensure_callable(_crop_and_pad_single)(np, ensure_callable(np.ones)((4, 4, 3)), ensure_callable(random.Random)(), (2, 2, 1, 1))
     _compute_random_crop(np, np.ones((1, 4, 4, 3)))
     random_crop_eager(np, np.ones((1, 4, 4, 3)), (2, 2))
     assert callable(random_crop_eager)
@@ -132,10 +131,10 @@ def test_elastic(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     _blur_displacement(np, np.ones((1, 4, 4)), 0.1)
-    as_callable(_generate_random_elastic_grid)(np, (1, 4, 4), as_callable(random.Random)(), 0.1, 0.1)
+    ensure_callable(_generate_random_elastic_grid)(np, (1, 4, 4), ensure_callable(random.Random)(), 0.1, 0.1)
 
-    assert isinstance(as_callable(_get_elastic_factor)(as_callable(random.Random)(), 0.1), float)
-    assert isinstance(as_callable(_get_elastic_factor)(as_callable(random.Random)(), (0.1, 0.2)), float)
+    assert isinstance(ensure_callable(_get_elastic_factor)(ensure_callable(random.Random)(), 0.1), float)
+    assert isinstance(ensure_callable(_get_elastic_factor)(ensure_callable(random.Random)(), (0.1, 0.2)), float)
 
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._apply_elastic_batch", return_value=np.ones((1, 4, 4, 3))):
         random_elastic_transform_eager(np, np.ones((1, 4, 4, 3)), 0.1, 0.1)
@@ -149,14 +148,14 @@ def test_geometric(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     rng = random.Random()
-    cfg = as_callable(GeometricGridConfig)(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
-    as_callable(_compute_zoom_grid)(np, cfg)
-    as_callable(_compute_translation_grid)(np, cfg)
+    cfg = ensure_callable(GeometricGridConfig)(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
+    ensure_callable(_compute_zoom_grid)(np, cfg)
+    ensure_callable(_compute_translation_grid)(np, cfg)
 
-    assert isinstance(as_callable(_get_shear_factor)(rng, 0.1), float)
-    assert isinstance(as_callable(_get_shear_factor)(rng, (0.1, 0.2)), float)
+    assert isinstance(ensure_callable(_get_shear_factor)(rng, 0.1), float)
+    assert isinstance(ensure_callable(_get_shear_factor)(rng, (0.1, 0.2)), float)
 
-    as_callable(_compute_shear_grid)(np, cfg)
+    ensure_callable(_compute_shear_grid)(np, cfg)
 
     imgs = np.ones((1, 4, 4, 3))
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_zoom_grid", return_value=(0, 0)):

@@ -5,9 +5,8 @@ from __future__ import annotations
 import builtins  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @global_eager_registry.register("Allclose")
@@ -24,9 +23,9 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     a = args[0]
     b = args[1]
-    rtol = kwargs.get("rtol", 1e-05) if _has_attr(kwargs, "get") else 1e-05
-    atol = kwargs.get("atol", 1e-08) if _has_attr(kwargs, "get") else 1e-08
-    equal_nan = kwargs.get("equal_nan", False) if _has_attr(kwargs, "get") else False
+    rtol = kwargs.get("rtol", 1e-05) if has_backend_member(kwargs, "get") else 1e-05
+    atol = kwargs.get("atol", 1e-08) if has_backend_member(kwargs, "get") else 1e-08
+    equal_nan = kwargs.get("equal_nan", False) if has_backend_member(kwargs, "get") else False
 
     def _val(x: EagerValue) -> EagerValue:
         """Execute the eager val operation on the active backend array.
@@ -37,17 +36,17 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         Returns:
             EagerValue: Result.
         """
-        x_data = _get_attr(x, "data", x)
-        if _has_attr(x_data, "item") and callable(_get_attr(x_data, "item")):
-            return as_tensor(_get_attr(x_data, "item")())
-        if _has_attr(x_data, "tolist"):
-            return as_tensor(_get_attr(x_data, "tolist")())
+        x_data = get_backend_member(x, "data", x)
+        if has_backend_member(x_data, "item") and callable(get_backend_member(x_data, "item")):
+            return ensure_eager_tensor(get_backend_member(x_data, "item")())
+        if has_backend_member(x_data, "tolist"):
+            return ensure_eager_tensor(get_backend_member(x_data, "tolist")())
         _typed_ret_1: EagerValue = x_data
         return _typed_ret_1
 
-    if _has_attr(backend_module, "allclose"):
-        return as_tensor(_get_attr(backend_module, "allclose")(a, b, rtol=float(as_float(_val(rtol))), atol=float(as_float(_val(atol))), equal_nan=bool(_val(equal_nan))))
-    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(as_float(_val(rtol))), atol=float(as_float(_val(atol))), equal_nan=bool(_val(equal_nan)))
+    if has_backend_member(backend_module, "allclose"):
+        return ensure_eager_tensor(get_backend_member(backend_module, "allclose")(a, b, rtol=float(ensure_float(_val(rtol))), atol=float(ensure_float(_val(atol))), equal_nan=bool(_val(equal_nan))))
+    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(ensure_float(_val(rtol))), atol=float(ensure_float(_val(atol))), equal_nan=bool(_val(equal_nan)))
 
 
 @global_eager_registry.register("ArrayEquiv")
@@ -63,7 +62,7 @@ def _array_equiv(backend_module: BackendModuleProtocol, a1: EagerValue, a2: Eage
     Returns:
             EagerValue: Result.
     """
-    return _get_attr(backend_module, "allclose")(a1, a2) if _has_attr(backend_module, "allclose") else True
+    return get_backend_member(backend_module, "allclose")(a1, a2) if has_backend_member(backend_module, "allclose") else True
 
 
 @global_eager_registry.register("Assert")
@@ -109,7 +108,7 @@ def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "promote_types")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "promote_types")(*args, **kwargs))
 
 
 @global_eager_registry.register("ResultType")
@@ -124,4 +123,4 @@ def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "result_type")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "result_type")(*args, **kwargs))

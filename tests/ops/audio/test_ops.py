@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.audio.ops import Dct, Frame, HammingWindow, HannWindow, Idct, InverseMdct, Istft, KaiserWindow, Mdct, MelFilterbank, MelSpectrogram, Mfcc, MfccsFromLogMelSpectrograms, OverlapAndAdd, Stft
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -36,18 +36,18 @@ def test_audio_ops() -> None:
     assert KaiserWindow().infer_shape() == (256,)
 
     t = DummyNode((10,))
-    assert as_callable(as_callable(Dct)().infer_shape)(t) == (10,)
-    assert as_callable(as_callable(Idct)().infer_shape)(t) == (10,)
+    assert ensure_callable(ensure_callable(Dct)().infer_shape)(t) == (10,)
+    assert ensure_callable(ensure_callable(Idct)().infer_shape)(t) == (10,)
 
-    assert as_callable(as_callable(Mdct)().infer_shape)(t) == (5,)
-    assert as_callable(Mdct)().infer_shape(as_callable(DummyNode)(())) == ()
+    assert ensure_callable(ensure_callable(Mdct)().infer_shape)(t) == (5,)
+    assert ensure_callable(Mdct)().infer_shape(ensure_callable(DummyNode)(())) == ()
 
-    assert as_callable(as_callable(InverseMdct)().infer_shape)(t) == (20,)
-    assert as_callable(InverseMdct)().infer_shape(as_callable(DummyNode)(())) == ()
+    assert ensure_callable(ensure_callable(InverseMdct)().infer_shape)(t) == (20,)
+    assert ensure_callable(InverseMdct)().infer_shape(ensure_callable(DummyNode)(())) == ()
 
-    assert as_callable(as_callable(Frame)().infer_shape)(t, frame_length=2, frame_step=2) == (5, 2)
-    assert as_callable(Frame)().infer_shape(as_callable(DummyNode)(())) == ()
+    assert ensure_callable(ensure_callable(Frame)().infer_shape)(t, frame_length=2, frame_step=2) == (5, 2)
+    assert ensure_callable(Frame)().infer_shape(ensure_callable(DummyNode)(())) == ()
 
     tf = DummyNode((5, 2))
-    assert as_callable(as_callable(OverlapAndAdd)().infer_shape)(tf, frame_step=2) == (10,)
-    assert as_callable(OverlapAndAdd)().infer_shape(as_callable(DummyNode)(())) == ()
+    assert ensure_callable(ensure_callable(OverlapAndAdd)().infer_shape)(tf, frame_step=2) == (10,)
+    assert ensure_callable(OverlapAndAdd)().infer_shape(ensure_callable(DummyNode)(())) == ()

@@ -10,11 +10,49 @@ from collections.abc import Callable, Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import _get_attr, as_callable, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_tensor
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar, TracedDataProtocol, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import (
+    DataHolderProtocol as DataHolderProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    DeviceHolderProtocol as DeviceHolderProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    DTypeHolderProtocol as DTypeHolderProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    LinearOperatorOperandProtocol as LinearOperatorOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    RaggedOperandProtocol as RaggedOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol as ShapeMetadataProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol as ShapeProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    SparseOperandProtocol as SparseOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TensorArrayOperandProtocol as TensorArrayOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TensorOperandProtocol as TensorOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TracedDataProtocol,
+    TypedVariadicCallable,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import as_attr_val
+from ml_switcheroo_compiler.ir.core import ensure_attr_val
 
 # We import dispatcher directly
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
@@ -34,71 +72,44 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    if typing.TYPE_CHECKING:
+    def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
+        """Universal dispatcher for the operation.
 
-        def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
-            """Universal dispatcher for the operation.
+        Args:
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
-            Args:
-                *args (TensorOrScalar): Positional args.
-                **kwargs (TensorOrScalar): Keyword args.
+        Returns:
+            Tensor: Result.
+        """
+        return dispatch_op(self.op_type, *args, **kwargs)
 
-            Returns:
-                Tensor: Result.
-            """
-            ...
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
-        def __getattr__(self, name: str) -> TypedVariadicCallable[TensorOrScalar]:
-            """Resolve infer_shape, eager_eval, and operation-specific methods.
+        Args:
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
-            Args:
-                name (str): Method name.
+        Returns:
+            TensorOrScalar: Inferred output shape or tuple of output shapes.
+        """
+        return tuple()
 
-            Returns:
-                TypedVariadicCallable[TensorOrScalar]: Resolved callable.
-            """
-            ...
+    def eager_eval(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the eager eval tensor operation.
 
-    else:
+        Args:
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
-        def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
-            """Universal dispatcher for the operation.
+        Returns:
+            OpArgValue: Result.
+        """
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            Args:
-                *args: Positional args.
-                **kwargs: Keyword args.
-
-            Returns:
-                Tensor: Result.
-            """
-            return dispatch_op(self.op_type, *args, **kwargs)
-
-        def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-            """Compute the infer shape tensor operation.
-
-            Args:
-                args: Positional args.
-                kwargs: Keyword args.
-
-            Returns:
-                tuple[int, ...] | tuple[tuple[int, ...], ...] | str | None: Inferred output shape or tuple of output shapes.
-            """
-            return tuple()
-
-        def eager_eval(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-            """Compute the eager eval tensor operation.
-
-            Args:
-                *args: Positional args.
-                **kwargs: Keyword args.
-
-            Returns:
-                OpArgValue: Result.
-            """
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-            backend = get_active_backend()
-            return backend.execute_op(self.op_type, *args, **kwargs)
+        backend = get_active_backend()
+        return backend.execute_op(self.op_type, *args, **kwargs)
 
 
 @typing.runtime_checkable
@@ -130,18 +141,19 @@ def _as_f(fn: TypedVariadicCallable[OpArgValue], orig: _F) -> _F:
     Returns:
         _F: Narrowed callable.
     """
-    raw_fn: StructuralOperandProtocol = fn
+    del orig
+    raw_fn: TypedVariadicCallable[OpArgValue] = fn
 
-    def _guard(cand: StructuralOperandProtocol) -> typing.TypeGuard[_F]:
+    def _guard(cand: TypedVariadicCallable[OpArgValue]) -> typing.TypeGuard[_F]:
         """Narrow candidate callable to `_F`.
 
         Args:
-            cand (StructuralOperandProtocol): Candidate callable.
+            cand (TypedVariadicCallable[OpArgValue]): Candidate callable.
 
         Returns:
-            bool: Always True.
+            bool: True if callable.
         """
-        return cand is not None or orig is not None
+        return callable(cand)
 
     assert _guard(raw_fn)
     return raw_fn
@@ -151,7 +163,7 @@ def emit_ir_node(
     graph: LogicalGraph | None,
     op_type: str,
     inputs: list[str],
-    shape_metadata: tuple[int | str, ...] | list[int | str] | None = None,
+    shape_metadata: tuple[int | str, ...] | list[int | str] | _DimsShapeProtocol | TensorOrScalar = None,
     attributes: Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
@@ -160,7 +172,7 @@ def emit_ir_node(
         graph (LogicalGraph | None): The graph parameter.
         op_type (str): The op_type parameter.
         inputs (list[str]): The inputs parameter.
-        shape_metadata (tuple[int | str, ...] | list[int | str] | None): The shape_metadata parameter.
+        shape_metadata (tuple[int | str, ...] | list[int | str] | _DimsShapeProtocol | TensorOrScalar): The shape_metadata parameter.
         attributes (Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None): The attributes parameter.
 
     Returns:
@@ -170,15 +182,15 @@ def emit_ir_node(
     from ml_switcheroo_ir import SymInt, SymNode
 
     norm_shape: tuple[int | str | SymNode | SymInt, ...] | None = None
-    raw_sm: StructuralOperandProtocol | TensorOrScalar = shape_metadata
-    raw_shape: TensorOrScalar = raw_sm.dims if isinstance(raw_sm, _DimsShapeProtocol) else shape_metadata
+    raw_sm: _DimsShapeProtocol | TensorOrScalar = shape_metadata
+    raw_shape: Sequence[int | str | float | None] | _DimsShapeProtocol | TensorOrScalar = raw_sm.dims if isinstance(raw_sm, _DimsShapeProtocol) else shape_metadata
     if isinstance(raw_shape, (tuple, list)):
         first_elem: TensorOrScalar = raw_shape[0] if len(raw_shape) > 0 else None
         flat_shape = first_elem if isinstance(first_elem, (tuple, list)) else raw_shape
         norm_shape = tuple(int(d) if isinstance(d, float) else (d if isinstance(d, (int, str, SymNode, SymInt)) and not isinstance(d, bool) else ("?" if d is None else str(d))) for d in flat_shape)
     raw_inputs: Sequence[TensorOrScalar] = inputs
     norm_inputs: list[str] = [i if isinstance(i, str) else str(i.id if isinstance(i, TracedDataProtocol) else id(i)) for i in raw_inputs]
-    norm_attrs: dict[str, AttributeValue] = {str(k): as_attr_val(v) for k, v in (attributes or {}).items()}
+    norm_attrs: dict[str, AttributeValue] = {str(k): ensure_attr_val(v) for k, v in (attributes or {}).items()}
     node = LogicalNode(
         id=nid,
         op_type=op_type,
@@ -218,7 +230,7 @@ def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
         assert _is_typed_variadic_op(cand_func)
         callable_func = cand_func
 
-        @functools.wraps(as_callable(callable_func))
+        @functools.wraps(ensure_callable(callable_func))
         def wrapper(*args: OpArgValue, **kwargs: OpArgValue) -> OpArgValue:
             """Compute the wrapper tensor operation.
 
@@ -237,17 +249,17 @@ def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
                 data = backend.execute_op(op_name, *raw_args, **kwargs)
                 first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
                 device = first_tensor.device if first_tensor is not None else None
-                dtype = first_tensor.dtype if first_tensor is not None else None
+                dtype = first_tensor.dtype if first_tensor is not None else "float32"
                 if isinstance(data, tuple):
                     return tuple(
                         Tensor(
                             backend.array(d),
-                            TensorConfig(as_shape(_get_attr(backend.array(d), "shape")), _get_attr(d, "dtype", dtype), device),
+                            TensorConfig(extract_shape(backend.array(d)), extract_dtype(d, dtype), device),
                         )
                         for d in data
                     )
-                return Tensor(backend.array(data), TensorConfig(as_shape(_get_attr(backend.array(data), "shape")), dtype, device))
-            return as_tensor(as_callable(callable_func)(*args, **kwargs))
+                return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), dtype if first_tensor is not None else None, device))
+            return ensure_eager_tensor(ensure_callable(callable_func)(*args, **kwargs))
 
         return _as_f(wrapper, func)
 
@@ -255,9 +267,23 @@ def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
 
 
 __all__ = [
+    "DataHolderProtocol",
+    "DTypeHolderProtocol",
+    "DeviceHolderProtocol",
+    "LinearOperatorOperandProtocol",
     "OpDef",
+    "RaggedOperandProtocol",
+    "ShapeMetadataProtocol",
+    "ShapeProtocol",
+    "SparseOperandProtocol",
+    "TensorArrayOperandProtocol",
+    "TensorOperandProtocol",
     "dispatch_eager",
     "emit_ir_node",
+    "extract_data",
+    "extract_device",
+    "extract_dtype",
+    "extract_shape",
     "get_op",
     "register_op",
 ]

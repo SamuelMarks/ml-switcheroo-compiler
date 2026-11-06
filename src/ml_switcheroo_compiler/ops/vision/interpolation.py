@@ -5,7 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -24,7 +24,7 @@ def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool =
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("ResizeBilinear", images.data, size=size, align_corners=align_corners)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
     return _emit_shape_node("ResizeBilinear", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
@@ -42,7 +42,7 @@ def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = 
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("ResizeNearest", images.data, size=size, align_corners=align_corners)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
     return _emit_shape_node("ResizeNearest", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
@@ -62,7 +62,7 @@ def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = 
         data = backend.execute_op("ResizeBicubic", images.data, size=size, align_corners=align_corners)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "ResizeBicubic",
@@ -89,7 +89,7 @@ def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool =
         data = backend.execute_op("ResizeLanczos3", images.data, size=size, align_corners=align_corners)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "ResizeLanczos3",
@@ -117,7 +117,7 @@ def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", anti
         data = backend.execute_op("Resize", images.data, size=size, method=method, antialias=antialias)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "Resize",
@@ -159,7 +159,7 @@ def map_coordinates(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device),
         )
     return _emit_shape_node(
         "MapCoordinates",

@@ -6,13 +6,13 @@ from ml_switcheroo_compiler.backends.common.audio_utils import (
     extract_mel_attributes,
     extract_stft_attributes,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_float
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,
     _extract_filter_attributes,
     _extract_vision_transform_attributes,
+    _node_attrs,
 )
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -90,7 +90,7 @@ class KerasVisionVisitor:
         Returns:
             str: Result.
         """
-        bounding_box_format: str = str(_get_attr(node, "attributes", {}).get("bounding_box_format", "xyxy"))
+        bounding_box_format: str = str(_node_attrs(node).get("bounding_box_format", "xyxy"))
         return f"keras_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
 
     def visit_NonMaxSuppression(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -104,9 +104,10 @@ class KerasVisionVisitor:
         Returns:
             str: Result.
         """
-        max_output_size = _get_attr(node, "attributes", {}).get("max_output_size")
-        iou_threshold: float = float(_get_attr(node, "attributes", {}).get("iou_threshold", 0.5))
-        score_threshold: float = float(_get_attr(node, "attributes", {}).get("score_threshold", float("-inf")))
+        attrs = _node_attrs(node)
+        max_output_size = attrs.get("max_output_size")
+        iou_threshold: float = float(ensure_float(attrs.get("iou_threshold", 0.5)))
+        score_threshold: float = float(ensure_float(attrs.get("score_threshold", float("-inf"))))
         return f"keras_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
 
     def visit_ResizeBicubic(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -120,8 +121,9 @@ class KerasVisionVisitor:
         Returns:
             str: Result.
         """
-        size = _get_attr(node, "attributes", {}).get("size")
-        align_corners = _get_attr(node, "attributes", {}).get("align_corners", False)
+        attrs = _node_attrs(node)
+        size = attrs.get("size")
+        align_corners = attrs.get("align_corners", False)
         return f"keras_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
 
     def visit_ResizeLanczos3(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -135,8 +137,9 @@ class KerasVisionVisitor:
         Returns:
             str: Result.
         """
-        size = _get_attr(node, "attributes", {}).get("size")
-        align_corners = _get_attr(node, "attributes", {}).get("align_corners", False)
+        attrs = _node_attrs(node)
+        size = attrs.get("size")
+        align_corners = attrs.get("align_corners", False)
         return f"keras_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
 
     def visit_PerspectiveTransform(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:

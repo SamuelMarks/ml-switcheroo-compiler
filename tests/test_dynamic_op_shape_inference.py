@@ -7,7 +7,6 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import get_op
 from ml_switcheroo_compiler.ops.shape_inference import (
@@ -32,7 +31,7 @@ from ml_switcheroo_compiler.ops.shape_inference import (
     infer_transpose,
 )
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -255,7 +254,7 @@ def test_dynamic_op_def_declarative_inference() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
     _load_yaml_registry()
-    _get_attr(_YAML_REGISTRY, "__setitem__")("CustomDynamicTestOp", {"category": "elementwise"})
+    ensure_eager_tensor(_YAML_REGISTRY)["CustomDynamicTestOp"] = {"category": "elementwise"}
     op_cls = get_op("CustomDynamicTestOp")
     op = op_cls()
 
@@ -272,11 +271,11 @@ def test_dynamic_op_def_declarative_inference() -> None:
 
 def test_shape_inference_pass_with_strides_and_symbolic() -> None:
     """Test that shape_inference_pass correctly attaches shape_metadata and contiguous strides."""
-    sym_shape = _cast_val("tuple[int | str, ...]", (S("batch"), 4))
+    sym_shape = (S("batch"), 4)
     node_in1 = IRNode(id="in1", op_type="Input", inputs=[], attributes={})
-    _obj_set_attr(node_in1, "shape_metadata", sym_shape)
+    ensure_mutable(node_in1).shape_metadata = ensure_eager_tensor(sym_shape)
     node_in2 = IRNode(id="in2", op_type="Input", inputs=[], attributes={})
-    _obj_set_attr(node_in2, "shape_metadata", sym_shape)
+    ensure_mutable(node_in2).shape_metadata = ensure_eager_tensor(sym_shape)
     node_add = IRNode(id="add", op_type="Add", inputs=["in1", "in2"], attributes={}, shape_metadata=None)
 
     graph = IRGraph(name="test_graph", outputs=["add"])
@@ -286,7 +285,7 @@ def test_shape_inference_pass_with_strides_and_symbolic() -> None:
 
     modified = shape_inference_pass(graph)
     assert modified is True
-    assert as_tensor(graph.nodes["add"].shape_metadata) == (S("batch"), 4)
+    assert ensure_eager_tensor(graph.nodes["add"].shape_metadata) == (S("batch"), 4)
     assert graph.nodes["add"].attributes["strides"] == (4, 1)
 
 
@@ -307,7 +306,7 @@ def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) ->
 
 def test_broadcast_shapes_none_and_edge_cases() -> None:
     """Test broadcasting with None inputs."""
-    assert as_callable(broadcast_shapes)(None, None) == ()
+    assert ensure_callable(broadcast_shapes)(None, None) == ()
 
 
 def test_conv_3d_and_symbolic() -> None:
@@ -459,12 +458,12 @@ def test_infer_shape_input_extractors() -> None:
             self.shape = s
 
     # Positional args
-    assert as_callable(infer_shape)("Add", as_callable(DummyMeta)((2, 3)), as_callable(DummyShape)((1, 3))) == (2, 3)
+    assert ensure_callable(infer_shape)("Add", ensure_callable(DummyMeta)((2, 3)), ensure_callable(DummyShape)((1, 3))) == (2, 3)
     assert infer_shape("Add", (2, 3), [1, 3]) == (2, 3)
 
     # inputs kwarg
-    assert as_callable(infer_shape)("Add", inputs=[as_callable(DummyMeta)((2, 3)), as_callable(DummyShape)((1, 3))]) == (2, 3)
-    assert as_callable(infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
+    assert ensure_callable(infer_shape)("Add", inputs=[ensure_callable(DummyMeta)((2, 3)), ensure_callable(DummyShape)((1, 3))]) == (2, 3)
+    assert ensure_callable(infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
 
 
 def test_coverage_gap_fillers() -> None:

@@ -10,12 +10,11 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import while_loop
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -39,7 +38,7 @@ def test_while_loop_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return as_callable(Tensor)(as_tensor(val) < as_tensor(5), as_callable(TensorConfig)((), DType.Bool, device))
+            return ensure_callable(Tensor)(ensure_eager_tensor(val) < ensure_eager_tensor(5), ensure_callable(TensorConfig)((), DType.Bool, device))
 
         def body_fn(val: EagerValue) -> EagerValue:
             """Body fn.
@@ -50,9 +49,9 @@ def test_while_loop_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return as_tensor(val) + as_tensor(1)
+            return ensure_eager_tensor(val) + ensure_eager_tensor(1)
 
-        res = as_callable(while_loop)(cond_fn, body_fn, 0)
+        res = ensure_callable(while_loop)(cond_fn, body_fn, 0)
         assert res == 5
 
 
@@ -88,7 +87,7 @@ def test_while_loop_trace() -> None:
 
         init_val = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
         global_tracing_state.start_tracing()
-        res = as_callable(while_loop)(cond_fn, body_fn, init_val)
+        res = ensure_callable(while_loop)(cond_fn, body_fn, init_val)
         assert res.dtype == DType.Float32
         global_tracing_state.stop_tracing()
 
@@ -112,8 +111,8 @@ def test_while_loop_tuple_init() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            (v1, _v2) = as_tensor(state)
-            return Tensor(as_tensor(_get_attr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
+            (v1, _v2) = ensure_eager_tensor(state)
+            return Tensor(ensure_eager_tensor(ensure_eager_tensor(v1).data) < 2, TensorConfig((), DType.Bool, device))
 
         def body_fn(state: EagerValue) -> EagerValue:
             """Body fn.
@@ -124,10 +123,10 @@ def test_while_loop_tuple_init() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            (v1, v2) = as_tensor(state)
-            return (Tensor(as_tensor(_get_attr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
+            (v1, v2) = ensure_eager_tensor(state)
+            return (Tensor(ensure_eager_tensor(ensure_eager_tensor(v1).data) + 1, TensorConfig((), DType.Int32, device)), v2)
 
-        (res1, _res2) = as_callable(while_loop)(cond_fn, body_fn, (t1, t2))
+        (res1, _res2) = ensure_callable(while_loop)(cond_fn, body_fn, (t1, t2))
         assert res1.data == 2
     with ConfigContext(eager_mode=False):
         pt1 = Tensor(ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
@@ -159,8 +158,8 @@ def test_while_loop_tuple_init() -> None:
 
         global_tracing_state.start_tracing()
         try:
-            res_trace = as_callable(while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
-            assert isinstance(as_tensor(res_trace), list)
+            res_trace = ensure_callable(while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
+            assert isinstance(ensure_eager_tensor(res_trace), list)
             assert len(res_trace) == 2
         finally:
             global_tracing_state.stop_tracing()

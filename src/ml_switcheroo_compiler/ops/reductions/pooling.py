@@ -2,9 +2,28 @@
 
 from __future__ import annotations
 
+import typing
+
+from ml_switcheroo_compiler.backends.registry import ensure_int
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@typing.runtime_checkable
+class _IndexableSizeProtocol(typing.Protocol):
+    """Protocol for indexable size sequences."""
+
+    def __getitem__(self, index: int) -> TensorOrScalar:
+        """Retrieve dimension size at `index`.
+
+        Args:
+            index (int): Spatial dimension index.
+
+        Returns:
+            TensorOrScalar: Spatial dimension size.
+        """
+        ...
 
 
 @register_op("CTCLoss")
@@ -22,8 +41,8 @@ class CTCLoss(OpDef):
             The inferred shape tuple (typically containing the batch size), or an empty tuple if it cannot be determined.
         """
         log_probs = args[0] if len(args) > 0 else kwargs.get("log_probs")
-        if _has_attr(log_probs, "shape"):
-            return (_get_attr(log_probs, "shape")[1],) if len(_get_attr(log_probs, "shape")) >= MATRIX_RANK else ()
+        if isinstance(log_probs, ShapeProtocol):
+            return (log_probs.shape[1],) if len(log_probs.shape) >= MATRIX_RANK else ()
         return ()
 
 
@@ -43,9 +62,9 @@ class FractionalMaxPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -66,9 +85,9 @@ class AdaptiveAvgPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -89,9 +108,9 @@ class AdaptiveMaxPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -146,9 +165,9 @@ class FractionalMaxPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -169,9 +188,9 @@ class AdaptiveAvgPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -192,9 +211,9 @@ class AdaptiveMaxPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -215,9 +234,9 @@ class MaxUnpool1D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-1] = _get_attr(output_size, "__getitem__")(0)
+        if isinstance(output_size, _IndexableSizeProtocol):
+            s = list(extract_shape(operand))
+            s[-1] = ensure_int(output_size[0])
             return tuple(s)
         return ()
 
@@ -238,9 +257,9 @@ class MaxUnpool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
+        if isinstance(output_size, _IndexableSizeProtocol):
+            s = list(extract_shape(operand))
+            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -261,9 +280,9 @@ class MaxUnpool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(output_size, _IndexableSizeProtocol):
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -284,9 +303,9 @@ class AdaptiveMaxPool3D_Indices(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -307,9 +326,9 @@ class FractionalMaxPool3D_Indices(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
-            s = list(_get_attr(operand, "shape"))
-            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
+        if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
+            s = list(operand.shape)
+            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
             return tuple(s)
         return ()
 

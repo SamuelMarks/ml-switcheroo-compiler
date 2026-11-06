@@ -8,9 +8,8 @@ import ml_switcheroo_compiler.tracing.state as state
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d, unfold
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -25,7 +24,7 @@ def test_frontend_pool_tracing() -> None:
     try:
         config.eager_mode = False
         state.global_tracing_state.is_tracing = True
-        _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
 
         class MockData:
             """Test class MockData."""
@@ -48,27 +47,27 @@ def test_frontend_pool_tracing() -> None:
 
             def eval(self) -> EagerValue:
                 """Test function eval."""
-                return as_tensor(self)
+                return ensure_eager_tensor(self)
 
         mt3 = MockTensor((1, 1, 1))
         mt4 = MockTensor((1, 1, 1, 1))
         mt5 = MockTensor((1, 1, 1, 1, 1))
 
-        as_callable(fractional_max_pool2d)(mt4, output_size=[1, 1])
-        as_callable(adaptive_avg_pool2d)(mt4, output_size=[1, 1])
-        as_callable(adaptive_max_pool2d)(mt4, output_size=[1, 1])
-        as_callable(unfold)(mt4, kernel_size=(1, 1))
-        as_callable(fold)(mt3, output_size=(1, 1), kernel_size=(1, 1))
-        as_callable(fractional_max_pool3d)(mt5, output_size=[1, 1, 1])
-        as_callable(adaptive_avg_pool3d)(mt5, output_size=[1, 1, 1])
-        as_callable(adaptive_max_pool3d)(mt5, output_size=[1, 1, 1], return_indices=True)
-        as_callable(adaptive_max_pool3d)(mt5, output_size=[1, 1, 1], return_indices=False)
-        as_callable(max_unpool1d)(mt3, mt3, as_callable(UnpoolOptions)(kernel_size=(1,), output_size=(1,)))
-        as_callable(max_unpool2d)(mt4, mt4, as_callable(UnpoolOptions)(kernel_size=(1, 1), output_size=(1, 1)))
-        as_callable(max_unpool3d)(mt5, mt5, as_callable(UnpoolOptions)(kernel_size=(1, 1, 1), output_size=(1, 1, 1)))
+        ensure_callable(fractional_max_pool2d)(mt4, output_size=[1, 1])
+        ensure_callable(adaptive_avg_pool2d)(mt4, output_size=[1, 1])
+        ensure_callable(adaptive_max_pool2d)(mt4, output_size=[1, 1])
+        ensure_callable(unfold)(mt4, kernel_size=(1, 1))
+        ensure_callable(fold)(mt3, output_size=(1, 1), kernel_size=(1, 1))
+        ensure_callable(fractional_max_pool3d)(mt5, output_size=[1, 1, 1])
+        ensure_callable(adaptive_avg_pool3d)(mt5, output_size=[1, 1, 1])
+        ensure_callable(adaptive_max_pool3d)(mt5, output_size=[1, 1, 1], return_indices=True)
+        ensure_callable(adaptive_max_pool3d)(mt5, output_size=[1, 1, 1], return_indices=False)
+        ensure_callable(max_unpool1d)(mt3, mt3, ensure_callable(UnpoolOptions)(kernel_size=(1,), output_size=(1,)))
+        ensure_callable(max_unpool2d)(mt4, mt4, ensure_callable(UnpoolOptions)(kernel_size=(1, 1), output_size=(1, 1)))
+        ensure_callable(max_unpool3d)(mt5, mt5, ensure_callable(UnpoolOptions)(kernel_size=(1, 1, 1), output_size=(1, 1, 1)))
 
     finally:
         config.eager_mode = orig_eager
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
-    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+    assert ensure_eager_tensor(state.global_tracing_state).add_node == orig_add_node

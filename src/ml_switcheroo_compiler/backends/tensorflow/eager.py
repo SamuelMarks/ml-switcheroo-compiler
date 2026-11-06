@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import sys
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
 from ml_switcheroo_compiler.backends.mapping_loader import dispatch_eager_op, load_backend_mappings
+from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
@@ -40,11 +41,12 @@ def execute_op(
         raise BackendNotSupportedError("TensorFlow is not installed or available in this environment.")
 
     # Convert Python sequences to native TensorFlow tensor primitives where possible
+    has_conv, conv_fn = resolve_backend_member(tf, "convert_to_tensor")
     processed_args: list[EagerValue] = []
     for arg in args:
-        if isinstance(arg, (list, tuple)) and _has_attr(tf, "convert_to_tensor"):
+        if isinstance(arg, (list, tuple)) and has_conv:
             try:
-                processed_args.append(as_callable(_get_attr(tf, "convert_to_tensor"))(arg))
+                processed_args.append(ensure_callable(conv_fn)(arg))
             except Exception:
                 processed_args.append(arg)
         else:

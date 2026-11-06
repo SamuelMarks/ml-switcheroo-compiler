@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -24,7 +29,7 @@ class SparsePlus(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -52,7 +57,7 @@ class SparseSigmoid(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -84,8 +89,8 @@ def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         "SparsePlus",
         list(args),
         kwargs,
-        _get_attr(args[0], "shape", ()) if args else (),
-        _get_attr(args[0], "dtype", "float32") if args else "float32",
+        extract_shape(args[0]) if args else (),
+        extract_dtype(args[0]) if args else "float32",
     )
 
 
@@ -111,6 +116,6 @@ def sparse_sigmoid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         "SparseSigmoid",
         list(args),
         kwargs,
-        _get_attr(args[0], "shape", ()) if args else (),
-        _get_attr(args[0], "dtype", "float32") if args else "float32",
+        extract_shape(args[0]) if args else (),
+        extract_dtype(args[0]) if args else "float32",
     )

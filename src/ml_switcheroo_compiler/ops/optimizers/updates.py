@@ -8,7 +8,7 @@ import typing  # noqa: F401
 import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, maximum, multiply, subtract
 from ml_switcheroo_compiler.ops.unary import abs as abs_op
@@ -571,8 +571,7 @@ class ApplyAdam(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(param, "shape", ())
-        return _typed_ret_1
+        return extract_shape(param)
 
 
 @register_op("ApplyAdagrad")
@@ -593,8 +592,7 @@ class ApplyAdagrad(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(param, "shape", ())
-        return _typed_ret_2
+        return extract_shape(param)
 
 
 @register_op("ApplyFtrl")
@@ -616,8 +614,7 @@ class ApplyFtrl(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(param, "shape", ())
-        return _typed_ret_3
+        return extract_shape(param)
 
 
 @register_op("ApplyRMSProp")
@@ -639,8 +636,7 @@ class ApplyRMSProp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(param, "shape", ())
-        return _typed_ret_4
+        return extract_shape(param)
 
 
 def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> TensorOrScalar:
@@ -740,8 +736,7 @@ class LionConfigOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_5: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_5
+        return extract_shape(inputs)
 
 
 @register_op("AdamaxHyperparams")
@@ -761,5 +756,4 @@ class AdamaxHyperparamsOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_6: TensorOrScalar = _get_attr(inputs, "shape", ())
-        return _typed_ret_6
+        return extract_shape(inputs)

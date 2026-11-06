@@ -7,8 +7,8 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -36,10 +36,9 @@ def _test_frontend_pool_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
 
     t = Tensor(np.ones((1, 1, 4, 4)), TensorConfig(shape=(1, 1, 4, 4), dtype=DType("float32"), device=Device("cpu")))
     t_3d = Tensor(np.ones((1, 1, 4, 4, 4)), TensorConfig(shape=(1, 1, 4, 4, 4), dtype=DType("float32"), device=Device("cpu")))
-    _get_attr(_state, "update")({"MagicMock": MagicMock, "np": np, "orig": orig, "orig_tracing": orig_tracing})
-    _get_attr(_state, "update")({"patch": patch, "pool": pool, "state": state, "t": t})
-    _get_attr(_state, "update")({"t_3d": t_3d})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "np": np, "orig": orig, "orig_tracing": orig_tracing}))
+    _state.update(ensure_tensor_dict({"patch": patch, "pool": pool, "state": state, "t": t}))
+    _state.update(ensure_tensor_dict({"t_3d": t_3d}))
 
 
 def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -80,12 +79,12 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
         config.eager_mode = True
 
         mock_backend = MagicMock()
-        _set_attr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2)))
-        _set_attr(mock_backend, "array", lambda x: x)
+        ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(np.zeros((1, 1, 2, 2)))
+        ensure_mutable(mock_backend).array = ensure_eager_tensor(lambda x: x)
 
         mock_backend_3d = MagicMock()
-        _set_attr(mock_backend_3d.execute_op, "return_value", (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2))))
-        _set_attr(mock_backend_3d, "array", lambda x: x)
+        ensure_mutable(mock_backend_3d.execute_op).return_value = ensure_eager_tensor((np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2))))
+        ensure_mutable(mock_backend_3d).array = ensure_eager_tensor(lambda x: x)
 
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend", return_value=mock_backend):
             pool.adaptive_avg_pool2d(t, (2, 2))
@@ -94,7 +93,7 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
             pool.max_unpool2d(t, t, opt)
             pool.max_unpool3d(t_3d, t_3d, opt3d)
 
-            _set_attr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2, 2)))
+            ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(np.zeros((1, 1, 2, 2, 2)))
             pool.adaptive_avg_pool3d(t_3d, (2, 2, 2))
             pool.adaptive_max_pool3d(t_3d, (2, 2, 2), return_indices=False)
 
@@ -106,9 +105,8 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
             pool.fractional_max_pool3d(t_3d, (2, 2, 2))
 
     finally:
-        _set_attr(state.global_tracing_state, "is_tracing", orig_tracing)
-        _set_attr(config, "eager_mode", orig)
-    _state.update(_caller_locals())
+        ensure_mutable(state.global_tracing_state).is_tracing = ensure_eager_tensor(orig_tracing)
+        ensure_mutable(config).eager_mode = ensure_eager_tensor(orig)
 
 
 def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -118,7 +116,7 @@ def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     t_3d = _state["t_3d"]
-    assert _get_attr(t_3d, "shape") == (1, 1, 4, 4, 4)
+    assert ensure_eager_tensor(t_3d).shape == (1, 1, 4, 4, 4)
 
 
 def test_frontend_pool_coverage() -> None:

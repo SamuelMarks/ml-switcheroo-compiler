@@ -11,7 +11,6 @@ import zipfile
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization import (
     CustomObjectScope,
     KerasFileEditor,
@@ -57,7 +56,7 @@ from ml_switcheroo_compiler.serialization import (
     save_weights,
     serialize_object,
 )
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -118,7 +117,7 @@ class MockModel:
                 """Test function numpy."""
                 return "ema2_data"
 
-        as_callable(self.ema_variables.append)(as_callable(EMA2)())
+        ensure_callable(self.ema_variables.append)(ensure_callable(EMA2)())
 
     def get_config(self) -> EagerValue:
         """Test function get_config."""
@@ -163,7 +162,7 @@ def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
 
 def test_validate_and_map_weights() -> None:
     """Test function test_validate_and_map_weights."""
-    assert as_callable(_validate_and_map_weights)({"a": 1}) == {"a": 1}
+    assert ensure_callable(_validate_and_map_weights)({"a": 1}) == {"a": 1}
 
 
 def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
@@ -175,7 +174,7 @@ def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.serialization.PickleWeightFormat.load", return_value={"a": 1})
     assert load_weights("test.pkl") == {"a": 1}
     with tempfile.NamedTemporaryFile() as f:
-        as_callable(save_weights)(as_callable(MockModel)(), f.name)
+        ensure_callable(save_weights)(ensure_callable(MockModel)(), f.name)
         assert os.path.exists(f.name)
 
 
@@ -186,12 +185,12 @@ def test_export_funcs(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_graph = mocker.MagicMock()
-    _set_attr(mock_graph.to_json, "return_value", "{}")
+    ensure_mutable(mock_graph.to_json).return_value = ensure_eager_tensor("{}")
     with tempfile.NamedTemporaryFile() as f:
-        as_callable(export_to_onnx)(mock_graph, f.name)
-        as_callable(export_to_tflite)(mock_graph, f.name)
-        as_callable(export_model_topology)(mock_graph, f.name)
-    assert as_callable(graph_to_json)(mock_graph) == "{}"
+        ensure_callable(export_to_onnx)(mock_graph, f.name)
+        ensure_callable(export_to_tflite)(mock_graph, f.name)
+        ensure_callable(export_model_topology)(mock_graph, f.name)
+    assert ensure_callable(graph_to_json)(mock_graph) == "{}"
 
 
 def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
@@ -208,15 +207,15 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    as_callable(_compile_model_metadata)(m2)
+    ensure_callable(_compile_model_metadata)(m2)
     m = MockModel()
-    weights = as_callable(_extract_model_weights)(m)
+    weights = ensure_callable(_extract_model_weights)(m)
     assert weights == {"w1": "w1_data", "weight_1": "w2_data"}
-    state = as_tensor_dict({})
-    as_callable(_extract_optimizer_state)(m, state)
+    state = ensure_tensor_dict({})
+    ensure_callable(_extract_optimizer_state)(m, state)
     assert state == {"v1": "v1_data", "opt_state_1": "v2_data", "m1": "m1_data", "momentum_1": "m2_data"}
     state = {}
-    as_callable(_extract_non_trainable_state)(m, state, weights)
+    ensure_callable(_extract_non_trainable_state)(m, state, weights)
 
     class NT2:
         """Test class NT2."""
@@ -227,19 +226,19 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
             """Test function numpy."""
             return "nt2_data"
 
-    as_callable(_extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
+    ensure_callable(_extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
     pass
     state = {}
-    as_callable(_extract_ema_state)(m, state)
+    ensure_callable(_extract_ema_state)(m, state)
     pass
-    state = as_tensor_dict(as_callable(_extract_model_state)(m, weights))
+    state = ensure_tensor_dict(ensure_callable(_extract_model_state)(m, weights))
 
     class MockModelNoOptimizer:
         """Test class MockModelNoOptimizer."""
 
         pass
 
-    as_callable(_extract_optimizer_state)(as_callable(MockModelNoOptimizer)(), {})
+    ensure_callable(_extract_optimizer_state)(ensure_callable(MockModelNoOptimizer)(), {})
     pass
 
 
@@ -252,9 +251,9 @@ def test_compile_model_metadata() -> None:
         pass
 
     m2 = MockModelNoConfig()
-    as_callable(_compile_model_metadata)(m2)
+    ensure_callable(_compile_model_metadata)(m2)
     m = MockModel()
-    (config, meta) = as_callable(_compile_model_metadata)(m)
+    (config, meta) = ensure_callable(_compile_model_metadata)(m)
     assert config == {"conf": "mock"}
     assert "keras_version" in meta
 
@@ -293,10 +292,10 @@ def test_keras_zip_save_load(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    as_callable(_compile_model_metadata)(m2)
+    ensure_callable(_compile_model_metadata)(m2)
     m = MockModel()
     with tempfile.NamedTemporaryFile() as f:
-        as_callable(save_model)(m, f.name)
+        ensure_callable(save_model)(m, f.name)
         m_loaded = load_model(f.name)
         assert m_loaded.config == {"conf": "mock"}
 
@@ -345,7 +344,7 @@ def test_deserialize_serialize_keras_object() -> None:
             """Test function get_config."""
             return {"a": 1}
 
-    assert serialize_object(as_tensor(Obj())) == {"a": 1}
+    assert serialize_object(ensure_eager_tensor(Obj())) == {"a": 1}
     assert serialize_object() == {}
 
 

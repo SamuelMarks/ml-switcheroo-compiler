@@ -16,9 +16,8 @@ from ml_switcheroo_compiler.backends.metal.metal import (
     MetalRunner,
     _calculate_node_bytes,
 )
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_node_dict, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -241,11 +240,11 @@ def test_metal_runner_execute_kernel_success() -> None:
     with patch.dict(sys.modules, {"Metal": mock_metal}):
         # Case 1: with inputs
         res = runner.execute_kernel("src", "main", np.array([1.0], dtype=np.float32))
-        assert as_callable(np.isclose)(as_callable(_get_attr(res, "__getitem__"))(0), 42.0)
+        assert ensure_callable(np.isclose)(ensure_eager_tensor(res)[0], 42.0)
 
         # Case 2: without inputs
         res2 = runner.execute_kernel("src", "main")
-        assert as_callable(np.isclose)(as_callable(_get_attr(res2, "__getitem__"))(0), 42.0)
+        assert ensure_callable(np.isclose)(ensure_eager_tensor(res2)[0], 42.0)
 
 
 def test_metal_runner_launch_kernel() -> None:
@@ -385,7 +384,7 @@ def test_metal_coverage_additional_branches() -> None:
         runner._dispatch_compute_node(dummy_node, 0, mock_lib, encoder, {})
 
         # library is None in execute_graph -> raises RuntimeError
-        _set_attr(runner, "is_available", lambda: True)
+        ensure_mutable(runner).is_available = ensure_eager_tensor(lambda: True)
         mock_dev.newLibraryWithSource_options_error_.return_value = (None, "compilation failed")
         with pytest.raises(RuntimeError, match="Metal compilation failed"):
             runner.execute_graph(IRGraph(), {})
@@ -416,7 +415,7 @@ def test_metal_prepare_input_buffers() -> None:
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
 
-    buffers = as_callable(_prepare_metal_input_buffers)(
+    buffers = ensure_callable(_prepare_metal_input_buffers)(
         graph,
         (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
     )
@@ -457,7 +456,7 @@ def test_metal_evaluate_fallback() -> None:
     assert res_single is not None
 
     # Test with arg.data wrapper and extra arguments
-    res_wrapper = as_callable(_evaluate_metal_fallback)(g_single, (as_callable(_MockTensor)(arr), "extra_arg"))
+    res_wrapper = ensure_callable(_evaluate_metal_fallback)(g_single, (ensure_callable(_MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
 
     # 2. Multi output graph
@@ -510,7 +509,7 @@ def _test_metal_compile_and_runner_dispatch_part_1(_state: dict[str, EagerTensor
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b"metalc binary source"
-        assert as_tensor(_get_attr(artifact.metadata, "__getitem__")("compiler_cli")) == "metal"
+        assert ensure_eager_tensor(artifact.metadata)["compiler_cli"] == "metal"
 
     # 2. Compile without list options and without assembly ptx
     mock_comp_empty = HardwareCompilationResult(
@@ -527,10 +526,9 @@ def _test_metal_compile_and_runner_dispatch_part_1(_state: dict[str, EagerTensor
     mock_runner = MagicMock()
     mock_runner.device = MagicMock()
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
-    _get_attr(_state, "update")({"CompiledArtifact": CompiledArtifact, "HardwareCompilationResult": HardwareCompilationResult, "artifact": artifact, "artifact_empty": artifact_empty})
-    _get_attr(_state, "update")({"gen": gen, "graph": graph, "mock_comp_empty": mock_comp_empty, "mock_comp_res": mock_comp_res})
-    _get_attr(_state, "update")({"mock_runner": mock_runner, "n_exp": n_exp, "n_in": n_in})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"CompiledArtifact": CompiledArtifact, "HardwareCompilationResult": HardwareCompilationResult, "artifact": artifact, "artifact_empty": artifact_empty}))
+    _state.update(ensure_tensor_dict({"gen": gen, "graph": graph, "mock_comp_empty": mock_comp_empty, "mock_comp_res": mock_comp_res}))
+    _state.update(ensure_tensor_dict({"mock_runner": mock_runner, "n_exp": n_exp, "n_in": n_in}))
 
 
 def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -543,13 +541,13 @@ def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensor
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner):
             res_avail = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
-            assert as_callable(np.array_equal)(res_avail, as_callable(np.array)([42.0]))
+            assert ensure_callable(np.array_equal)(res_avail, ensure_callable(np.array)([42.0]))
 
     # 3b. Multi output with device present
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = NodeDict(as_node_dict({"x": n_in, "out1": n_out1, "out2": n_out2}))
+    g_multi.nodes = NodeDict(ensure_node_dict({"x": n_in, "out1": n_out1, "out2": n_out2}))
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
     gen_multi = MetalCodeGenerator(g_multi)
@@ -561,16 +559,17 @@ def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensor
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner_multi):
-            res_m = as_callable(art_multi.callable_fn)(as_callable(np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = ensure_callable(art_multi.callable_fn)(ensure_callable(np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
 
     # 3c. Device is None -> falls back to evaluator
     mock_runner_no_dev = MagicMock()
     mock_runner_no_dev.device = None
-    _get_attr(_state, "update")({"art_multi": art_multi, "g_multi": g_multi, "gen_multi": gen_multi, "mock_runner_multi": mock_runner_multi})
-    _get_attr(_state, "update")({"mock_runner_no_dev": mock_runner_no_dev, "n_out1": n_out1, "n_out2": n_out2, "res_avail": res_avail})
-    _get_attr(_state, "update")({"res_m": res_m})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"art_multi": art_multi, "g_multi": g_multi, "gen_multi": gen_multi, "mock_runner_multi": mock_runner_multi}))
+    _state.update(ensure_tensor_dict({"mock_runner_no_dev": mock_runner_no_dev, "n_out1": n_out1, "n_out2": n_out2, "res_avail": res_avail}))
+    _state.update(ensure_tensor_dict({"res_m": res_m}))
+    _state.update(ensure_tensor_dict({"artifact": artifact, "mock_comp_res": mock_comp_res, "mock_runner": mock_runner}))
+    _state.update(ensure_tensor_dict({"n_in": n_in}))
 
 
 def _test_metal_compile_and_runner_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -598,7 +597,7 @@ def _test_metal_compile_and_runner_dispatch_part_3(_state: dict[str, EagerTensor
     with patch.object(MetalRunner, "is_available", return_value=False):
         res_fallback = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None
-    _get_attr(_state, "update")({"mock_runner_err": mock_runner_err, "res_err": res_err, "res_fallback": res_fallback, "res_nodev": res_nodev})
+    _state.update(ensure_tensor_dict({"mock_runner_err": mock_runner_err, "res_err": res_err, "res_fallback": res_fallback, "res_nodev": res_nodev}))
 
 
 def test_metal_compile_and_runner_dispatch() -> None:

@@ -5,9 +5,15 @@ Provides operations and node definitions related to text manipulation and proces
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
     TensorConfig,
@@ -30,15 +36,24 @@ def _extract_shape(arg: TensorOrScalar) -> tuple[int, ...]:
     """
     if arg is None:
         return ()
-    if _has_attr(arg, "shape"):
-        return tuple(int(d) for d in _get_attr(arg.shape, "__iter__")())
-    if _has_attr(arg, "shape_metadata"):
-        sm = arg.shape_metadata
-        if sm:
-            return tuple(int(d) for d in sm)
+    extracted = extract_shape(arg)
+    if extracted:
+        return tuple(int(ensure_int(d)) for d in extracted)
     if isinstance(arg, (tuple, list)):
-        return tuple(int(d) for d in arg)
+        return tuple(int(ensure_int(d)) for d in arg)
     return ()
+
+
+def _first_arg_shape(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> TensorOrScalar:
+    """Return `.shape` of the first argument if it implements `ShapeProtocol`, else `()`.
+
+    Args:
+        args (Sequence[EagerTensorProtocol | TensorOrScalar]): Positional arguments.
+
+    Returns:
+        TensorOrScalar: Shape tuple or empty tuple.
+    """
+    return extract_shape(args[0]) if args and isinstance(args[0], ShapeProtocol) else ()
 
 
 @register_op("StringToHash")
@@ -172,7 +187,7 @@ class IntegerLookup(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("TextVectorization")
@@ -197,10 +212,10 @@ class TextVectorization(OpDef):
             return ()
         output_sequence_length = kwargs.get("output_sequence_length")
         if output_sequence_length is not None:
-            return s + (int(as_int(output_sequence_length)),)
+            return s + (int(ensure_int(output_sequence_length)),)
         max_tokens = kwargs.get("max_tokens")
         if max_tokens is not None and kwargs.get("output_mode") in ("count", "tf_idf", "multi_hot"):
-            return s[:-1] + (int(as_int(max_tokens)),) if s else (int(as_int(max_tokens)),)
+            return s[:-1] + (int(ensure_int(max_tokens)),) if s else (int(ensure_int(max_tokens)),)
         return s + (SymVar("seq_len"),)
 
 
@@ -218,7 +233,7 @@ class StringToNumber(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("StringLower")
@@ -235,7 +250,7 @@ class StringLower(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("StringUpper")
@@ -252,7 +267,7 @@ class StringUpper(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("StringJoin")
@@ -279,7 +294,7 @@ class StringJoin(OpDef):
         s = list(_extract_shape(inp))
         axis = kwargs.get("axis")
         if axis is not None and s:
-            ax = int(as_int(axis))
+            ax = int(ensure_int(axis))
             if ax < 0:
                 ax += len(s)
             if 0 <= ax < len(s):
@@ -302,7 +317,7 @@ class StringLength(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("StringSubstr")
@@ -319,7 +334,7 @@ class StringSubstr(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 @register_op("RegexFullMatch")
@@ -336,7 +351,7 @@ class RegexFullMatch(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and _has_attr(args[0], "shape") else ()
+        return _first_arg_shape(args)
 
 
 def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
@@ -355,7 +370,7 @@ def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(extract_shape(backend.array(data)), inputs.dtype, inputs.device),
         )
 
     return get_op("Hashing")()(inputs, **kwargs)
@@ -377,7 +392,7 @@ def lookup(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(extract_shape(backend.array(data)), inputs.dtype, inputs.device),
         )
 
     return get_op("StringLookup")()(inputs, **kwargs)
@@ -399,7 +414,7 @@ def text_vectorization(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(extract_shape(backend.array(data)), inputs.dtype, inputs.device),
         )
 
     return get_op("TextVectorization")()(inputs, **kwargs)

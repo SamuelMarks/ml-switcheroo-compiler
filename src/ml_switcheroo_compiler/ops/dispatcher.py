@@ -20,7 +20,7 @@ def dispatch_op(
     op_type: str,
     *args: Tensor | DispatchArg,
     **kwargs: Tensor | DispatchArg,
-) -> Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]:
+) -> Tensor:
     """Route operation to eager or tracing handler.
 
     Args:
@@ -29,13 +29,14 @@ def dispatch_op(
         **kwargs (Tensor | DispatchArg): Keyword args.
 
     Returns:
-        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Execution result.
+        Tensor: Execution result.
 
     Raises:
         RuntimeError: If called outside of an active tracing context when eager mode is disabled.
     """
     if config.eager_mode:
-        return EagerEvaluator.evaluate(op_type, *args, **kwargs)
+        res_eager = EagerEvaluator.evaluate(op_type, *args, **kwargs)
+        return res_eager[0] if isinstance(res_eager, tuple) else res_eager
 
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."

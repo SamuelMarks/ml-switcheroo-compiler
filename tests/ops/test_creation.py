@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _infer_dtype
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -20,4 +20,4 @@ def test_infer_dtype_from_array_object() -> None:
 
         dtype = "O"
 
-    assert as_callable(_infer_dtype)(as_callable(ObjArr)()) == DType.Object
+    assert ensure_callable(_infer_dtype)(ensure_callable(ObjArr)()) == DType.Object

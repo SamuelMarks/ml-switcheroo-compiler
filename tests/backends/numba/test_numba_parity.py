@@ -15,10 +15,9 @@ from ml_switcheroo_compiler.backends.numba.eager import _unwrap_arg, execute_op
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.backends.numba.profiler import NumbaProfiler, _get_process_memory_mb
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -77,7 +76,7 @@ def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
 
     # Eager Scan
     scan_res = execute_op("Scan", 0, [1.0, 2.0, 3.0, 4.0])
-    as_callable(np.testing.assert_allclose)(scan_res, [1.0, 3.0, 6.0, 10.0])
+    ensure_callable(np.testing.assert_allclose)(scan_res, [1.0, 3.0, 6.0, 10.0])
 
 
 def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
@@ -104,7 +103,7 @@ def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
     a = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     b = np.array([2.0, 3.0, 4.0], dtype=np.float32)
     expected = a + b * b
-    as_callable(np.testing.assert_allclose)(as_callable(ufunc)(a, b), expected)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(ufunc)(a, b), expected)
 
     # 2. Unary vectorized ufunc: relu_scale (max(0, x) * 2)
     ufunc_unary = gen.compile_vectorized_ufunc(
@@ -114,7 +113,7 @@ def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
     )
     x = np.array([-1.0, 0.0, 2.5], dtype=np.float32)
     expected_unary = np.array([0.0, 0.0, 5.0], dtype=np.float32)
-    as_callable(np.testing.assert_allclose)(as_callable(ufunc_unary)(x), expected_unary)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(ufunc_unary)(x), expected_unary)
 
     # 3. Failing compilation branch
     with mock.patch("builtins.exec"):
@@ -133,11 +132,11 @@ def test_numba_eager_dispatch_and_tensor_unwrap() -> None:
     assert _unwrap_arg(5) == 5
 
     res_add = execute_op("Add", t1, t2)
-    as_callable(np.testing.assert_allclose)(res_add, [5.0, 7.0, 9.0])
+    ensure_callable(np.testing.assert_allclose)(res_add, [5.0, 7.0, 9.0])
 
     # Direct numpy function
     res_sin = execute_op("sin", np.array([0.0, np.pi / 2.0]))
-    as_callable(np.testing.assert_allclose)(res_sin, [0.0, 1.0], atol=1e-5)
+    ensure_callable(np.testing.assert_allclose)(res_sin, [0.0, 1.0], atol=1e-5)
 
     # Eager registry fallback
     def mock_nb_custom(mod: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> str:
@@ -180,12 +179,12 @@ def test_numba_profiler_and_memory_metrics() -> None:
     )
 
     assert "latencies" in metrics
-    assert as_callable(len)(metrics["latencies"]) == 3
-    assert _get_attr(metrics, "__getitem__")("latency_ms") >= 0.0
-    assert _get_attr(metrics, "__getitem__")("p50_ms") >= 0.0
-    assert _get_attr(metrics, "__getitem__")("p95_ms") >= 0.0
-    assert _get_attr(metrics, "__getitem__")("p99_ms") >= 0.0
-    assert _get_attr(metrics, "__getitem__")("peak_memory_mb") > 0.0
+    assert ensure_callable(len)(metrics["latencies"]) == 3
+    assert ensure_eager_tensor(metrics)["latency_ms"] >= 0.0
+    assert ensure_eager_tensor(metrics)["p50_ms"] >= 0.0
+    assert ensure_eager_tensor(metrics)["p95_ms"] >= 0.0
+    assert ensure_eager_tensor(metrics)["p99_ms"] >= 0.0
+    assert ensure_eager_tensor(metrics)["peak_memory_mb"] > 0.0
 
     # Test Linux RSS branch in _get_process_memory_mb
     with mock.patch("sys.platform", "linux"):
@@ -194,7 +193,7 @@ def test_numba_profiler_and_memory_metrics() -> None:
     # Profile with empty inputs
     empty_graph = IRGraph()
     metrics_empty = profiler.profile_graph(empty_graph, inputs={}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(metrics_empty["latencies"]) == 2
+    assert ensure_callable(len)(metrics_empty["latencies"]) == 2
 
     # Profile with fallback summation
     metrics_sum = profiler.profile_graph(
@@ -202,12 +201,12 @@ def test_numba_profiler_and_memory_metrics() -> None:
         inputs={"a": np.array([1.0, 2.0]), "b": np.array([3.0, 4.0])},
         num_iters=2,
     )
-    assert as_callable(len)(metrics_sum["latencies"]) == 2
+    assert ensure_callable(len)(metrics_sum["latencies"]) == 2
 
     # Failing compile_graph fallback
     with mock.patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile failed")):
         metrics_fallback = profiler.profile_graph(g, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=2)
-        assert as_callable(len)(metrics_fallback["latencies"]) == 2
+        assert ensure_callable(len)(metrics_fallback["latencies"]) == 2
 
     # Profiler import fallback when numba is not installed
     real_import = __import__
@@ -222,7 +221,7 @@ def test_numba_profiler_and_memory_metrics() -> None:
         """
         if name == "numba":
             raise ImportError("no numba")
-        return as_callable(real_import)(name, *args, **kwargs)
+        return ensure_callable(real_import)(name, *args, **kwargs)
 
     import importlib
 
@@ -252,15 +251,15 @@ def test_numba_generator_aot_and_classmethods() -> None:
 
     input_arr = np.array([[-1.0, 2.0], [-3.0, 4.0]], dtype=np.float32)
     res = artifact(input_arr)
-    as_callable(np.testing.assert_allclose)(res, as_callable(np.abs)(input_arr))
+    ensure_callable(np.testing.assert_allclose)(res, ensure_callable(np.abs)(input_arr))
 
     # Classmethods on NumbaGenerator and package exports
-    assert as_tensor(_get_attr(nb_pkg.zeros((2, 2)), "shape")) == (2, 2)
-    assert as_tensor(_get_attr(NumbaGenerator.zeros((2, 2)), "shape")) == (2, 2)
-    assert as_tensor(_get_attr(nb_pkg.array([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(_get_attr(NumbaGenerator.array([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(_get_attr(nb_pkg.asarray([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(_get_attr(NumbaGenerator.asarray([1.0, 2.0]), "shape")) == (2,)
+    assert ensure_eager_tensor(nb_pkg.zeros((2, 2))).shape == (2, 2)
+    assert ensure_eager_tensor(NumbaGenerator.zeros((2, 2))).shape == (2, 2)
+    assert ensure_eager_tensor(nb_pkg.array([1.0, 2.0])).shape == (2,)
+    assert ensure_eager_tensor(NumbaGenerator.array([1.0, 2.0])).shape == (2,)
+    assert ensure_eager_tensor(nb_pkg.asarray([1.0, 2.0])).shape == (2,)
+    assert ensure_eager_tensor(NumbaGenerator.asarray([1.0, 2.0])).shape == (2,)
     assert nb_pkg.item(np.array([42.0])) == 42.0
     assert NumbaGenerator.item(np.array([42.0])) == 42.0
     assert nb_pkg.execute_op("Add", 1, 2) == 3

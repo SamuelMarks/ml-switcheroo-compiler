@@ -7,7 +7,6 @@ from unittest.mock import mock_open, patch
 
 import yaml
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff_rules import autodiff_provider
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
@@ -23,7 +22,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
     get_jvp_from_data,
     get_vjp_from_data,
 )
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -145,8 +144,8 @@ def test_fallback_finite_difference_jvp() -> None:
 def test_get_autodiff_manifest_branches() -> None:
     """Test _get_autodiff_manifest caching, missing file, and exception handling."""
     # 1. Cache hit
-    _set_attr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest")
-    assert as_tensor(_get_autodiff_manifest()) == as_tensor("cached_manifest")
+    ensure_mutable(autodiff_provider)._MANIFEST_MODEL_CACHE = ensure_eager_tensor("cached_manifest")
+    assert ensure_eager_tensor(_get_autodiff_manifest()) == ensure_eager_tensor("cached_manifest")
     autodiff_provider._MANIFEST_MODEL_CACHE = None
 
     # 2. File not found
@@ -282,7 +281,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
             with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.load_primitive_jvp_rules", return_value={"prim_op": DummyRule(jvp="tan_prim")}):
                 assert _load_autodiff_rule("prim_op", "jvp") == {"jvp": "tan_prim"}
                 # Missing JVP primitive falls through (branch 329->337)
-                assert as_tensor(_load_autodiff_rule("non_prim_op", "jvp")) == as_tensor(_fallback_finite_difference_jvp) or as_tensor(_load_autodiff_rule("non_prim_op", "jvp")) is as_tensor(None)
+                assert ensure_eager_tensor(_load_autodiff_rule("non_prim_op", "jvp")) == ensure_eager_tensor(_fallback_finite_difference_jvp) or ensure_eager_tensor(_load_autodiff_rule("non_prim_op", "jvp")) is ensure_eager_tensor(None)
 
     # 4. Stage 4: OPS_REGISTRY fallback (including non-dict and missing autodiff branch 340->345)
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):

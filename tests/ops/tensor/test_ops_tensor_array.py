@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.tensor_array import TensorArrayRead, TensorArrayStack, TensorArrayWrite
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -39,9 +39,9 @@ def test_tensor_array_infer_shape() -> None:
     h2 = MockHandle((2, 3), size=None)
     h3 = MockHandle(elem_shape=(), size="non_int")
 
-    assert as_callable(as_callable(TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
-    assert as_callable(as_callable(TensorArrayRead)().infer_shape)(h3, 0) == ()
-    assert as_callable(as_callable(TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
-    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
-    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
-    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h3) == (None,)
+    assert ensure_callable(ensure_callable(TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
+    assert ensure_callable(ensure_callable(TensorArrayRead)().infer_shape)(h3, 0) == ()
+    assert ensure_callable(ensure_callable(TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
+    assert ensure_callable(ensure_callable(TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
+    assert ensure_callable(ensure_callable(TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
+    assert ensure_callable(ensure_callable(TensorArrayStack)().infer_shape)(h3) == (None,)

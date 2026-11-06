@@ -8,10 +8,10 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_shape
 from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
+from ml_switcheroo_compiler.backends.protocols import get_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -96,8 +96,8 @@ class NumpyASTVisitor:
             str: The generated default NumPy code string for the node.
         """
         if "dimension" in kwargs:
-            return f"np.{_get_attr(node, 'op_type').lower()}({input_vars[0]}, axis={kwargs['dimension']})"
-        op_type = str(_get_attr(node, "op_type", ""))
+            return f"np.{get_backend_member(node, 'op_type').lower()}({input_vars[0]}, axis={kwargs['dimension']})"
+        op_type = str(get_backend_member(node, "op_type", ""))
         op_spec = load_backend_mappings("numpy").operations.get(op_type)
         np_func = (op_spec.ast_template if op_spec and op_spec.ast_template else None) or f"np.{op_type.lower()}"
         args_str = ", ".join(input_vars)
@@ -187,7 +187,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return as_tensor(_get_attr(np.random, "default_rng")(*args, **kwargs))
+        return ensure_eager_tensor(get_backend_member(np.random, "default_rng")(*args, **kwargs))
 
     @classmethod
     def load(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -201,7 +201,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return as_tensor(_get_attr(np, "load")(*args, **kwargs))
+        return ensure_eager_tensor(get_backend_member(np, "load")(*args, **kwargs))
 
     @classmethod
     def save(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
@@ -213,7 +213,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        _get_attr(np, "save")(*args, **kwargs)
+        get_backend_member(np, "save")(*args, **kwargs)
 
     @classmethod
     def savez(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
@@ -225,7 +225,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        _get_attr(np, "savez")(*args, **kwargs)
+        get_backend_member(np, "savez")(*args, **kwargs)
 
     @classmethod
     def savez_compressed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
@@ -237,7 +237,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        _get_attr(np, "savez_compressed")(*args, **kwargs)
+        get_backend_member(np, "savez_compressed")(*args, **kwargs)
 
     def _get_backend_prefix(self) -> str:
         """Retrieve the backend prefix property or mapping.
@@ -306,26 +306,26 @@ class NumpyGenerator(
                 EagerValue: Computed tensor or collection of tensors.
             """
             input_map = {}
-            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if get_backend_member(n, "op_type", "") == "Input"]
             for i, inp_node in enumerate(input_nodes):
                 if i < len(w_args):
                     arg_val = w_args[i]
                     input_map[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
 
-            res_map = _get_attr(evaluator_module, "evaluate_graph")(graph, input_map)
+            res_map = evaluator_module.evaluate_graph(graph, input_map)
             if graph.outputs:
                 if len(graph.outputs) == 1:
-                    out_val = res_map[graph.outputs[0]]
+                    out_val: EagerValue = res_map[graph.outputs[0]]
                     if isinstance(out_val, Tensor):
                         return out_val
-                    return Tensor(out_val, TensorConfig(_get_attr(out_val, "shape", ()), DType.Float32, "cpu"))
-                outs = []
+                    return Tensor(out_val, TensorConfig(ensure_shape(get_backend_member(out_val, "shape", ())), DType.Float32, "cpu"))
+                outs: list[EagerValue] = []
                 for out_id in graph.outputs:
                     out_val = res_map[out_id]
                     if isinstance(out_val, Tensor):
                         outs.append(out_val)
                     else:
-                        outs.append(Tensor(out_val, TensorConfig(_get_attr(out_val, "shape", ()), DType.Float32, "cpu")))
+                        outs.append(Tensor(out_val, TensorConfig(ensure_shape(get_backend_member(out_val, "shape", ())), DType.Float32, "cpu")))
                 return outs
             return None
 

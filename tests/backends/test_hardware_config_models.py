@@ -30,9 +30,8 @@ from ml_switcheroo_compiler.backends.llvm_cpp.config_models import (
     CppTemplatesConfig,
     CppTilingConfig,
 )
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -110,7 +109,7 @@ def test_hardware_template_config_equality_and_validation() -> None:
     assert cfg.templates["list_tpl"] == ["item1", "item2"]
 
     # Test _validate_templates non-dict bypass
-    raw_val = as_callable(_get_attr(HardwareTemplatesConfig, "_validate_templates"))("not_a_dict")
+    raw_val = ensure_callable(ensure_eager_tensor(HardwareTemplatesConfig)._validate_templates)("not_a_dict")
     assert raw_val == "not_a_dict"
 
 
@@ -152,8 +151,8 @@ def test_load_hardware_templates_from_file_and_dir() -> None:
         assert "op1" in cfg.templates
         assert "op2" in cfg.templates
         assert "op3" in cfg.templates
-        assert as_tensor(_get_attr(as_tensor(_get_attr(cfg.templates, "__getitem__")("op1")), "body")) == "void op1() {}"
-        assert as_tensor(_get_attr(as_tensor(_get_attr(cfg.templates, "__getitem__")("op2")), "workgroup_size")) == [32, 1, 1]
+        assert ensure_eager_tensor(ensure_eager_tensor(cfg.templates)["op1"].body) == "void op1() {}"
+        assert ensure_eager_tensor(ensure_eager_tensor(cfg.templates)["op2"].workgroup_size) == [32, 1, 1]
         assert cfg.templates["op3"] == 123
 
         # 3. Fallback when dir does not exist
@@ -176,7 +175,7 @@ def test_load_hardware_templates_from_file_and_dir() -> None:
             patch("yaml.safe_load", return_value={"direct": tpl_instance}),
         ):
             _load_yaml_file_into_config("dummy.yaml", cfg_inst)
-        assert as_tensor(_get_attr(as_tensor(_get_attr(cfg_inst.templates, "__getitem__")("direct")), "body")) == "void direct() {}"
+        assert ensure_eager_tensor(ensure_eager_tensor(cfg_inst.templates)["direct"].body) == "void direct() {}"
 
 
 def test_hardware_helpers_liveness_and_resolve() -> None:
@@ -301,13 +300,12 @@ def _test_hardware_launch_helpers_and_dispatch_part_1(_state: dict[str, EagerTen
 
     # Matmul with empty inputs/shape
     empty_mm = IRNode("empty_mm", "Dot", inputs=[], shape_metadata=())
-    _get_attr(_state, "update")({"_": _, "_calculate_contiguous_strides": _calculate_contiguous_strides, "_format_stride_terms": _format_stride_terms, "_load_yaml_file_into_config": _load_yaml_file_into_config})
-    _get_attr(_state, "update")({"args": args, "args_mm": args_mm, "calculate_hardware_launch_config": calculate_hardware_launch_config, "empty_conv": empty_conv})
-    _get_attr(_state, "update")({"empty_mm": empty_mm, "g": g, "generate_nd_coordinate_offset_logic": generate_nd_coordinate_offset_logic, "grid": grid})
-    _get_attr(_state, "update")({"grid_empty": grid_empty, "grid_mm": grid_mm, "in0": in0, "in1": in1})
-    _get_attr(_state, "update")({"in_m0": in_m0, "in_m1": in_m1, "load_hardware_execution_schema": load_hardware_execution_schema, "out_conv": out_conv})
-    _get_attr(_state, "update")({"out_mm": out_mm, "tpl": tpl})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_": _, "_calculate_contiguous_strides": _calculate_contiguous_strides, "_format_stride_terms": _format_stride_terms, "_load_yaml_file_into_config": _load_yaml_file_into_config}))
+    _state.update(ensure_tensor_dict({"args": args, "args_mm": args_mm, "calculate_hardware_launch_config": calculate_hardware_launch_config, "empty_conv": empty_conv}))
+    _state.update(ensure_tensor_dict({"empty_mm": empty_mm, "g": g, "generate_nd_coordinate_offset_logic": generate_nd_coordinate_offset_logic, "grid": grid}))
+    _state.update(ensure_tensor_dict({"grid_empty": grid_empty, "grid_mm": grid_mm, "in0": in0, "in1": in1}))
+    _state.update(ensure_tensor_dict({"in_m0": in_m0, "in_m1": in_m1, "load_hardware_execution_schema": load_hardware_execution_schema, "out_conv": out_conv}))
+    _state.update(ensure_tensor_dict({"out_mm": out_mm, "tpl": tpl}))
 
 
 def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -317,7 +315,7 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
         _state: Shared test state dictionary.
     """
     calculate_hardware_launch_config, empty_mm, g, tpl = _state["calculate_hardware_launch_config"], _state["empty_mm"], _state["g"], _state["tpl"]
-    grid_empty_mm, _ = as_callable(resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
+    grid_empty_mm, _ = ensure_callable(resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
     assert grid_empty_mm == ("(1 + block_1.x - 1) / block_1.x", "(1 + block_1.y - 1) / block_1.y", "1")
 
     # 3. BatchMatMul
@@ -325,17 +323,17 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
     in_bm1 = IRNode("bm_in1", "Input", shape_metadata=(4, 16, 32))
     out_bmm = IRNode("bm_out", "BatchMatMul", inputs=["bm_in0", "bm_in1"], shape_metadata=(4, 8, 32))
     g.nodes.update({"bm_in0": in_bm0, "bm_in1": in_bm1, "bm_out": out_bmm})
-    grid_bmm, args_bmm = as_callable(resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
+    grid_bmm, args_bmm = ensure_callable(resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
     assert grid_bmm == ("(32 + block_2.x - 1) / block_2.x", "(8 + block_2.y - 1) / block_2.y", "4")
     assert args_bmm[-5:] == ["out_bmm", "4", "8", "32", "16"]
 
     empty_bmm = IRNode("empty_bmm", "BatchMatMul", inputs=[], shape_metadata=())
-    grid_empty_bmm, _ = as_callable(resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
+    grid_empty_bmm, _ = ensure_callable(resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
     assert grid_empty_bmm == ("(1 + block_2.x - 1) / block_2.x", "(1 + block_2.y - 1) / block_2.y", "1")
 
     # 4. FusedElementwise
     out_fused = IRNode("fused_out", "FusedElementwise", inputs=["c_in0"], shape_metadata=(2, 3))
-    grid_fused, args_fused = as_callable(resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
+    grid_fused, args_fused = ensure_callable(resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
     assert grid_fused == ("(6 + block_3.x - 1) / block_3.x", "1", "1")
     assert args_fused == ["in_0", "out_fused", "6"]
 
@@ -346,10 +344,11 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
     assert calculate_hardware_launch_config([32, 64]) == ((16, 16, 1), (4, 2, 1))
     assert calculate_hardware_launch_config([4, 16, 32]) == ((16, 8, 8), (2, 2, 1))
     assert calculate_hardware_launch_config(["invalid_dim", 10]) == ((16, 16, 1), (1, 1, 1))
-    _get_attr(_state, "update")({"_": _, "args_bmm": args_bmm, "args_fused": args_fused, "empty_bmm": empty_bmm})
-    _get_attr(_state, "update")({"grid_bmm": grid_bmm, "grid_empty_bmm": grid_empty_bmm, "grid_empty_mm": grid_empty_mm, "grid_fused": grid_fused})
-    _get_attr(_state, "update")({"in_bm0": in_bm0, "in_bm1": in_bm1, "out_bmm": out_bmm, "out_fused": out_fused})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_": _, "args_bmm": args_bmm, "args_fused": args_fused, "empty_bmm": empty_bmm}))
+    _state.update(ensure_tensor_dict({"grid_bmm": grid_bmm, "grid_empty_bmm": grid_empty_bmm, "grid_empty_mm": grid_empty_mm, "grid_fused": grid_fused}))
+    _state.update(ensure_tensor_dict({"in_bm0": in_bm0, "in_bm1": in_bm1, "out_bmm": out_bmm, "out_fused": out_fused}))
+    _state.update(ensure_tensor_dict({"calculate_hardware_launch_config": calculate_hardware_launch_config, "empty_mm": empty_mm, "g": g}))
+    _state.update(ensure_tensor_dict({"tpl": tpl}))
 
 
 def _test_hardware_launch_helpers_and_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -389,9 +388,10 @@ def _test_hardware_launch_helpers_and_dispatch_part_3(_state: dict[str, EagerTen
     if os.path.exists(bundled_path):
         explicit_schema = load_hardware_execution_schema(path=bundled_path)
         assert "cuda" in explicit_schema.hardware_execution_schemas
-    _get_attr(_state, "update")({"bundled_path": bundled_path, "default_schema": default_schema, "lines_1d_custom": lines_1d_custom, "lines_1d_default": lines_1d_default})
-    _get_attr(_state, "update")({"lines_nd_cuda": lines_nd_cuda, "lines_nd_invalid": lines_nd_invalid, "lines_nd_metal": lines_nd_metal})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bundled_path": bundled_path, "default_schema": default_schema, "lines_1d_custom": lines_1d_custom, "lines_1d_default": lines_1d_default}))
+    _state.update(ensure_tensor_dict({"lines_nd_cuda": lines_nd_cuda, "lines_nd_invalid": lines_nd_invalid, "lines_nd_metal": lines_nd_metal}))
+    _state.update(ensure_tensor_dict({"_calculate_contiguous_strides": _calculate_contiguous_strides, "_format_stride_terms": _format_stride_terms, "generate_nd_coordinate_offset_logic": generate_nd_coordinate_offset_logic}))
+    _state.update(ensure_tensor_dict({"load_hardware_execution_schema": load_hardware_execution_schema}))
 
 
 def _test_hardware_launch_helpers_and_dispatch_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -417,7 +417,7 @@ def _test_hardware_launch_helpers_and_dispatch_part_4(_state: dict[str, EagerTen
             os.remove(f_bad_tpl)
         if os.path.exists(f_missing_tpl):
             os.remove(f_missing_tpl)
-    _get_attr(_state, "update")({"f_bad_tpl": f_bad_tpl, "f_missing_tpl": f_missing_tpl, "tf": tf})
+    _state.update(ensure_tensor_dict({"f_bad_tpl": f_bad_tpl, "f_missing_tpl": f_missing_tpl, "tf": tf}))
 
 
 def test_hardware_launch_helpers_and_dispatch() -> None:
@@ -530,7 +530,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_tmpl_path = f.name
     try:
         tmpl_m = load_kernel_templates_manifest(path=custom_tmpl_path)
-        assert as_tensor(_get_attr(tmpl_m, "version")) == "1.0.0"
+        assert ensure_eager_tensor(ensure_eager_tensor(tmpl_m).version) == "1.0.0"
     finally:
         os.remove(custom_tmpl_path)
 
@@ -539,7 +539,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_heur_path = f.name
     try:
         heur_m = load_launch_heuristics(path=custom_heur_path)
-        assert as_tensor(_get_attr(heur_m, "version")) == "1.0.0"
+        assert ensure_eager_tensor(ensure_eager_tensor(heur_m).version) == "1.0.0"
     finally:
         os.remove(custom_heur_path)
 
@@ -548,7 +548,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_layout_path = f.name
     try:
         layout_m = load_memory_layouts(path=custom_layout_path)
-        assert as_tensor(_get_attr(layout_m, "version")) == "1.0.0"
+        assert ensure_eager_tensor(ensure_eager_tensor(layout_m).version) == "1.0.0"
     finally:
         os.remove(custom_layout_path)
 
@@ -611,14 +611,13 @@ def _test_hardware_config_models_100_coverage_part_1(_state: dict[str, EagerTens
     g.nodes.update({"p3d_in": in_p3d, "p3d_out": out_p3d})
     grid_p3d, args_p3d = resolve_hardware_launch_grid_and_args(out_p3d, tpl, {"p3d_in": "in_p"}, "out_buf", 192, 1, g)
     assert grid_p3d == ("(2 * 4 * 4 + block_1.x - 1) / block_1.x", "3", "2")
-    _get_attr(_state, "update")({"HardwareDeviceProfileModel": HardwareDeviceProfileModel, "HardwareDeviceProfilesManifestModel": HardwareDeviceProfilesManifestModel, "IRGraph": IRGraph, "IRNode": IRNode})
-    _get_attr(_state, "update")({"_": _, "_merge_unified_kernel_templates": _merge_unified_kernel_templates, "args_c3d": args_c3d, "args_p3d": args_p3d})
-    _get_attr(_state, "update")({"empty_c3d": empty_c3d, "g": g, "grid_c3d": grid_c3d, "grid_empty_c3d": grid_empty_c3d})
-    _get_attr(_state, "update")({"grid_p3d": grid_p3d, "in_c3d_0": in_c3d_0, "in_c3d_1": in_c3d_1, "in_p3d": in_p3d})
-    _get_attr(_state, "update")({"load_hardware_templates": load_hardware_templates, "load_kernel_templates_manifest": load_kernel_templates_manifest, "out_c3d": out_c3d, "out_p3d": out_p3d})
-    _get_attr(_state, "update")({"patch": patch, "pytest": pytest, "resolve_hardware_launch_grid_and_args": resolve_hardware_launch_grid_and_args, "tpl": tpl})
-    _get_attr(_state, "update")({"validate_and_bound_shared_memory": validate_and_bound_shared_memory})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"HardwareDeviceProfileModel": HardwareDeviceProfileModel, "HardwareDeviceProfilesManifestModel": HardwareDeviceProfilesManifestModel, "IRGraph": IRGraph, "IRNode": IRNode}))
+    _state.update(ensure_tensor_dict({"_": _, "_merge_unified_kernel_templates": _merge_unified_kernel_templates, "args_c3d": args_c3d, "args_p3d": args_p3d}))
+    _state.update(ensure_tensor_dict({"empty_c3d": empty_c3d, "g": g, "grid_c3d": grid_c3d, "grid_empty_c3d": grid_empty_c3d}))
+    _state.update(ensure_tensor_dict({"grid_p3d": grid_p3d, "in_c3d_0": in_c3d_0, "in_c3d_1": in_c3d_1, "in_p3d": in_p3d}))
+    _state.update(ensure_tensor_dict({"load_hardware_templates": load_hardware_templates, "load_kernel_templates_manifest": load_kernel_templates_manifest, "out_c3d": out_c3d, "out_p3d": out_p3d}))
+    _state.update(ensure_tensor_dict({"patch": patch, "pytest": pytest, "resolve_hardware_launch_grid_and_args": resolve_hardware_launch_grid_and_args, "tpl": tpl}))
+    _state.update(ensure_tensor_dict({"validate_and_bound_shared_memory": validate_and_bound_shared_memory}))
 
 
 def _test_hardware_config_models_100_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -665,11 +664,12 @@ def _test_hardware_config_models_100_coverage_part_2(_state: dict[str, EagerTens
             "existing_real": HardwareTemplateConfig(body="void custom() { /* real */ }"),
         }
     )
-    _get_attr(_state, "update")({"_": _, "args_norm": args_norm, "args_p2d": args_p2d, "args_soft": args_soft})
-    _get_attr(_state, "update")({"cfg_cuda": cfg_cuda, "empty_p": empty_p, "grid_ep": grid_ep, "grid_norm": grid_norm})
-    _get_attr(_state, "update")({"grid_p2d": grid_p2d, "grid_soft": grid_soft, "in_norm": in_norm, "in_p2d": in_p2d})
-    _get_attr(_state, "update")({"out_norm": out_norm, "out_p2d": out_p2d, "out_soft": out_soft})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_": _, "args_norm": args_norm, "args_p2d": args_p2d, "args_soft": args_soft}))
+    _state.update(ensure_tensor_dict({"cfg_cuda": cfg_cuda, "empty_p": empty_p, "grid_ep": grid_ep, "grid_norm": grid_norm}))
+    _state.update(ensure_tensor_dict({"grid_p2d": grid_p2d, "grid_soft": grid_soft, "in_norm": in_norm, "in_p2d": in_p2d}))
+    _state.update(ensure_tensor_dict({"out_norm": out_norm, "out_p2d": out_p2d, "out_soft": out_soft}))
+    _state.update(ensure_tensor_dict({"IRNode": IRNode, "args_p3d": args_p3d, "g": g}))
+    _state.update(ensure_tensor_dict({"resolve_hardware_launch_grid_and_args": resolve_hardware_launch_grid_and_args, "tpl": tpl}))
 
 
 def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -704,10 +704,10 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
         KernelTemplatesManifestModel,
     )
 
-    dummy_manifest = as_callable(KernelTemplatesManifestModel)(
+    dummy_manifest = ensure_callable(KernelTemplatesManifestModel)(
         kernel_templates={
-            "no_body_op": as_callable(KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
-            "with_body_op": as_callable(KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
+            "no_body_op": ensure_callable(KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
+            "with_body_op": ensure_callable(KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
         }
     )
     cfg_empty_body = HardwareTemplatesConfig(templates={})
@@ -717,7 +717,7 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
     assert "no_body_op" not in cfg_empty_body.templates
 
     # _merge_unified_kernel_templates when load_kernel_templates_manifest raises
-    with as_callable(patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=as_callable(RuntimeError)("fail")):
+    with ensure_callable(patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=ensure_callable(RuntimeError)("fail")):
         _merge_unified_kernel_templates(cfg_cuda, "cuda")
 
     # load_hardware_templates with backend param
@@ -726,10 +726,11 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
     cuda_dir = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cuda", "templates")
     cuda_file = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cuda", "cuda_templates.yaml")
     loaded_cuda = load_hardware_templates(cuda_dir, cuda_file, backend="cuda")
-    _get_attr(_state, "update")({"KernelTemplateModel": KernelTemplateModel, "KernelTemplatesManifestModel": KernelTemplatesManifestModel, "cfg_empty_body": cfg_empty_body, "cfg_metal": cfg_metal})
-    _get_attr(_state, "update")({"cfg_rocm": cfg_rocm, "cuda_dir": cuda_dir, "cuda_file": cuda_file, "dummy_manifest": dummy_manifest})
-    _get_attr(_state, "update")({"loaded_cuda": loaded_cuda, "os": os})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"KernelTemplateModel": KernelTemplateModel, "KernelTemplatesManifestModel": KernelTemplatesManifestModel, "cfg_empty_body": cfg_empty_body, "cfg_metal": cfg_metal}))
+    _state.update(ensure_tensor_dict({"cfg_rocm": cfg_rocm, "cuda_dir": cuda_dir, "cuda_file": cuda_file, "dummy_manifest": dummy_manifest}))
+    _state.update(ensure_tensor_dict({"loaded_cuda": loaded_cuda, "os": os}))
+    _state.update(ensure_tensor_dict({"_merge_unified_kernel_templates": _merge_unified_kernel_templates, "cfg_cuda": cfg_cuda, "load_hardware_templates": load_hardware_templates}))
+    _state.update(ensure_tensor_dict({"patch": patch}))
 
 
 def _test_hardware_config_models_100_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -771,7 +772,7 @@ def _test_hardware_config_models_100_coverage_part_4(_state: dict[str, EagerTens
     assert validate_and_bound_shared_memory(4096, "custom_default", manifest=custom_prof_manifest) == 4096
     with pytest.raises(ValueError, match="exceeds device limit"):
         validate_and_bound_shared_memory(65536, "custom_metal", manifest=custom_prof_manifest)
-    _get_attr(_state, "update")({"custom_prof_manifest": custom_prof_manifest, "found_tmpl": found_tmpl, "manifest_tmpl": manifest_tmpl})
+    _state.update(ensure_tensor_dict({"custom_prof_manifest": custom_prof_manifest, "found_tmpl": found_tmpl, "manifest_tmpl": manifest_tmpl}))
 
 
 def test_hardware_config_models_100_coverage() -> None:

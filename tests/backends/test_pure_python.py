@@ -12,7 +12,6 @@ from ml_switcheroo_compiler.backends.pure_python.generator import PurePythonGene
 from ml_switcheroo_compiler.backends.pure_python.types import PurePythonTensor
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if typing.TYPE_CHECKING:
@@ -94,7 +93,7 @@ def test_pure_python_scalar_and_nested_initialization() -> None:
     assert seq_tuple.shape == (2,)
     assert seq_tuple.to_flat_list() == [10.0, 20.0]
 
-    nested: PurePythonTensor = _cast_val("TypedVariadicCallable[PurePythonTensor]", PurePythonTensor)([[1.0, 2.0], [3.0, 4.0]])
+    nested: PurePythonTensor = PurePythonTensor([[1.0, 2.0], [3.0, 4.0]])
     assert nested.shape == (2, 2)
     assert nested.to_flat_list() == [1.0, 2.0, 3.0, 4.0]
 
@@ -207,7 +206,7 @@ def test_pure_python_generator_and_aot() -> None:
     assert "none = None" in line_empty
 
     runner = generator.compile_aot(graph)
-    res: PurePythonTensor = _cast_val("PurePythonTensor", runner(PurePythonTensor([0.0])))
+    res = runner(PurePythonTensor([0.0]))
     assert isinstance(res, PurePythonTensor)
 
     # Graph without output node to cover trailing return

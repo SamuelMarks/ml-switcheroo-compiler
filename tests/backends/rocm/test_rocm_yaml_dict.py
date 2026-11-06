@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -155,7 +154,7 @@ def test_rocm_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert as_tensor(_get_attr(ptr, "value")) == 12345
+        assert ensure_eager_tensor(ensure_eager_tensor(ptr).value) == 12345
 
 
 def test_rocm_runner_allocate_ctypes() -> None:
@@ -202,7 +201,7 @@ def test_rocm_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert as_tensor(_get_attr(ptr, "value")) is None
+            assert ensure_eager_tensor(ensure_eager_tensor(ptr).value) is None
 
 
 def test_rocm_runner_write_cupy() -> None:
@@ -260,7 +259,7 @@ def test_rocm_runner_write_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert as_callable(runner.write_buffer)(None, b"test") is None
+    assert ensure_callable(runner.write_buffer)(None, b"test") is None
 
 
 def test_rocm_runner_read_cupy() -> None:
@@ -321,7 +320,7 @@ def test_rocm_runner_read_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert as_callable(runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert ensure_callable(runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_rocm_runner_read_no_lib() -> None:
@@ -372,7 +371,7 @@ def test_rocm_runner_free_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    as_callable(runner.free_buffer)(None)
+    ensure_callable(runner.free_buffer)(None)
     assert isinstance(runner, ROCmRunner)
 
 

@@ -6,10 +6,9 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -48,7 +47,7 @@ def test_rematerialization_pass() -> None:
 
     # Also coverage for the internal functions:
     assert _estimate_memory(n1) == 4.0
-    _obj_set_attr(n1, "shape_metadata", 5)
+    ensure_mutable(n1).shape_metadata = ensure_eager_tensor(5)
     assert _estimate_memory(n1) == 4.0
     assert _estimate_compute(n1, rules) == 1.0
     n3.op_type = "Conv2D"
@@ -113,7 +112,7 @@ def test_rematerialization_max_dist() -> None:
 
     rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
 
-    res = as_callable(_find_target_nodes)([node], consumers, node_indices, rules)
+    res = ensure_callable(_find_target_nodes)([node], consumers, node_indices, rules)
     assert not res
 
 

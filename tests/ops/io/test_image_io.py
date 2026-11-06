@@ -8,7 +8,7 @@ import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.ops.io.image_io import _decode_image_with_pil, decode_bmp, decode_gif, decode_png
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -55,7 +55,7 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
                 data: Test parameter `data`.
                 channels: Test parameter `channels`.
             """
-            return as_tensor(DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
+            return ensure_eager_tensor(DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyDecodeBackend)
 
@@ -114,9 +114,9 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyBackend)
 
-    assert as_tensor(decode_png(b"", channels=3)) == as_tensor("png")
-    assert as_tensor(decode_gif(b"")) == as_tensor("gif")
-    assert as_tensor(decode_bmp(b"", channels=3)) == as_tensor("bmp")
+    assert ensure_eager_tensor(decode_png(b"", channels=3)) == ensure_eager_tensor("png")
+    assert ensure_eager_tensor(decode_gif(b"")) == ensure_eager_tensor("gif")
+    assert ensure_eager_tensor(decode_bmp(b"", channels=3)) == ensure_eager_tensor("bmp")
 
 
 def test_decode_image_fallback() -> None:
@@ -172,10 +172,10 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
             """
             return "jpeg"
 
-    as_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=as_callable(DummyBackend)())
+    ensure_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=ensure_callable(DummyBackend)())
 
-    assert as_tensor(decode_image("x")) == as_tensor("DecodeImage")
-    assert as_tensor(decode_jpeg("x")) == as_tensor("jpeg")
+    assert ensure_eager_tensor(decode_image("x")) == ensure_eager_tensor("DecodeImage")
+    assert ensure_eager_tensor(decode_jpeg("x")) == ensure_eager_tensor("jpeg")
 
     config.eager_mode = False
 
@@ -202,7 +202,7 @@ def test_decode_image_infer_shape() -> None:
     t1 = DummyTensor((2, 3))
     t2 = DummyTensor((2, 1))
 
-    assert as_callable(op.infer_shape)(t1, t2) == (2, 3)
+    assert ensure_callable(op.infer_shape)(t1, t2) == (2, 3)
 
 
 def test_decode_image_non_eager() -> None:
@@ -218,5 +218,5 @@ def test_decode_image_non_eager() -> None:
         shape = ()
         dtype = "float32"
 
-    res = as_callable(decode_image)(as_callable(DummyNode)())
+    res = ensure_callable(decode_image)(ensure_callable(DummyNode)())
     assert res is not None

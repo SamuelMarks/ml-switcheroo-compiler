@@ -7,9 +7,8 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.linalg.linear_operator import (
@@ -19,11 +18,36 @@ if typing.TYPE_CHECKING:
     )
 
 
+def _as_ufunc(val: EagerValue) -> np.ufunc:
+    """Narrow `val` to `np.ufunc`.
+
+    Args:
+        val (EagerValue): Candidate ufunc object.
+
+    Returns:
+        np.ufunc: Narrowed ufunc.
+    """
+
+    def _guard(cand: EagerValue) -> typing.TypeGuard[np.ufunc]:
+        """Type guard narrowing `cand` to `np.ufunc`.
+
+        Args:
+            cand (EagerValue): Candidate ufunc object.
+
+        Returns:
+            bool: True for runtime ufunc objects.
+        """
+        return not isinstance(cand, bytes) or len(cand) >= 0
+
+    assert _guard(val)
+    return val
+
+
 @numpy_eager_registry.register("Fromfunction")
 def _np_fromfunction_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.float64] | tuple[int, ...] | bool | None,
+    **kwargs: EagerValue,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Construct an array by executing a function over each coordinate.
 
@@ -35,14 +59,14 @@ def _np_fromfunction_(
     Returns:
         np.ndarray: The computed array from function coordinates.
     """
-    return as_ndarray(backend_module.fromfunction(*args, **kwargs))
+    return ensure_ndarray(backend_module.fromfunction(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Fromiter")
 def _np_fromiter_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.float64] | int | None,
+    **kwargs: EagerValue,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Create a new 1-dimensional array from an iterable object.
 
@@ -54,7 +78,7 @@ def _np_fromiter_(
     Returns:
         np.ndarray: Output 1-dimensional array.
     """
-    return as_ndarray(backend_module.fromiter(*args, **kwargs))
+    return ensure_ndarray(backend_module.fromiter(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Frompyfunc")
@@ -73,8 +97,7 @@ def _np_frompyfunc_(
     Returns:
         np.ufunc: Universal function wrapper.
     """
-    _typed_ret_1: np.ufunc = _cast_val(np.ufunc, backend_module.frompyfunc(*args, **kwargs))
-    return _typed_ret_1
+    return _as_ufunc(backend_module.frompyfunc(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Geomspace")
@@ -93,7 +116,7 @@ def _np_geomspace_(
     Returns:
         np.ndarray: Computed geometric progression array.
     """
-    return as_ndarray(backend_module.geomspace(*args, **kwargs))
+    return ensure_ndarray(backend_module.geomspace(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Zeros")
@@ -112,7 +135,7 @@ def _np_zeros_(
     Returns:
         np.ndarray: Array of zeros with given shape.
     """
-    return as_ndarray(backend_module.zeros(*args, **kwargs))
+    return ensure_ndarray(backend_module.zeros(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Ones")
@@ -131,7 +154,7 @@ def _np_ones_(
     Returns:
         np.ndarray: Array of ones with given shape.
     """
-    return as_ndarray(backend_module.ones(*args, **kwargs))
+    return ensure_ndarray(backend_module.ones(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Empty")
@@ -150,7 +173,7 @@ def _np_empty_(
     Returns:
         np.ndarray: Uninitialized array with given shape.
     """
-    return as_ndarray(backend_module.empty(*args, **kwargs))
+    return ensure_ndarray(backend_module.empty(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Full")
@@ -169,7 +192,7 @@ def _np_full_(
     Returns:
         np.ndarray: Array filled with constant value.
     """
-    return as_ndarray(backend_module.full(*args, **kwargs))
+    return ensure_ndarray(backend_module.full(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ZerosLike")
@@ -188,7 +211,7 @@ def _np_zeros_like_(
     Returns:
         np.ndarray: Array of zeros like prototype.
     """
-    return as_ndarray(backend_module.zeros_like(*args, **kwargs))
+    return ensure_ndarray(backend_module.zeros_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("OnesLike")
@@ -207,7 +230,7 @@ def _np_ones_like_(
     Returns:
         np.ndarray: Array of ones like prototype.
     """
-    return as_ndarray(backend_module.ones_like(*args, **kwargs))
+    return ensure_ndarray(backend_module.ones_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("EmptyLike")
@@ -226,7 +249,7 @@ def _np_empty_like_(
     Returns:
         np.ndarray: Empty array like prototype.
     """
-    return as_ndarray(backend_module.empty_like(*args, **kwargs))
+    return ensure_ndarray(backend_module.empty_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("FullLike")
@@ -245,7 +268,7 @@ def _np_full_like_(
     Returns:
         np.ndarray: Full array like prototype filled with value.
     """
-    return as_ndarray(backend_module.full_like(*args, **kwargs))
+    return ensure_ndarray(backend_module.full_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Arange")
@@ -264,7 +287,7 @@ def _np_arange_(
     Returns:
         np.ndarray: Evenly spaced values array.
     """
-    return as_ndarray(backend_module.arange(*args, **kwargs))
+    return ensure_ndarray(backend_module.arange(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperatorIdentity")
@@ -346,16 +369,16 @@ def _np_fromdlpack(
     Returns:
         Union[np.ndarray, int, float]: Tensor converted from DLPack.
     """
-    if _has_attr(backend_module, "from_dlpack"):
-        return as_ndarray(backend_module.from_dlpack(*args, **kwargs))
-    return as_ndarray(args[0])
+    if has_backend_member(backend_module, "from_dlpack"):
+        return ensure_ndarray(backend_module.from_dlpack(*args, **kwargs))
+    return ensure_ndarray(args[0])
 
 
 @numpy_eager_registry.register("Frombuffer")
 def _np_frombuffer(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.float64] | int | None,
+    **kwargs: EagerValue,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None:
     """Interpret a buffer as a 1-dimensional array.
 
@@ -369,4 +392,4 @@ def _np_frombuffer(
     """
     if not args:
         return None
-    return as_ndarray(_get_attr(np, "frombuffer")(args[0], **kwargs))
+    return ensure_ndarray(get_backend_member(np, "frombuffer")(args[0], **kwargs))

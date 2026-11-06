@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, global_eager_registry
 from ml_switcheroo_compiler.backends.sparse import kernels, types
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
@@ -14,6 +15,8 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+_T = typing.TypeVar("_T")
 
 _DIRECT_OPS = {
     "coo_fromdense": kernels.coo_fromdense,
@@ -130,7 +133,8 @@ def _dispatch_sparse_linalg(
 
 
 def execute_op(
-    cls: type,
+    cls: type[_T],
+    /,
     op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,
@@ -156,7 +160,7 @@ def execute_op(
             return linalg_res
 
     if op_type in _DIRECT_OPS:
-        handler = as_callable(_DIRECT_OPS[op_type])
+        handler = ensure_callable(_DIRECT_OPS[op_type])
         return handler(*args, **kwargs)
 
     schema = mapping_loader.load_backend_mappings("sparse")

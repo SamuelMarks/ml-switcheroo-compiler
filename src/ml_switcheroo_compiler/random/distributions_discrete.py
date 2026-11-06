@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_shape
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import RandomArg, _dispatch_random, _emit_random_node
@@ -32,6 +32,18 @@ class _RandomTensorProtocol(typing.Protocol):
             dtypes.DType | str | None: Tensor dtype.
         """
         ...
+
+
+def _extract_int_shape(seq: Sequence[int | str]) -> tuple[int, ...]:
+    """Convert a sequence of shape dimensions into a concrete integer tuple.
+
+    Args:
+        seq (Sequence[int | str]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 def randint(
@@ -118,7 +130,7 @@ def permutation(
     Returns:
         Tensor: Permuted tensor.
     """
-    shape: tuple[int, ...] = as_shape(x.shape) if isinstance(x, (Tensor, ShapeProtocol, _RandomTensorProtocol)) else ()
+    shape: tuple[int, ...] = _extract_int_shape(x.shape) if isinstance(x, (Tensor, ShapeProtocol, _RandomTensorProtocol)) else ()
     dtype: dtypes.DType | str | None = x.dtype if isinstance(x, (Tensor, _RandomTensorProtocol)) else None
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 

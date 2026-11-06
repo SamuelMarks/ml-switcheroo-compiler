@@ -11,10 +11,9 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.utils import _compute_grad_and_value, _convert_to_tensors, _get_inputs_dict, value_and_grad_wrt_vars
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,7 +28,7 @@ def test_value_and_grad_wrt_vars() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor(x) * as_tensor(2)
+        return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
     wrapped = value_and_grad_wrt_vars(dummy_fun)
     val, grads = wrapped(5)
@@ -69,7 +68,7 @@ def test_get_inputs_dict() -> None:
 def test_convert_to_tensors_types() -> None:
     """Test function test_convert_to_tensors_types."""
     primals = [np.array(5.0, dtype=np.float64), np.array(5, dtype=np.int32), np.array(True, dtype=np.bool_)]
-    res = as_callable(_convert_to_tensors)(primals)
+    res = ensure_callable(_convert_to_tensors)(primals)
     assert res[0].config.dtype == DType.Float64
     assert res[1].config.dtype == DType.Int32
     assert res[2].config.dtype == DType.Bool
@@ -85,7 +84,7 @@ def test_compute_grad_and_value_argnums() -> None:
             x: Test parameter `x`.
             y: Test parameter `y`.
         """
-        return as_tensor(x) + as_tensor(y)
+        return ensure_eager_tensor(x) + ensure_eager_tensor(y)
 
     options = MagicMock()
     options.has_aux = False
@@ -131,9 +130,9 @@ def test_grad_utils_extra() -> None:
     class MockTensorProxy:
         """Test class MockTensorProxy."""
 
-        _data = as_callable(ProxyTensor)(None, (1,))
+        _data = ensure_callable(ProxyTensor)(None, (1,))
 
-    assert as_callable(_get_concrete_val)(as_callable(MockTensorProxy)()) is None
+    assert ensure_callable(_get_concrete_val)(ensure_callable(MockTensorProxy)()) is None
 
     class MockProxy(ProxyTensor):
         """Test class MockProxy."""
@@ -145,28 +144,28 @@ def test_grad_utils_extra() -> None:
     mock_proxy = MockProxy()
     mock_proxy.concrete_value = 5.0
     mock_tensor_proxy2 = MockTensorProxy()
-    mock_tensor_proxy2._data = as_tensor(mock_proxy)
-    assert as_callable(_get_concrete_val)(mock_tensor_proxy2) == 5.0
+    mock_tensor_proxy2._data = ensure_eager_tensor(mock_proxy)
+    assert ensure_callable(_get_concrete_val)(mock_tensor_proxy2) == 5.0
 
     class MockGraph:
         """Test class MockGraph."""
 
         inputs = ["in1"]
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
     with pytest.raises(ValueError, match="Missing input"):
-        as_callable(_get_inputs_dict)(as_callable(MockGraph)())
+        ensure_callable(_get_inputs_dict)(ensure_callable(MockGraph)())
 
     t = Tensor(1.0, TensorConfig((1,), "float32", "cpu"))
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.asarray.return_value = np.array([1.0], dtype=np.float64)
         res = _to_original_type(1.0, t)
-        assert _get_attr(res, "dtype", None) == DType.Float64
+        assert ensure_eager_tensor(res).dtype == DType.Float64
 
         mock_backend.return_value.asarray.return_value = np.array([1], dtype=np.int32)
         res = _to_original_type(1, t)
-        assert _get_attr(res, "dtype", None) == DType.Int32
+        assert ensure_eager_tensor(res).dtype == DType.Int32
 
         mock_backend.return_value.asarray.return_value = np.array([True], dtype=bool)
         res = _to_original_type(True, t)
-        assert _get_attr(res, "dtype", None) == DType.Bool
+        assert ensure_eager_tensor(res).dtype == DType.Bool

@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.distributed.config_models import (
     PipelineTopologiesConfig,
     StageCommunicationConfig,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -31,7 +31,7 @@ def test_pipeline_config_model() -> None:
             "stage_communication": {"protocol": "p2p_queue"},
         }
     }
-    config = as_callable(PipelineTopologiesConfig)(root=data)
+    config = ensure_callable(PipelineTopologiesConfig)(root=data)
     default_config = config.get("default")
     assert default_config is not None
     assert default_config.microbatch_splitting.num_microbatches == 4

@@ -10,7 +10,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.dropout as dropout_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -44,14 +44,14 @@ def test_dropout_ops_full_coverage() -> None:
     t_in = Tensor(np.ones((2, 2), dtype=np.float32), TensorConfig((2, 2), "float32", "cpu"))
 
     dp_op = dropout_mod.Dropout()
-    assert as_callable(dp_op.infer_shape)(t_in) == (2, 2)
+    assert ensure_callable(dp_op.infer_shape)(t_in) == (2, 2)
 
     alpha_op = dropout_mod.AlphaDropout()
-    assert as_callable(alpha_op.infer_shape)(t_in) == (2, 2)
+    assert ensure_callable(alpha_op.infer_shape)(t_in) == (2, 2)
 
     act_op = dropout_mod.ActivityRegularization()
-    assert as_callable(act_op.infer_shape)(t_in) == (2, 2)
-    assert as_callable(act_op.infer_shape)((t_in, t_in)) == (t_in, t_in)
+    assert ensure_callable(act_op.infer_shape)(t_in) == (2, 2)
+    assert ensure_callable(act_op.infer_shape)((t_in, t_in)) == (t_in, t_in)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         mock_inst = MagicMock()
@@ -63,16 +63,16 @@ def test_dropout_ops_full_coverage() -> None:
         assert dropout_mod.activity_regularization(t_in, l1=0.01, l2=0.02) is t_in
 
     dp1d_op = dropout_mod.Dropout1d()
-    assert as_callable(dp1d_op.infer_shape)(as_callable(DummyWithShape)((2, 4))) == (2, 4)
-    assert as_callable(dp1d_op.infer_shape)(as_callable(DummyWithoutShape)()) == ()
+    assert ensure_callable(dp1d_op.infer_shape)(ensure_callable(DummyWithShape)((2, 4))) == (2, 4)
+    assert ensure_callable(dp1d_op.infer_shape)(ensure_callable(DummyWithoutShape)()) == ()
 
     dp2d_op = dropout_mod.Dropout2d()
-    assert as_callable(dp2d_op.infer_shape)(as_callable(DummyWithShape)((2, 4, 4))) == (2, 4, 4)
-    assert as_callable(dp2d_op.infer_shape)(as_callable(DummyWithoutShape)()) == ()
+    assert ensure_callable(dp2d_op.infer_shape)(ensure_callable(DummyWithShape)((2, 4, 4))) == (2, 4, 4)
+    assert ensure_callable(dp2d_op.infer_shape)(ensure_callable(DummyWithoutShape)()) == ()
 
     dp3d_op = dropout_mod.Dropout3d()
-    assert as_callable(dp3d_op.infer_shape)(as_callable(DummyWithShape)((2, 4, 4, 4))) == (2, 4, 4, 4)
-    assert as_callable(dp3d_op.infer_shape)(as_callable(DummyWithoutShape)()) == ()
+    assert ensure_callable(dp3d_op.infer_shape)(ensure_callable(DummyWithShape)((2, 4, 4, 4))) == (2, 4, 4, 4)
+    assert ensure_callable(dp3d_op.infer_shape)(ensure_callable(DummyWithoutShape)()) == ()
 
     original_eager = config.eager_mode
     try:

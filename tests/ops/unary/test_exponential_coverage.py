@@ -5,9 +5,8 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.unary.exponential import Exp, Exp2, Expm1, Log, Log1P, Log10, NanToNum, ZeroFraction
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -28,15 +27,15 @@ def test_unary_exponential_ops() -> None:
     for inst, name, np_name in ops:
         assert inst.op_name == name
         if np_name:
-            assert _get_attr(inst, "np_op_name", None) == np_name
+            assert ensure_eager_tensor(inst).np_op_name == np_name
 
     # Test NanToNum copy argument handling
     with patch("ml_switcheroo_compiler.ops.base.dispatch_op", return_value="mock_nanto_num") as mock_dispatch:
         res = NanToNum()(10, copy=True)
-        assert as_tensor(res) == as_tensor("mock_nanto_num")
+        assert ensure_eager_tensor(res) == ensure_eager_tensor("mock_nanto_num")
         mock_dispatch.assert_called_once_with("NanToNum", 10)
 
         mock_dispatch.reset_mock()
         res_no_copy = NanToNum()(10)
-        assert as_tensor(res_no_copy) == as_tensor("mock_nanto_num")
+        assert ensure_eager_tensor(res_no_copy) == ensure_eager_tensor("mock_nanto_num")
         mock_dispatch.assert_called_once_with("NanToNum", 10)

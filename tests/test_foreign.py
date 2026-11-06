@@ -1,8 +1,7 @@
 """Tests for test_foreign."""
 
 from __future__ import annotations
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
+from tests.testing_utils import ensure_mutable, ensure_callable, ensure_eager_tensor, ensure_tensor_dict, ensure_tensor_list
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 import importlib
@@ -39,25 +38,25 @@ class MockJaxpr:
             consts: Optional constants list.
         """
         self.consts = consts or []
-        self.eqns = as_tensor_list([])
+        self.eqns = ensure_tensor_list([])
 
 
 def test_extract_jaxpr_constants() -> None:
     """Test jaxpr constant extraction."""
     graph = LogicalGraph()
     jaxpr_empty = MockJaxpr()
-    as_callable(_extract_jaxpr_constants)(jaxpr_empty, graph)
+    ensure_callable(_extract_jaxpr_constants)(jaxpr_empty, graph)
     assert len(graph.nodes) == 0
-    jaxpr_with = as_callable(MockJaxpr)([as_callable(MockConst)()])
-    as_callable(_extract_jaxpr_constants)(jaxpr_with, graph)
+    jaxpr_with = ensure_callable(MockJaxpr)([ensure_callable(MockConst)()])
+    ensure_callable(_extract_jaxpr_constants)(jaxpr_with, graph)
     assert "const_0" in graph.nodes
 
 
 def test_extract_jaxpr_constants_nodes_added() -> None:
     """Test that constants are correctly added to the graph."""
     graph = LogicalGraph()
-    jaxpr_with = as_callable(MockJaxpr)([as_callable(MockConst)()])
-    as_callable(_extract_jaxpr_constants)(jaxpr_with, graph)
+    jaxpr_with = ensure_callable(MockJaxpr)([ensure_callable(MockConst)()])
+    ensure_callable(_extract_jaxpr_constants)(jaxpr_with, graph)
     assert "const_0" in graph.nodes
     assert graph.nodes["const_0"].op_type == "Constant"
 
@@ -112,15 +111,19 @@ class MockFXGraphModule:
 
 def test_ingest_torch_fx() -> None:
     """Test ingest_torch_fx under various graph configurations."""
+
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     with pytest.raises(ValueError, match="Torch FX GraphModule cannot be None"):
         ingest_torch_fx(None)
 
     # Missing graph attribute
-    empty_res = as_callable(ingest_torch_fx)(as_callable(object)())
+    empty_res = ensure_callable(ingest_torch_fx)(ensure_callable(_BareDummy)())
     assert len(empty_res.nodes) == 0
 
     # Missing nodes attribute in graph
-    missing_nodes_res = ingest_torch_fx(type("BadMod", (), {"graph": object()})())
+    missing_nodes_res = ingest_torch_fx(type("BadMod", (), {"graph": _BareDummy()})())
     assert len(missing_nodes_res.nodes) == 0
 
     # Create dummy function targets
@@ -141,14 +144,14 @@ def test_ingest_torch_fx() -> None:
 
     node_x = MockFXNode("x", "placeholder")
     node_y = MockFXNode("y", "placeholder")
-    node_add = as_callable(MockFXNode)("add_1", "call_function", target=as_callable(TargetAdd)(), args=(node_x, node_y))
-    node_mul = as_callable(MockFXNode)("mul_1", "call_function", target=as_callable(TargetMul)(), args=(node_add, 2.0))
-    node_unknown = as_callable(MockFXNode)("un_1", "call_function", target="custom_sub", args=(as_callable(MockFXNode)("untracked", "placeholder"),))
+    node_add = ensure_callable(MockFXNode)("add_1", "call_function", target=ensure_callable(TargetAdd)(), args=(node_x, node_y))
+    node_mul = ensure_callable(MockFXNode)("mul_1", "call_function", target=ensure_callable(TargetMul)(), args=(node_add, 2.0))
+    node_unknown = ensure_callable(MockFXNode)("un_1", "call_function", target="custom_sub", args=(ensure_callable(MockFXNode)("untracked", "placeholder"),))
     node_ignored = MockFXNode("ignore_me", "get_attr")
-    node_out_tuple = as_callable(MockFXNode)("out", "output", args=((node_mul, 999),))
+    node_out_tuple = ensure_callable(MockFXNode)("out", "output", args=((node_mul, 999),))
 
-    gm = as_callable(MockFXGraphModule)([node_x, node_y, node_add, node_mul, node_unknown, node_ignored, node_out_tuple])
-    res = as_callable(ingest_torch_fx)(gm)
+    gm = ensure_callable(MockFXGraphModule)([node_x, node_y, node_add, node_mul, node_unknown, node_ignored, node_out_tuple])
+    res = ensure_callable(ingest_torch_fx)(gm)
 
     assert "add_1" in res.nodes
     assert res.nodes["add_1"].op_type == "Add"
@@ -165,23 +168,27 @@ def test_ingest_torch_fx() -> None:
     assert res.outputs == ["mul_1"]
 
     # Test output node with single named arg
-    gm_single = as_callable(MockFXGraphModule)([node_x, as_callable(MockFXNode)("out", "output", args=(node_x,))])
-    res_single = as_callable(ingest_torch_fx)(gm_single)
+    gm_single = ensure_callable(MockFXGraphModule)([node_x, ensure_callable(MockFXNode)("out", "output", args=(node_x,))])
+    res_single = ensure_callable(ingest_torch_fx)(gm_single)
     assert res_single.outputs == ["x"]
 
     # Test output node with non-named single arg
-    gm_raw = as_callable(MockFXGraphModule)([as_callable(MockFXNode)("out", "output", args=(123,))])
-    res_raw = as_callable(ingest_torch_fx)(gm_raw)
+    gm_raw = ensure_callable(MockFXGraphModule)([ensure_callable(MockFXNode)("out", "output", args=(123,))])
+    res_raw = ensure_callable(ingest_torch_fx)(gm_raw)
     assert res_raw.outputs == []
 
 
 def test_ingest_jaxpr() -> None:
     """Test ingest_jaxpr and related translation utilities."""
+
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     with pytest.raises(ValueError, match="JAX jaxpr cannot be None"):
         ingest_jaxpr(None)
 
     # Empty jaxpr without eqns or consts
-    res_empty = as_callable(ingest_jaxpr)(as_callable(object)())
+    res_empty = ensure_callable(ingest_jaxpr)(ensure_callable(_BareDummy)())
     assert len(res_empty.nodes) == 0
 
     class MockConstWithShape:
@@ -189,7 +196,7 @@ def test_ingest_jaxpr() -> None:
 
         shape = (4, 5)
 
-    const_var = object()
+    const_var = _BareDummy()
     const_val = MockConstWithShape()
     jaxpr_obj = type(
         "MockJaxprFull",
@@ -249,13 +256,13 @@ def test_generic_utils_stubs() -> None:
     """Test generic utils stubs."""
     from ml_switcheroo_compiler.utils.generic_utils import disable_interactive_logging, enable_interactive_logging, is_interactive_logging_enabled, is_symbolic_tensor, standardize_dtype
 
-    CustomObjectScope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
-    deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-    get_custom_objects = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
-    get_registered_name = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
-    get_registered_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
-    register_serializable = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
-    serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+    CustomObjectScope = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).CustomObjectScope)
+    deserialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).deserialize_object)
+    get_custom_objects = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_custom_objects)
+    get_registered_name = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_registered_name)
+    get_registered_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).get_registered_object)
+    register_serializable = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).register_serializable)
+    serialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).serialize_object)
 
     with CustomObjectScope():
         pass
@@ -346,8 +353,8 @@ def test_foreign_coverage() -> None:
 
         output_shape = 9
 
-    assert as_callable(op.infer_shape)(as_callable(DummyOutputShapeTuple)()) == (3, 4)
-    assert as_callable(op.infer_shape)(as_callable(DummyOutputShapeScalar)()) == (9,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyOutputShapeTuple)()) == (3, 4)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyOutputShapeScalar)()) == (9,)
 
     # 5. First arg has output_shapes
     class DummyOutputShapesList:
@@ -358,16 +365,16 @@ def test_foreign_coverage() -> None:
     class DummyOutputShapesEmpty:
         """Test class DummyOutputShapesEmpty."""
 
-        output_shapes = as_tensor_list([])
+        output_shapes = ensure_tensor_list([])
 
     class DummyOutputShapesNonSeq:
         """Test class DummyOutputShapesNonSeq."""
 
         output_shapes = 123
 
-    assert as_callable(op.infer_shape)(as_callable(DummyOutputShapesList)()) == (5, 6)
-    assert as_callable(op.infer_shape)(as_callable(DummyOutputShapesEmpty)()) == ()
-    assert as_callable(op.infer_shape)(as_callable(DummyOutputShapesNonSeq)()) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyOutputShapesList)()) == (5, 6)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyOutputShapesEmpty)()) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyOutputShapesNonSeq)()) == ()
 
     # 6. First arg has subgraph with outputs
     class NodeWithMeta:
@@ -385,7 +392,7 @@ def test_foreign_coverage() -> None:
         """Test class SubgraphMissingOut."""
 
         outputs = ["out_missing"]
-        nodes = as_tensor_dict({})
+        nodes = ensure_tensor_dict({})
 
     class NodeNoMeta:
         """Test class NodeNoMeta."""
@@ -420,10 +427,10 @@ def test_foreign_coverage() -> None:
             """
             self.subgraph = sg
 
-    assert as_callable(op.infer_shape)(as_callable(Container)(as_callable(SubgraphValid)())) == (10, 20)
-    assert as_callable(op.infer_shape)(as_callable(Container)(as_callable(SubgraphMissingOut)())) == ()
-    assert as_callable(op.infer_shape)(as_callable(Container)(as_callable(SubgraphNoMeta)())) == ()
-    assert as_callable(op.infer_shape)(as_callable(Container)(as_callable(SubgraphEmptyMeta)())) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(Container)(ensure_callable(SubgraphValid)())) == (10, 20)
+    assert ensure_callable(op.infer_shape)(ensure_callable(Container)(ensure_callable(SubgraphMissingOut)())) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(Container)(ensure_callable(SubgraphNoMeta)())) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(Container)(ensure_callable(SubgraphEmptyMeta)())) == ()
 
     # 7. Callable first argument
     # 7a. typing.get_type_hints with return annotation
@@ -435,7 +442,7 @@ def test_foreign_coverage() -> None:
         """
         return (x, x)
 
-    assert as_tensor(op.infer_shape(fn_hints)) == as_tensor((int, int))
+    assert ensure_eager_tensor(op.infer_shape(fn_hints)) == ensure_eager_tensor((int, int))
 
     # 7b. hints with no "return"
     def fn_no_ret(x: int) -> None:
@@ -476,9 +483,9 @@ def test_foreign_coverage() -> None:
             """
             pass
 
-    mock_callable = as_callable(CallableWithSignature)(tuple[int, int, int])
-    _set_attr(mock_callable, "__signature__", inspect.Signature(return_annotation=tuple[int, int, int]))
-    assert as_tensor(op.infer_shape(mock_callable)) == as_tensor((int, int, int))
+    mock_callable = ensure_callable(CallableWithSignature)(tuple[int, int, int])
+    ensure_mutable(mock_callable).__signature__ = ensure_eager_tensor(inspect.Signature(return_annotation=tuple[int, int, int]))
+    assert ensure_eager_tensor(op.infer_shape(mock_callable)) == ensure_eager_tensor((int, int, int))
 
     # 7e. Callable with signature raising TypeError
     class BrokenSignatureCallable:
@@ -496,7 +503,7 @@ def test_foreign_coverage() -> None:
     from ml_switcheroo_compiler.core.errors import ShapeInferenceError
 
     with pytest.raises(ShapeInferenceError, match="broken sig"):
-        op.infer_shape(as_tensor(BrokenSignatureCallable()))
+        op.infer_shape(ensure_eager_tensor(BrokenSignatureCallable()))
 
     # 7f. AST parsing: function returning constant int tuple without type hints
     assert op.infer_shape(_sample_ast_tuple) == (11, 22, 33)
@@ -519,5 +526,5 @@ def test_foreign_coverage() -> None:
 
         pass
 
-    assert as_callable(op.infer_shape)(as_callable(PlainObj)(), as_callable(DummyTensor)()) == (1, 2)
-    assert as_callable(op.infer_shape)(as_callable(PlainObj)(), as_callable(PlainObj)()) == ()
+    assert ensure_callable(op.infer_shape)(ensure_callable(PlainObj)(), ensure_callable(DummyTensor)()) == (1, 2)
+    assert ensure_callable(op.infer_shape)(ensure_callable(PlainObj)(), ensure_callable(PlainObj)()) == ()

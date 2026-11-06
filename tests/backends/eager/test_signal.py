@@ -8,8 +8,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager.signal import _apply_conv2d_batch, _apply_median_filter_batch, _generate_gaussian_kernel, _get_blur_config, gaussian_blur_eager, median_filter_eager
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -27,13 +26,13 @@ def test_signal() -> None:
 
     # 1. _generate_gaussian_kernel
     kernel = _generate_gaussian_kernel(np_mod, (3, 3), (1.0, 1.0))
-    assert as_tensor(_get_attr(kernel, "shape")) == (3, 3)
-    as_callable(np.testing.assert_allclose)(as_callable(np_mod.sum)(kernel), 1.0)
+    assert ensure_eager_tensor(kernel).shape == (3, 3)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(np_mod.sum)(kernel), 1.0)
 
     # 2. _apply_conv2d_batch
     imgs = np.ones((1, 1, 3, 3))
     out = _apply_conv2d_batch(np_mod, imgs, kernel, "reflect")
-    assert as_tensor(_get_attr(out, "shape")) == (1, 1, 3, 3)
+    assert ensure_eager_tensor(out).shape == (1, 1, 3, 3)
 
     with pytest.raises(ValueError):
         _apply_conv2d_batch(np_mod, np.ones((3, 3)), kernel, "reflect")
@@ -42,24 +41,24 @@ def test_signal() -> None:
     c1 = _get_blur_config({"kernel_size": (5, 5)}, None)
     assert c1.kernel_size == (5, 5)
     c2 = DummyConfig()
-    assert id(as_callable(_get_blur_config)({}, c2)) == id(c2)
+    assert id(ensure_callable(_get_blur_config)({}, c2)) == id(c2)
 
     # 4. gaussian_blur_eager
     imgs2 = np.ones((1, 1, 3, 3))
     res1 = gaussian_blur_eager(np_mod, imgs2, kernel_size=(3, 3), sigma=(1.0, 1.0))
-    assert as_tensor(_get_attr(res1, "shape")) == (1, 1, 3, 3)
+    assert ensure_eager_tensor(res1).shape == (1, 1, 3, 3)
 
     # 5. _apply_median_filter_batch
     imgs_med = np.random.rand(1, 1, 3, 3)
     out_med1 = _apply_median_filter_batch(np_mod, imgs_med, (3, 3), "same")
-    assert as_tensor(_get_attr(out_med1, "shape")) == (1, 1, 3, 3)
+    assert ensure_eager_tensor(out_med1).shape == (1, 1, 3, 3)
 
     out_med2 = _apply_median_filter_batch(np_mod, imgs_med, (3, 3), "reflect")
-    assert as_tensor(_get_attr(out_med2, "shape")) == (1, 1, 3, 3)
+    assert ensure_eager_tensor(out_med2).shape == (1, 1, 3, 3)
 
     with pytest.raises(ValueError):
         _apply_median_filter_batch(np_mod, np.ones((3, 3)), (3, 3), "same")
 
     # 6. median_filter_eager
     res2 = median_filter_eager(np_mod, imgs_med, (3, 3))
-    assert as_tensor(_get_attr(res2, "shape")) == (1, 1, 3, 3)
+    assert ensure_eager_tensor(res2).shape == (1, 1, 3, 3)

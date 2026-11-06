@@ -12,8 +12,8 @@ from unittest.mock import mock_open, patch
 import pytest
 
 import scripts.generate_exports as ge
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -39,10 +39,10 @@ def _mock_mod_import(mod_obj: EagerValue) -> TypedVariadicCallable[EagerValue]:
             kwargs: Test parameter `kwargs`.
         """
         if name in ("subprocess", "scripts", "scripts.generate_exports", "ast", "os", "sys", "tempfile", "builtins"):
-            return as_callable(_real_import)(name, *args, **kwargs)
+            return ensure_callable(_real_import)(name, *args, **kwargs)
         return mod_obj
 
-    return as_callable(_imp)
+    return ensure_callable(_imp)
 
 
 def test_get_exports_from_submodule() -> None:
@@ -64,7 +64,7 @@ def test_get_exports_from_submodule() -> None:
 
         import types
 
-        _set_attr(MockMod, "mod", types.ModuleType("sub"))
+        ensure_mutable(MockMod).mod = ensure_eager_tensor(types.ModuleType("sub"))
         mock_import.return_value = MockMod()
         assert ge._get_exports_from_submodule("foo") == ["func", "visible"]
     with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError("mock error")):
@@ -206,7 +206,7 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"), patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod2)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod2)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -233,7 +233,7 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         _z = 3
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -258,7 +258,7 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -282,7 +282,7 @@ def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.Mon
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ['x']"
 
@@ -304,7 +304,7 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         x = 1
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n"
 
@@ -327,7 +327,7 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         x = 1
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -351,7 +351,7 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ["
 
@@ -373,7 +373,7 @@ def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         __all__ = 123
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n\n__all__ = [\n]\n"
 
@@ -440,7 +440,7 @@ def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -487,14 +487,14 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             kwargs: Test parameter `kwargs`.
         """
         cmd = args[0]
-        if cmd and as_tensor("ruff") in as_tensor(cmd):
-            tmp_name = as_tensor(_get_attr(cmd, "__getitem__")(-1))
-            if as_callable(os.path.exists)(tmp_name):
-                with as_callable(builtins.open)(tmp_name, "w") as tmp_f:
+        if cmd and ensure_eager_tensor("ruff") in ensure_eager_tensor(cmd):
+            tmp_name = ensure_eager_tensor(cmd)[-1]
+            if ensure_callable(os.path.exists)(tmp_name):
+                with ensure_callable(builtins.open)(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
 
     with patch("subprocess.run", side_effect=mock_subprocess_run):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == original_source
 
@@ -516,7 +516,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x", "z"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_empty_all.py"
@@ -528,7 +528,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod2)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod2)())):
             ge.process_file(str(f))
     assert "x = 1\n\n__all__ = [\n" in f.read_text()
 
@@ -559,13 +559,13 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         """
         nodes = list(original_walk(node))
         for n in nodes:
-            if _has_attr(n, "end_lineno"):
+            if has_backend_member(n, "end_lineno"):
                 n.end_lineno = None
         return nodes
 
     with patch("subprocess.run"):
         with patch("ast.walk", side_effect=mock_walk):
-            with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+            with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
                 ge.process_file(str(f))
     assert "__all__" in f.read_text()
 
@@ -587,7 +587,7 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
         __all__ = ["x", "y"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "other.append" in content
@@ -634,7 +634,7 @@ def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ('x',)"
 
@@ -656,7 +656,7 @@ def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with as_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=as_callable(_mock_mod_import)(as_callable(MockMod)())):
+        with ensure_callable(patch)("scripts.generate_exports.importlib.import_module", side_effect=ensure_callable(_mock_mod_import)(ensure_callable(MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content

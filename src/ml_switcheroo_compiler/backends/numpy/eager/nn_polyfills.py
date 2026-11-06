@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_int, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -27,7 +26,7 @@ def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> n
         xs = x_safe[small_mask] + 1.0
         g_next = (xs - 0.5) * np.log(xs) - xs + c0 + (1.0 / (12.0 * xs)) - (1.0 / (360.0 * np.power(xs, 3)))
         res[small_mask] = g_next - np.log(x_safe[small_mask])
-    return as_ndarray(res)
+    return ensure_ndarray(res)
 
 
 @numpy_eager_registry.register("LogPoissonLoss")
@@ -60,7 +59,7 @@ def _np_log_poisson_loss(backend_module: BackendModuleProtocol, targets: EagerVa
             res = res + scipy.special.gammaln(t + 1.0)
         except ImportError:
             res = res + _stirling_gammaln(t + 1.0)
-    return as_ndarray(res)
+    return ensure_ndarray(res)
 
 
 @numpy_eager_registry.register("AllCandidateSampler")
@@ -76,19 +75,19 @@ def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classe
         tuple[np.ndarray, np.ndarray, np.ndarray]: (sampled_candidates, true_expected_count, sampled_expected_count).
     """
     t = np.asarray(true_classes, dtype=np.int64)
-    num_sampled = int(as_int(kwargs.get("num_sampled", 1)))
-    num_classes = int(as_int(kwargs.get("num_classes", 10)))
+    num_sampled = int(ensure_int(kwargs.get("num_sampled", 1)))
+    num_classes = int(ensure_int(kwargs.get("num_classes", 10)))
     unique = bool(kwargs.get("unique", True))
     seed = kwargs.get("seed")
 
-    rng = _get_attr(np.random, "default_rng")(seed)
+    rng = get_backend_member(np.random, "default_rng")(seed)
     replace = not unique
     sampled = rng.choice(num_classes, size=num_sampled, replace=replace)
 
     prob = num_sampled / max(1, num_classes)
     true_expected_count = np.full(t.shape, prob, dtype=np.float32)
     sampled_expected_count = np.full((num_sampled,), prob, dtype=np.float32)
-    return as_ndarray(sampled.astype(np.int32)), as_ndarray(true_expected_count), as_ndarray(sampled_expected_count)
+    return ensure_ndarray(sampled.astype(np.int32)), ensure_ndarray(true_expected_count), ensure_ndarray(sampled_expected_count)
 
 
 def _np_ctc_beam_step(
@@ -178,15 +177,15 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
             probs = arr[t, b]
             max_p = np.max(probs)
             log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
-            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, as_int(beam_width))
+            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, ensure_int(beam_width))
 
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
         best_paths_by_batch.append(best_paths)
 
     sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]] = []
-    log_probs_matrix = _get_attr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
+    log_probs_matrix = get_backend_member(np, "zeros")((batch_size, top_paths), dtype=np.float32)
 
-    for p in range(as_int(top_paths)):
+    for p in range(ensure_int(top_paths)):
         indices_p: list[list[int]] = []
         values_p: list[int] = []
         max_len = 0
@@ -204,7 +203,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
         ind_arr = np.array(indices_p, dtype=np.int64) if indices_p else np.zeros((0, 2), dtype=np.int64)
         val_arr = np.array(values_p, dtype=np.int64)
         shape_arr = np.array([batch_size, max_len], dtype=np.int64)
-        sparse_list.append((as_ndarray(ind_arr), as_ndarray(val_arr), as_ndarray(shape_arr)))
+        sparse_list.append((ensure_ndarray(ind_arr), ensure_ndarray(val_arr), ensure_ndarray(shape_arr)))
 
     if top_paths == 1:
         if not sparse_list:
@@ -274,11 +273,11 @@ def _np_sufficient_statistics(
     keepdims = bool(kwargs.get("keepdims", False))
     divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes_tup or ())]) if axes_tup else 1
     counts = np.array(arr.size / divisor, dtype=np.float32)
-    counts = np.broadcast_to(counts, _get_attr(np, "mean")(arr, axis=axes_tup, keepdims=keepdims).shape)
-    shift = _get_attr(np, "mean")(arr, axis=axes_tup, keepdims=True)
-    m_ss = _get_attr(np, "sum")(arr - shift, axis=axes_tup, keepdims=keepdims)
-    v_ss = _get_attr(np, "sum")(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
-    return as_ndarray(counts), as_ndarray(m_ss), as_ndarray(v_ss), as_ndarray(np.squeeze(shift)) if not keepdims else as_ndarray(shift)
+    counts = np.broadcast_to(counts, get_backend_member(np, "mean")(arr, axis=axes_tup, keepdims=keepdims).shape)
+    shift = get_backend_member(np, "mean")(arr, axis=axes_tup, keepdims=True)
+    m_ss = get_backend_member(np, "sum")(arr - shift, axis=axes_tup, keepdims=keepdims)
+    v_ss = get_backend_member(np, "sum")(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
+    return ensure_ndarray(counts), ensure_ndarray(m_ss), ensure_ndarray(v_ss), ensure_ndarray(np.squeeze(shift)) if not keepdims else ensure_ndarray(shift)
 
 
 @numpy_eager_registry.register("WeightedMoments")
@@ -299,10 +298,10 @@ def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, a
     fw = np.asarray(frequency_weights)
     axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
     keepdims = bool(kwargs.get("keepdims", False))
-    sum_w = _get_attr(np, "sum")(fw, axis=axes_tup, keepdims=keepdims)
-    mean = _get_attr(np, "sum")(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    var = _get_attr(np, "sum")(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    return as_ndarray(mean), as_ndarray(var)
+    sum_w = get_backend_member(np, "sum")(fw, axis=axes_tup, keepdims=keepdims)
+    mean = get_backend_member(np, "sum")(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    var = get_backend_member(np, "sum")(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    return ensure_ndarray(mean), ensure_ndarray(var)
 
 
 @numpy_eager_registry.register("MaxPoolWithArgmax")
@@ -380,11 +379,12 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
     dilation = kwargs.get("dilation", 1)
     groups = kwargs.get("groups", 1)
 
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list, ensure_eager_tensor, ensure_int_list
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     spatial_dims = w_float.ndim - 2
-    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(_get_attr(stride, "__iter__")())
-    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(_get_attr(dilation, "__iter__")())
+    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(int(s) for s in ensure_int_list(stride))
+    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(int(d) for d in ensure_int_list(dilation))
 
     pad_arg = padding
     if isinstance(padding, int):
@@ -397,20 +397,20 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
     rhs_spec = (spatial_dims + 1, spatial_dims) + tuple(range(0, spatial_dims))
     out_spec = lhs_spec
 
-    pad_val: str | list[tuple[int, int]] = pad_arg if isinstance(pad_arg, str) else [(int(p[0]), int(p[1])) for p in _get_attr(pad_arg, "__iter__")()]
+    pad_val: str | list[tuple[int, int]] = pad_arg if isinstance(pad_arg, str) else [(int(ensure_int(ensure_eager_tensor(p)[0])), int(ensure_int(ensure_eager_tensor(p)[1]))) for p in ensure_eager_list(pad_arg)]
     config_obj = ConvConfig(
         window_strides=strides_tuple,
         padding=pad_val,
         lhs_dilation=(1,) * spatial_dims,
         rhs_dilation=dilation_tuple,
         dimension_numbers=(lhs_spec, rhs_spec, out_spec),
-        feature_group_count=as_int(groups),
+        feature_group_count=ensure_int(groups),
     )
 
     from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 
     res = _conv_general_dilated(input_val, w_float, config_obj)
-    return as_ndarray(res)
+    return ensure_ndarray(res)
 
 
 @numpy_eager_registry.register("DepthwiseConv2dNativeBackpropFilter")

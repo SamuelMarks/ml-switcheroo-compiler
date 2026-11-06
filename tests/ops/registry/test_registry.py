@@ -6,10 +6,9 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_frontend, get_op, get_util, register_frontend, register_op, register_util
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,13 +28,8 @@ def test_registry_register_op() -> None:
     assert get_op("TestRegistryOp1") == TestRegistryOp1
 
     # re-registration with same name and same class name is allowed
-    @register_op("TestRegistryOp1")
-    class TestRegistryOp1(OpDef):  # type: ignore[no-redef]  # noqa: F811
-        """Test class TestRegistryOp1."""
-
-        def infer_shape(self) -> EagerValue:
-            """Test function infer_shape."""
-            return ()
+    re_registered = type("TestRegistryOp1", (OpDef,), {"infer_shape": lambda self: ()})
+    register_op("TestRegistryOp1")(re_registered)
 
     # re-registration with same name but DIFFERENT class name is KeyError
     with pytest.raises(ValueError, match="already registered"):
@@ -66,7 +60,7 @@ def test_registry_util() -> None:
 def test_registry_frontend() -> None:
     """Test function test_registry_frontend."""
 
-    @as_callable(register_frontend)("my_frontend")
+    @ensure_callable(register_frontend)("my_frontend")
     def my_frontend_fn() -> EagerValue:
         """Test function my_frontend_fn."""
         return 42
@@ -93,7 +87,7 @@ def test_registry_files_load() -> None:
     ops = get_all_ops()
     assert len(ops) > 0
     op = get_op("Conv2D")
-    assert as_tensor(_get_attr(op, "get_yaml_data"))() is not None
+    assert ensure_eager_tensor(ensure_eager_tensor(op).get_yaml_data)() is not None
     assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
     assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
     assert get_backend_mapping("NonExistentOp") == {}
@@ -110,10 +104,10 @@ def test_registry_files_load() -> None:
     assert backend_mapping_registry.get_op("Add") is not None
 
     # Test dynamic class builder
-    _get_attr(_YAML_REGISTRY, "__setitem__")("FakeYamlOp", {"some": "data"})
+    ensure_eager_tensor(_YAML_REGISTRY)["FakeYamlOp"] = {"some": "data"}
     fake_op_cls = get_op("FakeYamlOp")
     assert fake_op_cls.__name__ == "FakeYamlOp"
-    assert as_tensor(_get_attr(fake_op_cls, "get_yaml_data"))() == {"some": "data"}
+    assert ensure_eager_tensor(ensure_eager_tensor(fake_op_cls).get_yaml_data)() == {"some": "data"}
     _REGISTRY.pop("FakeYamlOp", None)
     _YAML_REGISTRY.pop("FakeYamlOp", None)
 

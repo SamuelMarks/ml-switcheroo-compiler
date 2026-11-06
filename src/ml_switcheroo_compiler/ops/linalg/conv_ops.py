@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg.products import _has_valid_shape
@@ -29,13 +29,11 @@ class ConvGeneralDilated(OpDef):
         lhs = args[0] if len(args) > 0 else kwargs.get("lhs")
         rhs = args[1] if len(args) > 1 else kwargs.get("rhs")
         config: OpArgValue | ConvConfig = args[2] if len(args) > BINARY_OP_ARITY else kwargs.get("config", None)
-        if config is None:
-            config = ConvConfig(window_strides=[], padding=[])
         if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):
             return ()
 
-        lhs_shape = _get_attr(lhs, "shape", ())
-        rhs_shape = _get_attr(rhs, "shape", ())
+        lhs_shape = extract_shape(lhs)
+        rhs_shape = extract_shape(rhs)
         if not lhs_shape or not rhs_shape or len(lhs_shape) < 3 or len(rhs_shape) < 3:
             return ()
 
@@ -43,10 +41,11 @@ class ConvGeneralDilated(OpDef):
         out_channels = rhs_shape[0]
         spatial_in = lhs_shape[2:]
         spatial_k = rhs_shape[2:]
-        strides = _get_attr(config, "window_strides", []) or [1] * len(spatial_in)
-        padding = _get_attr(config, "padding", []) or [(0, 0)] * len(spatial_in)
-        lhs_dilation = _get_attr(config, "lhs_dilation", []) or [1] * len(spatial_in)
-        rhs_dilation = _get_attr(config, "rhs_dilation", []) or [1] * len(spatial_in)
+        cfg = config if isinstance(config, ConvConfig) else ConvConfig(window_strides=[], padding=[])
+        strides = cfg.window_strides or [1] * len(spatial_in)
+        padding = cfg.padding if isinstance(cfg.padding, (list, tuple)) and cfg.padding else [(0, 0)] * len(spatial_in)
+        lhs_dilation = cfg.lhs_dilation or [1] * len(spatial_in)
+        rhs_dilation = cfg.rhs_dilation or [1] * len(spatial_in)
 
         out_spatial = []
         for i, (d_in, k) in enumerate(zip(spatial_in, spatial_k)):
@@ -84,8 +83,8 @@ class Convolve(OpDef):
         """
         if not _has_valid_shape(a) or not _has_valid_shape(v):
             return ()
-        a_shape = _get_attr(a, "shape", ())
-        v_shape = _get_attr(v, "shape", ())
+        a_shape = extract_shape(a)
+        v_shape = extract_shape(v)
         na = a_shape[0] if a_shape else 1
         nv = v_shape[0] if v_shape else 1
         if mode == "full":
@@ -204,7 +203,7 @@ class ConvTranspose(OpDef):
             strides = (strides,) * len(spatial_in)
 
         out_spatial = []
-        for s_in, k, st in zip(spatial_in, spatial_k, _get_attr(strides, "__iter__")()):
+        for s_in, k, st in zip(spatial_in, spatial_k, ensure_shape(strides)):
             if padding == "VALID":
                 s_out = (s_in - 1) * st + k
             else:  # SAME

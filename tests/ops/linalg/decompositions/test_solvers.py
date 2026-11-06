@@ -12,7 +12,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Polar, PowerIteration, TridiagonalMatmul, TridiagonalSolve, lu, lu_solve, polar, tridiagonal_solve
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -28,11 +28,11 @@ def test_misc_infer_shapes() -> None:
         dtype = "float32"
 
     t = MockTensor()
-    (shapes, dtypes) = as_callable(PowerIteration)().infer_shape(t)
+    (shapes, dtypes) = ensure_callable(PowerIteration)().infer_shape(t)
     assert shapes == ((2, 4), (2, 3), (2,))
-    assert as_callable(Polar)().infer_shape(t) == ((2, 3, 4), (2, 3, 4))
-    assert as_callable(TridiagonalSolve)().infer_shape(t, t, t, t) == (2, 3, 4)
-    assert as_callable(TridiagonalMatmul)().infer_shape(t, t, t, t) == (2, 3, 4)
+    assert ensure_callable(Polar)().infer_shape(t) == ((2, 3, 4), (2, 3, 4))
+    assert ensure_callable(TridiagonalSolve)().infer_shape(t, t, t, t) == (2, 3, 4)
+    assert ensure_callable(TridiagonalMatmul)().infer_shape(t, t, t, t) == (2, 3, 4)
 
 
 def test_misc_eager_and_trace() -> None:
@@ -41,14 +41,14 @@ def test_misc_eager_and_trace() -> None:
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2, res3) = as_callable(lu)(t)
-        assert isinstance(as_tensor(res1), Tensor)
+        (res1, res2, res3) = ensure_callable(lu)(t)
+        assert isinstance(ensure_eager_tensor(res1), Tensor)
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         res = lu_solve((t, t), t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2) = as_callable(polar)(t)
-        assert isinstance(as_tensor(res1), Tensor)
+        (res1, res2) = ensure_callable(polar)(t)
+        assert isinstance(ensure_eager_tensor(res1), Tensor)
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         res = tridiagonal_solve(t, t, t, t)
         assert isinstance(res, Tensor)

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -89,7 +89,7 @@ def _has_valid_shape(obj: TensorOrScalar) -> bool:
     Returns:
         bool: Result.
     """
-    return _has_attr(obj, "shape") and bool(_get_attr(obj, "shape"))
+    return isinstance(obj, ShapeProtocol) and bool(obj.shape)
 
 
 @register_op("MatrixPower")
@@ -110,10 +110,7 @@ class MatrixPower(OpDef):
             tuple[int, ...]: The inferred shape of the matrix power result.
         """
         del kwargs
-        if _has_attr(a, "shape"):
-            _typed_ret_1: tuple[int, ...] = a.shape
-            return _typed_ret_1
-        return ()
+        return extract_shape(a)
 
 
 @register_op("Trace")
@@ -136,8 +133,8 @@ class Trace(OpDef):
         axis1 = kwargs.get("axis1", 0)
         axis2 = kwargs.get("axis2", 1)
         if len(shape) >= 2:
-            shape.pop(max(int(as_int(axis1)), int(as_int(axis2))))
-            shape.pop(min(int(as_int(axis1)), int(as_int(axis2))))
+            shape.pop(max(int(ensure_int(axis1)), int(ensure_int(axis2))))
+            shape.pop(min(int(ensure_int(axis1)), int(ensure_int(axis2))))
         return tuple(shape)
 
 

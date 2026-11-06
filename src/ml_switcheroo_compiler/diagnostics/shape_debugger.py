@@ -8,18 +8,32 @@ from __future__ import annotations
 
 import os
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
+
+
+@typing.runtime_checkable
+class _ShapedOutputProtocol(typing.Protocol):
+    """Protocol for traced outputs exposing a `shape` attribute."""
+
+    @property
+    def shape(self) -> Sequence[int | str | None]:
+        """Return output shape.
+
+        Returns:
+            Sequence[int | str | None]: Shape sequence.
+        """
+        ...
+
 
 _FORMATTERS: dict[str, dict[str, str]] = {}
 
@@ -59,9 +73,9 @@ def debug_shapes(
         dummy_input = ops.zeros(input_shape, dtype=DType.Float64)
         res += row_fmt.format(name="input", shape=input_shape, dtype="float64")
 
-        out = model_func(dummy_input)
-        if _has_attr(out, "shape"):
-            res += row_fmt.format(name="output", shape=_get_attr(out, "shape"), dtype="float64")
+        raw_out = model_func(dummy_input)
+        if isinstance(raw_out, _ShapedOutputProtocol):
+            res += row_fmt.format(name="output", shape=raw_out.shape, dtype="float64")
         else:
             res += row_fmt.format(name="output", shape="unknown", dtype="float64")
     except RuntimeError:

@@ -7,7 +7,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 
 def test_webgl_slice_codegen() -> None:
@@ -206,4 +206,4 @@ def test_webgl_slice_and_concat_runner() -> None:
 
     inp = np.arange(16, dtype=np.float32).reshape(4, 4)
     res = artifact(inp)
-    as_callable(np.testing.assert_allclose)(res, inp[0:2, :])
+    ensure_callable(np.testing.assert_allclose)(res, inp[0:2, :])

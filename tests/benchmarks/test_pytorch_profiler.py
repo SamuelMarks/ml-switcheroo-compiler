@@ -8,18 +8,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_graph, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_graph, ensure_mutable, ensure_tensor_dict, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-if "torch" in sys.modules and _has_attr(sys.modules["torch"], "Tensor"):
+if "torch" in sys.modules and has_backend_member(sys.modules["torch"], "Tensor"):
     torch = sys.modules["torch"]
 else:
     try:
-        import torch
+        import torch as _torch_pkg
+
+        torch = _torch_pkg
     except (ImportError, RuntimeError, TypeError, ValueError) as e:
         pytest.skip(f"PyTorch not available: {e}", allow_module_level=True)
 
@@ -40,7 +41,7 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert _get_attr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
+        assert ensure_eager_tensor(res_linux)["peak_memory_mb"] > 0.0
 
     # 2. cuda device fallback when unavailable
     with patch("torch.cuda.is_available", return_value=False):
@@ -56,11 +57,11 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
     # 4. Existing torch.Tensor input branch
     t_in = torch.tensor([1.0, 2.0], dtype=torch.float32)
     res_tensor = profiler.profile_graph(IRGraph(), {"t": t_in, "list": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_tensor["latencies"]) == 2
+    assert ensure_callable(len)(res_tensor["latencies"]) == 2
 
     # 5. Empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-    assert _get_attr(res_empty, "__getitem__")("latency_ms") >= 0.0
+    assert ensure_eager_tensor(res_empty)["latency_ms"] >= 0.0
 
     # 6. Synchronize MPS hardware branch
     with patch.object(torch, "mps", create=True) as mock_mps_module:
@@ -69,10 +70,9 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
         mock_mps_dev.type = "mps"
         profiler._sync(mock_mps_dev)
         assert mock_mps_module.synchronize.called
-    _get_attr(_state, "update")({"dev": dev, "mock_mps": mock_mps, "mock_mps_dev": mock_mps_dev, "mock_mps_module": mock_mps_module})
-    _get_attr(_state, "update")({"profiler": profiler, "res_empty": res_empty, "res_linux": res_linux, "res_tensor": res_tensor})
-    _get_attr(_state, "update")({"t_in": t_in})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dev": dev, "mock_mps": mock_mps, "mock_mps_dev": mock_mps_dev, "mock_mps_module": mock_mps_module}))
+    _state.update(ensure_tensor_dict({"profiler": profiler, "res_empty": res_empty, "res_linux": res_linux, "res_tensor": res_tensor}))
+    _state.update(ensure_tensor_dict({"t_in": t_in}))
 
 
 def _test_pytorch_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -94,8 +94,8 @@ def _test_pytorch_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtoc
         mock_cuda_dev.type = "cuda"
         profiler._reset_cuda_stats(mock_cuda_dev)
         assert mock_reset.called
-    _get_attr(_state, "update")({"mock_cuda_dev": mock_cuda_dev, "mock_cuda_sync": mock_cuda_sync, "mock_reset": mock_reset})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_cuda_dev": mock_cuda_dev, "mock_cuda_sync": mock_cuda_sync, "mock_reset": mock_reset}))
+    _state.update(ensure_tensor_dict({"profiler": profiler}))
 
 
 def _test_pytorch_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -135,9 +135,9 @@ def _test_pytorch_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtoc
     # TorchGraphModule.forward with no graph outputs
     g_no_out = IRGraph()
     g_no_out.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
-    _get_attr(_state, "update")({"g_no_out": g_no_out, "g_ops": g_ops, "mock_cuda_dev": mock_cuda_dev, "out_fwd": out_fwd})
-    _get_attr(_state, "update")({"out_unmatched": out_unmatched, "res_cuda": res_cuda, "res_ops": res_ops, "tgm": tgm})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_no_out": g_no_out, "g_ops": g_ops, "mock_cuda_dev": mock_cuda_dev, "out_fwd": out_fwd}))
+    _state.update(ensure_tensor_dict({"out_unmatched": out_unmatched, "res_cuda": res_cuda, "res_ops": res_ops, "tgm": tgm}))
+    _state.update(ensure_tensor_dict({"profiler": profiler}))
 
 
 def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -148,15 +148,15 @@ def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtoc
     """
     g_no_out, g_ops, profiler = _state["g_no_out"], _state["g_ops"], _state["profiler"]
     g_no_out.nodes["y"] = IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(2,))
-    _set_attr(g_no_out, "outputs", [])
-    tgm_no_out = as_callable(TorchGraphModule)(g_no_out)
+    ensure_mutable(g_no_out).outputs = ensure_eager_tensor([])
+    tgm_no_out = ensure_callable(TorchGraphModule)(g_no_out)
     out_no_out = tgm_no_out.forward({"x": torch.tensor([1.0, 2.0])})
-    assert as_tensor(out_no_out) is None
+    assert ensure_eager_tensor(out_no_out) is None
 
     # TorchGraphModule TypeError when generator doesn't produce Module
     with patch("ml_switcheroo_compiler.backends.pytorch.generator.PyTorchCodeGenerator.generate", return_value="# empty"):
         with pytest.raises(TypeError, match="Failed to generate valid torch.nn.Module"):
-            TorchGraphModule(as_graph(g_ops))
+            TorchGraphModule(ensure_graph(g_ops))
 
     # Fallback when torch has non-callable compile attribute
     with patch.object(torch, "compile", None):
@@ -168,8 +168,8 @@ def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtoc
         with patch.object(torch.jit, "trace", side_effect=RuntimeError("trace fail")):
             res_fail = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
             assert len(res_fail["latencies"]) == 1
-    _get_attr(_state, "update")({"out_no_out": out_no_out, "res_fail": res_fail, "res_no_compile": res_no_compile, "tgm_no_out": tgm_no_out})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"out_no_out": out_no_out, "res_fail": res_fail, "res_no_compile": res_no_compile, "tgm_no_out": tgm_no_out}))
+    _state.update(ensure_tensor_dict({"g_no_out": g_no_out, "g_ops": g_ops, "profiler": profiler}))
 
 
 def _test_pytorch_profiler_exhaustive_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -206,9 +206,9 @@ def _test_pytorch_profiler_exhaustive_part_5(_state: dict[str, EagerTensorProtoc
     mock_ev1 = MagicMock()
     mock_ev2 = MagicMock()
     mock_ev1.elapsed_time.return_value = 1.25
-    _get_attr(_state, "update")({"compiled_empty": compiled_empty, "cuda_dev": cuda_dev, "mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1})
-    _get_attr(_state, "update")({"mock_ev2": mock_ev2, "mock_traced": mock_traced, "prepared": prepared, "res_traced": res_traced})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"compiled_empty": compiled_empty, "cuda_dev": cuda_dev, "mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1}))
+    _state.update(ensure_tensor_dict({"mock_ev2": mock_ev2, "mock_traced": mock_traced, "prepared": prepared, "res_traced": res_traced}))
+    _state.update(ensure_tensor_dict({"g_ops": g_ops, "profiler": profiler}))
 
 
 def _test_pytorch_profiler_exhaustive_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -251,9 +251,10 @@ def _test_pytorch_profiler_exhaustive_part_6(_state: dict[str, EagerTensorProtoc
 
     # mps without current_allocated_memory
     mock_mps_bare = MagicMock(spec=[])
-    _get_attr(_state, "update")({"lats_cuda": lats_cuda, "lats_cuda_err": lats_cuda_err, "mock_mps_bare": mock_mps_bare, "mock_mps_mod": mock_mps_mod})
-    _get_attr(_state, "update")({"mps_device": mps_device, "res_empty_lats": res_empty_lats})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"lats_cuda": lats_cuda, "lats_cuda_err": lats_cuda_err, "mock_mps_bare": mock_mps_bare, "mock_mps_mod": mock_mps_mod}))
+    _state.update(ensure_tensor_dict({"mps_device": mps_device, "res_empty_lats": res_empty_lats}))
+    _state.update(ensure_tensor_dict({"mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1, "mock_ev2": mock_ev2}))
+    _state.update(ensure_tensor_dict({"profiler": profiler}))
 
 
 def _test_pytorch_profiler_exhaustive_part_7(_state: dict[str, EagerTensorProtocol]) -> None:

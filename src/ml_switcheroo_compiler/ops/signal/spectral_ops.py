@@ -6,9 +6,9 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, _get_attr, _has_attr, as_shape, as_tensor_pair, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape, ensure_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -87,7 +87,7 @@ def welch(
 
     if config.eager_mode:
         backend = get_active_backend()
-        f, Pxx = as_tensor_pair(
+        f, Pxx = ensure_tensor_pair(
             backend.execute_op(
                 "Welch",
                 x.data,
@@ -194,13 +194,14 @@ class Stft(OpDef):
             ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
         _ = kwargs
-        if not _has_attr(x, "shape") or not x.shape:
+        x_shape = extract_shape(x)
+        if not x_shape:
             return ()
         step = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
-        num_frames = (int(x.shape[-1]) - noverlap) // step
-        return tuple(x.shape[:-1]) + (nfft // 2 + 1, num_frames)
+        num_frames = (int(x_shape[-1]) - noverlap) // step
+        return tuple(x_shape[:-1]) + (nfft // 2 + 1, num_frames)
 
 
 @register_op("Istft")
@@ -229,14 +230,15 @@ class Istft(OpDef):
             ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
         _ = kwargs
-        if not _has_attr(x, "shape") or not x.shape or len(x.shape) < 2:
+        x_shape = extract_shape(x)
+        if len(x_shape) < 2:
             return ()
         step = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
-        T = int(x.shape[-1])
+        T = int(x_shape[-1])
         L = (T - 1) * step + nfft
-        return tuple(x.shape[:-2]) + (L,)
+        return tuple(x_shape[:-2]) + (L,)
 
 
 def window_hann(length: int) -> TensorOrScalar:
@@ -251,7 +253,7 @@ def window_hann(length: int) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHann", length)
-        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape", (length,))), "float32", None))
+        return Tensor(data, TensorConfig(extract_shape(data, (length,)), "float32", None))
     return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
 
 
@@ -267,7 +269,7 @@ def window_hamming(length: int) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHamming", length)
-        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape", (length,))), "float32", None))
+        return Tensor(data, TensorConfig(extract_shape(data, (length,)), "float32", None))
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
@@ -285,9 +287,9 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = as_shape(_get_attr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = extract_shape(data, ensure_shape(Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = as_shape(Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+    out_shape = ensure_shape(Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Stft",
         [x],
@@ -311,9 +313,9 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = as_shape(_get_attr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = extract_shape(data, ensure_shape(Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = as_shape(Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+    out_shape = ensure_shape(Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Istft",
         [x],

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
@@ -101,10 +101,7 @@ class AxisIndex(OpDef):
         """
         if not args:
             return ()
-        shape_val = _get_attr(args[0], "shape", ())
-        if isinstance(shape_val, tuple):
-            return shape_val
-        return tuple(shape_val)
+        return extract_shape(args[0])
 
 
 def infeed(

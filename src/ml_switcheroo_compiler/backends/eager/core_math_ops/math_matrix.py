@@ -8,11 +8,10 @@ from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
-    as_tensor,
+    ensure_eager_tensor,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 from .math_matrix_utils import _apply_causal_mask
 from .math_reduction import _apply_softmax
@@ -33,14 +32,14 @@ def _matmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         EagerValue: Matrix product result.
     """
     mod = backend_module
-    a = as_tensor(args[0])
-    b = as_tensor(args[1])
+    a = ensure_eager_tensor(args[0])
+    b = ensure_eager_tensor(args[1])
     kw = dict(kwargs)
     if kw.pop("transpose_a", False):
         a = mod.swapaxes(a, -1, -2)
     if kw.pop("transpose_b", False):
         b = mod.swapaxes(b, -1, -2)
-    if _has_attr(backend_module, "matmul"):
+    if has_backend_member(backend_module, "matmul"):
         return mod.matmul(a, b, **kw)
     return a @ b
 
@@ -58,10 +57,10 @@ def _batch_matmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
         EagerValue: Batched matrix product result.
     """
-    if _has_attr(backend_module, "matmul"):
+    if has_backend_member(backend_module, "matmul"):
         _typed_ret_1: EagerValue = backend_module.matmul(*args, **kwargs)
         return _typed_ret_1
-    return as_tensor(args[0]) @ as_tensor(args[1])
+    return ensure_eager_tensor(args[0]) @ ensure_eager_tensor(args[1])
 
 
 @global_eager_registry.register("Dot")
@@ -76,10 +75,10 @@ def _dot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
         EagerValue: Dot product result.
     """
-    if _has_attr(backend_module, "dot"):
+    if has_backend_member(backend_module, "dot"):
         _typed_ret_2: EagerValue = backend_module.dot(*args, **kwargs)
         return _typed_ret_2
-    return as_tensor(args[0]) @ as_tensor(args[1])
+    return ensure_eager_tensor(args[0]) @ ensure_eager_tensor(args[1])
 
 
 @global_eager_registry.register("Einsum")
@@ -94,9 +93,9 @@ def _einsum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    eq = kwargs.pop("equation", "") if _has_attr(kwargs, "pop") and "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
+    eq = kwargs.pop("equation", "") if has_backend_member(kwargs, "pop") and "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
-    if _has_attr(backend_module, "einsum"):
+    if has_backend_member(backend_module, "einsum"):
         _typed_ret_3: EagerValue = backend_module.einsum(eq, *op_args, **kwargs)
         return _typed_ret_3
     return _resolve_eager_mod(backend_module).einsum(eq, *op_args, **kwargs)
@@ -120,29 +119,29 @@ def _scaled_dot_product_attention_eager(backend_module: BackendModuleProtocol, q
     import math
 
     mod = backend_module
-    scale = kwargs.get("scale") if _has_attr(kwargs, "get") else None
-    is_causal = kwargs.get("is_causal", False) if _has_attr(kwargs, "get") else False
-    mask = kwargs.get("mask", None) if _has_attr(kwargs, "get") else None
+    scale = kwargs.get("scale") if has_backend_member(kwargs, "get") else None
+    is_causal = kwargs.get("is_causal", False) if has_backend_member(kwargs, "get") else False
+    mask = kwargs.get("mask", None) if has_backend_member(kwargs, "get") else None
 
     if scale is None:
-        scale = 1.0 / math.sqrt(as_tensor(query).shape[-1])
+        scale = 1.0 / math.sqrt(ensure_eager_tensor(query).shape[-1])
 
     # key transpose
-    key_t_axes = list(range(len(as_tensor(key).shape)))
+    key_t_axes = list(range(len(ensure_eager_tensor(key).shape)))
     key_t_axes[-1], key_t_axes[-2] = key_t_axes[-2], key_t_axes[-1]
 
-    if _has_attr(backend_module, "transpose"):
+    if has_backend_member(backend_module, "transpose"):
         key_t: EagerTensorProtocol = mod.transpose(key, axes=key_t_axes)
     else:
-        key_t = as_tensor(key)
+        key_t = ensure_eager_tensor(key)
 
     scores: EagerTensorProtocol = mod.matmul(query, key_t) * scale
 
     if is_causal:
-        scores = as_tensor(_apply_causal_mask(backend_module, scores))
+        scores = ensure_eager_tensor(_apply_causal_mask(backend_module, scores))
 
     if mask is not None:
-        scores = scores + as_tensor(mask)
+        scores = scores + ensure_eager_tensor(mask)
 
     attn = _apply_softmax(backend_module, scores)
 
@@ -162,10 +161,10 @@ def _cholesky_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "cho_solve"):
-        return as_tensor(func.cho_solve(*args, **kwargs))
-    if _has_attr(backend_module, "cho_solve"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "cho_solve"):
+        return ensure_eager_tensor(func.cho_solve(*args, **kwargs))
+    if has_backend_member(backend_module, "cho_solve"):
         return mod.cho_solve(*args, **kwargs)
 
     b, c = args[0], args[1]
@@ -185,10 +184,10 @@ def _banded_triangular_solve(backend_module: BackendModuleProtocol, *args: Eager
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "solve_banded"):
-        return as_tensor(func.solve_banded(*args, **kwargs))
-    if _has_attr(backend_module, "solve_banded"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "solve_banded"):
+        return ensure_eager_tensor(func.solve_banded(*args, **kwargs))
+    if has_backend_member(backend_module, "solve_banded"):
         return mod.solve_banded(*args, **kwargs)
 
     a, b = args[0], args[1]
@@ -208,10 +207,10 @@ def _matrix_power(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "matrix_power"):
-        return as_tensor(func.matrix_power(*args, **kwargs))
-    if _has_attr(backend_module, "matrix_power"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "matrix_power"):
+        return ensure_eager_tensor(func.matrix_power(*args, **kwargs))
+    if has_backend_member(backend_module, "matrix_power"):
         return mod.matrix_power(*args, **kwargs)
 
     x, n = args[0], args[1]
@@ -231,10 +230,10 @@ def _matrix_rank(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "matrix_rank"):
-        return as_tensor(func.matrix_rank(*args, **kwargs))
-    if _has_attr(backend_module, "matrix_rank"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "matrix_rank"):
+        return ensure_eager_tensor(func.matrix_rank(*args, **kwargs))
+    if has_backend_member(backend_module, "matrix_rank"):
         return mod.matrix_rank(*args, **kwargs)
 
     x = args[0]
@@ -254,10 +253,10 @@ def _solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "solve"):
-        return as_tensor(func.solve(*args, **kwargs))
-    if _has_attr(backend_module, "solve"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "solve"):
+        return ensure_eager_tensor(func.solve(*args, **kwargs))
+    if has_backend_member(backend_module, "solve"):
         return mod.solve(*args, **kwargs)
 
     a, b = args[0], args[1]
@@ -277,10 +276,10 @@ def _tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "linalg", None)
-    if func and _has_attr(func, "tensorsolve"):
-        return as_tensor(func.tensorsolve(*args, **kwargs))
-    if _has_attr(backend_module, "tensorsolve"):
+    func = get_backend_member(backend_module, "linalg", None)
+    if func and has_backend_member(func, "tensorsolve"):
+        return ensure_eager_tensor(func.tensorsolve(*args, **kwargs))
+    if has_backend_member(backend_module, "tensorsolve"):
         return mod.tensorsolve(*args, **kwargs)
 
     a, b = args[0], args[1]
@@ -299,9 +298,9 @@ def _np_tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "tensorsolve", _get_attr(backend_module, "tensorsolve", None))
+    func = get_backend_member(backend_module, "tensorsolve", get_backend_member(backend_module, "tensorsolve", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.tensorsolve(*args, **kwargs)
 
 
@@ -317,9 +316,9 @@ def _np_triangularsolve(backend_module: BackendModuleProtocol, *args: EagerValue
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "triangularsolve", _get_attr(backend_module, "triangularsolve", None))
+    func = get_backend_member(backend_module, "triangularsolve", get_backend_member(backend_module, "triangularsolve", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.solve(*args)
 
 
@@ -335,9 +334,9 @@ def _np_tridiagonalmatmul(backend_module: BackendModuleProtocol, *args: EagerVal
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "tridiagonalmatmul", _get_attr(backend_module, "tridiagonalmatmul", None))
+    func = get_backend_member(backend_module, "tridiagonalmatmul", get_backend_member(backend_module, "tridiagonalmatmul", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).matmul(args[0], args[1])
 
 
@@ -353,9 +352,9 @@ def _np_tridiagonalsolve(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "tridiagonalsolve", _get_attr(backend_module, "tridiagonalsolve", None))
+    func = get_backend_member(backend_module, "tridiagonalsolve", get_backend_member(backend_module, "tridiagonalsolve", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.solve(*args)
 
 
@@ -371,7 +370,7 @@ def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "vecdot", _get_attr(backend_module, "vecdot", None))
+    func = get_backend_member(backend_module, "vecdot", get_backend_member(backend_module, "vecdot", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vdot(args[0], args[1])

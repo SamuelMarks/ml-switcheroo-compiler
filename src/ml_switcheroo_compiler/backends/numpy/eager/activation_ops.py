@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -27,7 +27,7 @@ def _np_relu(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(backend_module.maximum(x, 0.0))
+    return ensure_ndarray(backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("Elu")
@@ -48,7 +48,7 @@ def _np_elu(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0)))
+    return ensure_ndarray(backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0)))
 
 
 @numpy_eager_registry.register("Celu")
@@ -69,7 +69,7 @@ def _np_celu(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0)))
+    return ensure_ndarray(backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0)))
 
 
 @numpy_eager_registry.register("Softplus")
@@ -88,7 +88,7 @@ def _np_softplus(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0))
+    return ensure_ndarray(backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("Softsign")
@@ -107,7 +107,7 @@ def _np_softsign(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(x / (1.0 + backend_module.abs(x)))
+    return ensure_ndarray(x / (1.0 + backend_module.abs(x)))
 
 
 @numpy_eager_registry.register("Mish")
@@ -127,7 +127,7 @@ def _np_mish(
         np.ndarray: Result.
     """
     softplus_x = backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
-    return as_ndarray(x * backend_module.tanh(softplus_x))
+    return ensure_ndarray(x * backend_module.tanh(softplus_x))
 
 
 @numpy_eager_registry.register("LogSigmoid")
@@ -146,4 +146,4 @@ def _np_log_sigmoid(
     Returns:
         np.ndarray: Result.
     """
-    return as_ndarray(-backend_module.log1p(backend_module.exp(-x)))
+    return ensure_ndarray(-backend_module.log1p(backend_module.exp(-x)))

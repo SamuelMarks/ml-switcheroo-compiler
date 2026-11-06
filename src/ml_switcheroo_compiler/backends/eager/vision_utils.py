@@ -2,13 +2,36 @@
 
 from __future__ import annotations
 
+import typing
+
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor, as_tensor_pair
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_eager_tensor, ensure_tensor_pair
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
+
+
+@typing.runtime_checkable
+class _NamedBackendModuleProtocol(typing.Protocol):
+    """Protocol for backend modules exposing `__name__`."""
+
+    __name__: str
+
+
+def _resolve_backend_name(backend_module: BackendModuleProtocol | EagerValue | None) -> str:
+    """Resolve the module name string of `backend_module`.
+
+    Args:
+        backend_module: Candidate backend module or None.
+
+    Returns:
+        str: Module name string, defaulting to `'numpy'`.
+    """
+    if isinstance(backend_module, _NamedBackendModuleProtocol):
+        return str(backend_module.__name__)
+    return "numpy"
 
 
 def _resolve_backend_mod(backend_module: BackendModuleProtocol | EagerValue | None) -> BackendModuleProtocol:
@@ -24,7 +47,7 @@ def _resolve_backend_mod(backend_module: BackendModuleProtocol | EagerValue | No
         from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
         return _resolve_eager_mod(None)
-    return as_mod(_get_attr(backend_module, "numpy", backend_module))
+    return ensure_mod(get_backend_member(backend_module, "numpy", backend_module))
 
 
 class RandomCropConfig(pydantic.BaseModel):
@@ -115,7 +138,7 @@ def _prepare_eager_transform(
         EagerTransformContext: Standardized context containing channels-last images.
     """
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
+    name: str = _resolve_backend_name(backend_module) if backend_module is not None else "numpy"
 
     if images is None:
         return EagerTransformContext(
@@ -220,12 +243,12 @@ def _map_coords_nearest(ctx: MapCoordsContext | None) -> EagerValue:
         return 0
 
     np_mod = _resolve_backend_mod(ctx.np_mod)
-    img = as_tensor(ctx.image)
+    img = ensure_eager_tensor(ctx.image)
     h, w = img.shape[:2]
 
     eps = 1e-5
-    y = as_tensor(ctx.y)
-    x = as_tensor(ctx.x)
+    y = ensure_eager_tensor(ctx.y)
+    x = ensure_eager_tensor(ctx.x)
 
     in_bounds = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
     y_clamped = np_mod.clip(y, 0.0, float(h - 1))
@@ -236,7 +259,7 @@ def _map_coords_nearest(ctx: MapCoordsContext | None) -> EagerValue:
 
     sampled = img[y_round, x_round]
     if ctx.valid is not None:
-        in_bounds = in_bounds & as_tensor(ctx.valid)
+        in_bounds = in_bounds & ensure_eager_tensor(ctx.valid)
     return np_mod.where(in_bounds, sampled, 0.0)
 
 
@@ -253,12 +276,12 @@ def _map_coords_bilinear(ctx: MapCoordsContext | None) -> EagerValue:
         return 0
 
     np_mod = _resolve_backend_mod(ctx.np_mod)
-    img = as_tensor(ctx.image)
+    img = ensure_eager_tensor(ctx.image)
     h, w = img.shape[:2]
 
     eps = 1e-5
-    y = as_tensor(ctx.y)
-    x = as_tensor(ctx.x)
+    y = ensure_eager_tensor(ctx.y)
+    x = ensure_eager_tensor(ctx.x)
 
     in_bounds = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
 
@@ -286,7 +309,7 @@ def _map_coords_bilinear(ctx: MapCoordsContext | None) -> EagerValue:
     interpolated = w00 * ia + w01 * ib + w10 * ic + w11 * id_val
 
     if ctx.valid is not None:
-        in_bounds = in_bounds & as_tensor(ctx.valid)
+        in_bounds = in_bounds & ensure_eager_tensor(ctx.valid)
     return np_mod.where(in_bounds, interpolated, 0.0)
 
 
@@ -325,11 +348,11 @@ def _map_coords_bicubic(ctx: MapCoordsContext | None) -> EagerValue:
         return 0
 
     np_mod = _resolve_backend_mod(ctx.np_mod)
-    img = as_tensor(ctx.image)
+    img = ensure_eager_tensor(ctx.image)
     h, w = img.shape[:2]
 
-    y = as_tensor(ctx.y)
-    x = as_tensor(ctx.x)
+    y = ensure_eager_tensor(ctx.y)
+    x = ensure_eager_tensor(ctx.x)
 
     in_bounds = (y >= 0.0) & (y <= float(h - 1)) & (x >= 0.0) & (x <= float(w - 1))
 
@@ -341,17 +364,17 @@ def _map_coords_bicubic(ctx: MapCoordsContext | None) -> EagerValue:
     for m in range(-1, 3):
         ym = y_floor + m
         ym_c = np_mod.clip(ym, 0, h - 1)
-        wy = as_tensor(_cubic_kernel(y - ym.astype(np_mod.float32), np_mod=np_mod))
+        wy = ensure_eager_tensor(_cubic_kernel(y - ym.astype(np_mod.float32), np_mod=np_mod))
 
         for n in range(-1, 3):
             xn = x_floor + n
             xn_c = np_mod.clip(xn, 0, w - 1)
-            wx = as_tensor(_cubic_kernel(x - xn.astype(np_mod.float32), np_mod=np_mod))
+            wx = ensure_eager_tensor(_cubic_kernel(x - xn.astype(np_mod.float32), np_mod=np_mod))
 
             out = out + wy * wx * img[ym_c, xn_c]
 
     if ctx.valid is not None:
-        in_bounds = in_bounds & as_tensor(ctx.valid)
+        in_bounds = in_bounds & ensure_eager_tensor(ctx.valid)
     return np_mod.where(in_bounds, out, 0.0)
 
 
@@ -378,11 +401,11 @@ def _np_map_coordinates(
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    coords_t = as_tensor(coords)
+    coords_t = ensure_eager_tensor(coords)
     y: EagerTensorProtocol = mod.asarray(coords_t[0], dtype=mod.float32)
     x: EagerTensorProtocol = mod.asarray(coords_t[1], dtype=mod.float32)
 
-    h, w = as_tensor(image).shape[:2]
+    h, w = ensure_eager_tensor(image).shape[:2]
     eps = 1e-5
     valid_mask = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
     ctx = MapCoordsContext(np_mod=mod, image=image, y=y, x=x, valid=valid_mask)
@@ -408,7 +431,7 @@ def _check_collinear_quad(points: EagerValue) -> bool:
     Returns:
         bool: True if collinearity is detected among any 3 points, False otherwise.
     """
-    pts = as_tensor(points)
+    pts = ensure_eager_tensor(points)
     triplets = ((0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3))
     for i, j, k in triplets:
         p1 = pts[i]
@@ -442,10 +465,10 @@ def _compute_single_homography(np_mod: BackendModuleProtocol, src: EagerValue, d
     # Direct Linear Transformation (DLT) matrix A (8 x 9)
     A = mod.zeros((8, 9), dtype=mod.float64)
     for i in range(4):
-        x = float(as_tensor(src)[i, 0])
-        y = float(as_tensor(src)[i, 1])
-        u = float(as_tensor(dst)[i, 0])
-        v = float(as_tensor(dst)[i, 1])
+        x = float(ensure_eager_tensor(src)[i, 0])
+        y = float(ensure_eager_tensor(src)[i, 1])
+        u = float(ensure_eager_tensor(dst)[i, 0])
+        v = float(ensure_eager_tensor(dst)[i, 1])
 
         A[2 * i] = [-x, -y, -1.0, 0.0, 0.0, 0.0, u * x, u * y, u]
         A[2 * i + 1] = [0.0, 0.0, 0.0, -x, -y, -1.0, v * x, v * y, v]
@@ -522,7 +545,7 @@ def _generate_perspective_coords(np_mod: BackendModuleProtocol, h_batch: EagerVa
     ys_list = []
     xs_list = []
     for b in range(b_count):
-        sub_coords = as_tensor_pair(_generate_perspective_coords(mod, h[b], c))
+        sub_coords = ensure_tensor_pair(_generate_perspective_coords(mod, h[b], c))
         ys_list.append(sub_coords[0])
         xs_list.append(sub_coords[1])
     return (mod.stack(ys_list, axis=0), mod.stack(xs_list, axis=0))
@@ -603,14 +626,14 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext | None) -> EagerV
     np_mod = _resolve_backend_mod(pctx.np_mod)
     b = pctx.ctx.b
     coords = pctx.ctx.coords
-    order = 1 if _get_attr(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
-    fill_value = float(_get_attr(pctx.config, "fill_value", 0.0))
+    order = 1 if get_backend_member(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
+    fill_value = float(get_backend_member(pctx.config, "fill_value", 0.0))
 
-    c_count = as_tensor(pctx.imgs).shape[3]
+    c_count = ensure_eager_tensor(pctx.imgs).shape[3]
     for c in range(c_count):
-        as_tensor(pctx.out)[b, :, :, c] = _np_map_coordinates(
+        ensure_eager_tensor(pctx.out)[b, :, :, c] = _np_map_coordinates(
             np_mod,
-            as_tensor(pctx.imgs)[b, :, :, c],
+            ensure_eager_tensor(pctx.imgs)[b, :, :, c],
             coords,
             order=order,
             fill_value=fill_value,
@@ -634,12 +657,12 @@ def _apply_perspective_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, h:
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    b_count, h_dim, w_dim, _ = as_tensor(imgs).shape
+    b_count, h_dim, w_dim, _ = ensure_eager_tensor(imgs).shape
     grid = _generate_perspective_grid(mod, h_dim, w_dim)
     out = mod.zeros_like(imgs)
 
     for b in range(b_count):
-        h_item = as_tensor(h)[b] if _get_attr(h, "ndim", 2) == 3 else h
+        h_item = ensure_eager_tensor(h)[b] if get_backend_member(h, "ndim", 2) == 3 else h
         coords = _generate_perspective_coords(mod, h_item, grid)
         ctx = PerspectiveContext(b=b, coords=coords, h=h_item)
         pctx = PerspectiveChannelContext(ctx=ctx, config=config, np_mod=mod, imgs=imgs, out=out)

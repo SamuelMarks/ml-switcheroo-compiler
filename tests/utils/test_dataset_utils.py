@@ -8,7 +8,6 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.utils.dataset_utils import (
     BatchConfig,
     DataLoaderConfig,
@@ -30,7 +29,7 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     timeseries_dataset_from_array,
     unpack_x_y_sample_weight,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -55,7 +54,7 @@ def test_unpack_x_y_sample_weight() -> None:
 
 def test_split_dataset() -> None:
     """Test split."""
-    assert as_callable(split_dataset)(1, 0.5) == (1, 1)
+    assert ensure_callable(split_dataset)(1, 0.5) == (1, 1)
 
 
 def test_pad_sequences() -> None:
@@ -87,9 +86,9 @@ def test_numpy_dataset_iteration_and_length() -> None:
     assert len(ds) == 3
     batches = list(ds)
     assert len(batches) == 3
-    assert as_callable(len)(batches[0][0]) == 2
-    assert as_callable(len)(batches[0][1]) == 2
-    assert as_callable(len)(batches[2][0]) == 1
+    assert ensure_callable(len)(batches[0][0]) == 2
+    assert ensure_callable(len)(batches[0][1]) == 2
+    assert ensure_callable(len)(batches[2][0]) == 1
     ds_no_y = NumpyDataset(x, config=BatchConfig(batch_size=3, shuffle=False))
     assert len(ds_no_y) == 2
     batches_no_y = list(ds_no_y)
@@ -120,10 +119,10 @@ def _test_directory_dataset_parsers_and_loaders_sub_1(_state: dict[str, EagerTen
     for p in [cat1_img, cat2_png, cat_txt, cat_audio, dog1_img, dog_txt, dog_audio]:
         with open(p, "w") as f:
             f.write("content")
-    _get_attr(_state, "update")({"cat1_img": cat1_img, "cat2_png": cat2_png, "cat_audio": cat_audio, "cat_dir": cat_dir})
-    _get_attr(_state, "update")({"cat_txt": cat_txt, "dog1_img": dog1_img, "dog_audio": dog_audio, "dog_dir": dog_dir})
-    _get_attr(_state, "update")({"dog_txt": dog_txt, "empty_dir": empty_dir, "f": f})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"cat1_img": cat1_img, "cat2_png": cat2_png, "cat_audio": cat_audio, "cat_dir": cat_dir}))
+    _state.update(ensure_tensor_dict({"cat_txt": cat_txt, "dog1_img": dog1_img, "dog_audio": dog_audio, "dog_dir": dog_dir}))
+    _state.update(ensure_tensor_dict({"dog_txt": dog_txt, "empty_dir": empty_dir, "f": f}))
+    _state.update(ensure_tensor_dict({"tmp_dir": tmp_dir}))
 
 
 def _test_directory_dataset_parsers_and_loaders_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -135,23 +134,23 @@ def _test_directory_dataset_parsers_and_loaders_sub_2(_state: dict[str, EagerTen
     (cat_dir, dog_dir, tmp_dir) = (_state["cat_dir"], _state["dog_dir"], _state["tmp_dir"])
     broken_sym = os.path.join(dog_dir, "broken.jpg")
     os.symlink(os.path.join(dog_dir, "nonexistent.jpg"), broken_sym)
-    classes = as_callable(_parse_class_names)(tmp_dir, None)
+    classes = ensure_callable(_parse_class_names)(tmp_dir, None)
     assert classes == ["cats", "dogs"]
-    classes_explicit = as_callable(_parse_class_names)(tmp_dir, ["dogs", "cats"])
+    classes_explicit = ensure_callable(_parse_class_names)(tmp_dir, ["dogs", "cats"])
     assert classes_explicit == ["dogs", "cats"]
-    assert as_callable(_is_valid_file)("cat1.jpg", cat_dir, [".jpg"])
-    assert not as_callable(_is_valid_file)("cat1.jpg", cat_dir, [".png"])
-    (fps, lbls) = as_callable(_walk_directory_and_filter)(tmp_dir, ["cats", "nonexistent_dir"], [".jpg"])
+    assert ensure_callable(_is_valid_file)("cat1.jpg", cat_dir, [".jpg"])
+    assert not ensure_callable(_is_valid_file)("cat1.jpg", cat_dir, [".png"])
+    (fps, lbls) = ensure_callable(_walk_directory_and_filter)(tmp_dir, ["cats", "nonexistent_dir"], [".jpg"])
     assert len(fps) == 1
     assert lbls == [0]
     with pytest.raises(ValueError, match="does not exist"):
         _get_files_and_labels(os.path.join(tmp_dir, "missing_folder"))
-    (fps, lbls, cls_names) = as_callable(_get_files_and_labels)(tmp_dir, labels=[10, 20, 30], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+    (fps, lbls, cls_names) = ensure_callable(_get_files_and_labels)(tmp_dir, labels=[10, 20, 30], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
     assert lbls == [10, 20, 30]
-    (fps_str, lbls_str, _) = as_callable(_get_files_and_labels)(tmp_dir, labels="custom_mode", class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
-    _get_attr(_state, "update")({"_": _, "classes": classes, "classes_explicit": classes_explicit, "cls_names": cls_names})
-    _get_attr(_state, "update")({"fps": fps, "fps_str": fps_str, "lbls": lbls, "lbls_str": lbls_str})
-    _state.update(_caller_locals())
+    (fps_str, lbls_str, _) = ensure_callable(_get_files_and_labels)(tmp_dir, labels="custom_mode", class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+    _state.update(ensure_tensor_dict({"_": _, "classes": classes, "classes_explicit": classes_explicit, "cls_names": cls_names}))
+    _state.update(ensure_tensor_dict({"fps": fps, "fps_str": fps_str, "lbls": lbls, "lbls_str": lbls_str}))
+    _state.update(ensure_tensor_dict({"cat_dir": cat_dir, "dog_dir": dog_dir, "tmp_dir": tmp_dir}))
 
 
 def _test_directory_dataset_parsers_and_loaders_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -163,28 +162,28 @@ def _test_directory_dataset_parsers_and_loaders_sub_3(_state: dict[str, EagerTen
     (lbls_str, tmp_dir) = (_state["lbls_str"], _state["tmp_dir"])
     assert len(lbls_str) == 3
     with pytest.raises(ValueError, match="Length of labels does not match"):
-        as_callable(_get_files_and_labels)(tmp_dir, labels=[1], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+        ensure_callable(_get_files_and_labels)(tmp_dir, labels=[1], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
     cfg_audio = DatasetConfig(io_config=IOConfig(), batch_config=BatchConfig(batch_size=1, seed=123))
-    audio_ds = as_callable(audio_dataset_from_directory)(tmp_dir, cfg_audio)
+    audio_ds = ensure_callable(audio_dataset_from_directory)(tmp_dir, cfg_audio)
     assert len(audio_ds) == 2
-    audio_ds_default = as_callable(audio_dataset_from_directory)(tmp_dir)
+    audio_ds_default = ensure_callable(audio_dataset_from_directory)(tmp_dir)
     assert len(audio_ds_default) >= 1
-    img_ds = as_callable(image_dataset_from_directory)(tmp_dir)
+    img_ds = ensure_callable(image_dataset_from_directory)(tmp_dir)
     assert len(img_ds) >= 1
-    txt_ds = as_callable(text_dataset_from_directory)(tmp_dir)
+    txt_ds = ensure_callable(text_dataset_from_directory)(tmp_dir)
     assert len(txt_ds) >= 1
     items = list(txt_ds)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(items, "__getitem__")(0)), "__getitem__")(0)), "__getitem__")(0)) == "content"
-    _get_attr(_state, "update")({"audio_ds": audio_ds, "audio_ds_default": audio_ds_default, "cfg_audio": cfg_audio, "img_ds": img_ds})
-    _get_attr(_state, "update")({"items": items, "txt_ds": txt_ds})
-    _state.update(_caller_locals())
+    assert ensure_eager_tensor(items)[0][0][0] == "content"
+    _state.update(ensure_tensor_dict({"audio_ds": audio_ds, "audio_ds_default": audio_ds_default, "cfg_audio": cfg_audio, "img_ds": img_ds}))
+    _state.update(ensure_tensor_dict({"items": items, "txt_ds": txt_ds}))
+    _state.update(ensure_tensor_dict({"lbls_str": lbls_str, "tmp_dir": tmp_dir}))
 
 
 def test_directory_dataset_parsers_and_loaders() -> None:
     """Test directory parsing, file validation, and datasets from directory."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"tmp_dir": tmp_dir})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"tmp_dir": tmp_dir}))
         for _sub_fn in (_test_directory_dataset_parsers_and_loaders_sub_1, _test_directory_dataset_parsers_and_loaders_sub_2, _test_directory_dataset_parsers_and_loaders_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -201,7 +200,7 @@ def test_timeseries_dataset_from_array() -> None:
     ds_no_target = timeseries_dataset_from_array(data, None, sequence_length=3)
     windows_no_target = list(ds_no_target)
     assert len(windows_no_target) > 0
-    assert as_callable(len)(windows_no_target[0][0]) == 3
+    assert ensure_callable(len)(windows_no_target[0][0]) == 3
     cfg = DatasetConfig(loader=DataLoaderConfig(sequence_stride=2, sampling_rate=2, start_index=1, end_index=18), batch_config=BatchConfig(batch_size=2, shuffle=False))
     ds = timeseries_dataset_from_array(data, targets, sequence_length=3, config=cfg)
     batches = list(ds)

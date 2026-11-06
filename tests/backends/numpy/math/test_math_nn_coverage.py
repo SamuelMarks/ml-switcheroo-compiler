@@ -8,8 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_nn as math_nn_module
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -25,33 +24,33 @@ def test_math_nn_ops() -> None:
     sig2 = np.array([0.5, 1.0])
 
     # Convolve
-    conv_res = math_nn_module._np_convolve(np, sig1, sig2)
-    assert as_callable(len)(conv_res) == 4
+    conv_res = math_nn_module._np_convolve(ensure_eager_tensor(np), sig1, sig2)
+    assert ensure_callable(len)(conv_res) == 4
     reg_conv = numpy_eager_registry.get("Convolve")
-    assert as_callable(len)(as_callable(reg_conv)(np, sig1, sig2)) == 4
+    assert ensure_callable(len)(ensure_callable(reg_conv)(np, sig1, sig2)) == 4
 
     # ConvGeneralDilatedLocal
-    dil_local = math_nn_module._np_convgeneraldilatedlocal(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
-    assert as_callable(len)(dil_local) == 3
+    dil_local = math_nn_module._np_convgeneraldilatedlocal(ensure_eager_tensor(np), [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
+    assert ensure_callable(len)(dil_local) == 3
     reg_dil_local = numpy_eager_registry.get("ConvGeneralDilatedLocal")
-    assert as_callable(len)(as_callable(reg_dil_local)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
+    assert ensure_callable(len)(ensure_callable(reg_dil_local)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
 
     # ConvGeneralDilatedPatches
-    dil_patches = math_nn_module._np_convgeneraldilatedpatches(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
-    assert as_callable(len)(dil_patches) == 3
+    dil_patches = math_nn_module._np_convgeneraldilatedpatches(ensure_eager_tensor(np), [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
+    assert ensure_callable(len)(dil_patches) == 3
     reg_dil_patches = numpy_eager_registry.get("ConvGeneralDilatedPatches")
-    assert as_callable(len)(as_callable(reg_dil_patches)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
+    assert ensure_callable(len)(ensure_callable(reg_dil_patches)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
 
     # ConvWithGeneralPadding
-    gen_pad = math_nn_module._np_convwithgeneralpadding(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
-    assert as_callable(len)(gen_pad) == 3
+    gen_pad = math_nn_module._np_convwithgeneralpadding(ensure_eager_tensor(np), [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])
+    assert ensure_callable(len)(gen_pad) == 3
     reg_gen_pad = numpy_eager_registry.get("ConvWithGeneralPadding")
-    assert as_callable(len)(as_callable(reg_gen_pad)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
+    assert ensure_callable(len)(ensure_callable(reg_gen_pad)(np, [1.0, 2.0, 3.0, 4.0], [1.0, 1.0])) == 3
 
     # RawConv2D
     img = np.array([[1.0, 2.0], [3.0, 4.0]])
     filt = np.array([[1.0, 0.0], [0.0, 1.0]])
-    raw_conv = math_nn_module._np_rawconv2d(np, img, filt)
-    assert as_tensor(_get_attr(raw_conv, "shape")) == (1, 1)
+    raw_conv = math_nn_module._np_rawconv2d(ensure_eager_tensor(np), img, filt)
+    assert ensure_eager_tensor(raw_conv).shape == (1, 1)
     reg_raw_conv = numpy_eager_registry.get("RawConv2D")
-    assert as_tensor(_get_attr(as_callable(reg_raw_conv)(np, img, filt), "shape")) == (1, 1)
+    assert ensure_eager_tensor(ensure_callable(reg_raw_conv)(np, img, filt)).shape == (1, 1)

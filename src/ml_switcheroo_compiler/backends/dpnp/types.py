@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import importlib
 import logging
-import operator
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    StructuralOperandProtocol,
-    as_callable,
-    as_float,
-    as_tensor,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
 )
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 
 
 @typing.runtime_checkable
@@ -62,44 +61,6 @@ class DpnpArrayProtocol(typing.Protocol):
             float | int | bool: Scalar value.
         """
         ...
-
-
-def _has_attr(obj: StructuralOperandProtocol | EagerValue, name: str) -> bool:
-    """Return True if `obj` or its class hierarchy defines `name`.
-
-    Args:
-        obj (StructuralOperandProtocol | EagerValue): Target object.
-        name (str): Attribute name.
-
-    Returns:
-        bool: True if present.
-    """
-    try:
-        operator.attrgetter(name)(obj)
-        return True
-    except AttributeError:
-        return False
-
-
-def _get_attr(
-    obj: StructuralOperandProtocol | EagerValue,
-    name: str,
-    default: EagerValue = None,
-) -> EagerValue:
-    """Retrieve attribute `name` from `obj` without `getattr`.
-
-    Args:
-        obj (StructuralOperandProtocol | EagerValue): Target object.
-        name (str): Attribute name.
-        default (EagerValue): Default value if not found.
-
-    Returns:
-        EagerValue: Attribute value or bound callable.
-    """
-    try:
-        return as_tensor(operator.attrgetter(name)(obj))
-    except AttributeError:
-        return default
 
 
 def _get_dpnp_module() -> EagerValue:
@@ -158,12 +119,12 @@ def zeros(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype)) if dtype and _has_attr(dpnp_mod, str(dtype)) else _get_attr(dpnp_mod, "float32", float)
-    zeros_fn = as_callable(_get_attr(dpnp_mod, "zeros"))
+    kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype)) if dtype and has_backend_member(dpnp_mod, str(dtype)) else get_backend_member(dpnp_mod, "float32", float)
+    zeros_fn = ensure_callable(get_backend_member(dpnp_mod, "zeros"))
     try:
-        return as_tensor(zeros_fn(shape, **kwargs))
+        return ensure_eager_tensor(zeros_fn(shape, **kwargs))
     except TypeError:
-        return as_tensor(zeros_fn(shape, dtype=kwargs.get("dtype", float)))
+        return ensure_eager_tensor(zeros_fn(shape, dtype=kwargs.get("dtype", float)))
 
 
 def ones(
@@ -187,12 +148,12 @@ def ones(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype)) if dtype and _has_attr(dpnp_mod, str(dtype)) else _get_attr(dpnp_mod, "float32", float)
-    ones_fn = as_callable(_get_attr(dpnp_mod, "ones"))
+    kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype)) if dtype and has_backend_member(dpnp_mod, str(dtype)) else get_backend_member(dpnp_mod, "float32", float)
+    ones_fn = ensure_callable(get_backend_member(dpnp_mod, "ones"))
     try:
-        return as_tensor(ones_fn(shape, **kwargs))
+        return ensure_eager_tensor(ones_fn(shape, **kwargs))
     except TypeError:
-        return as_tensor(ones_fn(shape, dtype=kwargs.get("dtype", float)))
+        return ensure_eager_tensor(ones_fn(shape, dtype=kwargs.get("dtype", float)))
 
 
 def empty(
@@ -216,12 +177,12 @@ def empty(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype)) if dtype and _has_attr(dpnp_mod, str(dtype)) else _get_attr(dpnp_mod, "float32", float)
-    empty_fn = as_callable(_get_attr(dpnp_mod, "empty"))
+    kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype)) if dtype and has_backend_member(dpnp_mod, str(dtype)) else get_backend_member(dpnp_mod, "float32", float)
+    empty_fn = ensure_callable(get_backend_member(dpnp_mod, "empty"))
     try:
-        return as_tensor(empty_fn(shape, **kwargs))
+        return ensure_eager_tensor(empty_fn(shape, **kwargs))
     except TypeError:
-        return as_tensor(empty_fn(shape, dtype=kwargs.get("dtype", float)))
+        return ensure_eager_tensor(empty_fn(shape, dtype=kwargs.get("dtype", float)))
 
 
 def full(
@@ -247,13 +208,13 @@ def full(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    if dtype is not None and _has_attr(dpnp_mod, str(dtype)):
-        kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype))
-    full_fn = as_callable(_get_attr(dpnp_mod, "full"))
+    if dtype is not None and has_backend_member(dpnp_mod, str(dtype)):
+        kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype))
+    full_fn = ensure_callable(get_backend_member(dpnp_mod, "full"))
     try:
-        return as_tensor(full_fn(shape, fill_value, **kwargs))
+        return ensure_eager_tensor(full_fn(shape, fill_value, **kwargs))
     except TypeError:
-        return as_tensor(full_fn(shape, fill_value, dtype=kwargs.get("dtype", None)))
+        return ensure_eager_tensor(full_fn(shape, fill_value, dtype=kwargs.get("dtype", None)))
 
 
 def array(
@@ -277,13 +238,13 @@ def array(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    if dtype is not None and _has_attr(dpnp_mod, str(dtype)):
-        kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype))
-    array_fn = as_callable(_get_attr(dpnp_mod, "array"))
+    if dtype is not None and has_backend_member(dpnp_mod, str(dtype)):
+        kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype))
+    array_fn = ensure_callable(get_backend_member(dpnp_mod, "array"))
     try:
-        return as_tensor(array_fn(data, **kwargs))
+        return ensure_eager_tensor(array_fn(data, **kwargs))
     except TypeError:
-        return as_tensor(array_fn(data, dtype=kwargs.get("dtype", None)))
+        return ensure_eager_tensor(array_fn(data, dtype=kwargs.get("dtype", None)))
 
 
 def asarray(
@@ -307,13 +268,13 @@ def asarray(
     """
     dpnp_mod = _get_dpnp_module()
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
-    if dtype is not None and _has_attr(dpnp_mod, str(dtype)):
-        kwargs["dtype"] = _get_attr(dpnp_mod, str(dtype))
-    asarray_fn = as_callable(_get_attr(dpnp_mod, "asarray"))
+    if dtype is not None and has_backend_member(dpnp_mod, str(dtype)):
+        kwargs["dtype"] = get_backend_member(dpnp_mod, str(dtype))
+    asarray_fn = ensure_callable(get_backend_member(dpnp_mod, "asarray"))
     try:
-        return as_tensor(asarray_fn(data, **kwargs))
+        return ensure_eager_tensor(asarray_fn(data, **kwargs))
     except TypeError:
-        return as_tensor(asarray_fn(data, dtype=kwargs.get("dtype", None)))
+        return ensure_eager_tensor(asarray_fn(data, dtype=kwargs.get("dtype", None)))
 
 
 def asnumpy(data: EagerValue) -> EagerValue:
@@ -326,16 +287,16 @@ def asnumpy(data: EagerValue) -> EagerValue:
         EagerValue: Host ndarray buffer.
     """
     dpnp_mod = _get_dpnp_module()
-    if _has_attr(dpnp_mod, "asnumpy"):
+    if has_backend_member(dpnp_mod, "asnumpy"):
         try:
-            return as_tensor(as_callable(_get_attr(dpnp_mod, "asnumpy"))(data))
+            return ensure_eager_tensor(ensure_callable(get_backend_member(dpnp_mod, "asnumpy"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-    raw_data: StructuralOperandProtocol = data
-    if isinstance(raw_data, DpnpArrayProtocol) or _has_attr(data, "asnumpy"):
-        return as_tensor(as_callable(_get_attr(data, "asnumpy"))())
+    raw_data: EagerValue = data
+    if isinstance(raw_data, DpnpArrayProtocol) or has_backend_member(data, "asnumpy"):
+        return ensure_eager_tensor(ensure_callable(get_backend_member(data, "asnumpy"))())
 
-    return as_tensor(as_callable(_get_attr(dpnp_mod, "asarray"))(data))
+    return ensure_eager_tensor(ensure_callable(get_backend_member(dpnp_mod, "asarray"))(data))
 
 
 def to_numpy(data: EagerValue) -> EagerValue:
@@ -379,10 +340,10 @@ def get_device(data: EagerValue) -> str:
     Returns:
         str: Device identifier string ('cpu', 'gpu', 'sycl', etc.).
     """
-    if _has_attr(data, "device"):
-        return str(_get_attr(data, "device"))
-    if _has_attr(data, "sycl_device"):
-        return str(_get_attr(data, "sycl_device"))
+    if has_backend_member(data, "device"):
+        return str(get_backend_member(data, "device"))
+    if has_backend_member(data, "sycl_device"):
+        return str(get_backend_member(data, "sycl_device"))
     return "cpu"
 
 
@@ -395,8 +356,8 @@ def get_usm_type(data: EagerValue) -> str | None:
     Returns:
         str | None: USM type ('device', 'shared', 'host') or None.
     """
-    if _has_attr(data, "usm_type"):
-        return str(_get_attr(data, "usm_type"))
+    if has_backend_member(data, "usm_type"):
+        return str(get_backend_member(data, "usm_type"))
     return None
 
 
@@ -409,8 +370,8 @@ def is_sycl_array(data: EagerValue) -> bool:
     Returns:
         bool: True if buffer exhibits DPNP/SYCL attributes, False otherwise.
     """
-    raw_data: StructuralOperandProtocol = data
-    return bool(isinstance(raw_data, DpnpArrayProtocol) or _has_attr(data, "usm_type") or _has_attr(data, "sycl_queue") or _has_attr(data, "sycl_device"))
+    raw_data: EagerValue = data
+    return bool(isinstance(raw_data, DpnpArrayProtocol) or has_backend_member(data, "usm_type") or has_backend_member(data, "sycl_queue") or has_backend_member(data, "sycl_device"))
 
 
 def item(data: EagerValue) -> float:
@@ -422,8 +383,8 @@ def item(data: EagerValue) -> float:
     Returns:
         float: Extracted scalar value.
     """
-    if _has_attr(data, "item"):
-        return float(as_float(as_callable(_get_attr(data, "item"))()))
+    if has_backend_member(data, "item"):
+        return float(ensure_float(ensure_callable(get_backend_member(data, "item"))()))
     dpnp_mod = _get_dpnp_module()
-    arr = as_tensor(as_callable(_get_attr(dpnp_mod, "asarray"))(data))
-    return float(as_float(arr.item()))
+    arr = ensure_eager_tensor(ensure_callable(get_backend_member(dpnp_mod, "asarray"))(data))
+    return float(ensure_float(arr.item()))

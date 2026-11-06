@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
 from ml_switcheroo_compiler.tracing.tracer import TracerTape
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -55,7 +55,7 @@ def test_scaled_dot_product_attention_opdef() -> None:
 
         shape = (1, 1, 1)
 
-    res = as_callable(op.infer_shape)(as_callable(DummyShape)(), None, None, None)
+    res = ensure_callable(op.infer_shape)(ensure_callable(DummyShape)(), None, None, None)
     assert res == (1, 1, 1)
 
 

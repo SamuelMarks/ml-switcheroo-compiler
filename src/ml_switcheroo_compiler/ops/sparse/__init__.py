@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import as_callable, as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+import typing
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_int, ensure_shape
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot as RaggedDot
 
@@ -38,6 +41,20 @@ from .frontend import sparse_to_indicator as sparse_to_indicator
 from .frontend import sparse_transpose as sparse_transpose
 
 
+@typing.runtime_checkable
+class _DenseShapeProtocol(typing.Protocol):
+    """Protocol for sparse tensor objects exposing `dense_shape`."""
+
+    dense_shape: Sequence[int] | None
+
+
+@typing.runtime_checkable
+class _ValueAttrProtocol(typing.Protocol):
+    """Protocol for scalar wrapper objects exposing a `value` attribute."""
+
+    value: TensorOrScalar
+
+
 def _get_dense_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     """Extract dense shape tuple from a tensor or shape structure.
 
@@ -49,12 +66,14 @@ def _get_dense_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     """
     if obj is None:
         return ()
-    for attr in ("dense_shape", "shape", "shape_metadata"):
-        val = _get_attr(obj, attr, None)
-        if val is not None:
-            return tuple(int(d) for d in val)
+    raw_obj: TensorOrScalar | _DenseShapeProtocol = obj
+    if isinstance(raw_obj, _DenseShapeProtocol) and raw_obj.dense_shape is not None:
+        return tuple(int(ensure_int(d)) for d in raw_obj.dense_shape)
+    extracted = extract_shape(obj)
+    if extracted:
+        return tuple(int(ensure_int(d)) for d in extracted)
     if isinstance(obj, (list, tuple)):
-        return tuple(int(d) for d in obj)
+        return tuple(int(ensure_int(d)) for d in obj)
     return ()
 
 
@@ -221,7 +240,7 @@ class SparseReduceSum(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return as_shape(as_callable(_reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return ensure_shape(ensure_callable(_reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseSoftmax")
@@ -264,7 +283,7 @@ class SparseReduceMax(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return as_shape(as_callable(_reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return ensure_shape(ensure_callable(_reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseBincount")
@@ -285,7 +304,7 @@ class SparseBincount(OpDef):
         """
         shape = _get_dense_shape(a)
         batch = shape[0] if shape else 1
-        size = int(as_int(kwargs.get("size", kwargs.get("maxlength", 0))))
+        size = int(ensure_int(kwargs.get("size", kwargs.get("maxlength", 0))))
         return (batch, size) if size > 0 else (batch,)
 
 
@@ -308,7 +327,7 @@ class SparseCrossHashed(OpDef):
         inp_list = inputs if isinstance(inputs, (list, tuple)) else [inputs]
         first_shape = _get_dense_shape(inp_list[0]) if inp_list else ()
         batch = first_shape[0] if first_shape else 1
-        num_buckets = int(as_int(kwargs.get("num_buckets", 1)))
+        num_buckets = int(ensure_int(kwargs.get("num_buckets", 1)))
         return (batch, num_buckets)
 
 
@@ -329,7 +348,7 @@ class SparseExpandDims(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(_get_dense_shape(a))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         if axis < 0:
             axis += len(shape) + 1
         shape.insert(axis, 1)
@@ -352,8 +371,9 @@ class SparseEye(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        r = int(as_int(_get_attr(num_rows, "value", num_rows))) if isinstance(num_rows, int) or _has_attr(num_rows, "value") else 1
-        c = int(as_int(kwargs.get("num_columns", r)))
+        raw_rows: TensorOrScalar | _ValueAttrProtocol = num_rows
+        r = int(ensure_int(raw_rows.value if isinstance(raw_rows, _ValueAttrProtocol) else num_rows)) if isinstance(num_rows, int) or isinstance(raw_rows, _ValueAttrProtocol) else 1
+        c = int(ensure_int(kwargs.get("num_columns", r)))
         return (r, c)
 
 
@@ -493,7 +513,7 @@ class SparseResetShape(OpDef):
         """
         new_shape = kwargs.get("new_shape")
         if new_shape is not None:
-            return tuple(int(d) for d in _get_attr(new_shape, "__iter__")())
+            return ensure_shape(new_shape)
         return _get_dense_shape(sp_input)
 
 
@@ -558,7 +578,7 @@ class SparseSegmentMean(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(as_int(kwargs.get("num_segments", 1)))
+        num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -581,7 +601,7 @@ class SparseSegmentSqrtN(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(as_int(kwargs.get("num_segments", 1)))
+        num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -604,7 +624,7 @@ class SparseSegmentSum(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(as_int(kwargs.get("num_segments", 1)))
+        num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -675,7 +695,7 @@ class SparseTranspose(OpDef):
         shape = _get_dense_shape(sp_input)
         perm = kwargs.get("perm")
         if perm is not None:
-            return tuple(shape[int(p)] for p in _get_attr(perm, "__iter__")())
+            return tuple(shape[int(p)] for p in ensure_shape(perm))
         return tuple(reversed(shape))
 
 
@@ -722,7 +742,7 @@ class SparseConcat(OpDef):
         if not inps:
             return ()
         first_shape = list(_get_dense_shape(inps[0]))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         if axis < 0 and first_shape:
             axis += len(first_shape)
         total_dim = 0
@@ -755,7 +775,7 @@ class SparseSplit(OpDef):
         shape = list(_get_dense_shape(sp_input))
         n_split = num_split if num_split is not None else kwargs.get("num_split", 1)
         n = int(n_split) if isinstance(n_split, int) else 1
-        axis = int(as_int(kwargs.get("axis", 0)))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         if axis < 0 and shape:
             axis += len(shape)
         if shape and len(shape) > axis:

@@ -6,7 +6,7 @@ import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 def test_common_ast_visitor_mixin() -> None:
     """Verify CommonASTVisitor delegation and fallback prefix."""
     visitor_self = CommonASTVisitor()
-    assert as_tensor(visitor_self.generator) is as_tensor(visitor_self)
+    assert ensure_eager_tensor(visitor_self.generator) is ensure_eager_tensor(visitor_self)
     assert visitor_self.get_fallback_prefix() == ""
 
     mock_gen = MagicMock()

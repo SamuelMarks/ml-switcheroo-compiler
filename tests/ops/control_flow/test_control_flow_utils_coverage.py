@@ -10,13 +10,12 @@ from ml_switcheroo_ir import LogicalGraph, NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _del_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import (
     _get_tensor_ids,
     _wrap_proxy_inputs,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, has_backend_member
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,10 +44,10 @@ def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     t2 = Tensor(np.array([3.0, 4.0], dtype=np.float32), cfg)
 
     nested_args = ((t1, t2), "non_tensor")
-    input_ids, proxy_args = as_callable(_wrap_proxy_inputs)(nested_args, graph)
+    input_ids, proxy_args = ensure_callable(_wrap_proxy_inputs)(nested_args, graph)
 
     assert len(input_ids) == 2
-    assert isinstance(as_tensor(proxy_args[0]), tuple)
+    assert isinstance(ensure_eager_tensor(proxy_args[0]), tuple)
     assert proxy_args[1] == "non_tensor"
 
 
@@ -56,8 +55,8 @@ def test_control_flow_utils_wrap_proxy_inputs_no_input_specs() -> None:
     """Cover _wrap_proxy_inputs branch when subgraph does not have input_specs."""
     graph = LogicalGraph(name="test_graph_no_specs")
     graph.nodes = NodeDict({})
-    if _has_attr(graph, "input_specs"):
-        _del_attr(graph, "input_specs")
+    if has_backend_member(graph, "input_specs"):
+        del ensure_mutable(graph).input_specs
 
     cfg = TensorConfig(shape=(2,), dtype=DType.Float32, device=Device("cpu"))
     t1 = Tensor(np.array([1.0, 2.0], dtype=np.float32), cfg)
@@ -73,25 +72,25 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Nested tensor unwrapping (cur.data is a Tensor)
     inner_payload = _PayloadWithId("inner_id_42")
-    inner_t = as_callable(Tensor)(inner_payload, cfg)
+    inner_t = ensure_callable(Tensor)(inner_payload, cfg)
     outer_t = Tensor(inner_t, cfg)
     ids_nested = _get_tensor_ids(outer_t)
     assert ids_nested == ["inner_id_42"]
 
     # Tensor where cur has no data.id but has id on Tensor
     t_no_id_payload = Tensor(np.array([1.0]), cfg)
-    _set_attr(t_no_id_payload, "id", "tensor_attr_id")
+    ensure_mutable(t_no_id_payload).id = ensure_eager_tensor("tensor_attr_id")
     assert _get_tensor_ids(t_no_id_payload) == ["tensor_attr_id"]
 
     # Tensor where cur has neither data.id nor id (generates uuid)
-    _del_attr(t_no_id_payload, "id")
+    del ensure_mutable(t_no_id_payload).id
     ids_uuid = _get_tensor_ids(t_no_id_payload)
     assert len(ids_uuid) == 1
     assert isinstance(ids_uuid[0], str)
 
     # list/tuple of tensors
-    t_a = as_callable(Tensor)(as_callable(_PayloadWithId)("a"), cfg)
-    t_b = as_callable(Tensor)(as_callable(_PayloadWithId)("b"), cfg)
+    t_a = ensure_callable(Tensor)(ensure_callable(_PayloadWithId)("a"), cfg)
+    t_b = ensure_callable(Tensor)(ensure_callable(_PayloadWithId)("b"), cfg)
     ids_list = _get_tensor_ids([t_a, (t_b,)])
     assert ids_list == ["a", "b"]
 

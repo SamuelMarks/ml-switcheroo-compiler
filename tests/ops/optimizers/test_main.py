@@ -29,7 +29,7 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     rmsprop_update,
     sgd_update,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -60,9 +60,9 @@ def test_sgd(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(sgd_update)(p, g, as_callable(SGDConfig)(lr=0.1))
+    (new_p, state) = ensure_callable(sgd_update)(p, g, ensure_callable(SGDConfig)(lr=0.1))
     assert new_p is not None
-    (new_p2, state2) = as_callable(sgd_update)(p, g, as_callable(SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
+    (new_p2, state2) = ensure_callable(sgd_update)(p, g, ensure_callable(SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
     assert new_p2 is not None
 
 
@@ -76,7 +76,7 @@ def test_adam(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adam_update)(p, g, as_callable(AdamHyperparams)(lr=0.1))
+    (new_p, state) = ensure_callable(adam_update)(p, g, ensure_callable(AdamHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -90,7 +90,7 @@ def test_adamw(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adamw_update)(p, g, as_callable(AdamWHyperparams)(lr=0.1))
+    (new_p, state) = ensure_callable(adamw_update)(p, g, ensure_callable(AdamWHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -104,7 +104,7 @@ def test_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adagrad_update)(p, g, as_callable(AdagradConfig)(lr=0.1))
+    (new_p, state) = ensure_callable(adagrad_update)(p, g, ensure_callable(AdagradConfig)(lr=0.1))
     assert new_p is not None
 
 
@@ -118,9 +118,9 @@ def test_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(rmsprop_update)(p, g, as_callable(RMSPropHyperparams)(lr=0.1))
+    (new_p, state) = ensure_callable(rmsprop_update)(p, g, ensure_callable(RMSPropHyperparams)(lr=0.1))
     assert new_p is not None
-    (new_p2, state2) = as_callable(rmsprop_update)(p, g, as_callable(RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
+    (new_p2, state2) = ensure_callable(rmsprop_update)(p, g, ensure_callable(RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
     assert new_p2 is not None
 
 
@@ -134,7 +134,7 @@ def test_adadelta(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adadelta_update)(p, g, as_callable(AdadeltaConfig)(lr=1.0))
+    (new_p, state) = ensure_callable(adadelta_update)(p, g, ensure_callable(AdadeltaConfig)(lr=1.0))
     assert new_p is not None
 
 
@@ -148,7 +148,7 @@ def test_adamax(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adamax_update)(p, g, as_callable(AdamaxHyperparams)(lr=0.1))
+    (new_p, state) = ensure_callable(adamax_update)(p, g, ensure_callable(AdamaxHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -162,7 +162,7 @@ def test_lion(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(lion_update)(p, g, as_callable(LionConfig)(lr=0.1))
+    (new_p, state) = ensure_callable(lion_update)(p, g, ensure_callable(LionConfig)(lr=0.1))
     assert new_p is not None
 
 
@@ -176,7 +176,7 @@ def test_adafactor(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(adafactor_update)(p, g, lr=0.1)
+    (new_p, state) = ensure_callable(adafactor_update)(p, g, lr=0.1)
     assert new_p is not None
 
 
@@ -190,7 +190,7 @@ def test_muon(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = as_callable(muon_update)(p, g, lr=0.1)
+    (new_p, state) = ensure_callable(muon_update)(p, g, lr=0.1)
     assert new_p is not None
 
 
@@ -203,7 +203,7 @@ def test_apply_adam(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adam
 
-    (p_new, m_new, v_new) = as_callable(apply_adam)(p, p, p, g, 0.1)
+    (p_new, m_new, v_new) = ensure_callable(apply_adam)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -216,7 +216,7 @@ def test_apply_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adagrad
 
-    (p_new, a_new) = as_callable(apply_adagrad)(p, p, g, 0.1)
+    (p_new, a_new) = ensure_callable(apply_adagrad)(p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -229,7 +229,7 @@ def test_apply_ftrl(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_ftrl
 
-    (p_new, a_new, l_new) = as_callable(apply_ftrl)(p, p, p, g, 0.1)
+    (p_new, a_new, l_new) = ensure_callable(apply_ftrl)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -242,7 +242,7 @@ def test_apply_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_rmsprop
 
-    (p_new, m_new, mom_new) = as_callable(apply_rmsprop)(p, p, p, g, 0.1)
+    (p_new, m_new, mom_new) = ensure_callable(apply_rmsprop)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -267,9 +267,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_callable(apply_adam)(a, a, a, b, 0.1)
+        return ensure_callable(apply_adam)(a, a, a, b, 0.1)
 
-    out1 = as_callable(_trace_function)(run_adam, (p, g), "adam")
+    out1 = ensure_callable(_trace_function)(run_adam, (p, g), "adam")
     assert out1 is not None
 
     def run_adagrad(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -279,9 +279,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_callable(apply_adagrad)(a, a, b, 0.1)
+        return ensure_callable(apply_adagrad)(a, a, b, 0.1)
 
-    out2 = as_callable(_trace_function)(run_adagrad, (p, g), "adagrad")
+    out2 = ensure_callable(_trace_function)(run_adagrad, (p, g), "adagrad")
     assert out2 is not None
 
     def run_ftrl(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -291,9 +291,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_callable(apply_ftrl)(a, a, a, b, 0.1)
+        return ensure_callable(apply_ftrl)(a, a, a, b, 0.1)
 
-    out3 = as_callable(_trace_function)(run_ftrl, (p, g), "ftrl")
+    out3 = ensure_callable(_trace_function)(run_ftrl, (p, g), "ftrl")
     assert out3 is not None
 
     def run_rmsprop(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -303,7 +303,7 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_callable(apply_rmsprop)(a, a, a, b, 0.1)
+        return ensure_callable(apply_rmsprop)(a, a, a, b, 0.1)
 
-    out4 = as_callable(_trace_function)(run_rmsprop, (p, g), "rmsprop")
+    out4 = ensure_callable(_trace_function)(run_rmsprop, (p, g), "rmsprop")
     assert out4 is not None

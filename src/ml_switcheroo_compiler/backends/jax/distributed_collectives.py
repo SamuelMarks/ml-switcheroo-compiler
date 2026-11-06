@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 
 
 def jax_all_reduce(
@@ -26,12 +26,13 @@ def jax_all_reduce(
     try:
         import jax.lax as lax
 
+        lax_mod = ensure_mod(lax)
         if op.upper() in ("SUM", "ADD"):
-            return as_tensor(_get_attr(lax, "psum")(tensor, axis_name=axis_name))
+            return ensure_eager_tensor(lax_mod.psum(tensor, axis_name=axis_name))
         elif op.upper() == "MAX":
-            return as_tensor(_get_attr(lax, "pmax")(tensor, axis_name=axis_name))
+            return ensure_eager_tensor(lax_mod.pmax(tensor, axis_name=axis_name))
         elif op.upper() == "MIN":
-            return as_tensor(_get_attr(lax, "pmin")(tensor, axis_name=axis_name))
+            return ensure_eager_tensor(lax_mod.pmin(tensor, axis_name=axis_name))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -56,7 +57,7 @@ def jax_all_gather(
     try:
         import jax.lax as lax
 
-        return as_tensor(_get_attr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
+        return ensure_eager_tensor(ensure_mod(lax).all_gather(tensor, axis_name=axis_name, axis=axis))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

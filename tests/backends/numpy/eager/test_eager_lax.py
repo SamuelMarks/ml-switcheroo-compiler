@@ -8,8 +8,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -34,19 +33,19 @@ def test_numpy_lax_mocks() -> None:
             Returns:
                 EagerValue: The evaluated or processed output.
             """
-            return as_callable(numpy_eager_registry.get)(op)(np, *args, **kwargs)
+            return ensure_callable(numpy_eager_registry.get)(op)(np, *args, **kwargs)
 
-        (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([1, 2]))
-        assert as_callable(np.array_equal)(a, as_callable(np.array)([2]))
-        assert as_callable(np.array_equal)(b, as_callable(np.array)([1]))
-        (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([]))
-        assert as_tensor(_get_attr(a, "size")) == 0
-        assert as_tensor(_get_attr(b, "size")) == 0
+        (a, b) = ensure_callable(execute)("ApproxMaxK", ensure_callable(np.array)([1, 2]))
+        assert ensure_callable(np.array_equal)(a, ensure_callable(np.array)([2]))
+        assert ensure_callable(np.array_equal)(b, ensure_callable(np.array)([1]))
+        (a, b) = ensure_callable(execute)("ApproxMaxK", ensure_callable(np.array)([]))
+        assert ensure_eager_tensor(ensure_eager_tensor(a).size) == 0
+        assert ensure_eager_tensor(ensure_eager_tensor(b).size) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
-        assert as_callable(np.array_equal)(c, as_callable(np.array)([3]))
+        assert ensure_callable(np.array_equal)(c, ensure_callable(np.array)([3]))
         c = execute("ForiLoop", None)
-        assert as_callable(np.array_equal)(c, as_callable(np.array)(0))
+        assert ensure_callable(np.array_equal)(c, ensure_callable(np.array)(0))
         d = execute("IgammaGradA", np.array([4]))
-        assert as_callable(np.array_equal)(d, as_callable(np.array)([4]))
+        assert ensure_callable(np.array_equal)(d, ensure_callable(np.array)([4]))
         d = execute("IgammaGradA")
-        assert as_callable(np.array_equal)(d, as_callable(np.array)(0))
+        assert ensure_callable(np.array_equal)(d, ensure_callable(np.array)(0))

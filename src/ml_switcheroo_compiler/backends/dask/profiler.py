@@ -5,9 +5,10 @@ from __future__ import annotations
 import resource
 import sys
 import time
+import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -19,6 +20,19 @@ try:
     da = _da
 except ImportError:
     da = None
+
+
+@typing.runtime_checkable
+class _ComputableDaskProtocol(typing.Protocol):
+    """Protocol for lazy Dask arrays exposing `.compute()`."""
+
+    def compute(self) -> EagerValue:
+        """Compute lazy Dask task graph.
+
+        Returns:
+            EagerValue: Concrete array result.
+        """
+        ...
 
 
 def _get_process_memory_mb() -> float:
@@ -50,9 +64,10 @@ def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, 
     if isinstance(result, (list, tuple)):
         computed = [_sync_dask_result(item) for item in result]
         return type(result)(computed)
-    if _has_attr(result, "compute") and callable(_get_attr(result, "compute")):
+    raw_res: EagerValue = result
+    if isinstance(raw_res, _ComputableDaskProtocol) and callable(raw_res.compute):
         try:
-            return as_tensor(as_callable(_get_attr(result, "compute"))())
+            return ensure_eager_tensor(raw_res.compute())
         except Exception:
             _typed_ret_1: EagerValue = result
             return _typed_ret_1
@@ -81,13 +96,14 @@ class DaskProfiler:
 
         da_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if _has_attr(val, "compute"):
+            raw_val: EagerValue = val
+            if isinstance(raw_val, _ComputableDaskProtocol):
                 da_inputs_dict[k] = val
             else:
                 da_inputs_dict[k] = da.asarray(val, dtype=float)
 
-        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if graph.nodes else []
+        input_keys = [n.id for n in sorted_nodes if n.op_type == "Input"]
         if input_keys and all(k in da_inputs_dict for k in input_keys):
             return [da_inputs_dict[k] for k in input_keys]
         return list(da_inputs_dict.values())
@@ -149,7 +165,7 @@ class DaskProfiler:
             }
 
         da_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:

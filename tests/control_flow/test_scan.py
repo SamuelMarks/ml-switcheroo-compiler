@@ -10,12 +10,11 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import scan
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -41,12 +40,12 @@ def test_scan_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            y = carry + _get_attr(x, "data")
+            y = carry + ensure_eager_tensor(x).data
             return (y, Tensor(y, TensorConfig((), DType.Int32, device)))
 
-        (carry, ys) = as_callable(scan)(f, 0, xs)
+        (carry, ys) = ensure_callable(scan)(f, 0, xs)
         assert carry == 6
-        assert as_callable(np.array_equal)(ys.data, as_callable(np.array)([1, 3, 6]))
+        assert ensure_callable(np.array_equal)(ys.data, ensure_callable(np.array)([1, 3, 6]))
 
 
 def test_scan_trace() -> None:
@@ -72,7 +71,7 @@ def test_scan_trace() -> None:
             return (carry, x)
 
         global_tracing_state.start_tracing()
-        (_carry, ys) = as_callable(scan)(f, init, xs)
+        (_carry, ys) = ensure_callable(scan)(f, init, xs)
         assert ys.dtype == DType.Int32
         global_tracing_state.stop_tracing()
 
@@ -99,6 +98,6 @@ def test_scan_eager_ndarray() -> None:
             """
             return (carry, Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device)))
 
-        (carry_out, ys_out) = as_callable(scan)(f, 0, xs)
-        assert isinstance(as_tensor(ys_out), Tensor)
-        assert as_callable(np.array_equal)(ys_out.data, as_callable(np.array)([[1, 2], [1, 2], [1, 2]]))
+        (carry_out, ys_out) = ensure_callable(scan)(f, 0, xs)
+        assert isinstance(ensure_eager_tensor(ys_out), Tensor)
+        assert ensure_callable(np.array_equal)(ys_out.data, ensure_callable(np.array)([[1, 2], [1, 2], [1, 2]]))

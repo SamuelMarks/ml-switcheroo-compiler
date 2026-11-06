@@ -6,7 +6,7 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.signal.common_ops import _calculate_padding, _emit_signal_node
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,5 +19,5 @@ def test_signal_common_ops() -> None:
 
     with patch("ml_switcheroo_compiler.ops.signal.common_ops._emit_linalg_node", return_value="mock_node") as mock_emit:
         res = _emit_signal_node("Convolve2D", [], {}, (3, 3), "float32")
-        assert as_tensor(res) == as_tensor("mock_node")
+        assert ensure_eager_tensor(res) == ensure_eager_tensor("mock_node")
         mock_emit.assert_called_once_with("Convolve2D", [], {}, [(3, 3)], ["float32"])

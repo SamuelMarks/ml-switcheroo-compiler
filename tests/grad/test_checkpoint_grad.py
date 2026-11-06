@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,7 +28,7 @@ def test_checkpoint_grad() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (as_tensor(x) * as_tensor(x)) * as_tensor(x)
+        return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
 
     cp_fun = checkpoint(my_fun)
 
@@ -40,11 +39,11 @@ def test_checkpoint_grad() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted_std = as_callable(jit)(vg_std)
-    jitted_cp = as_callable(jit)(vg_cp)
+    jitted_std = ensure_callable(jit)(vg_std)
+    jitted_cp = ensure_callable(jit)(vg_cp)
 
     v1, g1 = jitted_std(x)
     v2, g2 = jitted_cp(x)
 
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(v1, "numpy")))(), as_callable(as_tensor(_get_attr(v2, "numpy")))())
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(g1, "numpy")))(), as_callable(as_tensor(_get_attr(g2, "numpy")))())
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(v1).numpy))(), ensure_callable(ensure_eager_tensor(ensure_eager_tensor(v2).numpy))())
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(g1).numpy))(), ensure_callable(ensure_eager_tensor(ensure_eager_tensor(g2).numpy))())

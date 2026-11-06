@@ -5,19 +5,21 @@ from __future__ import annotations
 import builtins  # noqa: F401
 import typing  # noqa: F401
 
-from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     ShapeProtocol,
-    StructuralOperandProtocol,
-    as_callable,
-    as_int,
-    as_shape,
-    as_tensor,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_shape,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendModuleProtocol,
+    get_backend_member,
+    has_backend_member,
+)
 
 from .math_special import _dispatch_special
 
@@ -34,8 +36,8 @@ def _deg2rad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "deg2rad", None)
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "deg2rad", None)
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Degrees")
@@ -50,8 +52,8 @@ def _degrees(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "degrees", _get_attr(backend_module, "rad2deg", None))
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "degrees", get_backend_member(backend_module, "rad2deg", None))
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Rad2Deg")
@@ -66,8 +68,8 @@ def _rad2deg(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "rad2deg", _get_attr(backend_module, "degrees", None))
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "rad2deg", get_backend_member(backend_module, "degrees", None))
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Radians")
@@ -82,8 +84,8 @@ def _radians(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "radians", _get_attr(backend_module, "deg2rad", None))
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "radians", get_backend_member(backend_module, "deg2rad", None))
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Cbrt")
@@ -99,9 +101,9 @@ def _cbrt(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "cbrt", None)
+    func = get_backend_member(backend_module, "cbrt", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     x = args[0]
     return mod.sign(x) * mod.power(mod.abs(x), 1.0 / 3.0)
 
@@ -119,10 +121,10 @@ def _fix(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "fix", _get_attr(backend_module, "trunc", None))
+    func = get_backend_member(backend_module, "fix", get_backend_member(backend_module, "trunc", None))
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
-    x = as_tensor(args[0])
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
+    x = ensure_eager_tensor(args[0])
     return mod.where(x >= 0, mod.floor(x), mod.ceil(x))
 
 
@@ -138,10 +140,10 @@ def _hypot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "hypot", None)
+    func = get_backend_member(backend_module, "hypot", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
-    (x, y) = (as_tensor(args[0]), as_tensor(args[1]))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
+    (x, y) = (ensure_eager_tensor(args[0]), ensure_eager_tensor(args[1]))
     return backend_module.sqrt(x**2 + y**2)
 
 
@@ -157,8 +159,8 @@ def _i0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "i0", None)
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "i0", None)
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Imag")
@@ -173,8 +175,8 @@ def _imag(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "imag", None)
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "imag", None)
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Lcm")
@@ -189,9 +191,9 @@ def _lcm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "lcm", _get_attr(backend_module, "least_common_multiple", None))
+    func = get_backend_member(backend_module, "lcm", get_backend_member(backend_module, "least_common_multiple", None))
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).lcm(args[0], args[1])
 
 
@@ -207,9 +209,9 @@ def _nextafter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "nextafter", None)
+    func = get_backend_member(backend_module, "nextafter", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).nextafter(args[0], args[1])
 
 
@@ -225,9 +227,9 @@ def _real(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "real", None)
+    func = get_backend_member(backend_module, "real", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).real(args[0])
 
 
@@ -243,9 +245,9 @@ def _spacing(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "spacing", None)
+    func = get_backend_member(backend_module, "spacing", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).spacing(args[0])
 
 
@@ -261,9 +263,9 @@ def _unwrap(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "unwrap", None)
+    func = get_backend_member(backend_module, "unwrap", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unwrap(args[0], **kwargs)
 
 
@@ -282,8 +284,8 @@ def _beta(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     mod = backend_module
     kwargs.pop("shape", None)
     kwargs.pop("dtype", None)
-    if _has_attr(backend_module, "random") and _has_attr(mod.random, "beta"):
-        return mod.random.beta(_get_attr(args[1], "data", args[1]), _get_attr(args[2], "data", args[2]))
+    if has_backend_member(backend_module, "random") and has_backend_member(mod.random, "beta"):
+        return mod.random.beta(get_backend_member(args[1], "data", args[1]), get_backend_member(args[2], "data", args[2]))
     return _dispatch_special("Beta", "beta", backend_module, *args, **kwargs)
 
 
@@ -408,7 +410,7 @@ def _associative_scan(backend_module: BackendModuleProtocol, *args: EagerValue, 
             EagerValue: Result.
     """
     mod = backend_module
-    fn = as_callable(args[0])
+    fn = ensure_callable(args[0])
     elems = args[1]
     axis = kwargs.get("axis", 0)
     elems_arr = mod.array(elems)
@@ -436,7 +438,7 @@ def _atleast_1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return backend_module.atleast_1d(*args) if _has_attr(backend_module, "atleast_1d") else args[0]
+    return backend_module.atleast_1d(*args) if has_backend_member(backend_module, "atleast_1d") else args[0]
 
 
 @global_eager_registry.register("Atleast2d")
@@ -451,7 +453,7 @@ def _atleast_2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return backend_module.atleast_2d(*args) if _has_attr(backend_module, "atleast_2d") else args[0]
+    return backend_module.atleast_2d(*args) if has_backend_member(backend_module, "atleast_2d") else args[0]
 
 
 @global_eager_registry.register("Atleast3d")
@@ -466,7 +468,7 @@ def _atleast_3d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return backend_module.atleast_3d(*args) if _has_attr(backend_module, "atleast_3d") else args[0]
+    return backend_module.atleast_3d(*args) if has_backend_member(backend_module, "atleast_3d") else args[0]
 
 
 @global_eager_registry.register("Adjoint")
@@ -482,11 +484,11 @@ def _adjoint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "adjoint", None)
+    func = get_backend_member(backend_module, "adjoint", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     x = args[0]
-    if _has_attr(backend_module, "conj") and _has_attr(backend_module, "transpose"):
+    if has_backend_member(backend_module, "conj") and has_backend_member(backend_module, "transpose"):
         return mod.conj(mod.transpose(x))
     x_np = mod.asarray(x)
     fallback_mod = _resolve_eager_mod(backend_module)
@@ -506,9 +508,9 @@ def _bincount(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "bincount", None)
+    func = get_backend_member(backend_module, "bincount", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     x = args[0]
     weights = kwargs.get("weights", None)
     minlength = kwargs.get("minlength", 0)
@@ -528,9 +530,9 @@ def _cross(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "cross", None)
+    func = get_backend_member(backend_module, "cross", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return mod.cross(mod.asarray(args[0]), mod.asarray(args[1]), **kwargs)
 
 
@@ -547,9 +549,9 @@ def _inner(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "inner", None)
+    func = get_backend_member(backend_module, "inner", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     (a, b) = (args[0], args[1])
     return mod.inner(mod.asarray(a), mod.asarray(b))
 
@@ -597,7 +599,7 @@ def _hardsilu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             EagerValue: Result.
     """
     mod = backend_module
-    x = as_tensor(args[0])
+    x = ensure_eager_tensor(args[0])
     return x * mod.clip(x + 3, 0, 6) / 6
 
 
@@ -674,7 +676,7 @@ def _outfeed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
             EagerValue: Result.
     """
     mod = backend_module
-    if _has_attr(backend_module, "lax") and _has_attr(mod.lax, "outfeed"):
+    if has_backend_member(backend_module, "lax") and has_backend_member(mod.lax, "outfeed"):
         return mod.lax.outfeed(*args, **kwargs)
     return args[0] if args else None
 
@@ -723,9 +725,9 @@ def _squareplus(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
             EagerValue: Result.
     """
     mod = backend_module
-    x = as_tensor(args[0])
+    x = ensure_eager_tensor(args[0])
     b = kwargs.get("b", 4.0)
-    return 0.5 * (x + mod.sqrt(x**2 + as_tensor(b)))
+    return 0.5 * (x + mod.sqrt(x**2 + ensure_eager_tensor(b)))
 
 
 @global_eager_registry.register("Trapezoid")
@@ -741,7 +743,7 @@ def _trapezoid(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             EagerValue: Result.
     """
     mod = backend_module
-    if _has_attr(backend_module, "trapezoid"):
+    if has_backend_member(backend_module, "trapezoid"):
         return mod.trapezoid(*args, **kwargs)
     return mod.trapz(*args, **kwargs)
 
@@ -776,20 +778,20 @@ def _indexindim(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Raises:
         RuntimeError: An exception.
     """
-    if not _has_attr(backend_module, "array"):
+    if not has_backend_member(backend_module, "array"):
         raise RuntimeError("Expected numpy-like backend")
     x = args[0]
     index = args[1] if len(args) > 1 else kwargs.get("index")
-    axis = int(as_int(kwargs.get("axis", 0)))
+    axis = int(ensure_int(kwargs.get("axis", 0)))
     keepdims = kwargs.get("keepdims", False)
-    raw_x: StructuralOperandProtocol = x
-    x_shape = as_shape(raw_x.shape) if isinstance(raw_x, ShapeProtocol) else ()
+    raw_x: EagerValue = x
+    x_shape = ensure_shape(raw_x.shape) if isinstance(raw_x, ShapeProtocol) else ()
     slices: list[EagerValue] = [slice(None)] * len(x_shape)
     if keepdims and isinstance(index, int):
         slices[axis] = slice(index, index + 1)
     else:
         slices[axis] = index
-    return as_tensor(x)[tuple(slices)]
+    return ensure_eager_tensor(x)[tuple(slices)]
 
 
 @global_eager_registry.register("Ppermute")
@@ -805,7 +807,7 @@ def _ppermute(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             EagerValue: Result.
     """
     mod = backend_module
-    if _has_attr(backend_module, "lax") and _has_attr(mod.lax, "ppermute"):
+    if has_backend_member(backend_module, "lax") and has_backend_member(mod.lax, "ppermute"):
         return mod.lax.ppermute(*args, **kwargs)
     return args[0] if args else None
 
@@ -823,9 +825,9 @@ def _kronecker(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "kron", _get_attr(backend_module, "kronecker", None))
+    func = get_backend_member(backend_module, "kron", get_backend_member(backend_module, "kronecker", None))
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return mod.kron(mod.asarray(args[0]), mod.asarray(args[1]))
 
 
@@ -842,9 +844,9 @@ def _outer(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
             EagerValue: Result.
     """
     mod = backend_module
-    func = _get_attr(backend_module, "outer", None)
+    func = get_backend_member(backend_module, "outer", None)
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return mod.outer(mod.asarray(args[0]), mod.asarray(args[1]), **kwargs)
 
 
@@ -860,8 +862,8 @@ def _fabs(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "fabs", _get_attr(backend_module, "abs", None))
-    return as_callable(func)(*args, **kwargs) if func else None
+    func = get_backend_member(backend_module, "fabs", get_backend_member(backend_module, "abs", None))
+    return ensure_callable(func)(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Gcd")
@@ -876,12 +878,12 @@ def _gcd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "gcd", _get_attr(backend_module, "greatest_common_divisor", None))
+    func = get_backend_member(backend_module, "gcd", get_backend_member(backend_module, "greatest_common_divisor", None))
     if func:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     import math
 
-    return as_tensor(as_callable(math.gcd)(*args, **kwargs))
+    return ensure_eager_tensor(ensure_callable(math.gcd)(*args, **kwargs))
 
 
 @global_eager_registry.register("Ball")
@@ -896,9 +898,9 @@ def _np_ball(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "ball", None)
+    func = get_backend_member(backend_module, "ball", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.zeros(kwargs.get("shape", ()), dtype=mod.float32)
 
@@ -930,9 +932,9 @@ def _np_gcd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "gcd", None)
+    func = get_backend_member(backend_module, "gcd", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).gcd(args[0], args[1])
 
 
@@ -948,9 +950,9 @@ def _np_inner(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "inner", None)
+    func = get_backend_member(backend_module, "inner", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).inner(args[0], args[1])
 
 
@@ -966,9 +968,9 @@ def _np_r(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "r", None)
+    func = get_backend_member(backend_module, "r", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).r_[args[0]]
 
 
@@ -984,9 +986,9 @@ def _np_switch(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "switch", None)
+    func = get_backend_member(backend_module, "switch", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return args[1] if args[0] else args[2]
 
 
@@ -1002,9 +1004,9 @@ def _np_t(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "t", None)
+    func = get_backend_member(backend_module, "t", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).transpose(args[0])
 
 
@@ -1020,11 +1022,11 @@ def _np_trapezoid(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "trapezoid", _get_attr(backend_module, "trapz", None))
+    func = get_backend_member(backend_module, "trapezoid", get_backend_member(backend_module, "trapz", None))
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
-    trapz_fn = as_callable(_get_attr(mod, "trapezoid", _get_attr(mod, "trapz", None)))
+    trapz_fn = ensure_callable(get_backend_member(mod, "trapezoid", get_backend_member(mod, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
@@ -1040,11 +1042,11 @@ def _np_trapezoidalintegral(backend_module: BackendModuleProtocol, *args: EagerV
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "trapezoidalintegral", _get_attr(backend_module, "trapezoid", _get_attr(backend_module, "trapz", None)))
+    func = get_backend_member(backend_module, "trapezoidalintegral", get_backend_member(backend_module, "trapezoid", get_backend_member(backend_module, "trapz", None)))
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
-    trapz_fn = as_callable(_get_attr(mod, "trapezoid", _get_attr(mod, "trapz", None)))
+    trapz_fn = ensure_callable(get_backend_member(mod, "trapezoid", get_backend_member(mod, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
@@ -1060,9 +1062,9 @@ def _np_variance(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "variance", None)
+    func = get_backend_member(backend_module, "variance", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).var(*args, **kwargs)
 
 
@@ -1078,9 +1080,9 @@ def _np_vectorize(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "vectorize", None)
+    func = get_backend_member(backend_module, "vectorize", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vectorize(*args, **kwargs)
 
 
@@ -1096,9 +1098,9 @@ def _np_welch(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "welch", None)
+    func = get_backend_member(backend_module, "welch", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fft.rfft(args[0])
 
 
@@ -1114,9 +1116,9 @@ def _np_wrapkeydata(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "wrapkeydata", None)
+    func = get_backend_member(backend_module, "wrapkeydata", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     return args[0]
 
 
@@ -1132,9 +1134,9 @@ def _np_zerofraction(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "zerofraction", None)
+    func = get_backend_member(backend_module, "zerofraction", None)
     if func is not None:
-        return as_tensor(as_callable(func)(*args, **kwargs))
+        return ensure_eager_tensor(ensure_callable(func)(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.sum(args[0] == 0) / mod.size(args[0])
 

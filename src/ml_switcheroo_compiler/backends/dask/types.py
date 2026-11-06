@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.protocols import ensure_mod
 
 da: ModuleType | None
 try:
@@ -13,6 +15,13 @@ try:
     da = _da
 except ImportError:
     da = None
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for dtype objects exposing `.value`."""
+
+    value: EagerValue
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -25,7 +34,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
         EagerValue: The zeros tensor.
     """
-    return as_tensor(as_callable(_get_attr(da, "zeros"))(shape, chunks="auto"))
+    return ensure_eager_tensor(ensure_mod(da).zeros(shape, chunks="auto"))
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
@@ -40,8 +49,10 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         EagerValue: The array tensor.
     """
     if dtype is not None:
-        return as_tensor(as_callable(_get_attr(da, "array"))(data, dtype=_get_attr(dtype, "value", dtype)))
-    return as_tensor(as_callable(_get_attr(da, "array"))(data))
+        raw_dt: EagerValue = dtype
+        dt_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else dtype
+        return ensure_eager_tensor(ensure_mod(da).array(data, dtype=dt_val))
+    return ensure_eager_tensor(ensure_mod(da).array(data))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -54,7 +65,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return as_tensor(as_callable(_get_attr(da, "asarray"))(data))
+    return ensure_eager_tensor(ensure_mod(da).asarray(data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -67,6 +78,6 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    arr = as_callable(_get_attr(da, "asarray"))(data)
-    comp = as_callable(_get_attr(arr, "compute"))()
-    return float(as_float(as_callable(_get_attr(comp, "item"))()))
+    arr = ensure_mod(da).asarray(data)
+    comp = arr.compute()
+    return float(ensure_float(comp.item()))

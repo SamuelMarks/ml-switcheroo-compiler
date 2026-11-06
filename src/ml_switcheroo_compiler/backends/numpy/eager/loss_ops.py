@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float, ensure_int, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: EagerValue, probs: EagerValue, num_classes: int, blank: int) -> None:
@@ -21,14 +20,17 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: Eage
         blank (int): Blank token index.
         num_classes (int): Number of classes.
     """
+    aug_t = ensure_eager_tensor(augmented)
+    probs_t = ensure_eager_tensor(probs)
+    alpha_t = ensure_eager_tensor(alpha)
     for s in range(S):
-        prob_term = _get_attr(probs, "__getitem__")((t, _get_attr(augmented, "__getitem__")(s) % num_classes))
-        sum_term = _get_attr(alpha, "__getitem__")((t - 1, s))
+        prob_term = probs_t[t, aug_t[s] % num_classes]
+        sum_term = alpha_t[t - 1, s]
         if s > 0:
-            sum_term += _get_attr(alpha, "__getitem__")((t - 1, s - 1))
-        if s >= 2 and _get_attr(augmented, "__getitem__")(s) != blank and _get_attr(augmented, "__getitem__")(s) != _get_attr(augmented, "__getitem__")(s - 2):
-            sum_term += _get_attr(alpha, "__getitem__")((t - 1, s - 2))
-        as_tensor(alpha)[t, s] = sum_term * prob_term
+            sum_term += alpha_t[t - 1, s - 1]
+        if s >= 2 and aug_t[s] != blank and aug_t[s] != aug_t[s - 2]:
+            sum_term += alpha_t[t - 1, s - 2]
+        alpha_t[t, s] = sum_term * prob_term
 
 
 def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int) -> float:
@@ -45,16 +47,17 @@ def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int)
     """
     blank = 0
     augmented = np.zeros(2 * L + 1, dtype=np.int32)
-    if _get_attr(b_labels, "__len__")() > 0:
+    if len(ensure_eager_tensor(b_labels)) > 0:
         augmented[1::2] = np.asarray(b_labels, dtype=np.int32)
     S = len(augmented)
 
-    num_classes = _get_attr(probs, "shape")[-1]
+    num_classes = ensure_int(get_backend_member(probs, "shape")[-1])
     alpha = np.zeros((T, S))
+    probs_t = ensure_eager_tensor(probs)
     if T > 0:
-        alpha[0, 0] = _get_attr(probs, "__getitem__")((0, blank % num_classes))
+        alpha[0, 0] = probs_t[0, blank % num_classes]
         if S > 1:
-            alpha[0, 1] = _get_attr(probs, "__getitem__")((0, _get_attr(augmented, "__getitem__")(1) % num_classes))
+            alpha[0, 1] = probs_t[0, augmented[1] % num_classes]
 
     for t in range(1, T):
         _np_ctc_loss_update_alpha(t, S, augmented, alpha, probs, num_classes, blank)
@@ -137,12 +140,12 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     margin = kwargs.get("margin", 0.25)
     gamma = kwargs.get("gamma", 256.0)
 
-    O_p = 1 + as_tensor(margin)
-    O_n = -as_tensor(margin)
-    Delta_p = 1 - as_tensor(margin)
+    O_p = 1 + ensure_eager_tensor(margin)
+    O_n = -ensure_eager_tensor(margin)
+    Delta_p = 1 - ensure_eager_tensor(margin)
     Delta_n = margin
 
-    alpha_p = _get_attr(np, "maximum")(0, O_p - y_pred)
+    alpha_p = get_backend_member(np, "maximum")(0, O_p - y_pred)
     alpha_n = np.maximum(0, y_pred - O_n)
 
     p_loss = alpha_p * (y_pred - Delta_p)
@@ -152,7 +155,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     pos_mask = y_true == 1
     neg_mask = y_true == 0
 
-    logit_p = -as_tensor(gamma) * p_loss
+    logit_p = -ensure_eager_tensor(gamma) * p_loss
     logit_n = gamma * n_loss
 
     # Use logaddexp for numerical stability
@@ -162,7 +165,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     sum_exp_p = np.sum(np.exp(logit_p * pos_mask) * pos_mask, axis=-1, keepdims=True)
 
     loss = np.log1p(sum_exp_n * sum_exp_p)
-    return as_tensor(np.mean(loss))
+    return ensure_eager_tensor(np.mean(loss))
 
 
 @numpy_eager_registry.register("CategoricalGeneralizedCrossEntropy")
@@ -181,12 +184,12 @@ def _np_categorical_generalized_cross_entropy(backend_module: BackendModuleProto
         return backend_module.zeros(1)
     y_true = np.asarray(args[0])
     y_pred = np.asarray(args[1])
-    q = as_float(kwargs.get("q", 0.9))
+    q = ensure_float(kwargs.get("q", 0.9))
     y_pred = np.clip(y_pred, 1e-7, 1.0)
 
     # GCE = (1 - sum(y_true * y_pred^q)) / q
-    res = (1.0 - np.sum(y_true * _get_attr(np, "power")(y_pred, q), axis=-1)) / q
-    return as_tensor(np.mean(res))
+    res = (1.0 - np.sum(y_true * get_backend_member(np, "power")(y_pred, q), axis=-1)) / q
+    return ensure_eager_tensor(np.mean(res))
 
 
 @numpy_eager_registry.register("InTopK")
@@ -203,7 +206,7 @@ def _np_in_top_k(backend_module: BackendModuleProtocol, targets: EagerValue, pre
         EagerValue: Boolean array indicating if target is within top K predictions.
     """
     _ = backend_module
-    k = int(as_int(kwargs.get("k", 1)))
+    k = int(ensure_int(kwargs.get("k", 1)))
     t_arr = np.asarray(targets, dtype=np.int64).reshape(-1)
     p_arr = np.atleast_2d(np.asarray(predictions))
     sorted_indices = np.argsort(-p_arr, axis=-1)[:, : max(1, k)]

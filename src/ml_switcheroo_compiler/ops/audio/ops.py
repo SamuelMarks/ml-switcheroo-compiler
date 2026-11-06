@@ -2,9 +2,37 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+import typing
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@typing.runtime_checkable
+class _ValueAttrProtocol(typing.Protocol):
+    """Protocol for scalar wrapper objects exposing a `value` attribute."""
+
+    value: TensorOrScalar
+
+
+def _extract_window_length(args: tuple[TensorOrScalar, ...], kwargs: dict[str, TensorOrScalar]) -> TensorOrScalar:
+    """Extract window length from `args` or `kwargs`.
+
+    Args:
+        args (tuple[TensorOrScalar, ...]): Positional arguments.
+        kwargs (dict[str, TensorOrScalar]): Keyword arguments.
+
+    Returns:
+        TensorOrScalar: Window length.
+    """
+    window_length = kwargs.get("window_length", 256)
+    if len(args) > 0:
+        first: TensorOrScalar | _ValueAttrProtocol = args[0]
+        val = first.value if isinstance(first, _ValueAttrProtocol) else args[0]
+        if isinstance(val, int):
+            window_length = val
+    return window_length
 
 
 @register_op("Stft")
@@ -21,16 +49,16 @@ class Stft(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            shape = list(_get_attr(args[0], "shape", ()))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = shape[-1]
-                frame_length = kwargs.get("frame_length", 256)
-                frame_step = kwargs.get("frame_step", 128)
+                signal_length = int(ensure_int(shape[-1]))
+                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
+                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
                 fft_length = kwargs.get("fft_length", kwargs.get("fft_size", frame_length))
 
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
-                fft_bins = as_tensor(fft_length) // 2 + 1
+                fft_bins = ensure_eager_tensor(fft_length) // 2 + 1
                 shape[-1] = num_frames
                 shape.append(fft_bins)
             return tuple(shape)
@@ -51,12 +79,12 @@ class MelSpectrogram(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            shape = list(_get_attr(args[0], "shape", ()))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = shape[-1]
-                frame_length = kwargs.get("frame_length", 256)
-                frame_step = kwargs.get("frame_step", 128)
+                signal_length = int(ensure_int(shape[-1]))
+                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
+                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
                 num_mel_bins = kwargs.get("num_mel_bins", 128)
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
@@ -79,12 +107,12 @@ class Istft(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            shape = list(_get_attr(args[0], "shape", ()))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
             if len(shape) >= 2:
-                num_frames = shape[-2]
-                frame_length = kwargs.get("frame_length", 256)
-                frame_step = kwargs.get("frame_step", 128)
+                num_frames = int(ensure_int(shape[-2]))
+                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
+                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
                 signal_length = (num_frames - 1) * frame_step + frame_length
                 shape = shape[:-2]
                 shape.append(signal_length)
@@ -108,7 +136,7 @@ class MelFilterbank(OpDef):
         """
         fft_length = kwargs.get("fft_length", kwargs.get("fft_size", 256))
         num_mel_bins = kwargs.get("num_mel_bins", 128)
-        fft_bins = as_tensor(fft_length) // 2 + 1
+        fft_bins = ensure_eager_tensor(fft_length) // 2 + 1
         return (fft_bins, num_mel_bins)
 
 
@@ -126,12 +154,12 @@ class Mfcc(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            shape = list(_get_attr(args[0], "shape", ()))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = shape[-1]
-                frame_length = kwargs.get("frame_length", 256)
-                frame_step = kwargs.get("frame_step", 128)
+                signal_length = int(ensure_int(shape[-1]))
+                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
+                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
                 num_mfccs = kwargs.get("num_mfccs", 13)
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
@@ -154,8 +182,8 @@ class MfccsFromLogMelSpectrograms(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            shape = list(_get_attr(args[0], "shape", ()))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
             if len(shape) > 0:
                 num_mfccs = kwargs.get("num_mfccs", 13)
                 shape[-1] = num_mfccs
@@ -177,12 +205,7 @@ class HannWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length = kwargs.get("window_length", 256)
-        if len(args) > 0:
-            val = _get_attr(args[0], "value", args[0])
-            if isinstance(val, int):
-                window_length = val
-        return (window_length,)
+        return (_extract_window_length(args, kwargs),)
 
 
 @register_op("HammingWindow")
@@ -199,12 +222,7 @@ class HammingWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length = kwargs.get("window_length", 256)
-        if len(args) > 0:
-            val = _get_attr(args[0], "value", args[0])
-            if isinstance(val, int):
-                window_length = val
-        return (window_length,)
+        return (_extract_window_length(args, kwargs),)
 
 
 @register_op("KaiserWindow")
@@ -221,12 +239,7 @@ class KaiserWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length = kwargs.get("window_length", 256)
-        if len(args) > 0:
-            val = _get_attr(args[0], "value", args[0])
-            if isinstance(val, int):
-                window_length = val
-        return (window_length,)
+        return (_extract_window_length(args, kwargs),)
 
 
 @register_op("Dct")
@@ -283,15 +296,14 @@ class Mdct(OpDef):
         Returns:
             tuple[int, ...]: The output shape of the transformed signal.
         """
-        if len(args) == 0 or not _has_attr(args[0], "shape"):
+        if len(args) == 0 or not isinstance(args[0], ShapeProtocol):
             return ()
-        a = args[0]
-        shape = list(_get_attr(a, "shape", ()) or ())
+        shape = list(extract_shape(args[0]))
         if not shape:
             return ()
 
-        frame_length = int(as_int(kwargs.get("frame_length", 512)))
-        frame_step = int(as_int(kwargs.get("frame_step", 256)))
+        frame_length = int(ensure_int(kwargs.get("frame_length", 512)))
+        frame_step = int(ensure_int(kwargs.get("frame_step", 256)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         # If the input represents a pre-framed block (last dim is frame_length)
@@ -331,14 +343,14 @@ class InverseMdct(OpDef):
         Returns:
             tuple[int, ...]: The output shape of the inverse transformed signal.
         """
-        if not args or not _has_attr(args[0], "shape"):
+        if not args or not isinstance(args[0], ShapeProtocol):
             return ()
-        shape = list(_get_attr(args[0], "shape", ()) or ())
+        shape = list(extract_shape(args[0]))
         if not shape:
             return ()
 
-        fl = int(as_int(kwargs.get("frame_length", 512)))
-        fs = int(as_int(kwargs.get("frame_step", 256)))
+        fl = int(ensure_int(kwargs.get("frame_length", 512)))
+        fs = int(ensure_int(kwargs.get("frame_step", 256)))
         last = shape[-1]
 
         if last != fl // 2:
@@ -371,15 +383,14 @@ class Frame(OpDef):
         Returns:
             tuple[int, ...]: The output shape containing the newly added frame dimension.
         """
-        if len(args) == 0 or not _has_attr(args[0], "shape"):
+        if len(args) == 0 or not isinstance(args[0], ShapeProtocol):
             return ()
-        a = args[0]
-        shape = list(_get_attr(a, "shape", ()) or ())
+        shape = list(extract_shape(args[0]))
         if not shape:
             return ()
 
-        frame_length = int(as_int(kwargs.get("frame_length", 1)))
-        frame_step = int(as_int(kwargs.get("frame_step", 1)))
+        frame_length = int(ensure_int(kwargs.get("frame_length", 1)))
+        frame_step = int(ensure_int(kwargs.get("frame_step", 1)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         signal_length = shape[-1]
@@ -415,5 +426,5 @@ class OverlapAndAdd(OpDef):
             num_frames = shape[-2]
             frame_length = shape[-1]
             shape.pop()
-            shape[-1] = (int(num_frames) - 1) * int(as_int(frame_step)) + int(frame_length)
+            shape[-1] = (int(num_frames) - 1) * int(ensure_int(frame_step)) + int(frame_length)
         return tuple(shape)

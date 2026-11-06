@@ -9,8 +9,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops as ro
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -18,7 +17,9 @@ if typing.TYPE_CHECKING:
 
 def test_random_ops_coverage() -> None:
     """Test function test_random_ops_coverage."""
-    ops = [_get_attr(ro, name) for name in dir(ro) if name.startswith("_") and callable(_get_attr(ro, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(ro).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -27,9 +28,9 @@ def test_random_ops_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t"):
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:
@@ -48,9 +49,9 @@ def test_missing_random_ops() -> None:
         minval = None
         maxval = None
 
-    ro._np_uniform(np, shape=(2,), dtype="float32", config=_cast_val("RandomDistributionConfig", DummyConfig()))
-    ro._np_stateless_split(np, seed=np.array(["test"]), num=2)
-    ro._np_stateless_split(np, seed=np.array(["not_int", "other"]), num=2)
+    ensure_callable(ro._np_uniform)(np, shape=(2,), dtype="float32", config=DummyConfig())
+    ro._np_stateless_split(ensure_eager_tensor(np), seed=np.array(["test"]), num=2)
+    ro._np_stateless_split(ensure_eager_tensor(np), seed=np.array(["not_int", "other"]), num=2)
 
     class DummyTable:
         """Test class DummyTable."""
@@ -63,7 +64,7 @@ def test_missing_random_ops() -> None:
             """
             return keys
 
-    ro._np_lookup(np, _cast_val("dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int", DummyTable()), np.array([1, 2]))
+    ensure_callable(ro._np_lookup)(np, DummyTable(), np.array([1, 2]))
 
     class BadStr:
         """Test class BadStr."""
@@ -76,6 +77,6 @@ def test_missing_random_ops() -> None:
             """Test function __str__."""
             return "bad"
 
-    ro._np_stateless_split(np, seed=np.array([BadStr()]), num=2)
-    ro._np_lookup(np, {1: 2}, np.array([1, 2]))
-    ro._np_stateless_split(np, seed=np.array([]))
+    ro._np_stateless_split(ensure_eager_tensor(np), seed=np.array([BadStr()]), num=2)
+    ro._np_lookup(ensure_eager_tensor(np), {1: 2}, np.array([1, 2]))
+    ro._np_stateless_split(ensure_eager_tensor(np), seed=np.array([]))

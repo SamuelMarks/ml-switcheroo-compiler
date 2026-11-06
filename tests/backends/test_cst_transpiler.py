@@ -11,8 +11,7 @@ from ml_switcheroo_compiler.backends.cst_transpiler import (
     type_infer_dry_run,
     validate_diff,
 )
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     pass
@@ -87,8 +86,8 @@ def test_transpile_source_import() -> None:
 
     transformer = CSTTransformer("jax")
     dummy_names = [cst.ImportAlias(name=cst.Name("foo"))]
-    node = as_callable(cst.ImportFrom)(module=as_callable(cst.Integer)("1"), names=dummy_names)
-    assert id(as_callable(transformer.leave_ImportFrom)(node, node)) == id(node)
+    node = ensure_callable(cst.ImportFrom)(module=ensure_callable(cst.Integer)("1"), names=dummy_names)
+    assert id(ensure_callable(transformer.leave_ImportFrom)(node, node)) == id(node)
 
     # Test _get_base_name fallback (Line 79)
     # create a mock Attribute with a non-Name/non-Attribute value
@@ -335,14 +334,14 @@ def test_cst_transpiler_missing_branches() -> None:
     class FakeConfig:
         """Test class FakeConfig."""
 
-        kwarg_map = as_tensor_dict({})
+        kwarg_map = ensure_tensor_dict({})
         module_path = ["fake"]
         broadcast_method = "broadcast_fake"
-        method_map = as_tensor_dict({})
-        class_bases = as_tensor({"fake_base": []})
+        method_map = ensure_tensor_dict({})
+        class_bases = ensure_eager_tensor({"fake_base": []})
 
     visitor = CSTTransformer("pytorch")
-    _set_attr(visitor, "target_config", FakeConfig())
+    ensure_mutable(visitor).target_config = ensure_eager_tensor(FakeConfig())
 
     tree = cst.parse_module("func(x=1)")
     tree = tree.visit(visitor)
@@ -350,7 +349,7 @@ def test_cst_transpiler_missing_branches() -> None:
     # 5. broadcast_method different but not expand/broadcast_to
     # Just need fw_config.broadcast_method = "A" and target = "B"
     # Actually, we can just trigger it using fake visitor
-    _set_attr(visitor, "target_config", FakeConfig())
+    ensure_mutable(visitor).target_config = ensure_eager_tensor(FakeConfig())
     # It needs a valid original fw config in _CONFIG.frameworks to match
 
     # 6. line 247 -> 241 (target base parts empty)
@@ -361,7 +360,7 @@ def test_cst_transpiler_missing_branches() -> None:
     # 5. properly visit
     # Let's say pytorch to fake, pytorch uses expand, fake uses broadcast_fake
     tree = cst.parse_module("x.expand(1)")
-    _set_attr(visitor, "target_config", FakeConfig())  # with broadcast_fake
+    ensure_mutable(visitor).target_config = ensure_eager_tensor(FakeConfig())  # with broadcast_fake
     visitor.target_framework = "fake"
     # To match we need final_node.func.attr.value to be the broadcast_method of some config.
     # We can just visit it directly
@@ -429,7 +428,7 @@ def test_cst_transpiler_advanced_transforms() -> None:
             return False
 
     t_dynamic = CSTTransformer("jax")
-    _set_attr(t_dynamic, "target_config", FalsyAfterFirstCheck())
+    ensure_mutable(t_dynamic).target_config = ensure_eager_tensor(FalsyAfterFirstCheck())
     tree_dynamic = cst.parse_module(src_early_ret)
     res_dynamic = tree_dynamic.visit(t_dynamic)
     assert "jnp.where(cond, a, b)" in res_dynamic.code

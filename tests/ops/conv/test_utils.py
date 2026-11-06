@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.nn.conv_utils import (
     _build_conv_config,
     _calc_same_pad,
@@ -27,7 +26,7 @@ from ml_switcheroo_compiler.ops.nn.conv_utils import (
     dilation2d,
     erosion2d,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -44,15 +43,15 @@ def test_conv_utils_calc_pad() -> None:
 def test_build_conv_config() -> None:
     """Test function test_build_conv_config."""
     kwargs = {"strides": 1, "padding": "SAME", "lhs_dilation": 1, "rhs_dilation": 1, "feature_group_count": 1, "batch_group_count": 1}
-    c = as_callable(_build_conv_config)(kwargs, ((0, 1), (0, 1), (0, 1)))
+    c = ensure_callable(_build_conv_config)(kwargs, ((0, 1), (0, 1), (0, 1)))
     assert c is not None
-    c = as_tensor(_build_conv_config({}, ((0, 1), (0, 1), (0, 1))))
+    c = ensure_eager_tensor(_build_conv_config({}, ((0, 1), (0, 1), (0, 1))))
     assert c is not None
 
 
 def test_calculate_conv_transpose_padding() -> None:
     """Test function test_calculate_conv_transpose_padding."""
-    assert as_callable(_calculate_conv_transpose_padding)((5, 5), (3, 3), (2, 2)) is not None
+    assert ensure_callable(_calculate_conv_transpose_padding)((5, 5), (3, 3), (2, 2)) is not None
 
 
 def _test_conv_utils_frontend_funcs_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -69,7 +68,6 @@ def _test_conv_utils_frontend_funcs_sub_1(_state: dict[str, EagerTensorProtocol]
     with pytest.raises(RuntimeError):
         bias_add(None, None)
     collapse_repeated(None, None)
-    _state.update(_caller_locals())
 
 
 def _test_conv_utils_frontend_funcs_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -81,10 +79,9 @@ def _test_conv_utils_frontend_funcs_sub_2(_state: dict[str, EagerTensorProtocol]
     with pytest.raises(RuntimeError):
         compute_average_loss(None)
     with pytest.raises(KeyError):
-        as_callable(depthwise_conv2d)(None, None, None, None)
+        ensure_callable(depthwise_conv2d)(None, None, None, None)
     depthwise_conv2d_backprop_filter(None, None, None, None, None)
     depthwise_conv2d_backprop_input(None, None, None, None, None)
-    _state.update(_caller_locals())
 
 
 def _test_conv_utils_frontend_funcs_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -94,22 +91,21 @@ def _test_conv_utils_frontend_funcs_sub_3(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     with pytest.raises(TypeError):
-        as_callable(dilation2d)(None, None, None, None, None)
+        ensure_callable(dilation2d)(None, None, None, None, None)
     with pytest.raises(TypeError):
-        as_callable(erosion2d)(None, None, None, None, None)
+        ensure_callable(erosion2d)(None, None, None, None, None)
     with pytest.raises(KeyError):
         convolution(None, None)
     with pytest.raises(TypeError):
-        as_callable(conv_transpose)(None, None)
-    _state.update(_caller_locals())
+        ensure_callable(conv_transpose)(None, None)
 
 
 def test_conv_utils_frontend_funcs() -> None:
     """Test function test_conv_utils_frontend_funcs."""
     orig_eager = config.eager_mode
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"orig_eager": orig_eager})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"orig_eager": orig_eager}))
         for _sub_fn in (_test_conv_utils_frontend_funcs_sub_1, _test_conv_utils_frontend_funcs_sub_2, _test_conv_utils_frontend_funcs_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -139,12 +135,12 @@ def test_prepare_depthwise_conv() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
-    t2 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t2 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -175,8 +171,8 @@ def test_prepare_depthwise_conv() -> None:
 
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        as_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
-        as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=1, lhs_dilation=1, rhs_dilation=1)
+        ensure_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
+        ensure_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=1, lhs_dilation=1, rhs_dilation=1)
     finally:
         config.eager_mode = orig_eager
     assert config.eager_mode == orig_eager
@@ -208,12 +204,12 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
-    t2 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t2 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -244,8 +240,8 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
 
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        as_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
-        as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=(1,), lhs_dilation=(1,), rhs_dilation=(1,))
+        ensure_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
+        ensure_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=(1,), lhs_dilation=(1,), rhs_dilation=(1,))
     finally:
         config.eager_mode = orig_eager
     assert config.eager_mode == orig_eager
@@ -280,7 +276,8 @@ def _test_conv_utils_frontend_funcs_extra2_sub_1(_state: dict[str, EagerTensorPr
     collapse_repeated(t1, t1, None)
     with pytest.raises(RuntimeError):
         compute_average_loss(t1, t1, t1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"atrous_conv2d": atrous_conv2d, "bias_add": bias_add, "collapse_repeated": collapse_repeated}))
+    _state.update(ensure_tensor_dict({"compute_average_loss": compute_average_loss, "t1": t1}))
 
 
 def _test_conv_utils_frontend_funcs_extra2_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -297,7 +294,8 @@ def _test_conv_utils_frontend_funcs_extra2_sub_2(_state: dict[str, EagerTensorPr
     depthwise_conv2d_backprop_input(t1, t1, t1, t1, t1)
     with pytest.raises(TypeError):
         dilation2d(t1, t1, t1, t1, t1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter, "depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input}))
+    _state.update(ensure_tensor_dict({"dilation2d": dilation2d, "t1": t1}))
 
 
 def _test_conv_utils_frontend_funcs_extra2_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -313,7 +311,8 @@ def _test_conv_utils_frontend_funcs_extra2_sub_3(_state: dict[str, EagerTensorPr
         convolution(t1, t1)
     with pytest.raises(TypeError):
         conv_transpose(t1, t1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"conv_transpose": conv_transpose, "convolution": convolution, "erosion2d": erosion2d}))
+    _state.update(ensure_tensor_dict({"t1": t1}))
 
 
 def test_conv_utils_frontend_funcs_extra2() -> None:
@@ -333,18 +332,18 @@ def test_conv_utils_frontend_funcs_extra2() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"Tensor": Tensor, "TensorConfig": TensorConfig, "atrous_conv2d": atrous_conv2d, "bias_add": bias_add})
-        _get_attr(_state, "update")({"collapse_repeated": collapse_repeated, "compute_average_loss": compute_average_loss, "conv_transpose": conv_transpose, "convolution": convolution})
-        _get_attr(_state, "update")({"depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter, "depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input, "dilation2d": dilation2d})
-        _get_attr(_state, "update")({"erosion2d": erosion2d, "orig_eager": orig_eager, "t1": t1, "types": types})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"Tensor": Tensor, "TensorConfig": TensorConfig, "atrous_conv2d": atrous_conv2d, "bias_add": bias_add}))
+        _state.update(ensure_tensor_dict({"collapse_repeated": collapse_repeated, "compute_average_loss": compute_average_loss, "conv_transpose": conv_transpose, "convolution": convolution}))
+        _state.update(ensure_tensor_dict({"depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter, "depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input, "dilation2d": dilation2d}))
+        _state.update(ensure_tensor_dict({"erosion2d": erosion2d, "orig_eager": orig_eager, "t1": t1, "types": types}))
         for _sub_fn in (_test_conv_utils_frontend_funcs_extra2_sub_1, _test_conv_utils_frontend_funcs_extra2_sub_2, _test_conv_utils_frontend_funcs_extra2_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -370,17 +369,17 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.base as base
 
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOp:
             """Test class MockOp."""
@@ -394,13 +393,13 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
                 """
                 return "mock_op_called"
 
-        _set_attr(base, "get_op", lambda name: MockOp)
+        ensure_mutable(base).get_op = ensure_eager_tensor(lambda name: MockOp)
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
@@ -408,7 +407,7 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
     assert callable(test_conv_utils_frontend_funcs_extra3)
 
 
@@ -430,20 +429,20 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
 
-        orig_conv2d = _get_attr(conv_utils, "conv2d", None)
-        orig_conv2d_transpose = _get_attr(conv_utils, "conv2d_transpose", None)
-        orig_conv_nd = _get_attr(conv_utils, "_conv_nd", None)
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_conv2d = ensure_eager_tensor(conv_utils).conv2d
+        orig_conv2d_transpose = ensure_eager_tensor(conv_utils).conv2d_transpose
+        orig_conv_nd = ensure_eager_tensor(conv_utils)._conv_nd
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOp:
             """Test class MockOp."""
@@ -460,13 +459,13 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
                 return Tensor(None, TensorConfig(shape=(2, 2), dtype="float32", device=None, requires_grad=False, trainable=False))
 
         if orig_get_op:
-            _set_attr(base, "get_op", lambda name: MockOp)
+            ensure_mutable(base).get_op = ensure_eager_tensor(lambda name: MockOp)
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
@@ -475,15 +474,15 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
         if orig_conv2d:
-            _set_attr(conv_utils, "conv2d", orig_conv2d)
+            ensure_mutable(conv_utils).conv2d = ensure_eager_tensor(orig_conv2d)
         if orig_get_op:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
         if orig_conv2d_transpose:
-            _set_attr(conv_utils, "conv2d_transpose", orig_conv2d_transpose)
+            ensure_mutable(conv_utils).conv2d_transpose = ensure_eager_tensor(orig_conv2d_transpose)
         if orig_conv_nd:
-            _set_attr(conv_utils, "_conv_nd", orig_conv_nd)
+            ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(orig_conv_nd)
     assert callable(test_conv_utils_frontend_funcs_extra4)
 
 
@@ -523,15 +522,16 @@ def _test_conv_utils_frontend_funcs_extra5_sub_1(_state: dict[str, EagerTensorPr
         """
         return "conv_nd_called"
 
-    _set_attr(conv2d_mod, "conv2d", mock_conv2d)
-    _set_attr(conv2d_mod, "conv2d_transpose", mock_conv2d_transpose)
-    _set_attr(conv_utils, "_conv_nd", mock_conv_nd)
+    ensure_mutable(conv2d_mod).conv2d = ensure_eager_tensor(mock_conv2d)
+    ensure_mutable(conv2d_mod).conv2d_transpose = ensure_eager_tensor(mock_conv2d_transpose)
+    ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(mock_conv_nd)
     try:
         atrous_conv2d(t1, t1, 1, "VALID", None)
     except Exception as e:
         print(e)
-    _get_attr(_state, "update")({"mock_conv2d": mock_conv2d, "mock_conv2d_transpose": mock_conv2d_transpose, "mock_conv_nd": mock_conv_nd})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_conv2d": mock_conv2d, "mock_conv2d_transpose": mock_conv2d_transpose, "mock_conv_nd": mock_conv_nd}))
+    _state.update(ensure_tensor_dict({"atrous_conv2d": atrous_conv2d, "conv2d_mod": conv2d_mod, "conv_utils": conv_utils}))
+    _state.update(ensure_tensor_dict({"t1": t1}))
 
 
 def _test_conv_utils_frontend_funcs_extra5_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -558,7 +558,8 @@ def _test_conv_utils_frontend_funcs_extra5_sub_2(_state: dict[str, EagerTensorPr
         depthwise_conv2d_backprop_input((2, 2, 2), t1, t1, [1, 1], "VALID")
     except Exception as e:
         print(e)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"atrous_conv2d_transpose": atrous_conv2d_transpose, "depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter}))
+    _state.update(ensure_tensor_dict({"depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input, "t1": t1}))
 
 
 def _test_conv_utils_frontend_funcs_extra5_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -576,7 +577,7 @@ def _test_conv_utils_frontend_funcs_extra5_sub_3(_state: dict[str, EagerTensorPr
         conv_transpose(t1, t1, (2, 2, 2))
     except Exception as e:
         print(e)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"conv_transpose": conv_transpose, "convolution": convolution, "t1": t1}))
 
 
 def test_conv_utils_frontend_funcs_extra5() -> None:
@@ -596,26 +597,26 @@ def test_conv_utils_frontend_funcs_extra5() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
 
-    orig_conv2d = _get_attr(conv2d_mod, "conv2d", None)
-    orig_conv2d_transpose = _get_attr(conv2d_mod, "conv2d_transpose", None)
+    orig_conv2d = ensure_eager_tensor(conv2d_mod).conv2d
+    orig_conv2d_transpose = ensure_eager_tensor(conv2d_mod).conv2d_transpose
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
 
-    orig_conv_nd = _get_attr(conv_utils, "_conv_nd", None)
+    orig_conv_nd = ensure_eager_tensor(conv_utils)._conv_nd
     orig_eager = config.eager_mode
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
-        _get_attr(_state, "update")({"Tensor": Tensor, "TensorConfig": TensorConfig, "atrous_conv2d": atrous_conv2d, "atrous_conv2d_transpose": atrous_conv2d_transpose})
-        _get_attr(_state, "update")({"conv2d_mod": conv2d_mod, "conv_transpose": conv_transpose, "conv_utils": conv_utils, "convolution": convolution})
-        _get_attr(_state, "update")({"depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter, "depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input, "orig_conv2d": orig_conv2d})
-        _get_attr(_state, "update")({"orig_conv2d_transpose": orig_conv2d_transpose, "orig_conv_nd": orig_conv_nd, "orig_eager": orig_eager, "t1": t1})
-        _get_attr(_state, "update")({"types": types})
+        _state: dict[str, EagerTensorProtocol] = {}
+        _state.update(ensure_tensor_dict({"Tensor": Tensor, "TensorConfig": TensorConfig, "atrous_conv2d": atrous_conv2d, "atrous_conv2d_transpose": atrous_conv2d_transpose}))
+        _state.update(ensure_tensor_dict({"conv2d_mod": conv2d_mod, "conv_transpose": conv_transpose, "conv_utils": conv_utils, "convolution": convolution}))
+        _state.update(ensure_tensor_dict({"depthwise_conv2d": depthwise_conv2d, "depthwise_conv2d_backprop_filter": depthwise_conv2d_backprop_filter, "depthwise_conv2d_backprop_input": depthwise_conv2d_backprop_input, "orig_conv2d": orig_conv2d}))
+        _state.update(ensure_tensor_dict({"orig_conv2d_transpose": orig_conv2d_transpose, "orig_conv_nd": orig_conv_nd, "orig_eager": orig_eager, "t1": t1}))
+        _state.update(ensure_tensor_dict({"types": types}))
         for _sub_fn in (_test_conv_utils_frontend_funcs_extra5_sub_1, _test_conv_utils_frontend_funcs_extra5_sub_2, _test_conv_utils_frontend_funcs_extra5_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -626,7 +627,7 @@ def test_conv_utils_frontend_funcs_extra5() -> None:
         if orig_conv2d_transpose:
             conv2d_mod.conv2d_transpose = orig_conv2d_transpose
         if orig_conv_nd:
-            _set_attr(conv_utils, "_conv_nd", orig_conv_nd)
+            ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(orig_conv_nd)
     assert config.eager_mode == orig_eager
 
 
@@ -647,17 +648,17 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.base as base
 
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOpInstance:
             """Test class MockOpInstance."""
@@ -684,17 +685,17 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
                 return MockOpInstance()
 
         if orig_get_op:
-            _set_attr(base, "get_op", MockOp())
+            ensure_mutable(base).get_op = ensure_eager_tensor(MockOp())
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
             assert e is not None
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
     assert callable(test_conv_utils_frontend_funcs_extra6)
 
 
@@ -715,17 +716,17 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.base as base
 
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOpInstance:
             """Test class MockOpInstance."""
@@ -760,17 +761,17 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
             return MockOp()
 
         if orig_get_op:
-            _set_attr(base, "get_op", get_op_override)
+            ensure_mutable(base).get_op = ensure_eager_tensor(get_op_override)
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except Exception as e:
             print(e)
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
     assert config.eager_mode == orig_eager
 
 
@@ -791,17 +792,17 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.base as base
 
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOpInstance:
             """Test class MockOpInstance."""
@@ -840,17 +841,17 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
             return MockOp
 
         if orig_get_op:
-            _set_attr(base, "get_op", get_op_override)
+            ensure_mutable(base).get_op = ensure_eager_tensor(get_op_override)
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except Exception as e:
             print(e)
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
     assert config.eager_mode == orig_eager
 
 
@@ -871,11 +872,11 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -891,7 +892,7 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
                 """
-                return as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+                return ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
 
         class MockGetOp:
             """Test class MockGetOp."""
@@ -904,14 +905,14 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                 """
                 return MockOpInstance
 
-        orig_get_op = _get_attr(base, "get_op", None)
-        _set_attr(base, "get_op", MockGetOp())
+        orig_get_op = ensure_eager_tensor(base).get_op
+        ensure_mutable(base).get_op = ensure_eager_tensor(MockGetOp())
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            ensure_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except Exception as e:
@@ -919,7 +920,7 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
-            base.get_op = orig_get_op
+            ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
     assert config.eager_mode == orig_eager
 
 
@@ -945,12 +946,12 @@ def test_conv_utils_frontend_funcs_extra10() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
-    as_callable(_prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    ensure_callable(_prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
     assert callable(test_conv_utils_frontend_funcs_extra10)
 
 
@@ -971,16 +972,14 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = as_callable(np.ones)(shape)
+            self.data = ensure_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
 
-    orig_conv2d = _get_attr(conv_utils, "conv2d", None)
-    _get_attr(conv_utils, "conv2d_transpose", None)
-    _get_attr(conv_utils, "_conv_nd", None)
+    orig_conv2d = ensure_eager_tensor(conv_utils).conv2d
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -1012,12 +1011,12 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             """
             return "conv_nd_called"
 
-        _set_attr(conv_utils, "conv2d", mock_conv2d)
-        _set_attr(conv_utils, "conv2d_transpose", mock_conv2d_transpose)
-        _set_attr(conv_utils, "_conv_nd", mock_conv_nd)
+        ensure_mutable(conv_utils).conv2d = ensure_eager_tensor(mock_conv2d)
+        ensure_mutable(conv_utils).conv2d_transpose = ensure_eager_tensor(mock_conv2d_transpose)
+        ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(mock_conv_nd)
         import ml_switcheroo_compiler.ops.base as base
 
-        orig_get_op = _get_attr(base, "get_op", None)
+        orig_get_op = ensure_eager_tensor(base).get_op
 
         class MockOpInstance:
             """Test class MockOpInstance."""
@@ -1049,18 +1048,18 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             with patch("ml_switcheroo_compiler.ops.nn.conv_utils.get_op", lambda name: MockOp()):
                 conv_utils.atrous_conv2d(t1, t1, 1, "VALID", None)
                 conv_utils.atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-                as_callable(conv_utils.depthwise_conv2d)(t1, t1, as_callable(GenericConvConfig)(), "VALID")
+                ensure_callable(conv_utils.depthwise_conv2d)(t1, t1, ensure_callable(GenericConvConfig)(), "VALID")
                 conv_utils.convolution(t1, t1)
     finally:
         config.eager_mode = orig_eager
         if orig_conv2d:
-            _set_attr(conv_utils, "conv2d", orig_conv2d)
+            ensure_mutable(conv_utils).conv2d = ensure_eager_tensor(orig_conv2d)
         if orig_get_op:
             from unittest.mock import patch
 
             with patch("ml_switcheroo_compiler.ops.nn.conv_utils.get_op", lambda name: MockOp()):
                 conv_utils.atrous_conv2d(t1, t1, 1, "VALID", None)
                 conv_utils.atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-                as_callable(conv_utils.depthwise_conv2d)(t1, t1, as_callable(GenericConvConfig)(), "VALID")
+                ensure_callable(conv_utils.depthwise_conv2d)(t1, t1, ensure_callable(GenericConvConfig)(), "VALID")
                 conv_utils.convolution(t1, t1)
     assert config.eager_mode == orig_eager

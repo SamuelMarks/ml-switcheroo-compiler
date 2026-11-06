@@ -6,14 +6,13 @@ import importlib
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import (
     _get_np_arg,
     _get_sc,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("BesselI0e")
@@ -32,7 +31,7 @@ def _np_bessel_i0e(
     Returns:
         np.ndarray: Computed exponentially scaled Bessel i0e result.
     """
-    return as_ndarray(backend_module.array(importlib.import_module("scipy.special").i0e(args[0])))
+    return ensure_ndarray(backend_module.array(importlib.import_module("scipy.special").i0e(args[0])))
 
 
 @numpy_eager_registry.register("BesselI1e")
@@ -51,7 +50,7 @@ def _np_bessel_i1e(
     Returns:
         np.ndarray: Computed exponentially scaled Bessel i1e result.
     """
-    return as_ndarray(backend_module.array(importlib.import_module("scipy.special").i1e(args[0])))
+    return ensure_ndarray(backend_module.array(importlib.import_module("scipy.special").i1e(args[0])))
 
 
 @numpy_eager_registry.register("modified_bessel_i0")
@@ -73,7 +72,7 @@ def _np_modified_bessel_i0(
     x = _get_np_arg(args, 0)
     if x is None:
         return None
-    return as_ndarray(_get_attr(np, "i0")(x))
+    return ensure_ndarray(get_backend_member(np, "i0")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_i1")
@@ -102,9 +101,9 @@ def _np_modified_bessel_i1(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(x_ex * np.cos(t_grid)) * np.cos(t_grid)
-        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
-        return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1) * (1.0 / np.pi))
-    return as_ndarray(_get_attr(sc_module, "i1")(x))
+        trapz_fn = ensure_callable(get_backend_member(np, "trapezoid", get_backend_member(np, "trapz", None)))
+        return ensure_ndarray(trapz_fn(integrand, dx=dt, axis=-1) * (1.0 / np.pi))
+    return ensure_ndarray(get_backend_member(sc_module, "i1")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_k0")
@@ -133,9 +132,9 @@ def _np_modified_bessel_k0(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t_grid))
-        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
-        return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
-    return as_ndarray(_get_attr(sc_module, "k0")(x))
+        trapz_fn = ensure_callable(get_backend_member(np, "trapezoid", get_backend_member(np, "trapz", None)))
+        return ensure_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
+    return ensure_ndarray(get_backend_member(sc_module, "k0")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_k1")
@@ -164,6 +163,6 @@ def _np_modified_bessel_k1(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t_grid)) * np.cosh(t_grid)
-        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
-        return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
-    return as_ndarray(_get_attr(sc_module, "k1")(x))
+        trapz_fn = ensure_callable(get_backend_member(np, "trapezoid", get_backend_member(np, "trapz", None)))
+        return ensure_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
+    return ensure_ndarray(get_backend_member(sc_module, "k1")(x))

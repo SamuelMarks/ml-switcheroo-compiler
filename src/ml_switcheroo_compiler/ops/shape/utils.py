@@ -8,15 +8,49 @@ from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import ensure_int
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    DTypeHolderProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+
+
+def _extract_shape_or_seq(inp: TensorOrScalar) -> tuple[int, ...]:
+    """Extract integer shape tuple from `.shape`, `.shape_metadata`, or a sequence.
+
+    Args:
+        inp (TensorOrScalar): Input tensor, node, or shape sequence.
+
+    Returns:
+        tuple[int, ...]: Extracted integer shape tuple.
+    """
+    return extract_shape(inp, tuple(ensure_int(d) for d in inp) if isinstance(inp, (list, tuple)) else ())
+
+
+def _extract_shape_dtype(
+    obj: TensorOrScalar,
+    default: DType | str | None = None,
+) -> DType | str | None:
+    """Safely extract `.dtype` from `obj`, falling back to `default`.
+
+    Args:
+        obj (TensorOrScalar): Input tensor or array.
+        default (DType | str | None): Default dtype if `obj` has no dtype.
+
+    Returns:
+        DType | str | None: Extracted dtype or `default`.
+    """
+    return extract_dtype(obj) if isinstance(obj, DTypeHolderProtocol) and obj.dtype is not None else default
 
 
 @register_util("_emit_shape_node")
@@ -55,15 +89,15 @@ def _emit_shape_node(
         id=out_id,
         op_type=op_type,
         inputs=flat_inputs,
-        attributes=as_attrs(dict(attrs)) if attrs else {},
+        attributes=ensure_attrs(dict(attrs)) if attrs else {},
         shape_metadata=norm_shape,
     )
     global_tracing_state.add_node(node)
 
-    from ml_switcheroo_compiler.backends.registry import as_shape
+    from ml_switcheroo_compiler.backends.registry import ensure_shape
 
     dtype_val = out_dtype.value if isinstance(out_dtype, DType) else str(out_dtype or "float32")
-    shape_tuple = as_shape(tuple(raw_out_shape))
+    shape_tuple = ensure_shape(tuple(raw_out_shape))
 
     proxy = ProxyTensor(id=out_id, shape=shape_tuple, dtype=dtype_val)
     first_in = seq_inputs[0] if len(seq_inputs) > 0 else None

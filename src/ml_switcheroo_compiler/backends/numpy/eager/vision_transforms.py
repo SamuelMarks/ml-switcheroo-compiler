@@ -9,14 +9,15 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_perspective_eager,
     random_shear_eager,
 )
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("RandomShear")
 def _np_random_shear(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
     **kwargs: float | int | str | None,
@@ -33,13 +34,13 @@ def _np_random_shear(
     Returns:
         np.ndarray: Sheared images array.
     """
-    return np.asarray(random_shear_eager(backend_module, images, y_factor, x_factor, **kwargs))
+    return ensure_ndarray(np.asarray(random_shear_eager(backend_module, images, y_factor, x_factor, **kwargs)))
 
 
 @numpy_eager_registry.register("RandomPerspective")
 def _np_random_perspective(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
     factor: float,
     **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -54,13 +55,13 @@ def _np_random_perspective(
     Returns:
         np.ndarray: Transformed images array.
     """
-    return np.asarray(random_perspective_eager(backend_module, images, factor, **kwargs))
+    return ensure_ndarray(np.asarray(random_perspective_eager(backend_module, images, factor, **kwargs)))
 
 
 @numpy_eager_registry.register("RandomElasticTransform")
 def _np_random_elastic_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
     alpha: float,
     sigma: float,
     **kwargs: float | int | str | None,
@@ -77,4 +78,4 @@ def _np_random_elastic_transform(
     Returns:
         np.ndarray: Elastically transformed images array.
     """
-    return np.asarray(random_elastic_transform_eager(backend_module, images, alpha, sigma, **kwargs))
+    return ensure_ndarray(np.asarray(random_elastic_transform_eager(backend_module, images, alpha, sigma, **kwargs)))

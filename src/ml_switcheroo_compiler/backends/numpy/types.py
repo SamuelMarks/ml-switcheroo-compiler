@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import generic_array
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -30,7 +30,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
     Returns: np.ndarray: The array tensor.
     """
-    return as_tensor(as_callable(generic_array)(np, data, dtype))
+    return ensure_eager_tensor(ensure_callable(generic_array)(np, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -55,4 +55,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return as_float(np.asarray(data).item())
+    return ensure_float(np.asarray(data).item())

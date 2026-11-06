@@ -7,11 +7,11 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.random_ops as rand_ops_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
-from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray, ensure_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class MockCpuResult:
@@ -138,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
+        return ensure_ndarray(ensure_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -153,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return ensure_ndarray(ensure_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -183,7 +183,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -203,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -275,16 +275,14 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> EagerCallableProtocol:
-        """Delegate to numpy module.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            EagerCallableProtocol: Resolved callable attribute.
-        """
-        return as_callable(_get_attr(np, name))
+    arange = staticmethod(np.arange)
+    meshgrid = staticmethod(np.meshgrid)
+    exp = staticmethod(np.exp)
+    sum = staticmethod(np.sum)
+    zeros_like = staticmethod(np.zeros_like)
+    expand_dims = staticmethod(np.expand_dims)
+    reshape = staticmethod(np.reshape)
+    median = staticmethod(np.median)
 
     def pad(
         self,
@@ -302,6 +300,7 @@ class SignalBackendWrapper:
         Returns:
             np.ndarray: Padded array.
         """
+        _ = mode
         (b0, b1), (c0, c1), (h0, h1), (w0, w1) = pad_width
         b, c, h, w = arr.shape
         padded = np.zeros((b + b0 + b1, c + c0 + c1, h + h0 + h1, w + w0 + w1), dtype=arr.dtype)
@@ -342,23 +341,28 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-        """Dynamically return callable only on second check.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            TypedVariadicCallable[np.ndarray]: Function result.
-
-        Raises:
-            AttributeError: On first check.
-        """
+    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Return callable only on second check."""
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
         if count == 0:
             raise AttributeError(f"Initial check fails for {name}")
         return lambda *args, **kwargs: np.ones((2, 2))
+
+    @property
+    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic uniform attribute."""
+        return self._get_fn("uniform")
+
+    @property
+    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic normal attribute."""
+        return self._get_fn("normal")
+
+    @property
+    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic randint attribute."""
+        return self._get_fn("randint")
 
 
 class MockBackendWithFallback:
@@ -501,7 +505,7 @@ def test_random_ops_prng_and_split() -> None:
     backend_without_array = 123  # does not have array attribute
 
     # 1. prng_key
-    k1 = rand_ops_mod.prng_key(as_tensor(backend_with_array), 42)
+    k1 = rand_ops_mod.prng_key(ensure_eager_tensor(backend_with_array), 42)
     assert isinstance(k1, np.ndarray)
     np.testing.assert_array_equal(k1, np.array([0, 42], dtype=np.uint32))
 
@@ -509,7 +513,7 @@ def test_random_ops_prng_and_split() -> None:
     assert k2 == [0, 42]
 
     # 2. random_split
-    s1 = rand_ops_mod.random_split(as_tensor(backend_with_array), k1, 3)
+    s1 = rand_ops_mod.random_split(ensure_eager_tensor(backend_with_array), k1, 3)
     assert isinstance(s1, np.ndarray)
     assert s1.shape == (3, 2)
 
@@ -518,7 +522,7 @@ def test_random_ops_prng_and_split() -> None:
     assert len(s2) == 2
 
     # 3. random_fold_in with indexed key
-    f1 = rand_ops_mod.random_fold_in(as_tensor(backend_with_array), [10, 20], 5)
+    f1 = rand_ops_mod.random_fold_in(ensure_eager_tensor(backend_with_array), [10, 20], 5)
     assert isinstance(f1, np.ndarray)
     np.testing.assert_array_equal(f1, np.array([15, 20], dtype=np.uint32))
 
@@ -531,56 +535,56 @@ def test_random_ops_rand_and_randn() -> None:
     """Verify rand, randn, and randint under various backend capabilities."""
     # 1. rand with shape in kwargs as nested list
     res_rand1 = rand_ops_mod.rand(np, shape=[(2, 3)])
-    assert as_tensor(_get_attr(res_rand1, "shape")) == (2, 3)
+    assert ensure_eager_tensor(res_rand1).shape == (2, 3)
 
     # rand with args shape
     res_rand2 = rand_ops_mod.rand(np, 2, 4)
-    assert as_tensor(_get_attr(res_rand2, "shape")) == (2, 4)
+    assert ensure_eager_tensor(res_rand2).shape == (2, 4)
 
     # rand with random module without uniform (only rand)
-    res_rand3 = rand_ops_mod.rand(as_tensor(MockBackendWithRandOnly()), 3, 3)
-    assert as_tensor(_get_attr(res_rand3, "shape")) == (3, 3)
+    res_rand3 = rand_ops_mod.rand(ensure_eager_tensor(MockBackendWithRandOnly()), 3, 3)
+    assert ensure_eager_tensor(res_rand3).shape == (3, 3)
 
     # rand with direct rand
-    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(MockBackendDirectRand()), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.rand(ensure_eager_tensor(MockBackendDirectRand()), 2, 2)).shape == (2, 2)
 
     # rand with direct uniform
-    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(MockBackendDirectUniform()), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.rand(ensure_eager_tensor(MockBackendDirectUniform()), 2, 2)).shape == (2, 2)
 
     # rand fallback line 93
     fb_backend = MockBackendWithFallback()
-    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(fb_backend), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.rand(ensure_eager_tensor(fb_backend), 2, 2)).shape == (2, 2)
 
     # 2. randn tests
     res_randn1 = rand_ops_mod.randn(np, shape=[(3, 2)])
-    assert as_tensor(_get_attr(res_randn1, "shape")) == (3, 2)
+    assert ensure_eager_tensor(res_randn1).shape == (3, 2)
 
     res_randn2 = rand_ops_mod.randn(np, 3, 5)
-    assert as_tensor(_get_attr(res_randn2, "shape")) == (3, 5)
+    assert ensure_eager_tensor(res_randn2).shape == (3, 5)
 
     # randn with random module having only randn
-    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendWithRandnOnly()), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.randn(ensure_eager_tensor(MockBackendWithRandnOnly()), 2, 2)).shape == (2, 2)
 
     # randn with direct randn
-    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendDirectRandn()), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.randn(ensure_eager_tensor(MockBackendDirectRandn()), 2, 2)).shape == (2, 2)
 
     # randn with direct normal
-    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendDirectNormal()), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.randn(ensure_eager_tensor(MockBackendDirectNormal()), 2, 2)).shape == (2, 2)
 
     # randn fallback line 122
     fb_backend_normal = MockBackendWithFallback()
-    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(fb_backend_normal), 2, 2), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.randn(ensure_eager_tensor(fb_backend_normal), 2, 2)).shape == (2, 2)
 
     # 3. randint tests
     res_randint1 = rand_ops_mod.randint(np, 0, 10, (2, 3))
-    assert as_tensor(_get_attr(res_randint1, "shape")) == (2, 3)
+    assert ensure_eager_tensor(res_randint1).shape == (2, 3)
 
     res_randint2 = rand_ops_mod.randint(np, low=2, high=8, shape=(4,))
-    assert as_tensor(_get_attr(res_randint2, "shape")) == (4,)
+    assert ensure_eager_tensor(res_randint2).shape == (4,)
 
     res_randint3 = rand_ops_mod.randint(np)
-    assert as_tensor(_get_attr(res_randint3, "shape")) == ()
+    assert ensure_eager_tensor(res_randint3).shape == ()
 
     # randint fallback line 143
     fb_backend_randint = MockBackendWithFallback()
-    assert as_tensor(_get_attr(rand_ops_mod.randint(as_tensor(fb_backend_randint), 0, 5, (2, 2)), "shape")) == (2, 2)
+    assert ensure_eager_tensor(rand_ops_mod.randint(ensure_eager_tensor(fb_backend_randint), 0, 5, (2, 2))).shape == (2, 2)

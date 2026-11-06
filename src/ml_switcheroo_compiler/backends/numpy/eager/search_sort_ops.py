@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("SortKeyVal")
@@ -45,7 +44,7 @@ def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "partition")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "partition")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Percentile")
@@ -60,7 +59,7 @@ def _np_percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "percentile")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "percentile")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Quantile")
@@ -75,7 +74,7 @@ def _np_quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "quantile")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "quantile")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Unique")
@@ -90,7 +89,7 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(_get_attr(np, "unique")(_get_attr(np, "asarray")(args[0]), *args[1:], **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "unique")(get_backend_member(np, "asarray")(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("ArgSort")
@@ -137,7 +136,7 @@ def _np_top_k(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_callable(_top_k)(*args, **kwargs)
+    return ensure_callable(_top_k)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SearchSorted")

@@ -13,8 +13,7 @@ import pytest
 import ml_switcheroo_compiler.backends.dask.eager as dask_eager
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,28 +28,28 @@ def test_dask_eager_dispatch_native() -> None:
 
     with patch.dict(sys.modules, {"dask.array": mock_da}):
         with patch("ml_switcheroo_compiler.backends.dask.eager.da", mock_da):
-            res = as_callable(execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
+            res = ensure_callable(execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
             assert res == mock_da.add.return_value
             mock_da.add.assert_called_once()
 
             # Non-list arg (e.g. float) to test branch 60->66 and line 66
-            res_scalar = as_callable(execute_op)(None, "Add", 1.0, 2.0)
+            res_scalar = ensure_callable(execute_op)(None, "Add", 1.0, 2.0)
             assert res_scalar == mock_da.add.return_value
 
             # from_array raises Exception to test lines 63-64
             mock_da.from_array.side_effect = RuntimeError("from_array error")
-            res_err = as_callable(execute_op)(None, "Add", [1.0, 2.0])
+            res_err = ensure_callable(execute_op)(None, "Add", [1.0, 2.0])
             assert res_err == mock_da.add.return_value
             mock_da.from_array.side_effect = None
 
             # Ensure silent CPU NumPy fallback is prevented: unmapped op raises BackendNotSupportedError
             with pytest.raises(BackendNotSupportedError):
-                as_callable(execute_op)(None, "NonExistentDaskOp")
+                ensure_callable(execute_op)(None, "NonExistentDaskOp")
 
             # dispatch_eager_op raises BackendNotSupportedError
             with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("dispatch failure")):
                 with pytest.raises(BackendNotSupportedError, match="Operation 'Add' is not implemented"):
-                    as_callable(execute_op)(None, "Add", 1.0)
+                    ensure_callable(execute_op)(None, "Add", 1.0)
 
 
 def test_dask_import_error() -> None:
@@ -67,22 +66,22 @@ def test_dask_import_error() -> None:
         """
         if "dask" in name:
             raise ImportError("Mocked missing dask")
-        return as_callable(orig_import)(name, *args, **kwargs)
+        return ensure_callable(orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
         importlib.reload(dask_eager)
-        assert as_tensor(_get_attr(dask_eager, "da")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(dask_eager).da) is None
 
     # Restore module
     importlib.reload(dask_eager)
-    assert as_tensor(_get_attr(dask_eager, "da")) is not None
+    assert ensure_eager_tensor(ensure_eager_tensor(dask_eager).da) is not None
 
 
 def test_dask_eager_unavailable() -> None:
     """Test that BackendNotSupportedError is raised when Dask is unavailable."""
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
         with pytest.raises(BackendNotSupportedError, match="Dask is not installed"):
-            as_callable(execute_op)(None, "Add", 1, 2)
+            ensure_callable(execute_op)(None, "Add", 1, 2)
 
 
 def test_dask_eager_reductions_and_kwarg_mapping() -> None:
@@ -92,7 +91,7 @@ def test_dask_eager_reductions_and_kwarg_mapping() -> None:
 
     with patch.dict(sys.modules, {"dask.array": mock_da}):
         with patch("ml_switcheroo_compiler.backends.dask.eager.da", mock_da):
-            as_callable(execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
+            ensure_callable(execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
             mock_da.sum.assert_called_once()
             _, kwargs = mock_da.sum.call_args
             assert "axis" in kwargs and kwargs["axis"] == 0
@@ -104,7 +103,7 @@ def test_dask_eager_mock_entry_backend_mod() -> None:
     mock_entry = MagicMock()
     mock_entry.add.return_value = 999
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.dask.eager": mock_entry}):
-        res = as_callable(execute_op)(None, "Add", 1, 2)
+        res = ensure_callable(execute_op)(None, "Add", 1, 2)
         assert res == 999
 
 
@@ -114,7 +113,7 @@ def test_dask_eager_registry_fallback() -> None:
 
     mock_func = MagicMock(return_value="dask_reg_res")
     with patch.object(global_eager_registry, "get", return_value=mock_func):
-        res = as_callable(execute_op)(None, "CustomDaskRegOp", 5)
+        res = ensure_callable(execute_op)(None, "CustomDaskRegOp", 5)
         assert res == "dask_reg_res"
 
 
@@ -128,7 +127,7 @@ def test_dask_eager_remaining_branches() -> None:
 
     # 1. Line 26: _verify_dask_task_graph when da is None
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
-        assert as_callable(_verify_dask_task_graph)("anything") is None
+        assert ensure_callable(_verify_dask_task_graph)("anything") is None
 
     # 2. Line 51: propagate_chunk_shapes when da is None
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):

@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
     BufferAllocationPass,
@@ -16,6 +15,7 @@ from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
     InterferenceGraphColoringAllocator,
     _get_node_byte_size,
 )
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_get_node_byte_size_string() -> None:
@@ -118,7 +118,7 @@ def test_buffer_allocation_run_branches() -> None:
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=(8, 8))
     n1.attributes["dtype"] = "float32"
     g.nodes = NodeDict({"n1": n1})
-    _obj_set_attr(g, "attributes", {"skip_coloring": True})
+    ensure_mutable(g).attributes = ensure_eager_tensor({"skip_coloring": True})
     res = pass_obj.run(g)
     assert res is True
     assert "buffer_color" not in n1.attributes
@@ -128,7 +128,7 @@ def test_buffer_allocation_run_branches() -> None:
     n2 = IRNode(id="n2", op_type="Input", shape_metadata=(8, 8))
     n2.attributes["dtype"] = "float32"
     g2.nodes = NodeDict({"n2": n2})
-    _obj_set_attr(g2, "attributes", None)
+    ensure_mutable(g2).attributes = ensure_eager_tensor(None)
     res2 = pass_obj.run(g2)
     assert res2 is True
     assert "buffer_color" in n2.attributes

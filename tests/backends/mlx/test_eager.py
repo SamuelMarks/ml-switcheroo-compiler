@@ -10,8 +10,7 @@ import pytest
 
 import ml_switcheroo_compiler.backends.mlx.eager as eager
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _set_attr
-from tests.testing_utils import as_callable, as_module_type, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_module_type, ensure_mutable, has_backend_member
 
 try:
     import mlx.core as real_mx
@@ -19,7 +18,7 @@ try:
     _has_real_mlx = True
 except ImportError:
     _has_real_mlx = False
-    real_mx = as_module_type(None)
+    real_mx = ensure_module_type(None)
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -34,14 +33,14 @@ mock_pkg.__spec__ = MagicMock()
 @pytest.fixture(autouse=True, scope="module")
 def _cleanup_mlx_modules() -> Iterator[None]:
     """Setup and restore eager.mx and sys.modules for test module execution."""
-    orig_eager_mx = as_tensor(_get_attr(eager, "mx"))
-    _set_attr(eager, "mx", mock_mx)
+    orig_eager_mx = ensure_eager_tensor(ensure_eager_tensor(eager).mx)
+    ensure_mutable(eager).mx = ensure_eager_tensor(mock_mx)
     if not _has_real_mlx:
         sys.modules["mlx"] = mock_pkg
         sys.modules["mlx.core"] = mock_mx
         sys.modules["mlx.core.distributed"] = MagicMock()
     yield
-    _set_attr(eager, "mx", orig_eager_mx)
+    ensure_mutable(eager).mx = ensure_eager_tensor(orig_eager_mx)
     if not _has_real_mlx:
         sys.modules.pop("mlx", None)
         sys.modules.pop("mlx.core", None)
@@ -64,21 +63,21 @@ def test_get_mlx_func() -> None:
 def test_execute_op() -> None:
     """Test function test_execute_op."""
     mock_mx.zeros = MagicMock(return_value="zeros")
-    assert as_callable(eager.execute_op)(None, "Zeros", shape=(1,)) == "zeros"
+    assert ensure_callable(eager.execute_op)(None, "Zeros", shape=(1,)) == "zeros"
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     global_eager_registry.register("TestOp")(lambda m, *args, **kwargs: "global")
-    assert as_callable(eager.execute_op)(None, "TestOp") == "global"
+    assert ensure_callable(eager.execute_op)(None, "TestOp") == "global"
 
     mock_mx.add = MagicMock(return_value="add")
-    assert as_callable(eager.execute_op)(None, "Add") == "add"
+    assert ensure_callable(eager.execute_op)(None, "Add") == "add"
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._get_mlx_func", return_value=None):
         with pytest.raises(BackendNotSupportedError):
-            as_callable(eager.execute_op)(None, "NotFoundOpXYZ")
+            ensure_callable(eager.execute_op)(None, "NotFoundOpXYZ")
 
 
 def test_mlx_cast() -> None:
@@ -218,7 +217,7 @@ def test_zeros() -> None:
 
         data = (1, 2)
 
-    assert eager._mlx_zeros(mock_mx, as_tensor(TupleShape())) == "zeros"
+    assert eager._mlx_zeros(mock_mx, ensure_eager_tensor(TupleShape())) == "zeros"
 
 
 def test_ones() -> None:
@@ -406,7 +405,7 @@ def test_mlx_execute_op_attribute_error_raise() -> None:
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    as_callable(execute_op)(None, "OpThatThrowsAttr", 5)
+                    ensure_callable(execute_op)(None, "OpThatThrowsAttr", 5)
 
 
 def test_mlx_execute_op_attribute_error_none() -> None:
@@ -418,7 +417,7 @@ def test_mlx_execute_op_attribute_error_none() -> None:
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    as_callable(execute_op)(None, "OpWithoutFunc", 5)
+                    ensure_callable(execute_op)(None, "OpWithoutFunc", 5)
 
 
 def test_mlx_cum_ops_dtype_fallbacks() -> None:
@@ -428,11 +427,11 @@ def test_mlx_cum_ops_dtype_fallbacks() -> None:
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_cummax, _mlx_cummin, _mlx_cumprod
 
     mx = sys.modules["mlx.core"]
-    _set_attr(mx, "cummax", MagicMock())
+    ensure_mutable(mx).cummax = ensure_eager_tensor(MagicMock())
     mx.cummax().astype.return_value = "res"
-    _set_attr(mx, "cummin", MagicMock())
+    ensure_mutable(mx).cummin = ensure_eager_tensor(MagicMock())
     mx.cummin().astype.return_value = "res"
-    _set_attr(mx, "cumprod", MagicMock())
+    ensure_mutable(mx).cumprod = ensure_eager_tensor(MagicMock())
     mx.cumprod().astype.return_value = "res"
 
     class MockDtype:
@@ -445,9 +444,9 @@ def test_mlx_cum_ops_dtype_fallbacks() -> None:
             return "float16"
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="real_dtype"):
-        assert _mlx_cummax(mx, "t", dtype=as_tensor(MockDtype())) == "res"
-        assert _mlx_cummin(mx, "t", dtype="float16") == "res"
-        assert _mlx_cumprod(mx, "t", dtype=as_tensor(MockDtype())) == "res"
+        assert _mlx_cummax(ensure_eager_tensor(mx), "t", dtype=ensure_eager_tensor(MockDtype())) == "res"
+        assert _mlx_cummin(ensure_eager_tensor(mx), "t", dtype="float16") == "res"
+        assert _mlx_cumprod(ensure_eager_tensor(mx), "t", dtype=ensure_eager_tensor(MockDtype())) == "res"
 
 
 def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:
@@ -462,7 +461,7 @@ def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:
 
     # 2. _mlx_relu fallback to maximum
     with patch.dict(sys.modules, {"mlx.nn": None}):
-        if "mlx" in sys.modules and _has_attr(sys.modules["mlx"], "nn"):
+        if "mlx" in sys.modules and has_backend_member(sys.modules["mlx"], "nn"):
             with patch.object(sys.modules["mlx"], "nn", None):
                 mock_mx.maximum.return_value = "max_relu"
                 assert eager._mlx_relu(mock_mx, "x") == "max_relu"
@@ -491,5 +490,5 @@ def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:
     mock_dist = MagicMock()
     mock_dist.all_sum.return_value = mock_tensor
     mock_mx.distributed = mock_dist
-    out = eager._mlx_reduce_scatter(mock_mx, mock_tensor, group=as_tensor(FailingGroup()), op="sum")
+    out = eager._mlx_reduce_scatter(mock_mx, mock_tensor, group=ensure_eager_tensor(FailingGroup()), op="sum")
     assert out == "sliced"

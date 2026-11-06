@@ -11,7 +11,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -31,13 +31,13 @@ def test_tf_not_installed() -> None:
         """
         if name == "tensorflow":
             raise ImportError("No module named tensorflow")
-        return as_callable(orig_import)(name, *args, **kwargs)
+        return ensure_callable(orig_import)(name, *args, **kwargs)
 
     clean_modules = {k: v for k, v in sys.modules.items() if k != "tensorflow"}
     with patch.dict(sys.modules, clean_modules, clear=True):
         with patch("builtins.__import__", side_effect=failing_import):
             with pytest.raises(BackendNotSupportedError, match="TensorFlow is not installed"):
-                as_callable(execute_op)(None, "Add")
+                ensure_callable(execute_op)(None, "Add")
 
 
 def test_tf_eager_execute_op() -> None:
@@ -47,12 +47,12 @@ def test_tf_eager_execute_op() -> None:
 
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         mock_tf.add.return_value = "tf_add_res"
-        res = as_callable(execute_op)(None, "Add", [1, 2], 3)
+        res = ensure_callable(execute_op)(None, "Add", [1, 2], 3)
         assert res == "tf_add_res"
 
         # Test exception during convert_to_tensor
         mock_tf.convert_to_tensor.side_effect = RuntimeError("cannot convert")
-        res = as_callable(execute_op)(None, "Add", [1, 2], 3)
+        res = ensure_callable(execute_op)(None, "Add", [1, 2], 3)
         assert res == "tf_add_res"
 
 
@@ -73,10 +73,10 @@ def test_tf_eager_execute_op_fallback() -> None:
             return "dummy_res"
 
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=dummy_func):
-            res = as_callable(execute_op)(None, "UnknownOp")
+            res = ensure_callable(execute_op)(None, "UnknownOp")
             assert res == "dummy_res"
 
         # Unknown op with no registration
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with pytest.raises(BackendNotSupportedError, match="not supported by tensorflow"):
-                as_callable(execute_op)(None, "OpThatDoesNotExist")
+                ensure_callable(execute_op)(None, "OpThatDoesNotExist")

@@ -5,7 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -23,7 +23,7 @@ def rgb_to_hsv(images: Tensor) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RgbToHsv", images.data)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
 
     return get_op("RgbToHsv")()(images, dtype=DType.Int32)
 
@@ -40,7 +40,7 @@ def hsv_to_rgb(images: Tensor) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("HsvToRgb", images.data)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
 
     return get_op("HsvToRgb")()(images, dtype=DType.Int32)
 
@@ -58,7 +58,7 @@ def adjust_hue(images: Tensor, delta: float) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AdjustHue", images.data, delta=delta)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
 
     kwargs = {"delta": delta}
     return get_op("AdjustHue")()(images, dtype=DType.Int32, **kwargs)
@@ -77,7 +77,7 @@ def adjust_saturation(images: Tensor, saturation_factor: float) -> TensorOrScala
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AdjustSaturation", images.data, saturation_factor=saturation_factor)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
     return _emit_shape_node("AdjustSaturation", [images], {"saturation_factor": saturation_factor}, (), DType.Int32)
 
 
@@ -94,7 +94,7 @@ def adjust_contrast(images: Tensor, contrast_factor: float) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AdjustContrast", images.data, contrast_factor=contrast_factor)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
     return _emit_shape_node("AdjustContrast", [images], {"contrast_factor": contrast_factor}, (), DType.Int32)
 
 
@@ -111,7 +111,7 @@ def adjust_brightness(images: Tensor, delta: float) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AdjustBrightness", images.data, delta=delta)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
 
     kwargs = {"delta": delta}
     return get_op("AdjustBrightness")()(images, dtype=DType.Int32, **kwargs)
@@ -132,7 +132,7 @@ def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> Tens
         data = backend.execute_op("RgbToGrayscale", images.data, data_format=data_format)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node("RgbToGrayscale", [images], {"data_format": data_format}, (), images.dtype)
 
@@ -159,7 +159,7 @@ def random_color_jitter(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomColorJitter",
@@ -188,7 +188,7 @@ def solarize(images: Tensor, threshold: float = 0.5, value_range: TensorOrScalar
         data = backend.execute_op("Solarize", images.data, threshold=threshold)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"threshold": threshold, "value_range": value_range}
@@ -210,7 +210,7 @@ def invert(images: Tensor, value_range: TensorOrScalar = (0, 255)) -> TensorOrSc
         data = backend.execute_op("Invert", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     return get_op("Invert")()(images, value_range=value_range)
@@ -231,7 +231,7 @@ def posterize(images: Tensor, bits: int) -> TensorOrScalar:
         data = backend.execute_op("Posterize", images.data, bits=bits)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"bits": bits}
@@ -253,7 +253,7 @@ def degeneration(images: Tensor, factor: float = 0.0) -> TensorOrScalar:
         data = backend.execute_op("Degeneration", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"factor": factor}
@@ -275,7 +275,7 @@ def augmix(images: Tensor, factor: float = 0.3) -> TensorOrScalar:
         data = backend.execute_op("AugMix", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"factor": factor}
@@ -297,7 +297,7 @@ def auto_contrast(images: Tensor, value_range: TensorOrScalar = (0, 255)) -> Ten
         data = backend.execute_op("AutoContrast", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     return get_op("AutoContrast")()(images, value_range=value_range)
@@ -318,7 +318,7 @@ def rand_augment(images: Tensor, factor: float = 0.5) -> TensorOrScalar:
         data = backend.execute_op("RandAugment", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"factor": factor}
@@ -340,7 +340,7 @@ def random_erasing(images: Tensor, factor: float = 1.0) -> TensorOrScalar:
         data = backend.execute_op("RandomErasing", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"factor": factor}
@@ -361,7 +361,7 @@ def equalization(images: Tensor) -> TensorOrScalar:
         data = backend.execute_op("Equalization", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     return get_op("Equalization")()(images)
@@ -381,7 +381,7 @@ def rgb_to_yiq(images: Tensor) -> TensorOrScalar:
         data = backend.execute_op("RgbToYiq", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node("RgbToYiq", [images], {}, (), images.dtype)
 
@@ -400,7 +400,7 @@ def yiq_to_rgb(images: Tensor) -> TensorOrScalar:
         data = backend.execute_op("YiqToRgb", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node("YiqToRgb", [images], {}, (), images.dtype)
 
@@ -419,7 +419,7 @@ def rgb_to_yuv(images: Tensor) -> TensorOrScalar:
         data = backend.execute_op("RgbToYuv", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node("RgbToYuv", [images], {}, (), images.dtype)
 
@@ -438,7 +438,7 @@ def yuv_to_rgb(images: Tensor) -> TensorOrScalar:
         data = backend.execute_op("YuvToRgb", images.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node("YuvToRgb", [images], {}, (), images.dtype)
 
@@ -460,7 +460,7 @@ class AdjustBrightness(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(images)
         return _typed_ret_1
 
 
@@ -481,7 +481,7 @@ class AdjustContrast(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_2: TensorOrScalar = extract_shape(images)
         return _typed_ret_2
 
 
@@ -502,7 +502,7 @@ class AdjustHue(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_3: TensorOrScalar = extract_shape(images)
         return _typed_ret_3
 
 
@@ -523,7 +523,7 @@ class AdjustSaturation(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_4: TensorOrScalar = extract_shape(images)
         return _typed_ret_4
 
 
@@ -544,7 +544,7 @@ class AugMix(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_5: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_5: TensorOrScalar = extract_shape(images)
         return _typed_ret_5
 
 
@@ -565,7 +565,7 @@ class AutoContrast(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_6: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_6: TensorOrScalar = extract_shape(images)
         return _typed_ret_6
 
 
@@ -586,7 +586,7 @@ class Equalization(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_7: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_7: TensorOrScalar = extract_shape(images)
         return _typed_ret_7
 
 
@@ -607,7 +607,7 @@ class Invert(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_8: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_8: TensorOrScalar = extract_shape(images)
         return _typed_ret_8
 
 
@@ -628,7 +628,7 @@ class Posterize(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_9: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_9: TensorOrScalar = extract_shape(images)
         return _typed_ret_9
 
 
@@ -649,7 +649,7 @@ class RgbToGrayscale(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        s = list(_get_attr(images, "shape", ()))
+        s = list(extract_shape(images))
         if len(s) > 0:
             data_format = kwargs.get("data_format", "channels_last")
             if data_format == "channels_first":
@@ -676,5 +676,5 @@ class Solarize(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_10: TensorOrScalar = _get_attr(images, "shape", ())
+        _typed_ret_10: TensorOrScalar = extract_shape(images)
         return _typed_ret_10

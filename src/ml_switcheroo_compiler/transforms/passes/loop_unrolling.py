@@ -3,12 +3,28 @@
 from __future__ import annotations
 
 import os
+import typing
+from collections.abc import Mapping
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, as_graph, clone_logical_node
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, clone_logical_node
+
+
+@typing.runtime_checkable
+class _NodesGraphProtocol(typing.Protocol):
+    """Protocol for graphs exposing a `nodes` mapping."""
+
+    nodes: Mapping[str, IRNode]
+
+
+@typing.runtime_checkable
+class _IOGraphProtocol(typing.Protocol):
+    """Protocol for graphs exposing `inputs` and `outputs` lists."""
+
+    inputs: list[str]
+    outputs: list[str]
 
 
 def _load_config() -> dict[str, AttributeValue]:
@@ -25,11 +41,11 @@ def _load_config() -> dict[str, AttributeValue]:
     return {}
 
 
-def clone_subgraph(graph: IRGraph, prefix: str, id_map: dict[str, str]) -> list[IRNode]:
+def clone_subgraph(graph: IRGraph | _NodesGraphProtocol, prefix: str, id_map: dict[str, str]) -> list[IRNode]:
     """Clone a subgraph for unrolling.
 
     Args:
-        graph (IRGraph): The subgraph to clone.
+        graph (IRGraph | _NodesGraphProtocol): The subgraph to clone.
         prefix (str): Prefix for new node IDs.
         id_map (dict[str, str]): Mapping from old IDs to new IDs.
 
@@ -38,7 +54,7 @@ def clone_subgraph(graph: IRGraph, prefix: str, id_map: dict[str, str]) -> list[
     """
     cloned_nodes: list[IRNode] = []
 
-    nodes_to_clone = graph.nodes.values() if _has_attr(graph, "nodes") else []
+    nodes_to_clone = graph.nodes.values() if isinstance(graph, _NodesGraphProtocol) else []
 
     for n in nodes_to_clone:
         new_id = f"{prefix}_{n.id}"
@@ -64,11 +80,11 @@ def detect_static_bound(node: IRNode, heuristics: list[dict[str, AttributeValue]
     Returns:
         Optional[int]: The static bound if found, otherwise None.
     """
-    op_type = _get_attr(node, "op_type", "")
+    op_type = str(node.op_type)
     if op_type not in ("WhileLoop", "ForiLoop", "Loop"):
         return None
 
-    attrs = _get_attr(node, "attributes", {})
+    attrs = node.attributes
     max_iter = attrs.get("max_iterations")
     if isinstance(max_iter, int):
         return max_iter
@@ -96,7 +112,7 @@ def _unroll_single_node(
     node_id: str,
     node: IRNode,
     bound: int,
-    body_graph: IRGraph,
+    body_graph: IRGraph | _NodesGraphProtocol,
     new_nodes: dict[str, LogicalNode],
 ) -> None:
     """Unroll iterations of a single bounded loop node into new_nodes.
@@ -105,7 +121,7 @@ def _unroll_single_node(
         node_id (str): The node ID.
         node (IRNode): The loop IR node.
         bound (int): The number of unrolled iterations.
-        body_graph (IRGraph): The loop body graph or block.
+        body_graph (IRGraph | _NodesGraphProtocol): The loop body graph or block.
         new_nodes (dict[str, LogicalNode]): Target node map.
     """
     current_state_ids = list(node.inputs)
@@ -114,9 +130,9 @@ def _unroll_single_node(
 
     for i in range(bound):
         id_map: dict[str, str] = {}
-        body_inputs = _get_attr(body_graph, "inputs", [])
+        body_inputs: list[str] = list(body_graph.inputs) if isinstance(body_graph, _IOGraphProtocol) else []
 
-        if _get_attr(node, "op_type", "") == "ForiLoop" and len(body_inputs) >= 2:
+        if node.op_type == "ForiLoop" and len(body_inputs) >= 2:
             idx_const_id = f"{node_id}_iter{i}_const_idx"
             idx_const_node = IRNode(
                 id=idx_const_id,
@@ -137,7 +153,7 @@ def _unroll_single_node(
         for cn in cloned:
             new_nodes[cn.id] = cn
 
-        body_outputs = _get_attr(body_graph, "outputs", [])
+        body_outputs: list[str] = list(body_graph.outputs) if isinstance(body_graph, _IOGraphProtocol) else []
         current_state_ids = [id_map.get(out, out) for out in body_outputs]
 
     cloned_identity = clone_logical_node(
@@ -169,10 +185,12 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
 
     for node_id, node in graph.nodes.items():
         bound = detect_static_bound(node, heuristics)
-        body_graph = node.attributes.get("body")
-        if bound is not None and bound <= default_limit and body_graph and _has_attr(body_graph, "nodes"):
+        from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
+        body_graph: TensorOrScalar | AttributeValue = node.attributes.get("body")
+        if bound is not None and bound <= default_limit and isinstance(body_graph, _NodesGraphProtocol):
             unrolled = True
-            _unroll_single_node(node_id, node, bound, as_graph(body_graph), new_nodes)
+            _unroll_single_node(node_id, node, bound, body_graph, new_nodes)
             continue
 
         new_nodes[node_id] = node

@@ -11,7 +11,7 @@ import pytest
 import ml_switcheroo_compiler.ops.export as export_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -95,20 +95,20 @@ def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
             """
             self.id: str = node_id
 
-    t_arr = as_callable(Tensor)(as_callable(MockProxy)("node_2"), as_callable(TensorConfig)((1,), "float32", "cpu"))
-    t_untracked = as_callable(Tensor)(as_callable(MockProxy)("missing_node"), as_callable(TensorConfig)((1,), "float32", "cpu"))
-    t_no_id = as_callable(Tensor)(as_callable(DummyWithoutShape)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_arr = ensure_callable(Tensor)(ensure_callable(MockProxy)("node_2"), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_untracked = ensure_callable(Tensor)(ensure_callable(MockProxy)("missing_node"), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_no_id = ensure_callable(Tensor)(ensure_callable(DummyWithoutShape)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
 
     with patch.object(global_tracing_state, "active_graph", graph):
         str_io = io.StringIO()
-        as_callable(export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
+        ensure_callable(export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
         dot_str = str_io.getvalue()
         assert "digraph G {" in dot_str
         assert '"node_2"' in dot_str
         assert '"node_1"' in dot_str
 
-        file_path = as_callable(str)(as_tensor(tmp_path) / as_tensor("out.dot"))
-        as_callable(export_mod.export_to_dot)(file_path, t_arr)
+        file_path = ensure_callable(str)(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("out.dot"))
+        ensure_callable(export_mod.export_to_dot)(file_path, t_arr)
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
             assert "digraph G {" in content

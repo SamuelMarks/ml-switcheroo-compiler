@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import base64
 
-from ml_switcheroo_compiler.backends.registry import as_bytes
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.registry import ensure_bytes
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -33,7 +38,7 @@ def _eager_base64(op: str, data: TensorOrScalar, pad: bool = False) -> TensorOrS
         """
         if d is None:
             return b""
-        raw_bytes = d.encode("utf-8") if isinstance(d, str) else as_bytes(d)
+        raw_bytes = d.encode("utf-8") if isinstance(d, str) else ensure_bytes(d)
         res = base64.b64encode(raw_bytes) if op == "encode" else base64.b64decode(raw_bytes)
         if op == "encode" and not pad:
             res = res.rstrip(b"=")
@@ -67,8 +72,8 @@ def encode_base64(input: Tensor, pad: TensorOrScalar = False, name: TensorOrScal
         "EncodeBase64",
         [input],
         {"pad": pad, "name": name},
-        _get_attr(input, "shape", ()),
-        _get_attr(input, "dtype", "float32"),
+        extract_shape(input),
+        extract_dtype(input),
     )
 
 
@@ -94,8 +99,8 @@ def decode_base64(input: Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
         "DecodeBase64",
         [input],
         {"name": name},
-        _get_attr(input, "shape", ()),
-        _get_attr(input, "dtype", "float32"),
+        extract_shape(input),
+        extract_dtype(input),
     )
 
 
@@ -117,7 +122,7 @@ class EncodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -145,7 +150,7 @@ class DecodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]

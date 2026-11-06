@@ -8,7 +8,15 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    DeviceHolderProtocol,
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -51,9 +59,9 @@ def gather(input: Tensor, axis: int, index: Tensor) -> TensorOrScalar:
             (index.data if type(index).__name__ == "Tensor" else index),
             axis=axis,
         )
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input, index]
-    out_shape = index.shape if _get_attr(index, "shape", None) else inputs[0].shape
+    out_shape = index.shape if extract_shape(index) else inputs[0].shape
     return _emit_shape_node(
         "Gather",
         inputs,
@@ -81,10 +89,10 @@ def gather_nd(input: Tensor, indices: Tensor) -> TensorOrScalar:
             (input.data if type(input).__name__ == "Tensor" else input),
             (indices.data if type(indices).__name__ == "Tensor" else indices),
         )
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input, indices]
-    in_shape = _get_attr(input, "shape", ())
-    idx_shape = _get_attr(indices, "shape", ())
+    in_shape = extract_shape(input)
+    idx_shape = extract_shape(indices)
     if in_shape and idx_shape:
         last_dim = int(idx_shape[-1])
         out_shape = idx_shape[:-1] + in_shape[last_dim:]
@@ -118,10 +126,10 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None) -> TensorOrSca
             (indices.data if type(indices).__name__ == "Tensor" else indices),
             axis=axis,
         )
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [input, indices]
-    in_shape = _get_attr(input, "shape", ())
-    idx_shape = _get_attr(indices, "shape", ())
+    in_shape = extract_shape(input)
+    idx_shape = extract_shape(indices)
     if axis is None:
         out_shape = idx_shape
     else:
@@ -153,8 +161,8 @@ def take_along_axis(arr: TensorOrScalar, indices: TensorOrScalar, axis: int) -> 
     backend = get_active_backend()
     return backend.execute_op(
         "TakeAlongAxis",
-        ((_get_attr(arr, "data") if type(arr).__name__ == "Tensor" else arr) if _has_attr(arr, "device") else arr),
-        ((_get_attr(indices, "data") if type(indices).__name__ == "Tensor" else indices) if _has_attr(indices, "device") else indices),
+        ((extract_data(arr) if type(arr).__name__ == "Tensor" else arr) if isinstance(arr, DeviceHolderProtocol) else arr),
+        ((extract_data(indices) if type(indices).__name__ == "Tensor" else indices) if isinstance(indices, DeviceHolderProtocol) else indices),
         axis=axis,
     )
 
@@ -181,7 +189,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> TensorOrScalar:
             side=side,
         )
 
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, a.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, a.device))
 
     inputs = [a, v]
     attributes = {"side": side}
@@ -209,13 +217,13 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
             (input.data if type(input).__name__ == "Tensor" else input),
             (other.data if type(other).__name__ == "Tensor" else other),
         )
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     inputs = [condition, input, other]
     from ml_switcheroo_compiler.ops.shape_inference import broadcast_shapes
 
-    c_shape = _get_attr(condition, "shape", ())
-    i_shape = _get_attr(input, "shape", ())
-    o_shape = _get_attr(other, "shape", ())
+    c_shape = extract_shape(condition)
+    i_shape = extract_shape(input)
+    o_shape = extract_shape(other)
     try:
         out_shape: tuple[int | str, ...] = tuple(d if isinstance(d, int) else str(d) for d in broadcast_shapes(c_shape, i_shape, o_shape))
     except Exception:
@@ -265,7 +273,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), tensor.dtype, tensor.device),
+            TensorConfig(extract_shape(backend.array(data)), tensor.dtype, tensor.device),
         )
     inputs = [tensor, mask]
     attributes = {"axis": axis}
@@ -293,7 +301,7 @@ def invert_permutation(x: Tensor) -> TensorOrScalar:
         data = backend.execute_op("InvertPermutation", (x.data if type(x).__name__ == "Tensor" else x))
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), x.dtype, x.device),
+            TensorConfig(extract_shape(backend.array(data)), x.dtype, x.device),
         )
     inputs = [x]
     out_shape = x.shape
@@ -344,10 +352,10 @@ class DynamicPartition(OpDef):
         Returns:
             tuple[tuple[int | None, ...], ...]: A tuple of shapes, one per partition.
         """
-        if data is None or partitions is None or not _has_attr(data, "shape"):
+        if data is None or partitions is None or not isinstance(data, ShapeProtocol):
             return ()
-        data_shape = _get_attr(data, "shape", ())
-        part_shape = _get_attr(partitions, "shape", ())
+        data_shape = extract_shape(data)
+        part_shape = extract_shape(partitions)
         extra_shape = data_shape[len(part_shape) :] if len(data_shape) >= len(part_shape) else ()
         return tuple((None, *extra_shape) for _ in range(num_partitions))
 
@@ -373,9 +381,9 @@ class DynamicStitch(OpDef):
             return ()
         data_list = data if isinstance(data, (list, tuple)) else [data]
         indices_list = indices if isinstance(indices, (list, tuple)) else [indices]
-        if data_list and _has_attr(data_list[0], "shape") and indices_list and _has_attr(indices_list[0], "shape"):
-            d_shape = data_list[0].shape
-            idx_shape = indices_list[0].shape
+        if data_list and isinstance(data_list[0], ShapeProtocol) and indices_list and isinstance(indices_list[0], ShapeProtocol):
+            d_shape = extract_shape(data_list[0])
+            idx_shape = extract_shape(indices_list[0])
             extra_shape = d_shape[len(idx_shape) :] if len(d_shape) >= len(idx_shape) else ()
             return (None, *extra_shape)
         return ()
@@ -398,7 +406,7 @@ class TensorScatterSub(OpDef):
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_1
 
 
@@ -421,9 +429,9 @@ class ExtractVolumePatches(OpDef):
         Returns:
             tuple[int, ...]: The inferred volume patches output shape.
         """
-        if input is None or not _has_attr(input, "shape"):
+        if input is None or not isinstance(input, ShapeProtocol):
             return ()
-        in_shape: tuple[int, ...] = _get_attr(input, "shape", ())
+        in_shape: tuple[int, ...] = extract_shape(input)
         if len(in_shape) == 5:
             b, d, h, w, c = in_shape
             kd = ksizes[1] if len(ksizes) > 1 else 1
@@ -461,11 +469,12 @@ class UnravelIndex(OpDef):
         Returns:
             tuple[tuple[int, ...], ...]: Tuple of shapes matching indices.shape for each dimension.
         """
-        if indices is None or dims is None or not _has_attr(indices, "shape"):
+        if indices is None or dims is None or not isinstance(indices, ShapeProtocol):
             return ()
-        idx_shape = _get_attr(indices, "shape", ())
-        dims_val = _get_attr(dims, "data", dims)
-        num_dims = len(dims_val) if isinstance(dims_val, (list, tuple)) else (_get_attr(dims, "shape", (1,))[0] if _get_attr(dims, "shape", None) else 1)
+        idx_shape = extract_shape(indices)
+        dims_val = extract_data(dims)
+        dims_shape = extract_shape(dims)
+        num_dims = len(dims_val) if isinstance(dims_val, (list, tuple)) else (dims_shape[0] if dims_shape else 1)
         return tuple(idx_shape for _ in range(num_dims))
 
 
@@ -488,7 +497,7 @@ class DynamicSliceInDim(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = list(_get_attr(operand, "shape", ()))
+        shape = list(extract_shape(operand))
         if shape:
             shape[axis] = slice_size
         return tuple(shape)
@@ -513,7 +522,7 @@ class DynamicUpdateSliceInDim(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(operand, "shape", ())
+        _typed_ret_2: TensorOrScalar = extract_shape(operand)
         return _typed_ret_2
 
 
@@ -536,7 +545,7 @@ class DynamicIndexInDim(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = list(_get_attr(operand, "shape", ()))
+        shape = list(extract_shape(operand))
         if shape:
             if keepdims:
                 shape[axis] = 1
@@ -564,7 +573,7 @@ class DynamicUpdateIndexInDim(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(operand, "shape", ())
+        _typed_ret_3: TensorOrScalar = extract_shape(operand)
         return _typed_ret_3
 
 
@@ -589,7 +598,7 @@ class SliceInDim(OpDef):
 
         Returns: Tensor: The updated shape tuple.
         """
-        shape = list(_get_attr(operand, "shape", ()))
+        shape = list(extract_shape(operand))
         if shape:
             shape[spec.axis] = (spec.limit_index - spec.start_index + spec.stride - 1) // spec.stride
         return tuple(shape)
@@ -613,7 +622,7 @@ class ScatterApply(OpDef):
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_4: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_4
 
 
@@ -634,7 +643,7 @@ class ScatterMax(OpDef):
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_5: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_5: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_5
 
 
@@ -655,7 +664,7 @@ class ScatterMin(OpDef):
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_6: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_6: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_6
 
 
@@ -676,7 +685,7 @@ class ScatterMul(OpDef):
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_7: TensorOrScalar = _get_attr(tensor, "shape", ())
+        _typed_ret_7: TensorOrScalar = extract_shape(tensor)
         return _typed_ret_7
 
 
@@ -697,7 +706,7 @@ class PutAlongAxis(OpDef):
 
         Returns: Tensor: The shape of the input array or tensor.
         """
-        _typed_ret_8: TensorOrScalar = _get_attr(arr, "shape", ())
+        _typed_ret_8: TensorOrScalar = extract_shape(arr)
         return _typed_ret_8
 
 
@@ -725,15 +734,15 @@ def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> T
         return Tensor(
             data,
             TensorConfig(
-                _get_attr(data, "shape", _get_attr(arr, "shape", ())),
-                _get_attr(arr, "dtype", DType.Float32),
-                _get_attr(arr, "device", config.default_device),
+                extract_shape(data, extract_shape(arr)),
+                extract_dtype(arr, DType.Float32),
+                extract_device(arr, config.default_device),
             ),
         )
     return _emit_shape_node(
         "PutAlongAxis",
         [arr, indices, values],
         {"axis": axis},
-        _get_attr(arr, "shape", ()),
-        _get_attr(arr, "dtype", DType.Float32),
+        extract_shape(arr),
+        extract_dtype(arr, DType.Float32),
     )

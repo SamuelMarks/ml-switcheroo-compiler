@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.shape import _del_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -16,7 +15,7 @@ from ml_switcheroo_compiler.tracing.tracer import (
     increment_trace_count,
     reset_trace_count,
 )
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_proxy_tensor_binary_op() -> None:
@@ -78,15 +77,15 @@ def test_tracer_tape_and_global_instance() -> None:
     """Verify TracerTape life cycle and global _tracer instance methods."""
     tape = TracerTape()
     g = tape.start_tracing("TapeModel")
-    assert as_tensor(g) is not None
+    assert ensure_eager_tensor(g) is not None
     assert bool(global_tracing_state.is_tracing)
 
     node = IRNode(id="n1", op_type="Add", inputs=["a", "b"], outputs=["c"])
     tape.add_node(node)
-    assert as_tensor("n1") in g.nodes
+    assert ensure_eager_tensor("n1") in g.nodes
 
     final_g = tape.stop_tracing()
-    assert as_tensor(final_g) is not None
+    assert ensure_eager_tensor(final_g) is not None
     assert not bool(global_tracing_state.is_tracing)
 
     # Also exercise global _tracer
@@ -107,7 +106,7 @@ def test_proxy_tensor_sparsity_and_branches() -> None:
     # 2. Inside tracing when active_graph has no input_specs
     g = global_tracing_state.start_tracing("no_specs")
     # Remove input_specs attribute to hit branch
-    _del_attr(g, "input_specs")
+    del ensure_mutable(g).input_specs
     ProxyTensor(id="p_no_specs", shape=(2, 2))
     assert "p_no_specs" in g.inputs
 
@@ -126,7 +125,7 @@ def test_proxy_tensor_sparsity_and_branches() -> None:
 
         pass
 
-    _set_attr(global_tracing_state, "active_graph", DummyGraph())
+    ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
     p_dummy = ProxyTensor(id="dummy", shape=(1,))
     assert p_dummy.id == "dummy"
 

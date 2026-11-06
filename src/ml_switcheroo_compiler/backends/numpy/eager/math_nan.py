@@ -5,9 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 @numpy_eager_registry.register("DivideNoNan")
@@ -140,8 +139,8 @@ def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype
     Returns:
             tuple[int, ...]: Result.
     """
-    res = _get_attr(np, "where")(x == 0.0, 0.0, x * _get_attr(np, "log")(y))
-    return as_ndarray(res)
+    res = get_backend_member(np, "where")(x == 0.0, 0.0, x * get_backend_member(np, "log")(y))
+    return ensure_ndarray(res)
 
 
 @numpy_eager_registry.register("Nanmean")

@@ -56,8 +56,18 @@ packages = ["src/ml_switcheroo_compiler"]
 target-version = "py310"
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
-lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR09", "D"]
-lint.ignore = ["B905", "B009", "B010"]
+lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "D", "ANN401", "PGH003", "TID251"]
+lint.ignore = ["B905"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"cdd._DynamicAttrType".msg = "Disguised Any smuggling via cdd._DynamicAttrType is strictly banned; use concrete types or protocols."
+"typing.Any".msg = "typing.Any is strictly banned; use concrete types, generics, or structural protocols."
+"typing.cast".msg = "typing.cast is strictly banned; use proper type narrowing or runtime validation."
+"typing_extensions.Any".msg = "typing_extensions.Any is strictly banned; use concrete types, generics, or structural protocols."
+"typing_extensions.cast".msg = "typing_extensions.cast is strictly banned; use proper type narrowing or runtime validation."
+"operator.attrgetter".msg = "operator.attrgetter is strictly banned; access attributes directly on strongly-typed objects."
+"operator.itemgetter".msg = "operator.itemgetter is strictly banned; index directly on strongly-typed mappings/sequences."
+"operator.methodcaller".msg = "operator.methodcaller is strictly banned; invoke methods directly on strongly-typed protocols."
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -78,18 +88,37 @@ plugins = ["pydantic.mypy"]
 strict = true
 disallow_any_explicit = true
 disallow_any_generics = true
+disallow_any_decorated = true
 disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
 disallow_subclassing_any = true
+warn_return_any = true
+extra_checks = true
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unreachable = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+disable_error_code = ["override"]
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+    "truthy-iterable",
+    "possibly-undefined",
+    "redundant-self",
+    "unimported-reveal",
+]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_any_decorated = false
 
 [[tool.mypy.overrides]]
 module = [
@@ -159,7 +188,7 @@ ignore-module = false
 ignore-nested-functions = false
 ignore-nested-classes = false
 ignore-setters = false
-ignore-overloaded-functions = false
+ignore-overloaded-functions = true
 fail-under = 100
 exclude = ["tests", "docs", "ml-switcheroo-ir"]
 ignore-regex = []

@@ -3,18 +3,27 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 import re
 import typing  # noqa: F401
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from types import ModuleType
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_str, as_tensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_str,
+)
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
+@typing.runtime_checkable
 class VisitorProtocol(typing.Protocol):
     """Protocol for AST and IR visitor delegates."""
 
@@ -25,6 +34,51 @@ class VisitorProtocol(typing.Protocol):
             str: String representation.
         """
         ...
+
+
+@typing.runtime_checkable
+class CleanableResourceProtocol(typing.Protocol):
+    """Protocol for temporary directory or build resources supporting cleanup."""
+
+    def cleanup(self) -> None:
+        """Release or clean up associated resources."""
+        ...
+
+
+def _resolve_visitor_method(
+    target: VisitorProtocol,
+    method_name: str,
+) -> TypedVariadicCallable[EagerValue] | None:
+    """Resolve a bound visitor method on `target` without dynamic reflection builtins.
+
+    Args:
+        target (VisitorProtocol): Visitor or generator instance.
+        method_name (str): Name of the `visit_<Op>` method to look up.
+
+    Returns:
+        TypedVariadicCallable[EagerValue] | None: Bound callable if present, otherwise None.
+    """
+    members = dict(inspect.getmembers(target))
+    raw = members.get(method_name)
+    if raw is None or not callable(raw):
+        return None
+    fn = ensure_callable(raw)
+    if inspect.ismethod(raw):
+        return fn
+
+    def _bound(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Invoke bound visitor method on `target`.
+
+        Args:
+            *args (EagerValue): Positional visitor arguments.
+            **kwargs (EagerValue): Keyword visitor arguments.
+
+        Returns:
+            EagerValue: Visitor method return value.
+        """
+        return fn(target, *args, **kwargs)
+
+    return _bound
 
 
 if typing.TYPE_CHECKING:
@@ -73,11 +127,11 @@ class CompiledArtifact(pydantic.BaseModel):
         """
         if self.callable_fn is None:
             raise RuntimeError("CompiledArtifact has no executable callable bound.")
-        return as_callable(self.callable_fn)(*args, **kwargs)
+        return ensure_callable(self.callable_fn)(*args, **kwargs)
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
-        if self.temp_dir is not None and _has_attr(self.temp_dir, "cleanup"):
+        if self.temp_dir is not None and isinstance(self.temp_dir, CleanableResourceProtocol):
             self.temp_dir.cleanup()
             self.temp_dir = None
 
@@ -95,9 +149,28 @@ class CompiledArtifact(pydantic.BaseModel):
         """
         if self.metadata is not None and item in self.metadata:
             return self.metadata[item]
-        if _has_attr(self, item):
-            return as_tensor(_get_attr(self, item))
+        fields: dict[str, EagerValue] = {
+            "callable_fn": self.callable_fn,
+            "binary_bytes": ensure_eager_tensor(self.binary_bytes),
+            "source_code": self.source_code,
+            "metadata": ensure_eager_tensor(self.metadata),
+            "temp_dir": self.temp_dir,
+        }
+        if item in fields:
+            return fields[item]
         raise KeyError(item)
+
+
+def _is_compiled_artifact(val: EagerValue) -> typing.TypeGuard[CompiledArtifact]:
+    """Type guard narrowing `val` to `CompiledArtifact`.
+
+    Args:
+        val (EagerValue): Candidate compiled artifact or callable.
+
+    Returns:
+        bool: True for runtime compiled artifacts.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 class IRGraphWalker:
@@ -238,6 +311,48 @@ class FormatterProxyMixin:
         return self.formatter.assign_var_name(node_id, prefix)
 
 
+@typing.runtime_checkable
+class _GraphHolderProtocol(typing.Protocol):
+    """Protocol for generator mixins holding an `IRGraph` attribute."""
+
+    @property
+    def graph(self) -> IRGraph | None:
+        """Return the associated IRGraph if present.
+
+        Returns:
+            IRGraph | None: Associated computation graph.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _NodeAttributesProtocol(typing.Protocol):
+    """Protocol for IR nodes exposing `.attributes`."""
+
+    @property
+    def attributes(self) -> Mapping[str, AttributeValue] | None:
+        """Return node attributes mapping.
+
+        Returns:
+            Mapping[str, AttributeValue] | None: Node attributes.
+        """
+        ...
+
+
+def _extract_node_attributes(node: IRNode | EagerValue) -> Mapping[str, AttributeValue]:
+    """Return `node.attributes` if defined on `node`, or an empty mapping.
+
+    Args:
+        node (IRNode | EagerValue): Target IR node or mock node.
+
+    Returns:
+        Mapping[str, AttributeValue]: Node attributes mapping.
+    """
+    if isinstance(node, _NodeAttributesProtocol) and isinstance(node.attributes, Mapping):
+        return node.attributes
+    return {}
+
+
 class EmitUtilsMixin:
     """Provide mixin for emit utilities."""
 
@@ -255,7 +370,7 @@ class EmitUtilsMixin:
                 self.add_line(f"return {returns[0]}")
             else:
                 self.add_line(f"return ({', '.join(returns)})")
-        elif _has_attr(self, "graph") and _get_attr(self.graph, "outputs", None):
+        elif isinstance(self, _GraphHolderProtocol) and self.graph is not None and self.graph.outputs:
             out_vars: list[str] = [self.formatter.var_names.get(out_id, out_id) for out_id in self.graph.outputs]
             if len(out_vars) == 1:
                 self.add_line(f"return {out_vars[0]}")
@@ -285,7 +400,11 @@ class class_or_instance_method:
         """
         self.fn = fn
 
-    def __get__(self, obj: BaseGenerator | EagerValue, cls: type | None = None) -> TypedVariadicCallable[CompiledArtifact]:
+    def __get__(
+        self,
+        obj: BaseGenerator | EagerValue,
+        cls: type | None = None,
+    ) -> TypedVariadicCallable[CompiledArtifact]:
         """Bind method to instance if present, else to class.
 
         Args:
@@ -296,7 +415,23 @@ class class_or_instance_method:
             TypedVariadicCallable[CompiledArtifact]: Bound callable.
         """
         target = obj if obj is not None else cls
-        return lambda *args, **kwargs: _cast_val(TypedVariadicCallable[CompiledArtifact], self.fn)(target, *args, **kwargs)
+        fn = ensure_callable(self.fn)
+
+        def _bound(*args: EagerValue, **kwargs: EagerValue) -> CompiledArtifact:
+            """Invoke bound method on `target` (instance or class).
+
+            Args:
+                *args (EagerValue): Positional arguments.
+                **kwargs (EagerValue): Keyword arguments.
+
+            Returns:
+                CompiledArtifact: Wrapped method result.
+            """
+            res = fn(target, *args, **kwargs)
+            assert _is_compiled_artifact(res)
+            return res
+
+        return _bound
 
 
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
@@ -306,6 +441,15 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
     module: ModuleType
     get_numpy_rng: TypedVariadicCallable[TensorLike]
     numpy: TypedVariadicCallable[EagerValue]
+    backend_name: str | None = None
+    graph: IRGraph = IRGraph()
+    visitors: list[VisitorProtocol] = []
+    _aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] | None = None
+    _output_returns: list[str] | None = None
+    _cholesky_vjp_imported: bool = False
+    _lu_vjp_imported: bool = False
+    _qr_vjp_imported: bool = False
+    _svd_vjp_imported: bool = False
 
     if typing.TYPE_CHECKING:
 
@@ -351,17 +495,6 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             """
             ...
 
-        def __getattr__(self, name: str) -> TypedVariadicCallable[str]:
-            """Resolve dynamic visitor or mapping methods on generator instances.
-
-            Args:
-                name (str): Method or attribute name.
-
-            Returns:
-                TypedVariadicCallable[str]: Dynamic method callable.
-            """
-            ...
-
     def __init__(
         self,
         graph: IRGraph,
@@ -376,7 +509,8 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
-        self.visitors: list[VisitorProtocol] = [self] + (list(_cast_val("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
+        delegate_items: list[VisitorProtocol] = [d for d in delegates if isinstance(d, VisitorProtocol)] if isinstance(delegates, (list, tuple)) else []
+        self.visitors: list[VisitorProtocol] = [self] + delegate_items
 
     def get_language(self) -> str:
         """Get the target programming language for code emission.
@@ -473,7 +607,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         out_var = str(all_attrs.get("out_var") or "")
         subs: dict[str, str] = {
-            "out": out_var or self.assign_var_name(_get_attr(node, "id", "")),
+            "out": out_var or self.assign_var_name(node.id),
         }
         for i, iv in enumerate(input_vars):
             subs[f"in{i}"] = iv
@@ -497,11 +631,11 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: Generated code line or expression.
         """
-        backend_name = _get_attr(self, "backend_name", None) or self.get_fallback_prefix()
-        op_name = _get_attr(node, "op_type", "")
+        backend_name = self.backend_name or self.get_fallback_prefix()
+        op_name = node.op_type
         ast_template, kwarg_map, target_api = self._load_op_mapping_info(backend_name, op_name)
 
-        all_attrs: dict[str, EagerValue] = dict(_get_attr(node, "attributes", {}) or {})
+        all_attrs: dict[str, EagerValue] = dict(_extract_node_attributes(node))
         all_attrs.update(kwargs)
         translated_kwargs = self._translate_node_kwargs(all_attrs, kwarg_map)
 
@@ -527,18 +661,18 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: The computed result.
         """
-        op_type = _get_attr(node, "op_type", "")
+        op_type = node.op_type
         method_name = f"visit_{op_type}"
-        for visitor in _get_attr(self, "visitors", []):
-            if _has_attr(visitor, method_name):
-                method = _get_attr(visitor, method_name)
-                return as_str(method(node, input_vars, **kwargs))
-        if _has_attr(self, method_name) and method_name != "visit_OpNode":
-            method = _get_attr(self, method_name)
-            return as_str(method(node, input_vars, **kwargs))
-        if _has_attr(self, "visit_OpNode"):
-            _typed_ret_1: str = self.visit_OpNode(node, input_vars, **kwargs)
-            return _typed_ret_1
+        for visitor in self.visitors:
+            method = _resolve_visitor_method(visitor, method_name)
+            if method is not None:
+                return ensure_str(method(node, input_vars, **kwargs))
+        self_method = _resolve_visitor_method(self, method_name) if method_name != "visit_OpNode" else None
+        if self_method is not None:
+            return ensure_str(self_method(node, input_vars, **kwargs))
+        op_node_method = _resolve_visitor_method(self, "visit_OpNode")
+        if op_node_method is not None:
+            return ensure_str(op_node_method(node, input_vars, **kwargs))
         return self.generic_visit(node, input_vars, **kwargs)
 
     def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
@@ -581,7 +715,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         return "axis"
 
     @class_or_instance_method
-    def compile_aot(self, graph: IRGraph | None = None, **kwargs: EagerValue) -> EagerValue:
+    def compile_aot(self, graph: IRGraph | None = None, **kwargs: EagerValue) -> CompiledArtifact:
         """Compile an IRGraph into an ahead-of-time binary artifact or callable executable.
 
         Can be invoked either as an instance method (e.g. generator.compile_aot())
@@ -592,28 +726,33 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             **kwargs (EagerValue): Compiler options, optimization levels, or destination paths.
 
         Returns:
-            EagerValue: Compiled binary artifact, path, or callable execution wrapper.
+            CompiledArtifact: Compiled binary artifact, path, or callable execution wrapper.
 
         Raises:
             NotImplementedError: If AOT compilation is not implemented for this backend.
         """
-        target_graph = graph if graph is not None else _get_attr(self, "graph", None)
-        if target_graph is None:
-            target_graph = IRGraph()
+        self_obj: BaseGenerator | type[BaseGenerator] = self
+        raw_graph: IRGraph | None = graph if graph is not None else (self_obj.graph if not isinstance(self_obj, type) else None)
+        target_graph: IRGraph = raw_graph if isinstance(raw_graph, IRGraph) else IRGraph()
 
         if isinstance(self, type):
             instance = self(target_graph)
-            return as_tensor(instance.compile_aot(target_graph, **kwargs))
+            res_inst = instance.compile_aot(target_graph, **kwargs)
+            assert _is_compiled_artifact(res_inst)
+            return res_inst
 
-        if not _has_attr(self, "_aot_cache") or _get_attr(self, "_aot_cache", None) is None:
-            self._aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] = {}
+        if self._aot_cache is None:
+            self._aot_cache = {}
 
         cache_key = (id(target_graph), tuple(sorted((str(k), str(v)) for k, v in kwargs.items())))
         if cache_key in self._aot_cache:
-            return self._aot_cache[cache_key]
+            cached = self._aot_cache[cache_key]
+            assert _is_compiled_artifact(cached)
+            return cached
 
         artifact = self._compile_aot_impl(target_graph, **kwargs)
         self._aot_cache[cache_key] = artifact
+        assert _is_compiled_artifact(artifact)
         return artifact
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
@@ -658,7 +797,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         if device_type is not None:
             dtype_lower = str(device_type).lower()
-            return [d for d in devices if _get_attr(d.device_type, "value") == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
+            return [d for d in devices if (d.device_type if isinstance(d.device_type, str) else d.device_type.value) == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
         return devices
 
     @classmethod
@@ -686,50 +825,34 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         del device
         return {"current": 0, "peak": 0}
 
-    if typing.TYPE_CHECKING:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+        """Fallback visit method for operations not explicitly handled.
 
-        def generic_visit(self, node: IRNode, input_vars: list[str]) -> str:
-            """Fallback visit method for operations not explicitly handled.
+        Args:
+            node (IRNode): The node.
+            input_vars (list[str]): The inputs.
+            **kwargs (EagerValue): Additional attributes.
 
-            Args:
-                node (IRNode): The node.
-                input_vars (list[str]): The inputs.
+        Returns:
+            str: The code string.
+        """
+        op_type = node.op_type
+        ops_map = self.get_ops_map(kwargs)
+        if op_type in ops_map:
+            fmt = ops_map[op_type]
+            fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
+            fmt = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
+            return fmt
 
-            Returns:
-                str: The code string.
-            """
-            ...
-
-    else:
-
-        def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-            """Fallback visit method for operations not explicitly handled.
-
-            Args:
-                node (IRNode): The node.
-                input_vars (list[str]): The inputs.
-                **kwargs: Additional attributes.
-
-            Returns:
-                str: The code string.
-            """
-            op_type = _get_attr(node, "op_type", "")
-            ops_map = self.get_ops_map(kwargs)
-            if op_type in ops_map:
-                fmt = ops_map[op_type]
-                fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
-                fmt = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
-                return fmt
-
-            ctx = FormatterContext(
-                prefix=self.get_fallback_prefix(),
-                op_type=op_type,
-                input_vars=input_vars,
-                kwargs=kwargs,
-                axis_kwarg=self.get_fallback_axis_kwarg(),
-                keepdims_kwarg=self.get_fallback_keepdims_kwarg(),
-            )
-            return OpFormatter.format_generic_fallback(ctx)
+        ctx = FormatterContext(
+            prefix=self.get_fallback_prefix(),
+            op_type=op_type,
+            input_vars=input_vars,
+            kwargs=kwargs,
+            axis_kwarg=self.get_fallback_axis_kwarg(),
+            keepdims_kwarg=self.get_fallback_keepdims_kwarg(),
+        )
+        return OpFormatter.format_generic_fallback(ctx)
 
     @classmethod
     def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
@@ -770,7 +893,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             input_vars (list[str]): The input_vars parameter for the operation.
             returns (str): The returns parameter for the operation.
         """
-        if not _has_attr(self, "_output_returns"):
+        if self._output_returns is None:
             self._output_returns = []
         self._output_returns.append(returns)
 
@@ -846,6 +969,3 @@ class ClassBasedGenerator(BaseGenerator):
         self.indent_level += 1
         self._generate_body()
         return "\n".join(self.code)
-
-
-from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue

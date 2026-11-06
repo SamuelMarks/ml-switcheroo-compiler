@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.distributed_ops import (
     AllGather,
@@ -45,7 +44,7 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     send,
     shard_tensor,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -60,7 +59,7 @@ class MockArray:
         Args:
             shape: Test parameter `shape`.
         """
-        self.shape = as_callable(tuple)(shape)
+        self.shape = ensure_callable(tuple)(shape)
 
 
 def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -70,36 +69,35 @@ def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op1 = ShardTensor()
-    assert as_callable(op1.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op1.infer_shape)(None) == ()
+    assert ensure_callable(op1.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op1.infer_shape)(None) == ()
 
     op2 = NcclAllReduce()
-    assert as_callable(op2.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op2.infer_shape)(None) == ()
+    assert ensure_callable(op2.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op2.infer_shape)(None) == ()
 
     op3 = HierarchicalCopyAllReduce()
-    assert as_callable(op3.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op3.infer_shape)(None) == ()
+    assert ensure_callable(op3.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op3.infer_shape)(None) == ()
 
     op4 = Broadcast()
-    assert as_callable(op4.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op4.infer_shape)(None) == ()
+    assert ensure_callable(op4.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op4.infer_shape)(None) == ()
 
     op5 = AllGather()
-    assert as_callable(op5.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op5.infer_shape)(as_callable(MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
-    assert as_callable(op5.infer_shape)(None) == ()
+    assert ensure_callable(op5.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op5.infer_shape)(ensure_callable(MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
+    assert ensure_callable(op5.infer_shape)(None) == ()
 
     op6 = Reduce()
-    assert as_callable(op6.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op6.infer_shape)(None) == ()
+    assert ensure_callable(op6.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op6.infer_shape)(None) == ()
 
     op7 = AllReduce()
-    assert as_callable(op7.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op7.infer_shape)(None) == ()
-    _get_attr(_state, "update")({"op1": op1, "op2": op2, "op3": op3, "op4": op4})
-    _get_attr(_state, "update")({"op5": op5, "op6": op6, "op7": op7})
-    _state.update(_caller_locals())
+    assert ensure_callable(op7.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op7.infer_shape)(None) == ()
+    _state.update(ensure_tensor_dict({"op1": op1, "op2": op2, "op3": op3, "op4": op4}))
+    _state.update(ensure_tensor_dict({"op5": op5, "op6": op6, "op7": op7}))
 
 
 def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -109,36 +107,35 @@ def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op8 = ReduceScatter()
-    assert as_callable(op8.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
-    assert as_callable(op8.infer_shape)(as_callable(MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
-    assert as_callable(op8.infer_shape)(None) == ()
+    assert ensure_callable(op8.infer_shape)(ensure_callable(MockArray)((2, 2))) == (2, 2)
+    assert ensure_callable(op8.infer_shape)(ensure_callable(MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
+    assert ensure_callable(op8.infer_shape)(None) == ()
 
     op9 = AllToAll()
-    assert as_callable(op9.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op9.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op9.infer_shape() == ()
 
     op10 = BroadcastArrays()
-    assert as_callable(op10.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op10.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op10.infer_shape() == ()
 
     op11 = BroadcastTo()
-    assert as_callable(op11.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op11.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op11.infer_shape() == ()
 
     op12 = BroadcastToRank()
-    assert as_callable(op12.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op12.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op12.infer_shape() == ()
 
     op13 = BroadcastedIota()
-    assert as_callable(op13.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op13.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op13.infer_shape() == ()
 
     op14 = Pbroadcast()
-    assert as_callable(op14.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op14.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op14.infer_shape() == ()
-    _get_attr(_state, "update")({"op10": op10, "op11": op11, "op12": op12, "op13": op13})
-    _get_attr(_state, "update")({"op14": op14, "op8": op8, "op9": op9})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"op10": op10, "op11": op11, "op12": op12, "op13": op13}))
+    _state.update(ensure_tensor_dict({"op14": op14, "op8": op8, "op9": op9}))
 
 
 def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -148,31 +145,31 @@ def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op15 = Pmax()
-    assert as_callable(op15.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op15.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op15.infer_shape() == ()
 
     op16 = Pmin()
-    assert as_callable(op16.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op16.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op16.infer_shape() == ()
     op17 = Outfeed()
-    assert as_callable(op17.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == ()
+    assert ensure_callable(op17.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == ()
     assert op17.infer_shape() == ()
 
     op18 = Pshuffle()
-    assert as_callable(op18.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op18.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op18.infer_shape() == ()
 
     op19 = Pswapaxes()
-    assert as_callable(op19.infer_shape)(as_callable(MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
+    assert ensure_callable(op19.infer_shape)(ensure_callable(MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
 
     op20 = Ppermute()
-    assert as_callable(op20.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
+    assert ensure_callable(op20.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (2, 2)
     assert op20.infer_shape() == ()
 
     op21 = PsumScatter()
-    assert as_callable(op21.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (None, 2)
-    _get_attr(_state, "update")({"op15": op15, "op16": op16, "op17": op17, "op18": op18})
-    _get_attr(_state, "update")({"op19": op19, "op20": op20, "op21": op21})
+    assert ensure_callable(op21.infer_shape)(ensure_callable(MockArray)((2, 2)), ensure_callable(MockArray)((2, 1))) == (None, 2)
+    _state.update(ensure_tensor_dict({"op15": op15, "op16": op16, "op17": op17, "op18": op18}))
+    _state.update(ensure_tensor_dict({"op19": op19, "op20": op20, "op21": op21}))
 
 
 def test_distributed_ops_infer_shape() -> None:

@@ -16,7 +16,6 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
 from ml_switcheroo_compiler.core.shape import (
-    StructuralOperandProtocol,
     TensorOrScalar,
     invoke_callable,
     is_traced_data,
@@ -134,7 +133,7 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
             cur = cur.data
         if is_traced_data(cur.data):
             return [str(cur.data.id)]
-        raw_cur: StructuralOperandProtocol | TensorOrScalar = cur
+        raw_cur: TensorOrScalar | _HasIdProtocol = cur
         if isinstance(raw_cur, _HasIdProtocol):
             return [str(raw_cur.id)]
         return [str(uuid.uuid4())]

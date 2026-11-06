@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ml_switcheroo_compiler.ops.nn.rnn as rnn_module
 import ml_switcheroo_compiler.ops.nn.rnn_cell as rnn_cell_module
-from ml_switcheroo_compiler.core.shape import _has_attr
 
 
 def test_rnn_exports() -> None:
@@ -14,4 +13,4 @@ def test_rnn_exports() -> None:
     assert rnn_module.gru_step is rnn_module.gru_cell
 
     for item in rnn_module.__all__:
-        assert _has_attr(rnn_module, item)
+        assert item in dir(rnn_module)

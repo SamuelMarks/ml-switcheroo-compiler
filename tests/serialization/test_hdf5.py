@@ -8,9 +8,8 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.serialization.formats.hdf5 import HDF5WeightLoader, HDF5WeightSaver
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -28,7 +27,7 @@ def test_hdf5_save_and_load() -> None:
         filepath = os.path.join(tmpdir, "model.h5")
 
         saver = HDF5WeightSaver()
-        as_callable(saver.save)(weights, filepath)
+        ensure_callable(saver.save)(weights, filepath)
 
         assert os.path.exists(filepath)
 
@@ -38,7 +37,7 @@ def test_hdf5_save_and_load() -> None:
         assert len(loaded_weights) == 3
         for k, v in weights.items():
             assert k in loaded_weights
-            as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(loaded_weights, "__getitem__")(k)), v)
+            ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(loaded_weights)[k], v)
 
 
 def test_hdf5_schema_validation() -> None:
@@ -46,7 +45,7 @@ def test_hdf5_schema_validation() -> None:
     from ml_switcheroo_compiler.serialization.formats.hdf5 import WeightSchema
 
     # Should construct successfully
-    schema = as_callable(WeightSchema)(data={"a": as_callable(np.array)([1, 2, 3])})
+    schema = ensure_callable(WeightSchema)(data={"a": ensure_callable(np.array)([1, 2, 3])})
     assert "a" in schema.data
 
 
@@ -67,7 +66,7 @@ def test_hdf5_missing_h5py(monkeypatch: EagerTensorProtocol) -> None:
 
     saver = hdf5_mod.HDF5WeightSaver()
     with pytest.raises(ImportError, match="h5py is required for HDF5 weight saving"):
-        as_callable(saver.save)({"a": as_callable(np.array)([1])}, "dummy.h5")
+        ensure_callable(saver.save)({"a": ensure_callable(np.array)([1])}, "dummy.h5")
 
 
 def test_h5_and_hdf5_import_error_coverage(tmp_path: EagerTensorProtocol) -> None:

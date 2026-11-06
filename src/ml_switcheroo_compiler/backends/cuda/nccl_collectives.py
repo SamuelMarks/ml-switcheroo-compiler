@@ -6,9 +6,9 @@ import ctypes
 import logging
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_int
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_int
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
 
 # NCCL Data types
 NCCL_FLOAT32: int = 7
@@ -29,17 +29,20 @@ class _NcclUniqueId(ctypes.Structure):
     _fields_ = [("internal", ctypes.c_char * 128)]
 
 
+_CArgT = typing.TypeVar("_CArgT")
+
+
 class _CtypesFuncProtocol(typing.Protocol):
     """Protocol for ctypes C function objects."""
 
     argtypes: EagerValue
     restype: EagerValue
 
-    def __call__(self, *args: StructuralOperandProtocol | EagerValue) -> int:
+    def __call__(self, *args: _CArgT) -> int:
         """Invoke C function symbol.
 
         Args:
-            *args (EagerValue): C function arguments.
+            *args (_CArgT): C function arguments.
 
         Returns:
             int: Status code.
@@ -57,13 +60,13 @@ def _get_c_fn(lib: EagerValue, name: str) -> _CtypesFuncProtocol:
     Returns:
         _CtypesFuncProtocol: Typed ctypes callable.
     """
-    raw: StructuralOperandProtocol = _get_attr(lib, name)
+    raw: EagerValue = get_backend_member(lib, name)
 
-    def _guard(val: StructuralOperandProtocol) -> typing.TypeGuard[_CtypesFuncProtocol]:
+    def _guard(val: EagerValue) -> typing.TypeGuard[_CtypesFuncProtocol]:
         """Narrow value to `_CtypesFuncProtocol`.
 
         Args:
-            val (StructuralOperandProtocol): Candidate function object.
+            val (EagerValue): Candidate function object.
 
         Returns:
             bool: Always True when non-None.
@@ -120,7 +123,7 @@ class NCCLDriver:
         Returns:
             int: Memory address pointer value.
         """
-        if self.cuda_rt is not None and _has_attr(self.cuda_rt, "cudaMalloc"):
+        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMalloc"):
             ptr = ctypes.c_void_p()
             fn = self.cuda_rt.cudaMalloc
             fn.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t]
@@ -140,7 +143,7 @@ class NCCLDriver:
         Args:
             ptr (int): Pointer address to free.
         """
-        if self.cuda_rt is not None and _has_attr(self.cuda_rt, "cudaFree") and ptr not in self._allocated_buffers:
+        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaFree") and ptr not in self._allocated_buffers:
             try:
                 fn = self.cuda_rt.cudaFree
                 fn.argtypes = [ctypes.c_void_p]
@@ -158,11 +161,11 @@ class NCCLDriver:
             host_array (EagerValue): Source host NumPy array or buffer.
             dev_ptr (int): Destination accelerator device pointer address.
         """
-        raw_ct = _get_attr(host_array, "ctypes", None)
-        raw_dp = _get_attr(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(as_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(as_int(_get_attr(host_array, "nbytes", 0)))
-        if self.cuda_rt is not None and _has_attr(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = get_backend_member(host_array, "ctypes", None)
+        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(ensure_int(get_backend_member(host_array, "nbytes", 0)))
+        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
             try:
                 fn = self.cuda_rt.cudaMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -172,7 +175,7 @@ class NCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        as_callable(_get_attr(ctypes, "memmove"))(dev_ptr, buf_ptr, nbytes)
+        ensure_callable(get_backend_member(ctypes, "memmove"))(dev_ptr, buf_ptr, nbytes)
 
     def copy_device_to_host(self, dev_ptr: int, out_array: EagerValue) -> None:
         """Transfer memory buffer from accelerator device pointer to destination host NumPy array.
@@ -181,11 +184,11 @@ class NCCLDriver:
             dev_ptr (int): Source accelerator device pointer address.
             out_array (EagerValue): Destination host NumPy array or buffer.
         """
-        raw_ct = _get_attr(out_array, "ctypes", None)
-        raw_dp = _get_attr(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(as_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(as_int(_get_attr(out_array, "nbytes", 0)))
-        if self.cuda_rt is not None and _has_attr(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = get_backend_member(out_array, "ctypes", None)
+        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(ensure_int(get_backend_member(out_array, "nbytes", 0)))
+        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
             try:
                 fn = self.cuda_rt.cudaMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -195,7 +198,7 @@ class NCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        as_callable(_get_attr(ctypes, "memmove"))(buf_ptr, dev_ptr, nbytes)
+        ensure_callable(get_backend_member(ctypes, "memmove"))(buf_ptr, dev_ptr, nbytes)
 
     def _check_available(self) -> None:
         """Verify that NCCL hardware and shared library are available.
@@ -391,7 +394,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            if _has_attr(self.nccl_lib, "ncclAllToAll"):
+            if has_backend_member(self.nccl_lib, "ncclAllToAll"):
                 fn = _get_c_fn(self.nccl_lib, "ncclAllToAll")
                 fn.argtypes = [
                     ctypes.c_void_p,
@@ -586,7 +589,7 @@ class NCCLDriver:
         """
         if stream is None:
             return 0
-        if self.cuda_rt is not None and _has_attr(self.cuda_rt, "cudaStreamSynchronize"):
+        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaStreamSynchronize"):
             try:
                 fn = self.cuda_rt.cudaStreamSynchronize
                 fn.argtypes = [ctypes.c_void_p]

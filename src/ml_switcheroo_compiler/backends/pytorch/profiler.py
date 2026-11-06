@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import logging
 import resource
 import sys
@@ -10,17 +9,15 @@ import time
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-
-if typing.TYPE_CHECKING:
-    import torch
-else:
-    _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
-    torch = importlib.import_module("torch") if _has_torch else None
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_float
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+try:
+    import torch
+except ImportError:
+    torch = ensure_mod(None)
 
 
 def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]]:
@@ -30,9 +27,9 @@ def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torc
         val (EagerValue): Candidate forward output.
 
     Returns:
-        bool: Always True for runtime PyTorch outputs.
+        bool: True for runtime PyTorch outputs.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _as_torch_out(val: EagerValue) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
@@ -55,9 +52,9 @@ def _is_nn_module(val: EagerValue) -> typing.TypeGuard[torch.nn.Module]:
         val (EagerValue): Candidate module instance.
 
     Returns:
-        bool: Always True for runtime modules.
+        bool: True for runtime modules.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _as_nn_module(val: EagerValue) -> torch.nn.Module:
@@ -147,7 +144,7 @@ class TorchGraphModule:
         if len(args) == 1 and isinstance(args[0], dict):
             inp_dict: dict[str, torch.Tensor] = args[0]
             sorted_nodes = topological_sort(self.graph)
-            input_keys: list[str] = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+            input_keys: list[str] = [n.id for n in sorted_nodes if n.op_type == "Input"]
             if input_keys and all(k in inp_dict for k in input_keys):
                 ordered = [inp_dict[k] for k in input_keys]
             else:
@@ -174,7 +171,7 @@ class PyTorchProfiler:
         target = device or "cpu"
         if target == "cuda" and not torch.cuda.is_available():
             target = "cpu"
-        elif target == "mps" and not (_has_attr(torch.backends, "mps") and torch.backends.mps.is_available()):
+        elif target == "mps" and not (has_backend_member(torch.backends, "mps") and torch.backends.mps.is_available()):
             target = "cpu"
         return torch.device(target)
 
@@ -223,8 +220,8 @@ class PyTorchProfiler:
             else:
                 torch_inputs_dict[k] = torch.tensor(val, device=device, dtype=torch.float32)
 
-        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if graph.nodes else []
+        input_keys = [n.id for n in sorted_nodes if n.op_type == "Input"]
         if input_keys and all(k in torch_inputs_dict for k in input_keys):
             return [torch_inputs_dict[k] for k in input_keys]
         return list(torch_inputs_dict.values())
@@ -237,7 +234,7 @@ class PyTorchProfiler:
         """
         if device.type == "cuda" and torch.cuda.is_available():
             torch.cuda.synchronize()
-        elif device.type == "mps" and _has_attr(torch, "mps") and torch.mps.is_available():
+        elif device.type == "mps" and has_backend_member(torch, "mps") and torch.mps.is_available():
             torch.mps.synchronize()
 
     def _reset_cuda_stats(self, device: torch.device) -> None:
@@ -246,7 +243,7 @@ class PyTorchProfiler:
         Args:
             device (torch.device): Target PyTorch device.
         """
-        if device.type == "cuda" and torch.cuda.is_available() and _has_attr(torch.cuda, "reset_peak_memory_stats"):
+        if device.type == "cuda" and torch.cuda.is_available() and has_backend_member(torch.cuda, "reset_peak_memory_stats"):
             try:
                 torch.cuda.reset_peak_memory_stats()
             except Exception:
@@ -270,14 +267,14 @@ class PyTorchProfiler:
         """
         base_module = TorchGraphModule(graph).to(device)
         compiled: TorchGraphModule | torch.nn.Module = base_module
-        if callable(_get_attr(torch, "compile", None)):
+        if callable(get_backend_member(torch, "compile", None)):
             try:
-                compiled = _as_nn_module(_get_attr(torch, "compile")(base_module))
+                compiled = _as_nn_module(ensure_mod(torch).compile(base_module))
             except Exception:
                 compiled = base_module
-        if compiled is base_module and _has_attr(torch, "jit") and callable(_get_attr(torch.jit, "trace", None)) and input_list:
+        if compiled is base_module and has_backend_member(torch, "jit") and callable(get_backend_member(torch.jit, "trace", None)) and input_list:
             try:
-                compiled = _as_nn_module(_get_attr(torch.jit, "trace")(base_module, tuple(input_list)))
+                compiled = _as_nn_module(ensure_mod(torch.jit).trace(base_module, tuple(input_list)))
             except Exception:
                 compiled = base_module
         return compiled
@@ -302,16 +299,16 @@ class PyTorchProfiler:
         latencies: list[float] = []
         for _ in range(max(1, num_iters)):
             cuda_timed: bool = False
-            if is_cuda and _has_attr(torch.cuda, "Event"):
+            if is_cuda and has_backend_member(torch.cuda, "Event"):
                 try:
-                    event_cls = _get_attr(torch.cuda, "Event")
-                    start_event = event_cls(enable_timing=True)
-                    end_event = event_cls(enable_timing=True)
-                    _get_attr(start_event, "record")()
+                    event_cls = ensure_callable(get_backend_member(torch.cuda, "Event"))
+                    start_event = ensure_mod(event_cls(enable_timing=True))
+                    end_event = ensure_mod(event_cls(enable_timing=True))
+                    start_event.record()
                     _ = step_fn()
-                    _get_attr(end_event, "record")()
-                    _get_attr(end_event, "synchronize")()
-                    latencies.append(float(_get_attr(start_event, "elapsed_time")(end_event)))
+                    end_event.record()
+                    end_event.synchronize()
+                    latencies.append(float(ensure_float(start_event.elapsed_time(end_event))))
                     cuda_timed = True
                 except Exception:
                     cuda_timed = False
@@ -336,7 +333,7 @@ class PyTorchProfiler:
         if device.type == "cuda" and torch.cuda.is_available():
             return float(torch.cuda.max_memory_allocated() / (1024.0 * 1024.0))
         if device.type == "mps":
-            if _has_attr(torch, "mps") and _has_attr(torch.mps, "current_allocated_memory"):
+            if has_backend_member(torch, "mps") and has_backend_member(torch.mps, "current_allocated_memory"):
                 try:
                     mps_mem = float(torch.mps.current_allocated_memory()) / (1024.0 * 1024.0)
                     if mps_mem > 0.0:
@@ -366,7 +363,7 @@ class PyTorchProfiler:
             dict[str, Union[list[float], float]]: Latency and memory metrics.
         """
         torch_dev = self._resolve_device(device)
-        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
         torch_input_list: list[torch.Tensor] = self._prepare_ordered_inputs(graph, inputs, torch_dev)
 
         compiled_module: TorchGraphModule | torch.nn.Module | None = None

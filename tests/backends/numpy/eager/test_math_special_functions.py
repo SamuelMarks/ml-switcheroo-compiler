@@ -13,13 +13,12 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mod_raw
 import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
-from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _del_attr, _get_attr, _has_attr, _set_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-mod = as_tensor(_mod_raw)
+mod = ensure_eager_tensor(_mod_raw)
 
 
 def test_math_matrix_utils_coverage() -> None:
@@ -28,7 +27,7 @@ def test_math_matrix_utils_coverage() -> None:
 
     assert mat_utils._np_confusion_matrix_cap(np) is None
     res = mat_utils._np_confusion_matrix_cap(np, np.array([1]), np.array([1]))
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
     class MockBkDist:
         """Test class MockBkDist."""
@@ -42,7 +41,7 @@ def test_math_matrix_utils_coverage() -> None:
             """
             return "hit"
 
-    assert mat_utils._np_distributions(as_tensor(MockBkDist()), [1]) == "hit"
+    assert mat_utils._np_distributions(ensure_eager_tensor(MockBkDist()), [1]) == "hit"
     import sys
 
     class MockOps:
@@ -60,13 +59,13 @@ def test_math_matrix_utils_coverage() -> None:
                 """
                 self.val = "hit2"
 
-            def __eq__(self, other: object) -> bool:
+            def __eq__(self, other: EagerValue) -> bool:
                 """Test function __eq__.
 
                 Args:
                     other: Test parameter `other`.
                 """
-                _typed_ret_7: bool = _get_attr(self, "val", None) == other
+                _typed_ret_7: bool = ensure_eager_tensor(self).val == other
                 return _typed_ret_7
 
             def mean(self) -> EagerValue:
@@ -77,7 +76,7 @@ def test_math_matrix_utils_coverage() -> None:
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOps()}):
         res2 = mat_utils._np_distributions(np, [1])
-        as_callable(np.testing.assert_array_equal)(res2, as_callable(np.array)([1.0, 0.0]))
+        ensure_callable(np.testing.assert_array_equal)(res2, ensure_callable(np.array)([1.0, 0.0]))
 
 
 def test_math_general_coverage() -> None:
@@ -96,7 +95,7 @@ def test_math_general_coverage() -> None:
             """
             return "hit"
 
-    assert misc_ext._np_descriptive_2(as_tensor(MockBkDesc()), [1]) == "hit"
+    assert misc_ext._np_descriptive_2(ensure_eager_tensor(MockBkDesc()), [1]) == "hit"
     import sys
 
     class MockOpsDesc:
@@ -114,22 +113,22 @@ def test_math_general_coverage() -> None:
                 """
                 self.val = "hit2"
 
-            def __eq__(self, other: object) -> bool:
+            def __eq__(self, other: EagerValue) -> bool:
                 """Test function __eq__.
 
                 Args:
                     other: Test parameter `other`.
                 """
-                _typed_ret_8: bool = _get_attr(self, "val", None) == other
+                _typed_ret_8: bool = ensure_eager_tensor(self).val == other
                 return _typed_ret_8
 
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOpsDesc()}):
         res2 = misc_ext._np_descriptive_2(np, [1])
-        as_callable(np.testing.assert_array_equal)(res2, as_callable(np.array)([1.0, 0.0, 0.0]))
+        ensure_callable(np.testing.assert_array_equal)(res2, ensure_callable(np.array)([1.0, 0.0, 0.0]))
     res = misc_ext._np_descriptive_2(np, [1, 2, 3])
-    as_callable(np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
+    ensure_callable(np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
 
 
 def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -149,7 +148,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return as_callable(np.any)(x)
+            return ensure_callable(np.any)(x)
 
         @staticmethod
         def isinf(x: EagerValue) -> EagerValue:
@@ -158,7 +157,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return as_tensor(as_callable(np.isinf)(x))
+            return ensure_eager_tensor(ensure_callable(np.isinf)(x))
 
         @staticmethod
         def isnan(x: EagerValue) -> EagerValue:
@@ -167,7 +166,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return as_tensor(as_callable(np.isnan)(x))
+            return ensure_eager_tensor(ensure_callable(np.isnan)(x))
 
     dummy_bk = DummyBk()
     bk = np
@@ -177,9 +176,8 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     arg_int = np.array([1, 2])
     with pytest.raises(TypeError):
         mod._np_xlogy(bk, arg1)
-    _get_attr(_state, "update")({"DummyBk": DummyBk, "arg1": arg1, "arg2": arg2, "arg_bool": arg_bool})
-    _get_attr(_state, "update")({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBk": DummyBk, "arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -199,7 +197,8 @@ def _test_math_misc_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> N
         mod._np_xlogy(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_xlogy(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -219,7 +218,8 @@ def _test_math_misc_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> N
         mod._np_mvlgamma(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
         mod._np_mvlgamma(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -239,7 +239,8 @@ def _test_math_misc_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> N
     with pytest.raises(TypeError):
         mod._np_pmean(bk, arg1)
     mod._np_pmean(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -258,7 +259,8 @@ def _test_math_misc_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> N
     with pytest.raises(TypeError):
         mod._np_pmean(dummy_bk, arg1)
     mod._np_pmean(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -277,7 +279,8 @@ def _test_math_misc_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> N
     with pytest.raises(TypeError):
         mod._np_logsumexp(bk, arg_bool)
     mod._np_logsumexp(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -296,7 +299,8 @@ def _test_math_misc_coverage_part_7(_state: dict[str, EagerTensorProtocol]) -> N
         mod._np_segment_sum(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_segment_sum(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -316,7 +320,8 @@ def _test_math_misc_coverage_part_8(_state: dict[str, EagerTensorProtocol]) -> N
     with pytest.raises(IndexError):
         mod._np_segment_sum(dummy_bk, arg1, arg2)
     mod._np_psum(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_9(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -333,7 +338,8 @@ def _test_math_misc_coverage_part_9(_state: dict[str, EagerTensorProtocol]) -> N
     mod._np_psum(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_psum(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_10(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -351,7 +357,8 @@ def _test_math_misc_coverage_part_10(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_log1p2(bk, arg1, arg1, arg2)
     mod._np_log1p2(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_11(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -369,7 +376,8 @@ def _test_math_misc_coverage_part_11(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_log1p2(dummy_bk, arg1, arg2)
     mod._np_rsqrt(bk, arg1)
     mod._np_rsqrt(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_12(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -385,7 +393,8 @@ def _test_math_misc_coverage_part_12(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_rsqrt(bk, arg_int)
     mod._np_rsqrt(dummy_bk, arg1)
     mod._np_rsqrt(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_13(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -404,7 +413,8 @@ def _test_math_misc_coverage_part_13(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_truncate_div(bk, arg_bool)
     with pytest.raises(IndexError):
         mod._np_truncate_div(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_14(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -421,7 +431,8 @@ def _test_math_misc_coverage_part_14(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_truncate_mod(bk, arg1)
     mod._np_truncate_mod(bk, arg1, arg2)
     mod._np_truncate_mod(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_15(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -441,7 +452,8 @@ def _test_math_misc_coverage_part_15(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_truncate_mod(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_betainc(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_16(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -461,7 +473,8 @@ def _test_math_misc_coverage_part_16(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_betainc(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_betainc(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_17(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -478,7 +491,8 @@ def _test_math_misc_coverage_part_17(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_bessel_i0e(bk, arg1, arg2)
     mod._np_bessel_i0e(bk, arg1, arg1, arg2)
     mod._np_bessel_i0e(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_18(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -496,7 +510,8 @@ def _test_math_misc_coverage_part_18(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_bessel_i0e(dummy_bk, arg1, arg2)
     mod._np_bessel_i1e(bk, arg1)
     mod._np_bessel_i1e(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_19(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -514,7 +529,8 @@ def _test_math_misc_coverage_part_19(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_bessel_i1e(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_bessel_i1e(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_20(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -534,7 +550,8 @@ def _test_math_misc_coverage_part_20(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_clz(bk, arg_bool)
     mod._np_clz(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_21(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -554,7 +571,8 @@ def _test_math_misc_coverage_part_21(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_population_count(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_population_count(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_22(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -573,7 +591,8 @@ def _test_math_misc_coverage_part_22(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_population_count(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_bitcast_convert_type(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_23(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -592,7 +611,8 @@ def _test_math_misc_coverage_part_23(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_bitcast_convert_type(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_bitcast_convert_type(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_24(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -611,7 +631,8 @@ def _test_math_misc_coverage_part_24(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_reduce_precision(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_reduce_precision(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_25(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -629,10 +650,11 @@ def _test_math_misc_coverage_part_25(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_reduce_precision(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(bk, arg1, arg2)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(bk, arg1, arg2)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_26(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -644,16 +666,17 @@ def _test_math_misc_coverage_part_26(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(bk, arg1, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(bk, arg_bool)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(bk, arg_bool)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(bk, arg_int)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(bk, arg_int)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(dummy_bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_gather"))(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_gather)(dummy_bk, arg1, arg2)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_27(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -665,16 +688,17 @@ def _test_math_misc_coverage_part_27(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     bk = _state["bk"]
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(bk, arg1, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(bk, arg_bool)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(bk, arg_bool)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(bk, arg_int)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(bk, arg_int)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_28(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -685,16 +709,17 @@ def _test_math_misc_coverage_part_28(_state: dict[str, EagerTensorProtocol]) -> 
     """
     (arg1, arg2, bk, dummy_bk) = (_state["arg1"], _state["arg2"], _state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(dummy_bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_reduce"))(dummy_bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_reduce)(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(bk, arg1, arg1, arg2)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_29(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -706,16 +731,17 @@ def _test_math_misc_coverage_part_29(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(bk, arg_bool)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(bk, arg_bool)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(bk, arg_int)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(bk, arg_int)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(dummy_bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_all_to_all"))(dummy_bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_all_to_all)(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_packbits(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_30(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -734,7 +760,8 @@ def _test_math_misc_coverage_part_30(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_packbits(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_packbits(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_31(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -755,7 +782,8 @@ def _test_math_misc_coverage_part_31(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_unpackbits(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_unpackbits(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_32(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -776,7 +804,8 @@ def _test_math_misc_coverage_part_32(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_piecewise(bk, arg1)
     with pytest.raises(IndexError):
         mod._np_piecewise(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_33(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -796,7 +825,8 @@ def _test_math_misc_coverage_part_33(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_piecewise(dummy_bk, arg1)
     with pytest.raises(IndexError):
         mod._np_piecewise(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_34(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -817,7 +847,8 @@ def _test_math_misc_coverage_part_34(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_promotetypes(bk, arg_bool)
     with pytest.raises(IndexError):
         mod._np_promotetypes(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_35(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -837,7 +868,8 @@ def _test_math_misc_coverage_part_35(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trace(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_trace(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_36(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -857,7 +889,8 @@ def _test_math_misc_coverage_part_36(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_trace(dummy_bk, arg1, arg2)
     mod._np_trapz(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_37(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -873,7 +906,8 @@ def _test_math_misc_coverage_part_37(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_trapz(bk, arg_bool)
     mod._np_trapz(bk, arg_int)
     mod._np_trapz(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_38(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -893,7 +927,8 @@ def _test_math_misc_coverage_part_38(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_tri(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_tri(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_39(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -914,7 +949,8 @@ def _test_math_misc_coverage_part_39(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trilindices(bk, arg1)
     with pytest.raises(ValueError):
         mod._np_trilindices(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_40(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -935,7 +971,8 @@ def _test_math_misc_coverage_part_40(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trilindices(dummy_bk, arg1)
     with pytest.raises(ValueError):
         mod._np_trilindices(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_41(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -956,7 +993,8 @@ def _test_math_misc_coverage_part_41(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trilindicesfrom(bk, arg_bool)
     with pytest.raises(ValueError):
         mod._np_trilindicesfrom(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_42(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -975,7 +1013,8 @@ def _test_math_misc_coverage_part_42(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trimzeros(bk, arg1, arg2)
     with pytest.raises((TypeError, AttributeError)):
         mod._np_trimzeros(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_43(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -993,7 +1032,8 @@ def _test_math_misc_coverage_part_43(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_trimzeros(dummy_bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_triuindices(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_44(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1014,7 +1054,8 @@ def _test_math_misc_coverage_part_44(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_triuindices(bk, arg_int)
     with pytest.raises(ValueError):
         mod._np_triuindices(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_45(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1035,7 +1076,8 @@ def _test_math_misc_coverage_part_45(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_triuindicesfrom(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_triuindicesfrom(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_46(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1054,7 +1096,8 @@ def _test_math_misc_coverage_part_46(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_triuindicesfrom(dummy_bk, arg1, arg2)
     mod._np_uint(bk, arg1)
     mod._np_uint(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_47(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1070,7 +1113,8 @@ def _test_math_misc_coverage_part_47(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_uint(bk, arg_int)
     mod._np_uint(dummy_bk, arg1)
     mod._np_uint(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_48(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1086,7 +1130,8 @@ def _test_math_misc_coverage_part_48(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_uint8(bk, arg1, arg1, arg2)
     mod._np_uint8(bk, arg_bool)
     mod._np_uint8(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_49(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1102,7 +1147,8 @@ def _test_math_misc_coverage_part_49(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_union1d(bk, arg1)
     mod._np_union1d(bk, arg1, arg2)
     mod._np_union1d(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_50(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1122,7 +1168,8 @@ def _test_math_misc_coverage_part_50(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_union1d(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_unravelindex(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_51(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1143,7 +1190,8 @@ def _test_math_misc_coverage_part_51(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_unravelindex(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_unravelindex(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_52(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1162,7 +1210,8 @@ def _test_math_misc_coverage_part_52(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_unwrap(bk, arg1, arg1, arg2)
     mod._np_unwrap(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_53(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1180,7 +1229,8 @@ def _test_math_misc_coverage_part_53(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_vander(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_vander(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_54(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1198,7 +1248,8 @@ def _test_math_misc_coverage_part_54(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_vander(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_vander(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_55(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1219,7 +1270,8 @@ def _test_math_misc_coverage_part_55(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_vectorize(bk, arg_bool)
     with pytest.raises(ValueError):
         mod._np_vectorize(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_56(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1238,7 +1290,8 @@ def _test_math_misc_coverage_part_56(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_append(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_append(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_57(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1258,7 +1311,8 @@ def _test_math_misc_coverage_part_57(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(AttributeError):
         mod._np_append(dummy_bk, arg1, arg2)
     mod._np_average(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_58(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1277,7 +1331,8 @@ def _test_math_misc_coverage_part_58(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_average(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_average(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_59(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1296,7 +1351,8 @@ def _test_math_misc_coverage_part_59(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_block(bk, arg1, arg1, arg2)
     mod._np_block(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_60(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1314,7 +1370,8 @@ def _test_math_misc_coverage_part_60(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_block(dummy_bk, arg1, arg2)
     mod._np_atleast_1d(bk, arg1)
     mod._np_atleast_1d(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_61(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1332,7 +1389,8 @@ def _test_math_misc_coverage_part_61(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_atleast_1d(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_atleast_1d(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_62(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1348,7 +1406,8 @@ def _test_math_misc_coverage_part_62(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_atleast_2d(bk, arg1, arg1, arg2)
     mod._np_atleast_2d(bk, arg_bool)
     mod._np_atleast_2d(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_63(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1365,7 +1424,8 @@ def _test_math_misc_coverage_part_63(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_atleast_3d(bk, arg1)
     mod._np_atleast_3d(bk, arg1, arg2)
     mod._np_atleast_3d(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_64(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1384,7 +1444,8 @@ def _test_math_misc_coverage_part_64(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_atleast_3d(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_apply_along_axis(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_65(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1405,7 +1466,8 @@ def _test_math_misc_coverage_part_65(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_apply_along_axis(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_apply_along_axis(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_66(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1426,7 +1488,8 @@ def _test_math_misc_coverage_part_66(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_apply_over_axes(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_apply_over_axes(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_67(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1447,7 +1510,8 @@ def _test_math_misc_coverage_part_67(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_argpartition(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_argpartition(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_68(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1468,7 +1532,8 @@ def _test_math_misc_coverage_part_68(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_argpartition(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_argpartition(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_69(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1486,7 +1551,8 @@ def _test_math_misc_coverage_part_69(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_argwhere(bk, arg1, arg1, arg2)
     mod._np_argwhere(bk, arg_bool)
     mod._np_argwhere(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_70(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1506,7 +1572,8 @@ def _test_math_misc_coverage_part_70(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_choose(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_choose(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_71(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1526,7 +1593,8 @@ def _test_math_misc_coverage_part_71(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(AttributeError):
         mod._np_choose(dummy_bk, arg1, arg2)
     mod._np_column_stack(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_72(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1545,7 +1613,8 @@ def _test_math_misc_coverage_part_72(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_column_stack(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_column_stack(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_73(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1565,7 +1634,8 @@ def _test_math_misc_coverage_part_73(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_compress(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_compress(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_74(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1585,7 +1655,8 @@ def _test_math_misc_coverage_part_74(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_convolve(bk, arg1)
     mod._np_convolve(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_75(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1606,7 +1677,8 @@ def _test_math_misc_coverage_part_75(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_convolve(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_convolve(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_76(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1623,7 +1695,8 @@ def _test_math_misc_coverage_part_76(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_corrcoef(bk, arg1, arg1, arg2)
     mod._np_corrcoef(bk, arg_bool)
     mod._np_corrcoef(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_77(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1642,7 +1715,8 @@ def _test_math_misc_coverage_part_77(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_correlate(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_correlate(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_78(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1662,7 +1736,8 @@ def _test_math_misc_coverage_part_78(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(AttributeError):
         mod._np_correlate(dummy_bk, arg1, arg2)
     mod._np_cov(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_79(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1680,7 +1755,8 @@ def _test_math_misc_coverage_part_79(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_cov(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_cov(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_80(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1700,7 +1776,8 @@ def _test_math_misc_coverage_part_80(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_array_equiv_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_array_equiv_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_81(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1720,7 +1797,8 @@ def _test_math_misc_coverage_part_81(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_array_repr_(bk, arg1)
     with pytest.raises(ValueError):
         mod._np_array_repr_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_82(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1739,7 +1817,8 @@ def _test_math_misc_coverage_part_82(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_array_repr_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_array_repr_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_83(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1757,7 +1836,8 @@ def _test_math_misc_coverage_part_83(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_array_str_(bk, arg1, arg1, arg2)
     mod._np_array_str_(bk, arg_bool)
     mod._np_array_str_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_84(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1777,7 +1857,8 @@ def _test_math_misc_coverage_part_84(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_blackman_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_blackman_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_85(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1797,7 +1878,8 @@ def _test_math_misc_coverage_part_85(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(AttributeError):
         mod._np_blackman_(dummy_bk, arg1, arg2)
     mod._np_broadcast_arrays_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_86(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1814,7 +1896,8 @@ def _test_math_misc_coverage_part_86(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_broadcast_arrays_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_broadcast_arrays_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_87(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1835,7 +1918,8 @@ def _test_math_misc_coverage_part_87(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_can_cast_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_can_cast_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_88(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1856,7 +1940,8 @@ def _test_math_misc_coverage_part_88(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_delete_(bk, arg1)
     with pytest.raises(IndexError):
         mod._np_delete_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_89(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1877,7 +1962,8 @@ def _test_math_misc_coverage_part_89(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_delete_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_delete_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_90(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1898,7 +1984,8 @@ def _test_math_misc_coverage_part_90(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_diag_indices_(bk, arg_bool)
     with pytest.raises(ValueError):
         mod._np_diag_indices_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_91(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1918,7 +2005,8 @@ def _test_math_misc_coverage_part_91(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_diag_indices_from_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_diag_indices_from_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_92(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1938,7 +2026,8 @@ def _test_math_misc_coverage_part_92(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(AttributeError):
         mod._np_diag_indices_from_(dummy_bk, arg1, arg2)
     mod._np_diagflat_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_93(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1957,7 +2046,8 @@ def _test_math_misc_coverage_part_93(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_diagflat_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_diagflat_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_94(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1978,7 +2068,8 @@ def _test_math_misc_coverage_part_94(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_diagonal_(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_diagonal_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_95(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1998,7 +2089,8 @@ def _test_math_misc_coverage_part_95(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_diff_(bk, arg1)
     with pytest.raises(ValueError):
         mod._np_diff_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_96(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2017,7 +2109,8 @@ def _test_math_misc_coverage_part_96(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_diff_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_diff_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_97(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2037,7 +2130,8 @@ def _test_math_misc_coverage_part_97(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_digitize_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_digitize_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_98(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2054,7 +2148,8 @@ def _test_math_misc_coverage_part_98(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_ediff1d_(bk, arg1)
     mod._np_ediff1d_(bk, arg1, arg2)
     mod._np_ediff1d_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_99(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2074,7 +2169,8 @@ def _test_math_misc_coverage_part_99(_state: dict[str, EagerTensorProtocol]) -> 
         mod._np_ediff1d_(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_einsum_path_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_100(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2095,7 +2191,8 @@ def _test_math_misc_coverage_part_100(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_einsum_path_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_einsum_path_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_101(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2115,7 +2212,8 @@ def _test_math_misc_coverage_part_101(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_extract_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_extract_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_102(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2134,7 +2232,8 @@ def _test_math_misc_coverage_part_102(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_extract_(dummy_bk, arg1, arg2)
     mod._np_fabs_(bk, arg1)
     mod._np_fabs_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_103(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2153,7 +2252,8 @@ def _test_math_misc_coverage_part_103(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fabs_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_fabs_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_104(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2171,7 +2271,8 @@ def _test_math_misc_coverage_part_104(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_flatnonzero_(bk, arg1, arg1, arg2)
     mod._np_flatnonzero_(bk, arg_bool)
     mod._np_flatnonzero_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_105(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2190,7 +2291,8 @@ def _test_math_misc_coverage_part_105(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_flip_op_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_flip_op_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_106(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2209,7 +2311,8 @@ def _test_math_misc_coverage_part_106(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_flip_op_(dummy_bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_fliplr_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_107(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2230,7 +2333,8 @@ def _test_math_misc_coverage_part_107(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fliplr_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_fliplr_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_108(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2249,7 +2353,8 @@ def _test_math_misc_coverage_part_108(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_flipud_(bk, arg1, arg1, arg2)
     mod._np_flipud_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_109(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2268,7 +2373,8 @@ def _test_math_misc_coverage_part_109(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_flip_reverse_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_flip_reverse_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_110(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2287,7 +2393,8 @@ def _test_math_misc_coverage_part_110(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_flip_reverse_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_flip_reverse_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_111(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2308,7 +2415,8 @@ def _test_math_misc_coverage_part_111(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fromfunction_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_fromfunction_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_112(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2328,7 +2436,8 @@ def _test_math_misc_coverage_part_112(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fromiter_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_fromiter_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_113(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2349,7 +2458,8 @@ def _test_math_misc_coverage_part_113(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fromiter_(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_frompyfunc_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_114(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2370,7 +2480,8 @@ def _test_math_misc_coverage_part_114(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_frompyfunc_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_frompyfunc_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_115(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2390,7 +2501,8 @@ def _test_math_misc_coverage_part_115(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fromstring_(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_fromstring_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_116(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2409,7 +2521,8 @@ def _test_math_misc_coverage_part_116(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_geomspace_(bk, arg1)
     mod._np_geomspace_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_117(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2430,7 +2543,8 @@ def _test_math_misc_coverage_part_117(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_geomspace_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_geomspace_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_118(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2451,7 +2565,8 @@ def _test_math_misc_coverage_part_118(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_get_printoptions_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_get_printoptions_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_119(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2471,7 +2586,8 @@ def _test_math_misc_coverage_part_119(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_hamming_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_hamming_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_120(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2492,7 +2608,8 @@ def _test_math_misc_coverage_part_120(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_hamming_(dummy_bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_hanning_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_121(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2513,7 +2630,8 @@ def _test_math_misc_coverage_part_121(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_hanning_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_hanning_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_122(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2530,7 +2648,8 @@ def _test_math_misc_coverage_part_122(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_histogram_(bk, arg1, arg2)
     mod._np_histogram_(bk, arg1, arg1, arg2)
     mod._np_histogram_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_123(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2549,7 +2668,8 @@ def _test_math_misc_coverage_part_123(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_histogram2d_(bk, arg1)
     mod._np_histogram2d_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_124(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2570,7 +2690,8 @@ def _test_math_misc_coverage_part_124(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_histogram2d_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_histogram2d_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_125(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2586,7 +2707,8 @@ def _test_math_misc_coverage_part_125(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_histogram_bin_edges_(bk, arg1, arg1, arg2)
     mod._np_histogram_bin_edges_(bk, arg_bool)
     mod._np_histogram_bin_edges_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_126(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2605,7 +2727,8 @@ def _test_math_misc_coverage_part_126(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_histogramdd_(bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_histogramdd_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_127(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2624,7 +2747,8 @@ def _test_math_misc_coverage_part_127(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_histogramdd_(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_indices_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_128(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2644,7 +2768,8 @@ def _test_math_misc_coverage_part_128(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_indices_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_indices_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_129(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2665,7 +2790,8 @@ def _test_math_misc_coverage_part_129(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_insert_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_insert_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_130(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2686,7 +2812,8 @@ def _test_math_misc_coverage_part_130(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_interp_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_interp_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_131(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2706,7 +2833,8 @@ def _test_math_misc_coverage_part_131(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_interp_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_interp_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_132(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2726,7 +2854,8 @@ def _test_math_misc_coverage_part_132(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_intersect1d_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_intersect1d_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_133(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2745,7 +2874,8 @@ def _test_math_misc_coverage_part_133(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_iscomplex_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_iscomplex_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_134(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2763,7 +2893,8 @@ def _test_math_misc_coverage_part_134(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_iscomplex_(dummy_bk, arg1, arg2)
     mod._np_iscomplexobj_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_135(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2782,7 +2913,8 @@ def _test_math_misc_coverage_part_135(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_iscomplexobj_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_iscomplexobj_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_136(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2803,7 +2935,8 @@ def _test_math_misc_coverage_part_136(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_issubdtype_op_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_issubdtype_op_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_137(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2823,7 +2956,8 @@ def _test_math_misc_coverage_part_137(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_isin_(bk, arg1)
     mod._np_isin_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_138(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2843,7 +2977,8 @@ def _test_math_misc_coverage_part_138(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_isin_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_isin_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_139(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2861,7 +2996,8 @@ def _test_math_misc_coverage_part_139(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_isreal_(bk, arg1, arg1, arg2)
     mod._np_isreal_(bk, arg_bool)
     mod._np_isreal_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_140(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2880,7 +3016,8 @@ def _test_math_misc_coverage_part_140(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_isrealobj_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_isrealobj_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_141(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2898,7 +3035,8 @@ def _test_math_misc_coverage_part_141(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_isrealobj_(dummy_bk, arg1, arg2)
     mod._np_isscalar_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_142(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2917,7 +3055,8 @@ def _test_math_misc_coverage_part_142(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_isscalar_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_isscalar_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_143(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2938,7 +3077,8 @@ def _test_math_misc_coverage_part_143(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_issubdtype_issubdtype_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_issubdtype_issubdtype_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_144(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2958,7 +3098,8 @@ def _test_math_misc_coverage_part_144(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_iterable_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_iterable_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_145(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2977,7 +3118,8 @@ def _test_math_misc_coverage_part_145(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_iterable_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_iterable_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_146(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -2993,7 +3135,8 @@ def _test_math_misc_coverage_part_146(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ix__(bk, arg1, arg1, arg2)
     mod._np_ix__(bk, arg_bool)
     mod._np_ix__(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_147(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3013,7 +3156,8 @@ def _test_math_misc_coverage_part_147(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_kaiser_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_kaiser_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_148(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3034,7 +3178,8 @@ def _test_math_misc_coverage_part_148(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_kaiser_(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_kron_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_149(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3054,7 +3199,8 @@ def _test_math_misc_coverage_part_149(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_kron_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_kron_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_150(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3073,7 +3219,8 @@ def _test_math_misc_coverage_part_150(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_lexsort_(bk, arg1, arg1, arg2)
     mod._np_lexsort_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_151(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3093,7 +3240,8 @@ def _test_math_misc_coverage_part_151(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_load_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_load_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_152(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3114,7 +3262,8 @@ def _test_math_misc_coverage_part_152(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_load_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_load_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_153(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3135,7 +3284,8 @@ def _test_math_misc_coverage_part_153(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_mask_indices_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_mask_indices_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_154(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3154,7 +3304,8 @@ def _test_math_misc_coverage_part_154(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_median_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_median_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_155(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3172,7 +3323,8 @@ def _test_math_misc_coverage_part_155(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_median_(dummy_bk, arg1, arg2)
     mod._np_modf_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_156(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3189,7 +3341,8 @@ def _test_math_misc_coverage_part_156(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modf_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_modf_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_157(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3208,7 +3361,8 @@ def _test_math_misc_coverage_part_157(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_nonzero_(bk, arg1, arg1, arg2)
     mod._np_nonzero_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_158(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3228,7 +3382,8 @@ def _test_math_misc_coverage_part_158(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_resize_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_resize_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_159(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3249,7 +3404,8 @@ def _test_math_misc_coverage_part_159(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_resize_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_resize_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_160(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3265,7 +3421,8 @@ def _test_math_misc_coverage_part_160(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_result_type_(bk, arg1, arg1, arg2)
     mod._np_result_type_(bk, arg_bool)
     mod._np_result_type_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_161(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3285,7 +3442,8 @@ def _test_math_misc_coverage_part_161(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_ravel_multi_index_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_ravel_multi_index_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_162(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3305,7 +3463,8 @@ def _test_math_misc_coverage_part_162(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_ravel_multi_index_(dummy_bk, arg1, arg2)
     mod._np_trapz_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_163(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3321,7 +3480,8 @@ def _test_math_misc_coverage_part_163(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_trapz_(bk, arg_bool)
     mod._np_trapz_(bk, arg_int)
     mod._np_trapz_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_164(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3341,7 +3501,8 @@ def _test_math_misc_coverage_part_164(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_zeros_(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_zeros_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_165(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3361,7 +3522,8 @@ def _test_math_misc_coverage_part_165(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_ones_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_ones_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_166(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3381,7 +3543,8 @@ def _test_math_misc_coverage_part_166(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_ones_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_ones_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_167(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3401,7 +3564,8 @@ def _test_math_misc_coverage_part_167(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_empty_(bk, arg_bool)
     mod._np_empty_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_168(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3421,7 +3585,8 @@ def _test_math_misc_coverage_part_168(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_full_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_full_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_169(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3441,7 +3606,8 @@ def _test_math_misc_coverage_part_169(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_full_(dummy_bk, arg1, arg2)
     mod._np_zeros_like_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_170(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3460,7 +3626,8 @@ def _test_math_misc_coverage_part_170(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_zeros_like_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_zeros_like_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_171(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3479,7 +3646,8 @@ def _test_math_misc_coverage_part_171(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_ones_like_(bk, arg1, arg1, arg2)
     mod._np_ones_like_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_172(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3498,7 +3666,8 @@ def _test_math_misc_coverage_part_172(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_empty_like_(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_empty_like_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_173(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3517,7 +3686,8 @@ def _test_math_misc_coverage_part_173(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_empty_like_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_empty_like_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_174(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3537,7 +3707,8 @@ def _test_math_misc_coverage_part_174(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_full_like_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_full_like_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_175(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3557,7 +3728,8 @@ def _test_math_misc_coverage_part_175(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_arange_(bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_arange_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_176(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3578,7 +3750,8 @@ def _test_math_misc_coverage_part_176(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_arange_(dummy_bk, arg1, arg2)
     with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"):
         mod._np_linalg_cholesky_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_177(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3599,7 +3772,8 @@ def _test_math_misc_coverage_part_177(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_cholesky_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_linalg_cholesky_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_178(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3620,7 +3794,8 @@ def _test_math_misc_coverage_part_178(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_det_(bk, arg1, arg1, arg2)
     with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"):
         mod._np_linalg_det_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_179(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3641,7 +3816,8 @@ def _test_math_misc_coverage_part_179(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_svd_(bk, arg1)
     with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"):
         mod._np_linalg_svd_(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_180(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3662,7 +3838,8 @@ def _test_math_misc_coverage_part_180(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_svd_(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_linalg_svd_(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_181(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3683,7 +3860,8 @@ def _test_math_misc_coverage_part_181(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_expand_dims_(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_expand_dims_(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_182(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3703,7 +3881,8 @@ def _test_math_misc_coverage_part_182(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_inv_(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linalg_inv_(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_183(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3724,7 +3903,8 @@ def _test_math_misc_coverage_part_183(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_inv_(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linalg_matrix_power_(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_184(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3745,7 +3925,8 @@ def _test_math_misc_coverage_part_184(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_matrix_power_(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_linalg_matrix_power_(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_185(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3766,7 +3947,8 @@ def _test_math_misc_coverage_part_185(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_pinv_(bk, arg1, arg1, arg2)
     with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"):
         mod._np_linalg_pinv_(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_186(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3785,7 +3967,8 @@ def _test_math_misc_coverage_part_186(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linalg_pinv_(dummy_bk, arg1, arg2)
     mod._np_affineconfig(bk, arg1)
     mod._np_affineconfig(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_187(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3801,7 +3984,8 @@ def _test_math_misc_coverage_part_187(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_affineconfig(bk, arg_int)
     mod._np_affineconfig(dummy_bk, arg1)
     mod._np_affineconfig(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_188(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3817,7 +4001,8 @@ def _test_math_misc_coverage_part_188(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_asstringconfig(bk, arg1, arg1, arg2)
     mod._np_asstringconfig(bk, arg_bool)
     mod._np_asstringconfig(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_189(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3835,7 +4020,8 @@ def _test_math_misc_coverage_part_189(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_assertop(bk, arg1, arg2)
     with pytest.raises(AssertionError):
         mod._np_assertop(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_190(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3855,7 +4041,8 @@ def _test_math_misc_coverage_part_190(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_assertop(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_blurconfig(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_191(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3874,7 +4061,8 @@ def _test_math_misc_coverage_part_191(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_blurconfig(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_blurconfig(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_192(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3890,7 +4078,8 @@ def _test_math_misc_coverage_part_192(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_callable(bk, arg1, arg2)
     mod._np_callable(bk, arg1, arg1, arg2)
     mod._np_callable(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_193(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3907,7 +4096,8 @@ def _test_math_misc_coverage_part_193(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(IndexError):
         mod._np_convgeneraldilatedlocal(bk, arg1)
     mod._np_convgeneraldilatedlocal(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_194(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3926,7 +4116,8 @@ def _test_math_misc_coverage_part_194(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(IndexError):
         mod._np_convgeneraldilatedlocal(dummy_bk, arg1)
     mod._np_convgeneraldilatedlocal(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_195(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3945,7 +4136,8 @@ def _test_math_misc_coverage_part_195(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_convgeneraldilatedpatches(bk, arg_bool)
     with pytest.raises(IndexError):
         mod._np_convgeneraldilatedpatches(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_196(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3962,7 +4154,8 @@ def _test_math_misc_coverage_part_196(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_convwithgeneralpadding(bk, arg1)
     mod._np_convwithgeneralpadding(bk, arg1, arg2)
     mod._np_convwithgeneralpadding(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_197(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -3982,7 +4175,8 @@ def _test_math_misc_coverage_part_197(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_convwithgeneralpadding(dummy_bk, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_customlinearsolve(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_198(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4003,7 +4197,8 @@ def _test_math_misc_coverage_part_198(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_customlinearsolve(bk, arg_int)
     with pytest.raises(IndexError):
         mod._np_customlinearsolve(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_199(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4023,7 +4218,8 @@ def _test_math_misc_coverage_part_199(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_customroot(bk, arg1, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_customroot(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_200(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4041,7 +4237,8 @@ def _test_math_misc_coverage_part_200(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_customroot(dummy_bk, arg1, arg2)
     mod._np_debuginfs(bk, arg1)
     mod._np_debuginfs(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_201(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4057,7 +4254,8 @@ def _test_math_misc_coverage_part_201(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_debuginfs(bk, arg_int)
     mod._np_debuginfs(dummy_bk, arg1)
     mod._np_debuginfs(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_202(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4073,7 +4271,8 @@ def _test_math_misc_coverage_part_202(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_debugnans(bk, arg1, arg1, arg2)
     mod._np_debugnans(bk, arg_bool)
     mod._np_debugnans(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_203(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4089,7 +4288,8 @@ def _test_math_misc_coverage_part_203(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_dotgeneral(bk, arg1)
     mod._np_dotgeneral(bk, arg1, arg2)
     mod._np_dotgeneral(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_204(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4108,7 +4308,8 @@ def _test_math_misc_coverage_part_204(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_dotgeneral(dummy_bk, arg1)
     mod._np_dotgeneral(dummy_bk, arg1, arg2)
     mod._np_elasticconfig(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_205(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4124,7 +4325,8 @@ def _test_math_misc_coverage_part_205(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_elasticconfig(bk, arg_bool)
     mod._np_elasticconfig(bk, arg_int)
     mod._np_elasticconfig(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_206(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4140,7 +4342,8 @@ def _test_math_misc_coverage_part_206(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_extractpatchesoptions(bk, arg1, arg2)
     mod._np_extractpatchesoptions(bk, arg1, arg1, arg2)
     mod._np_extractpatchesoptions(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_207(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4158,7 +4361,8 @@ def _test_math_misc_coverage_part_207(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperator(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperator(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_208(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4179,7 +4383,8 @@ def _test_math_misc_coverage_part_208(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperator(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperator(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_209(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4200,7 +4405,8 @@ def _test_math_misc_coverage_part_209(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatoradjoint(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_linearoperatoradjoint(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_210(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4220,7 +4426,8 @@ def _test_math_misc_coverage_part_210(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorblockdiag(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorblockdiag(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_211(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4241,7 +4448,8 @@ def _test_math_misc_coverage_part_211(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorblockdiag(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorblocklowertriangular(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_212(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4262,7 +4470,8 @@ def _test_math_misc_coverage_part_212(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorblocklowertriangular(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_linearoperatorblocklowertriangular(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_213(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4283,7 +4492,8 @@ def _test_math_misc_coverage_part_213(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcirculant(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorcirculant(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_214(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4304,7 +4514,8 @@ def _test_math_misc_coverage_part_214(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcirculant2d(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorcirculant2d(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_215(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4325,7 +4536,8 @@ def _test_math_misc_coverage_part_215(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcirculant2d(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorcirculant2d(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_216(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4346,7 +4558,8 @@ def _test_math_misc_coverage_part_216(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcirculant3d(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_linearoperatorcirculant3d(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_217(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4366,7 +4579,8 @@ def _test_math_misc_coverage_part_217(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcomposition(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorcomposition(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_218(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4387,7 +4601,8 @@ def _test_math_misc_coverage_part_218(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorcomposition(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatordiag(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_219(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4408,7 +4623,8 @@ def _test_math_misc_coverage_part_219(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatordiag(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_linearoperatordiag(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_220(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4429,7 +4645,8 @@ def _test_math_misc_coverage_part_220(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorfullmatrix(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorfullmatrix(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_221(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4450,7 +4667,8 @@ def _test_math_misc_coverage_part_221(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorhouseholder(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorhouseholder(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_222(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4471,7 +4689,8 @@ def _test_math_misc_coverage_part_222(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorhouseholder(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorhouseholder(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_223(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4492,7 +4711,8 @@ def _test_math_misc_coverage_part_223(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatoridentity(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_linearoperatoridentity(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_224(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4512,7 +4732,8 @@ def _test_math_misc_coverage_part_224(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorinversion(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorinversion(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_225(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4533,7 +4754,8 @@ def _test_math_misc_coverage_part_225(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorinversion(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorkronecker(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_226(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4554,7 +4776,8 @@ def _test_math_misc_coverage_part_226(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorkronecker(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_linearoperatorkronecker(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_227(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4575,7 +4798,8 @@ def _test_math_misc_coverage_part_227(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorlowrankupdate(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorlowrankupdate(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_228(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4596,7 +4820,8 @@ def _test_math_misc_coverage_part_228(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorlowertriangular(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorlowertriangular(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_229(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4617,7 +4842,8 @@ def _test_math_misc_coverage_part_229(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorlowertriangular(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorlowertriangular(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_230(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4638,7 +4864,8 @@ def _test_math_misc_coverage_part_230(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorpermutation(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_linearoperatorpermutation(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_231(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4658,7 +4885,8 @@ def _test_math_misc_coverage_part_231(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorscaledidentity(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatorscaledidentity(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_232(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4679,7 +4907,8 @@ def _test_math_misc_coverage_part_232(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorscaledidentity(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatortoeplitz(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_233(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4700,7 +4929,8 @@ def _test_math_misc_coverage_part_233(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatortoeplitz(bk, arg_int)
     with pytest.raises(TypeError):
         mod._np_linearoperatortoeplitz(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_234(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4721,7 +4951,8 @@ def _test_math_misc_coverage_part_234(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatortridiag(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_linearoperatortridiag(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_235(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4742,7 +4973,8 @@ def _test_math_misc_coverage_part_235(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorzeros(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorzeros(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_236(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4763,7 +4995,8 @@ def _test_math_misc_coverage_part_236(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_linearoperatorzeros(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_linearoperatorzeros(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_237(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4779,7 +5012,8 @@ def _test_math_misc_coverage_part_237(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_perspectiveconfig(bk, arg1, arg1, arg2)
     mod._np_perspectiveconfig(bk, arg_bool)
     mod._np_perspectiveconfig(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_238(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4795,7 +5029,8 @@ def _test_math_misc_coverage_part_238(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_raggeddot(bk, arg1)
     mod._np_raggeddot(bk, arg1, arg2)
     mod._np_raggeddot(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_239(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4816,7 +5051,8 @@ def _test_math_misc_coverage_part_239(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_raggeddot(dummy_bk, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_rawconv2d(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_240(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4835,7 +5071,8 @@ def _test_math_misc_coverage_part_240(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_rawconv2d(bk, arg_int)
     with pytest.raises(IndexError):
         mod._np_rawconv2d(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_241(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4853,7 +5090,8 @@ def _test_math_misc_coverage_part_241(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rawmatmul(bk, arg1, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_rawmatmul(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_242(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4871,7 +5109,8 @@ def _test_math_misc_coverage_part_242(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rawmatmul(dummy_bk, arg1, arg2)
     mod._np_rawmerge(bk, arg1)
     mod._np_rawmerge(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_243(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4887,7 +5126,8 @@ def _test_math_misc_coverage_part_243(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rawmerge(bk, arg_int)
     mod._np_rawmerge(dummy_bk, arg1)
     mod._np_rawmerge(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_244(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4903,7 +5143,8 @@ def _test_math_misc_coverage_part_244(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rawop(bk, arg1, arg1, arg2)
     mod._np_rawop(bk, arg_bool)
     mod._np_rawop(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_245(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4920,7 +5161,8 @@ def _test_math_misc_coverage_part_245(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_rawswitch(bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_rawswitch(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_246(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4937,7 +5179,8 @@ def _test_math_misc_coverage_part_246(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_rawswitch(dummy_bk, arg1, arg2)
     mod._np_scanop(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_247(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4953,7 +5196,8 @@ def _test_math_misc_coverage_part_247(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_scanop(bk, arg_bool)
     mod._np_scanop(bk, arg_int)
     mod._np_scanop(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_248(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4973,7 +5217,8 @@ def _test_math_misc_coverage_part_248(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sobolsample(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_sobolsample(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_249(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -4993,7 +5238,8 @@ def _test_math_misc_coverage_part_249(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(IndexError):
         mod._np_sparsedensematmul(bk, arg1)
     mod._np_sparsedensematmul(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_250(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5012,7 +5258,8 @@ def _test_math_misc_coverage_part_250(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(IndexError):
         mod._np_sparsedensematmul(dummy_bk, arg1)
     mod._np_sparsedensematmul(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_251(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5033,7 +5280,8 @@ def _test_math_misc_coverage_part_251(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sparsemapvalues(bk, arg_bool)
     with pytest.raises(IndexError):
         mod._np_sparsemapvalues(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_252(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5050,7 +5298,8 @@ def _test_math_misc_coverage_part_252(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_sparsereducemax(bk, arg1)
     mod._np_sparsereducemax(bk, arg1, arg2)
     mod._np_sparsereducemax(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_253(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5069,7 +5318,8 @@ def _test_math_misc_coverage_part_253(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sparsereducemax(dummy_bk, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_sparsereshape(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_254(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5090,7 +5340,8 @@ def _test_math_misc_coverage_part_254(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sparsereshape(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_sparsereshape(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_255(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5109,7 +5360,8 @@ def _test_math_misc_coverage_part_255(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_sparsesampledadd(bk, arg1, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_sparsesampledadd(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_256(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5128,7 +5380,8 @@ def _test_math_misc_coverage_part_256(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sparsesampledadd(dummy_bk, arg1, arg2)
     mod._np_sparsesegmentsum(bk, arg1)
     mod._np_sparsesegmentsum(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_257(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5146,7 +5399,8 @@ def _test_math_misc_coverage_part_257(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_sparsesegmentsum(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_sparsesegmentsum(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_258(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5162,7 +5416,8 @@ def _test_math_misc_coverage_part_258(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_sparsetranspose(bk, arg1, arg1, arg2)
     mod._np_sparsetranspose(bk, arg_bool)
     mod._np_sparsetranspose(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_259(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5181,7 +5436,8 @@ def _test_math_misc_coverage_part_259(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_switchop(bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_switchop(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_260(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5198,7 +5454,8 @@ def _test_math_misc_coverage_part_260(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_switchop(dummy_bk, arg1, arg2)
     mod._np_tensor(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_261(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5217,7 +5474,8 @@ def _test_math_misc_coverage_part_261(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_tensor(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_tensor(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_262(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5238,7 +5496,8 @@ def _test_math_misc_coverage_part_262(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_tensorarrayread(bk, arg1, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_tensorarrayread(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_263(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5257,7 +5516,8 @@ def _test_math_misc_coverage_part_263(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_tensorarrayread(dummy_bk, arg1, arg2)
     mod._np_tensorarraystack(bk, arg1)
     mod._np_tensorarraystack(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_264(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5275,7 +5535,8 @@ def _test_math_misc_coverage_part_264(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_tensorarraystack(dummy_bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_tensorarraystack(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_265(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5296,7 +5557,8 @@ def _test_math_misc_coverage_part_265(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_tensorarraywrite(bk, arg_bool)
     with pytest.raises(IndexError):
         mod._np_tensorarraywrite(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_266(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5313,7 +5575,8 @@ def _test_math_misc_coverage_part_266(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_tensorconfig(bk, arg1)
     mod._np_tensorconfig(bk, arg1, arg2)
     mod._np_tensorconfig(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_267(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5330,7 +5593,8 @@ def _test_math_misc_coverage_part_267(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_tensorconfig(dummy_bk, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_vecdot(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_268(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5349,7 +5613,8 @@ def _test_math_misc_coverage_part_268(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_vecdot(bk, arg_int)
     with pytest.raises(IndexError):
         mod._np_vecdot(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_269(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5367,7 +5632,8 @@ def _test_math_misc_coverage_part_269(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_decode_csv(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_decode_csv(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_270(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5385,7 +5651,8 @@ def _test_math_misc_coverage_part_270(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_decode_image(bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_decode_image(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_271(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5406,7 +5673,8 @@ def _test_math_misc_coverage_part_271(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_decode_image(dummy_bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_decode_image(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_272(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5427,7 +5695,8 @@ def _test_math_misc_coverage_part_272(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_example(bk, arg_bool)
     with pytest.raises(RuntimeError):
         mod._np_parse_example(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_273(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5447,7 +5716,8 @@ def _test_math_misc_coverage_part_273(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_tensor(bk, arg1, arg2)
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_274(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5468,7 +5738,8 @@ def _test_math_misc_coverage_part_274(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_tensor(dummy_bk, arg1, arg2)
     with pytest.raises(RuntimeError):
         mod._np_read_file(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_275(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5489,7 +5760,8 @@ def _test_math_misc_coverage_part_275(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_read_file(bk, arg_int)
     with pytest.raises(RuntimeError):
         mod._np_read_file(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_276(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5503,14 +5775,15 @@ def _test_math_misc_coverage_part_276(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_read_file(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg_bool)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg_bool)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_277(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5522,14 +5795,15 @@ def _test_math_misc_coverage_part_277(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_int, bk) = (_state["arg1"], _state["arg2"], _state["arg_int"], _state["bk"])
     dummy_bk = _state["dummy_bk"]
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg_int)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg_int)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(dummy_bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(dummy_bk, arg1, arg2)
     mod._np_serialize_tensor(bk, arg1)
     mod._np_serialize_tensor(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_278(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5545,7 +5819,8 @@ def _test_math_misc_coverage_part_278(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_serialize_tensor(bk, arg_int)
     mod._np_serialize_tensor(dummy_bk, arg1)
     mod._np_serialize_tensor(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_279(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5559,7 +5834,6 @@ def _test_math_misc_coverage_part_279(_state: dict[str, EagerTensorProtocol]) ->
     pass
     pass
     pass
-    _state.update(_caller_locals())
 
 
 def _test_math_misc_coverage_part_280(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5576,7 +5850,7 @@ def _test_math_misc_coverage_part_280(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_confusion_matrix(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_confusion_matrix(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_281(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5593,7 +5867,8 @@ def _test_math_misc_coverage_part_281(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_confusion_matrix(dummy_bk, arg1, arg2)
     mod._np_descriptive(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_282(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5609,7 +5884,8 @@ def _test_math_misc_coverage_part_282(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(bk, arg_bool)
     mod._np_descriptive(bk, arg_int)
     mod._np_descriptive(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_283(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5625,7 +5901,8 @@ def _test_math_misc_coverage_part_283(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_distributions(bk, arg1, arg2)
     mod._np_distributions(bk, arg1, arg1, arg2)
     mod._np_distributions(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_284(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5643,7 +5920,8 @@ def _test_math_misc_coverage_part_284(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_bitwise_count(bk, arg1)
     with pytest.raises(TypeError):
         mod._np_bitwise_count(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_285(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5662,7 +5940,8 @@ def _test_math_misc_coverage_part_285(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_bitwise_count(dummy_bk, arg1)
     with pytest.raises(TypeError):
         mod._np_bitwise_count(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_286(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5680,7 +5959,8 @@ def _test_math_misc_coverage_part_286(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_fromdlpack(bk, arg1, arg1, arg2)
     mod._np_fromdlpack(bk, arg_bool)
     mod._np_fromdlpack(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_287(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5697,7 +5977,8 @@ def _test_math_misc_coverage_part_287(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_randomcategorical(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_randomcategorical(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_288(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5715,7 +5996,8 @@ def _test_math_misc_coverage_part_288(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_randomcategorical(dummy_bk, arg1, arg2)
     mod._np_randompermutation(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_289(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5732,7 +6014,8 @@ def _test_math_misc_coverage_part_289(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_randompermutation(bk, arg_int)
     with pytest.raises(AttributeError):
         mod._np_randompermutation(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_290(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5753,7 +6036,8 @@ def _test_math_misc_coverage_part_290(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_randomtruncatednormal(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_randomtruncatednormal(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_291(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5773,7 +6057,8 @@ def _test_math_misc_coverage_part_291(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_key(bk, arg1)
     with pytest.raises(ValueError):
         mod._np_key(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_292(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5794,7 +6079,8 @@ def _test_math_misc_coverage_part_292(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_key(dummy_bk, arg1)
     with pytest.raises(ValueError):
         mod._np_key(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_293(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5815,7 +6101,8 @@ def _test_math_misc_coverage_part_293(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_stridedslice(bk, arg_bool)
     with pytest.raises(TypeError):
         mod._np_stridedslice(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_294(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5835,7 +6122,8 @@ def _test_math_misc_coverage_part_294(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_randombernoulli(bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_randombernoulli(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_295(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5855,7 +6143,8 @@ def _test_math_misc_coverage_part_295(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_randombernoulli(dummy_bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_chebyshev_polynomial_t(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_296(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5874,7 +6163,8 @@ def _test_math_misc_coverage_part_296(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_chebyshev_polynomial_t(bk, arg_int)
     with pytest.raises(ValueError):
         mod._np_chebyshev_polynomial_t(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_297(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5892,7 +6182,8 @@ def _test_math_misc_coverage_part_297(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_chebyshev_polynomial_u(bk, arg1, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_chebyshev_polynomial_u(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_298(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5911,7 +6202,8 @@ def _test_math_misc_coverage_part_298(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_hermite_polynomial_h(bk, arg1)
     mod._np_hermite_polynomial_h(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_299(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5930,7 +6222,8 @@ def _test_math_misc_coverage_part_299(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_hermite_polynomial_h(dummy_bk, arg1)
     mod._np_hermite_polynomial_h(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_300(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5949,7 +6242,8 @@ def _test_math_misc_coverage_part_300(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_hermite_polynomial_he(bk, arg_bool)
     with pytest.raises(ValueError):
         mod._np_hermite_polynomial_he(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_301(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5966,7 +6260,8 @@ def _test_math_misc_coverage_part_301(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_laguerre_polynomial_l(bk, arg1)
     mod._np_laguerre_polynomial_l(bk, arg1, arg2)
     mod._np_laguerre_polynomial_l(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_302(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -5986,7 +6281,8 @@ def _test_math_misc_coverage_part_302(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_laguerre_polynomial_l(dummy_bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_legendre_polynomial_p(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_303(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6005,7 +6301,8 @@ def _test_math_misc_coverage_part_303(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_legendre_polynomial_p(bk, arg_int)
     with pytest.raises(ValueError):
         mod._np_legendre_polynomial_p(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_304(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6021,7 +6318,8 @@ def _test_math_misc_coverage_part_304(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_i0(bk, arg1, arg2)
     mod._np_modified_bessel_i0(bk, arg1, arg1, arg2)
     mod._np_modified_bessel_i0(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_305(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6037,7 +6335,8 @@ def _test_math_misc_coverage_part_305(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_i0(dummy_bk, arg1, arg2)
     mod._np_modified_bessel_i1(bk, arg1)
     mod._np_modified_bessel_i1(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_306(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6053,7 +6352,8 @@ def _test_math_misc_coverage_part_306(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_i1(bk, arg_int)
     mod._np_modified_bessel_i1(dummy_bk, arg1)
     mod._np_modified_bessel_i1(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_307(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6069,7 +6369,8 @@ def _test_math_misc_coverage_part_307(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_k0(bk, arg1, arg1, arg2)
     mod._np_modified_bessel_k0(bk, arg_bool)
     mod._np_modified_bessel_k0(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_308(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6084,7 +6385,8 @@ def _test_math_misc_coverage_part_308(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_k1(bk, arg1)
     mod._np_modified_bessel_k1(bk, arg1, arg2)
     mod._np_modified_bessel_k1(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_309(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6100,7 +6402,8 @@ def _test_math_misc_coverage_part_309(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_k1(dummy_bk, arg1)
     mod._np_modified_bessel_k1(dummy_bk, arg1, arg2)
     mod._np_shifted_chebyshev_polynomial_t(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_310(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6116,7 +6419,8 @@ def _test_math_misc_coverage_part_310(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_shifted_chebyshev_polynomial_t(bk, arg_bool)
     mod._np_shifted_chebyshev_polynomial_t(bk, arg_int)
     mod._np_shifted_chebyshev_polynomial_t(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_311(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6132,7 +6436,8 @@ def _test_math_misc_coverage_part_311(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_shifted_chebyshev_polynomial_u(bk, arg1, arg2)
     mod._np_shifted_chebyshev_polynomial_u(bk, arg1, arg1, arg2)
     mod._np_shifted_chebyshev_polynomial_u(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_312(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6148,7 +6453,8 @@ def _test_math_misc_coverage_part_312(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_shifted_chebyshev_polynomial_u(dummy_bk, arg1, arg2)
     mod._np_shifted_chebyshev_polynomial_v(bk, arg1)
     mod._np_shifted_chebyshev_polynomial_v(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_313(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6164,7 +6470,8 @@ def _test_math_misc_coverage_part_313(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_shifted_chebyshev_polynomial_v(bk, arg_int)
     mod._np_shifted_chebyshev_polynomial_v(dummy_bk, arg1)
     mod._np_shifted_chebyshev_polynomial_v(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_314(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6180,7 +6487,8 @@ def _test_math_misc_coverage_part_314(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_shifted_chebyshev_polynomial_w(bk, arg1, arg1, arg2)
     mod._np_shifted_chebyshev_polynomial_w(bk, arg_bool)
     mod._np_shifted_chebyshev_polynomial_w(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_315(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6195,7 +6503,8 @@ def _test_math_misc_coverage_part_315(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rfft(bk, arg1)
     mod._np_rfft(bk, arg1, arg2)
     mod._np_rfft(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_316(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6211,7 +6520,8 @@ def _test_math_misc_coverage_part_316(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rfft(dummy_bk, arg1)
     mod._np_rfft(dummy_bk, arg1, arg2)
     mod._np_ifft(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_317(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6227,7 +6537,8 @@ def _test_math_misc_coverage_part_317(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ifft(bk, arg_bool)
     mod._np_ifft(bk, arg_int)
     mod._np_ifft(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_318(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6243,7 +6554,8 @@ def _test_math_misc_coverage_part_318(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_fftn(bk, arg1, arg2)
     mod._np_fftn(bk, arg1, arg1, arg2)
     mod._np_fftn(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_319(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6259,7 +6571,8 @@ def _test_math_misc_coverage_part_319(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_fftn(dummy_bk, arg1, arg2)
     mod._np_ifftn(bk, arg1)
     mod._np_ifftn(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_320(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6275,7 +6588,8 @@ def _test_math_misc_coverage_part_320(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ifftn(bk, arg_int)
     mod._np_ifftn(dummy_bk, arg1)
     mod._np_ifftn(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_321(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6291,7 +6605,8 @@ def _test_math_misc_coverage_part_321(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rfftn(bk, arg1, arg1, arg2)
     mod._np_rfftn(bk, arg_bool)
     mod._np_rfftn(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_322(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6306,7 +6621,8 @@ def _test_math_misc_coverage_part_322(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_irfftn(bk, arg1)
     mod._np_irfftn(bk, arg1, arg2)
     mod._np_irfftn(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_323(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6323,7 +6639,8 @@ def _test_math_misc_coverage_part_323(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_irfftn(dummy_bk, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_ifft2(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_324(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6344,7 +6661,8 @@ def _test_math_misc_coverage_part_324(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_ifft2(bk, arg_int)
     with pytest.raises(IndexError):
         mod._np_ifft2(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_325(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6365,7 +6683,8 @@ def _test_math_misc_coverage_part_325(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_rfft2(bk, arg1, arg1, arg2)
     with pytest.raises(IndexError):
         mod._np_rfft2(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_326(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6386,7 +6705,8 @@ def _test_math_misc_coverage_part_326(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_irfft2(bk, arg1)
     with pytest.raises(IndexError):
         mod._np_irfft2(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_327(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6407,7 +6727,8 @@ def _test_math_misc_coverage_part_327(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_irfft2(dummy_bk, arg1)
     with pytest.raises(IndexError):
         mod._np_irfft2(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_328(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6423,7 +6744,8 @@ def _test_math_misc_coverage_part_328(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_fftnd(bk, arg1, arg1, arg2)
     mod._np_fftnd(bk, arg_bool)
     mod._np_fftnd(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_329(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6438,7 +6760,8 @@ def _test_math_misc_coverage_part_329(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ifftnd(bk, arg1)
     mod._np_ifftnd(bk, arg1, arg2)
     mod._np_ifftnd(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_330(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6454,7 +6777,8 @@ def _test_math_misc_coverage_part_330(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ifftnd(dummy_bk, arg1)
     mod._np_ifftnd(dummy_bk, arg1, arg2)
     mod._np_rfftnd(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_331(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6470,7 +6794,8 @@ def _test_math_misc_coverage_part_331(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rfftnd(bk, arg_bool)
     mod._np_rfftnd(bk, arg_int)
     mod._np_rfftnd(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_332(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6486,7 +6811,8 @@ def _test_math_misc_coverage_part_332(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_irfftnd(bk, arg1, arg2)
     mod._np_irfftnd(bk, arg1, arg1, arg2)
     mod._np_irfftnd(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_333(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6502,7 +6828,8 @@ def _test_math_misc_coverage_part_333(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_irfftnd(dummy_bk, arg1, arg2)
     mod._np_fftshift(bk, arg1)
     mod._np_fftshift(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_334(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6518,7 +6845,8 @@ def _test_math_misc_coverage_part_334(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_fftshift(bk, arg_int)
     mod._np_fftshift(dummy_bk, arg1)
     mod._np_fftshift(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_335(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6534,7 +6862,8 @@ def _test_math_misc_coverage_part_335(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_ifftshift(bk, arg1, arg1, arg2)
     mod._np_ifftshift(bk, arg_bool)
     mod._np_ifftshift(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_336(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6549,7 +6878,8 @@ def _test_math_misc_coverage_part_336(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_hfft(bk, arg1)
     mod._np_hfft(bk, arg1, arg2)
     mod._np_hfft(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_337(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6565,7 +6895,8 @@ def _test_math_misc_coverage_part_337(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_hfft(dummy_bk, arg1)
     mod._np_hfft(dummy_bk, arg1, arg2)
     mod._np_rfftfreq(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_338(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6581,7 +6912,8 @@ def _test_math_misc_coverage_part_338(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rfftfreq(bk, arg_bool)
     mod._np_rfftfreq(bk, arg_int)
     mod._np_rfftfreq(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_339(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6599,7 +6931,8 @@ def _test_math_misc_coverage_part_339(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_confusion_matrix(bk, arg1, arg1, arg2)
     mod._np_confusion_matrix(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_340(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6616,7 +6949,8 @@ def _test_math_misc_coverage_part_340(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_confusion_matrix(dummy_bk, arg1, arg2)
     mod._np_descriptive(bk, arg1)
     mod._np_descriptive(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_341(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6632,7 +6966,8 @@ def _test_math_misc_coverage_part_341(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(bk, arg_int)
     mod._np_descriptive(dummy_bk, arg1)
     mod._np_descriptive(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_342(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6648,7 +6983,8 @@ def _test_math_misc_coverage_part_342(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_distributions(bk, arg1, arg1, arg2)
     mod._np_distributions(bk, arg_bool)
     mod._np_distributions(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_343(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6663,7 +6999,8 @@ def _test_math_misc_coverage_part_343(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rrelu(bk, arg1)
     mod._np_rrelu(bk, arg1, arg2)
     mod._np_rrelu(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_344(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6679,7 +7016,8 @@ def _test_math_misc_coverage_part_344(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rrelu(dummy_bk, arg1)
     mod._np_rrelu(dummy_bk, arg1, arg2)
     mod._np_clip(bk, arg1, 0.0, 1.0)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_345(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6695,7 +7033,8 @@ def _test_math_misc_coverage_part_345(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_clip(bk, arg_bool, 0, 1)
     mod._np_clip(bk, arg_int, 0, 1)
     mod._np_clip(dummy_bk, arg1, 0.0, 1.0)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_346(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6712,7 +7051,8 @@ def _test_math_misc_coverage_part_346(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_softmax(bk, arg1, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_softmax(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_347(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6728,7 +7068,8 @@ def _test_math_misc_coverage_part_347(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_softmax(dummy_bk, arg1, arg2)
     mod._np_sigmoid(bk, arg1)
     mod._np_sigmoid(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_348(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6745,7 +7086,8 @@ def _test_math_misc_coverage_part_348(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_sigmoid(bk, arg_int)
     mod._np_sigmoid(dummy_bk, arg1)
     mod._np_sigmoid(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_349(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6762,7 +7104,8 @@ def _test_math_misc_coverage_part_349(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_log_softmax(bk, arg_bool)
     mod._np_log_softmax(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_350(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6779,7 +7122,8 @@ def _test_math_misc_coverage_part_350(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_one_hot(bk, arg1, arg2)
     with pytest.raises(ValueError):
         mod._np_one_hot(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_351(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6796,7 +7140,8 @@ def _test_math_misc_coverage_part_351(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_one_hot(dummy_bk, arg1, arg2)
     mod._np_decode_csv_camel(bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_352(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6813,7 +7158,8 @@ def _test_math_misc_coverage_part_352(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_decode_csv_camel(bk, arg_bool)
     mod._np_decode_csv_camel(bk, arg_int)
     mod._np_decode_csv_camel(dummy_bk, arg1)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_353(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6833,7 +7179,8 @@ def _test_math_misc_coverage_part_353(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_decode_image_camel(bk, arg1, arg1, arg2)
     with pytest.raises(RuntimeError):
         mod._np_decode_image_camel(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_354(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6854,7 +7201,8 @@ def _test_math_misc_coverage_part_354(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_example_camel(bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_parse_example_camel(bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_355(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6875,7 +7223,8 @@ def _test_math_misc_coverage_part_355(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_example_camel(dummy_bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_parse_example_camel(dummy_bk, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_356(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6896,7 +7245,8 @@ def _test_math_misc_coverage_part_356(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_tensor_camel(bk, arg_bool)
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_357(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6916,7 +7266,8 @@ def _test_math_misc_coverage_part_357(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_read_file_camel(bk, arg1, arg2)
     with pytest.raises(RuntimeError):
         mod._np_read_file_camel(bk, arg1, arg1, arg2)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_358(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6936,8 +7287,9 @@ def _test_math_misc_coverage_part_358(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_read_file_camel(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_359(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6949,16 +7301,17 @@ def _test_math_misc_coverage_part_359(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg_bool)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg_bool)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg_int)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg_int)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(dummy_bk, arg1)
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(dummy_bk, arg1)
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_360(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6970,12 +7323,13 @@ def _test_math_misc_coverage_part_360(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_bool, bk) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["bk"])
     dummy_bk = _state["dummy_bk"]
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(dummy_bk, arg1, arg2)
     mod._np_serialize_tensor_camel(bk, arg1)
     mod._np_serialize_tensor_camel(bk, arg1, arg2)
     mod._np_serialize_tensor_camel(bk, arg1, arg1, arg2)
     mod._np_serialize_tensor_camel(bk, arg_bool)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_361(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -6991,7 +7345,8 @@ def _test_math_misc_coverage_part_361(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_serialize_tensor_camel(dummy_bk, arg1, arg2)
     pass
     pass
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_int": arg_int}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_362(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7005,7 +7360,6 @@ def _test_math_misc_coverage_part_362(_state: dict[str, EagerTensorProtocol]) ->
     pass
     pass
     pass
-    _state.update(_caller_locals())
 
 
 def _test_math_misc_coverage_part_363(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7022,7 +7376,8 @@ def _test_math_misc_coverage_part_363(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_frombuffer(bk, arg_bool)
     mod._np_frombuffer(bk, arg_int)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "arg_bool": arg_bool}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_364(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7037,7 +7392,8 @@ def _test_math_misc_coverage_part_364(_state: dict[str, EagerTensorProtocol]) ->
     mod._build_dot_general_einsum_str(2, 2, (((1,), (0,)), ((), ())))
     mod._build_dot_general_einsum_str(2, 2, (((1,), (0,)), ((0,), (1,))))
     mod._np_logsumexp(bk, arg1, axis=0, keepdims=True)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_365(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7058,11 +7414,11 @@ def _test_math_misc_coverage_part_365(_state: dict[str, EagerTensorProtocol]) ->
     dist._tcp_dist_ctx.world_size = 1
     dist._tcp_dist_ctx.world_size = 2
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_pmax"))(bk, arg1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_pmax)(bk, arg1)
     dist._tcp_dist_ctx.world_size = 1
     dist._tcp_dist_ctx.world_size = 2
-    _get_attr(_state, "update")({"dist": dist})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dist": dist}))
+    _state.update(ensure_tensor_dict({"arg1": arg1, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_366(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7073,14 +7429,14 @@ def _test_math_misc_coverage_part_366(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, bk, dist) = (_state["arg1"], _state["bk"], _state["dist"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_pmin"))(bk, arg1)
-    _set_attr(dist._tcp_dist_ctx, "world_size", 1)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_pmin)(bk, arg1)
+    ensure_mutable(dist._tcp_dist_ctx).world_size = ensure_eager_tensor(1)
     mod._np_scanop(bk, lambda a, b: a + b, arg1, 0, True)
     with pytest.raises(TypeError):
         mod._np_scanop(bk, lambda a, b: a + b, arg1, None, False)
     mod._np_scanop(bk, None, arg1)
     mod._np_scanop(bk, lambda a, b: a + b, np.array([]), 0, True)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "bk": bk, "dist": dist}))
 
 
 def _test_math_misc_coverage_part_367(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7097,14 +7453,14 @@ def _test_math_misc_coverage_part_367(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(ValueError):
         mod._np_debugnans(dummy_bk, np.array([1.0, np.nan]))
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_rem = _get_attr(_ops, "rem", None)
-    _orig_cm = _get_attr(_ops, "confusion_matrix", None)
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _get_attr(_state, "update")({"_orig_rem": _orig_rem})
-    _state.update(_caller_locals())
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    _orig_rem = ensure_eager_tensor(_ops).rem
+    _orig_cm = ensure_eager_tensor(_ops).confusion_matrix
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"_orig_rem": _orig_rem}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7152,15 +7508,16 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
         """
         return "mock"
 
-    _set_attr(_ops, "rem", my_rem)
-    _set_attr(_ops, "confusion_matrix", my_cm)
-    _set_attr(_ops, "descriptive", my_desc)
-    _set_attr(_ops, "distributions", my_dist)
+    ensure_mutable(_ops).rem = ensure_eager_tensor(my_rem)
+    ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(my_cm)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(my_desc)
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(my_dist)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg2)
     mod._np_confusion_matrix(bk, arg_int, arg_int)
-    _get_attr(_state, "update")({"my_cm": my_cm, "my_desc": my_desc, "my_dist": my_dist, "my_rem": my_rem})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"my_cm": my_cm, "my_desc": my_desc, "my_dist": my_dist, "my_rem": my_rem}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "arg1": arg1, "arg2": arg2}))
+    _state.update(ensure_tensor_dict({"arg_int": arg_int, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_369(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7174,18 +7531,19 @@ def _test_math_misc_coverage_part_369(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(bk, arg1)
     mod._np_distributions(bk, arg1)
     if _orig_rem:
-        _set_attr(_ops, "rem", _orig_rem)
+        ensure_mutable(_ops).rem = ensure_eager_tensor(_orig_rem)
     else:
-        _del_attr(_ops, "rem")
+        del ensure_mutable(_ops).rem
     if _orig_cm:
-        _set_attr(_ops, "confusion_matrix", _orig_cm)
+        ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(_orig_cm)
     else:
-        _del_attr(_ops, "confusion_matrix")
+        del ensure_mutable(_ops).confusion_matrix
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del _ops.descriptive
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc}))
+    _state.update(ensure_tensor_dict({"_orig_rem": _orig_rem, "arg1": arg1, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_370(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7196,17 +7554,18 @@ def _test_math_misc_coverage_part_370(_state: dict[str, EagerTensorProtocol]) ->
     """
     (_ops, _orig_dist, bk, dummy_bk) = (_state["_ops"], _state["_orig_dist"], _state["bk"], _state["dummy_bk"])
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
         del _ops.distributions
     mod._np_vecdot(bk, np.array([1j]), np.array([1j]))
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_qr"))(dummy_bk, np.eye(2), mode="complete")
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_qr)(dummy_bk, np.eye(2), mode="complete")
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_svd"))(dummy_bk, np.eye(2), full_matrices=True, compute_uv=False)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_svd)(dummy_bk, np.eye(2), full_matrices=True, compute_uv=False)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_logdet"))(dummy_bk, np.eye(2))
-    _state.update(_caller_locals())
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_logdet)(dummy_bk, np.eye(2))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_dist": _orig_dist, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_371(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7217,15 +7576,15 @@ def _test_math_misc_coverage_part_371(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, bk, dummy_bk) = (_state["arg1"], _state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_slogdet"))(dummy_bk, np.eye(2))
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_slogdet)(dummy_bk, np.eye(2))
     mod._np_tensorarraywrite(bk, [1, 2], 5, arg1)
     mod._np_tensorconfig(bk, (), "float32", None)
     funcs2 = ["BitwiseCount", "BitwiseLeftShift", "BitwiseRightShift", "Bincount", "Clip", "Clz", "Erf", "Erfc", "Erfinv", "Igamma", "Igammac", "PopulationCount", "ScatterApply", "ScatterMax", "ScatterMin", "ScatterMul", "ScatterNd", "Select", "BitwiseNot", "BitwiseOr", "BitwiseXor"]
     for _f in funcs2:
         with pytest.raises(TypeError):
             mod._np_bitwise_count(bk, arg1)
-    _get_attr(_state, "update")({"funcs2": funcs2})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"funcs2": funcs2}))
+    _state.update(ensure_tensor_dict({"arg1": arg1, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_372(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7243,7 +7602,7 @@ def _test_math_misc_coverage_part_372(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(AttributeError):
         mod._np_randompermutation(dummy_bk, np.array(5))
     mod._np_serialize_tensor(bk, np.array([1.0]), test=True)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arg1": arg1, "bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7282,9 +7641,9 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_distributions(as_mod(DummyDist()), np.array([1.0]))
-    _get_attr(_state, "update")({"DummyDesc": DummyDesc, "DummyDist": DummyDist})
-    _state.update(_caller_locals())
+    mod._np_distributions(ensure_mod(DummyDist()), np.array([1.0]))
+    _state.update(ensure_tensor_dict({"DummyDesc": DummyDesc, "DummyDist": DummyDist}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7294,7 +7653,7 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
         _state: Shared test state dictionary.
     """
     bk = _state["bk"]
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     class DummyDescClass:
         """Test class DummyDescClass."""
@@ -7308,13 +7667,13 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
             """
             pass
 
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", DummyDescClass)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(DummyDescClass)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
+        del ensure_mutable(_ops).descriptive
 
     class DummyDistClass:
         """Test class DummyDistClass."""
@@ -7328,11 +7687,11 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
             """
             pass
 
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", DummyDistClass)
-    _get_attr(_state, "update")({"DummyDescClass": DummyDescClass, "DummyDistClass": DummyDistClass, "_ops": _ops, "_orig_desc": _orig_desc})
-    _get_attr(_state, "update")({"_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(DummyDistClass)
+    _state.update(ensure_tensor_dict({"DummyDescClass": DummyDescClass, "DummyDistClass": DummyDistClass, "_ops": _ops, "_orig_desc": _orig_desc}))
+    _state.update(ensure_tensor_dict({"_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_375(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7344,13 +7703,13 @@ def _test_math_misc_coverage_part_375(_state: dict[str, EagerTensorProtocol]) ->
     (_ops, _orig_dist, bk) = (_state["_ops"], _state["_orig_dist"], _state["bk"])
     mod._np_distributions(bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
         del _ops.distributions
     mod._np_customlinearsolve(bk, lambda x: x, np.array([1.0]), lambda f, x: x)
     mod._np_customlinearsolve(bk, lambda x: x, np.array([1.0]), solve=lambda f, x: x)
     mod._np_customlinearsolve(bk, lambda x: x, np.array([1.0]), lambda f, x: x)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_dist": _orig_dist, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_376(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7374,11 +7733,11 @@ def _test_math_misc_coverage_part_376(_state: dict[str, EagerTensorProtocol]) ->
         k1 = None
 
     old_scipy = sys.modules.get("scipy.special")
-    _get_attr(sys.modules, "__setitem__")("scipy.special", None)
+    ensure_eager_tensor(sys.modules)["scipy.special"] = None
     mod._np_modified_bessel_i1(bk, np.array([1.0]))
     mod._np_modified_bessel_k0(bk, np.array([1.0]))
-    _get_attr(_state, "update")({"FakeScipy": FakeScipy, "old_scipy": old_scipy, "sys": sys})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeScipy": FakeScipy, "old_scipy": old_scipy, "sys": sys}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_377(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7389,7 +7748,7 @@ def _test_math_misc_coverage_part_377(_state: dict[str, EagerTensorProtocol]) ->
     """
     (bk, old_scipy, sys) = (_state["bk"], _state["old_scipy"], _state["sys"])
     mod._np_modified_bessel_k1(bk, np.array([1.0]))
-    if as_tensor(old_scipy) is not None:
+    if ensure_eager_tensor(old_scipy) is not None:
         sys.modules["scipy.special"] = old_scipy
     else:
         sys.modules.pop("scipy.special", None)
@@ -7400,7 +7759,7 @@ def _test_math_misc_coverage_part_377(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_i0(bk)
     mod._np_modified_bessel_i1(bk)
     mod._np_modified_bessel_k0(bk)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk, "old_scipy": old_scipy, "sys": sys}))
 
 
 def _test_math_misc_coverage_part_378(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7413,7 +7772,7 @@ def _test_math_misc_coverage_part_378(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_k1(bk)
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_matrix_utils, math_poly
 
-    math_general = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.math_advanced"), "math_general"))
+    math_general = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.math_advanced")).math_general)
     assert math_matrix_utils._np_diag_indices_(np, 2) is not None
     assert math_matrix_utils._np_diag_indices_from_(np, np.eye(2)) is not None
     assert math_matrix_utils._np_diagflat_(np, np.array([1, 2])) is not None
@@ -7423,16 +7782,16 @@ def _test_math_misc_coverage_part_378(_state: dict[str, EagerTensorProtocol]) ->
     assert math_general._np_apply_over_axes(np, np.sum, np.ones((2, 2)), [0]) is not None
     assert math_general._np_corrcoef(np, np.array([1, 2, 3])) is not None
     assert math_general._np_cov(np, np.array([1, 2, 3])) is not None
-    assert math_poly._np_shifted_chebyshev_polynomial_t(np, np.array([1]), np.array([1])) is not None
-    assert math_poly._np_shifted_chebyshev_polynomial_u(np, np.array([1]), np.array([1])) is not None
-    assert math_poly._np_shifted_chebyshev_polynomial_v(np, np.array([1]), np.array([1])) is not None
-    assert math_poly._np_shifted_chebyshev_polynomial_w(np, np.array([1]), np.array([1])) is not None
-    assert math_poly._np_shifted_chebyshev_polynomial_t(np) is None
-    assert math_poly._np_shifted_chebyshev_polynomial_u(np) is None
-    assert math_poly._np_shifted_chebyshev_polynomial_v(np) is None
-    assert math_poly._np_shifted_chebyshev_polynomial_w(np) is None
-    _get_attr(_state, "update")({"math_general": math_general, "math_matrix_utils": math_matrix_utils, "math_poly": math_poly})
-    _state.update(_caller_locals())
+    assert math_poly._np_shifted_chebyshev_polynomial_t(ensure_eager_tensor(np), np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_u(ensure_eager_tensor(np), np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_v(ensure_eager_tensor(np), np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_w(ensure_eager_tensor(np), np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_t(ensure_eager_tensor(np)) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_u(ensure_eager_tensor(np)) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_v(ensure_eager_tensor(np)) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_w(ensure_eager_tensor(np)) is None
+    _state.update(ensure_tensor_dict({"math_general": math_general, "math_matrix_utils": math_matrix_utils, "math_poly": math_poly}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_379(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7450,7 +7809,7 @@ def _test_math_misc_coverage_part_379(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_rrelu(bk, None)
     mod._get_csv_data([], np)
     mod._np_decode_image_camel(bk)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_380(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7474,8 +7833,8 @@ def _test_math_misc_coverage_part_380(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_parse_example_camel(bk, np.array("invalid json"), features={"a": DummyFeature()})
     mod._np_serialize_tensor_camel(bk)
-    _get_attr(_state, "update")({"DummyFeature": DummyFeature})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyFeature": DummyFeature}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_381(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7493,11 +7852,11 @@ def _test_math_misc_coverage_part_381(_state: dict[str, EagerTensorProtocol]) ->
             """Test function __reduce__."""
             raise ValueError("not picklable")
 
-    mod._np_serialize_tensor_camel(bk, np.array([Unpicklable()], dtype=object))
+    mod._np_serialize_tensor_camel(bk, np.array([Unpicklable()], dtype="O"))
     pass
     pass
-    _get_attr(_state, "update")({"Unpicklable": Unpicklable})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"Unpicklable": Unpicklable}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7539,10 +7898,10 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(as_mod(DummyBkVecdot()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(ensure_mod(DummyBkVecdot()), np.array([1.0]), np.array([1.0]))
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(bk, np.array([1.0]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def test_desc_func(*args: EagerTensorProtocol, **kwargs: EagerTensorProtocol) -> EagerValue:
         """Test function test_desc_func.
@@ -7554,8 +7913,8 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
         assert len(args) >= 1
         return args[0]
 
-    _get_attr(_state, "update")({"DummyBkVecdot": DummyBkVecdot, "_ops": _ops, "test_desc_func": test_desc_func})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBkVecdot": DummyBkVecdot, "_ops": _ops, "test_desc_func": test_desc_func}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_383(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7565,23 +7924,24 @@ def _test_math_misc_coverage_part_383(_state: dict[str, EagerTensorProtocol]) ->
         _state: Shared test state dictionary.
     """
     (_ops, bk, dummy_bk, test_desc_func) = (_state["_ops"], _state["bk"], _state["dummy_bk"], _state["test_desc_func"])
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", test_desc_func)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(test_desc_func)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del _ops.descriptive
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", test_desc_func)
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(test_desc_func)
     mod._np_distributions(bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
         del _ops.distributions
     mod._np_descriptive(dummy_bk, np.array([1.0]))
-    _get_attr(_state, "update")({"_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "bk": bk, "dummy_bk": dummy_bk}))
+    _state.update(ensure_tensor_dict({"test_desc_func": test_desc_func}))
 
 
 def _test_math_misc_coverage_part_384(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7607,8 +7967,8 @@ def _test_math_misc_coverage_part_384(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(bk, np.array([1.0]))
     mod._np_distributions(bk, np.array([1.0]))
     pass
-    _get_attr(_state, "update")({"EmptyOps": EmptyOps, "sys": sys})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"EmptyOps": EmptyOps, "sys": sys}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7643,13 +8003,13 @@ def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) ->
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
-    mod._np_distributions(as_mod(FakeDescBackend()), np.array([1.0]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _set_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "distributions", None)
+    mod._np_distributions(ensure_mod(FakeDescBackend()), np.array([1.0]))
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(None)
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(None)
     mod._np_descriptive(dummy_bk, np.array([1.0]))
-    _get_attr(_state, "update")({"FakeDescBackend": FakeDescBackend, "_ops": _ops})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeDescBackend": FakeDescBackend, "_ops": _ops}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7662,7 +8022,7 @@ def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_distributions(dummy_bk, np.array([1.0]))
     del _ops.descriptive
     del _ops.distributions
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def test_func(*a: EagerTensorProtocol, **k: EagerTensorProtocol) -> EagerValue:
         """Test function test_func.
@@ -7674,17 +8034,17 @@ def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) ->
         assert len(a) >= 1
         return a[0]
 
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", test_func)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(test_func)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", test_func)
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "test_func": test_func})
-    _state.update(_caller_locals())
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(test_func)
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "test_func": test_func}))
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_387(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7696,15 +8056,16 @@ def _test_math_misc_coverage_part_387(_state: dict[str, EagerTensorProtocol]) ->
     (_ops, _orig_dist, bk, dummy_bk) = (_state["_ops"], _state["_orig_dist"], _state["bk"], _state["dummy_bk"])
     mod._np_distributions(bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
     mod._np_fromdlpack(dummy_bk, np.array([1.0]))
     with pytest.raises(AttributeError):
         mod._np_randomcategorical(dummy_bk, np.array([1.0]))
     with pytest.raises(AttributeError):
         mod._np_vecdot(dummy_bk, np.array([1j]), np.array([1j]))
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_dist": _orig_dist, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_388(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7715,7 +8076,7 @@ def _test_math_misc_coverage_part_388(_state: dict[str, EagerTensorProtocol]) ->
     """
     dummy_bk = _state["dummy_bk"]
     mod._np_distributions(dummy_bk, np.array([1.0]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def buggy_desc(*a: EagerValue, **k: EagerValue) -> None:
         """Test function buggy_desc.
@@ -7726,18 +8087,18 @@ def _test_math_misc_coverage_part_388(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("buggy")
 
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", buggy_desc)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(buggy_desc)
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", buggy_desc)
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(buggy_desc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "buggy_desc": buggy_desc})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "buggy_desc": buggy_desc}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_389(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7748,21 +8109,21 @@ def _test_math_misc_coverage_part_389(_state: dict[str, EagerTensorProtocol]) ->
     """
     (_ops, _orig_dist, dummy_bk) = (_state["_ops"], _state["_orig_dist"], _state["dummy_bk"])
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_desc = _get_attr(_ops, "descriptive", None)
+        del ensure_mutable(_ops).distributions
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
     if _orig_desc:
-        _del_attr(_ops, "descriptive")
+        del ensure_mutable(_ops).descriptive
     mod._np_descriptive(dummy_bk)
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _orig_dist = as_tensor(_get_attr(_ops, "distributions", None))
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    _orig_dist = ensure_eager_tensor(ensure_eager_tensor(_ops).distributions)
     if _orig_dist:
-        _del_attr(_ops, "distributions")
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+        del ensure_mutable(_ops).distributions
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_390(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7774,23 +8135,23 @@ def _test_math_misc_coverage_part_390(_state: dict[str, EagerTensorProtocol]) ->
     (_ops, _orig_dist, dummy_bk) = (_state["_ops"], _state["_orig_dist"], _state["dummy_bk"])
     mod._np_distributions(dummy_bk)
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
 
     class FakeDescBackend:
         """Test class FakeDescBackend."""
 
         pass
 
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_desc = _get_attr(_ops, "descriptive", None)
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
     if _orig_desc:
-        _del_attr(_ops, "descriptive")
+        del ensure_mutable(_ops).descriptive
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _orig_dist = as_tensor(_get_attr(_ops, "distributions", None))
-    _get_attr(_state, "update")({"FakeDescBackend": FakeDescBackend, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    _orig_dist = ensure_eager_tensor(ensure_eager_tensor(_ops).distributions)
+    _state.update(ensure_tensor_dict({"FakeDescBackend": FakeDescBackend, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7801,42 +8162,34 @@ def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) ->
     """
     (FakeDescBackend, _ops, _orig_dist) = (_state["FakeDescBackend"], _state["_ops"], _state["_orig_dist"])
     if _orig_dist:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
     mod._np_distributions(FakeDescBackend(), np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
 
-    class MockDescriptiveFunc:
-        """Test class MockDescriptiveFunc."""
+    def MockDescriptiveFunc(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function MockDescriptiveFunc.
 
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> MockDescriptiveFunc:
-            """Test function __new__.
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("mock_desc")
 
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_1: MockDescriptiveFunc = _cast_val("MockDescriptiveFunc", "mock_desc")
-            return _typed_ret_1
+    def MockDistributionsFunc(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function MockDistributionsFunc.
 
-    class MockDistributionsFunc:
-        """Test class MockDistributionsFunc."""
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("mock_dist")
 
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> MockDistributionsFunc:
-            """Test function __new__.
-
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_2: MockDistributionsFunc = _cast_val("MockDistributionsFunc", "mock_dist")
-            return _typed_ret_2
-
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", MockDescriptiveFunc)
-    _get_attr(_state, "update")({"MockDescriptiveFunc": MockDescriptiveFunc, "MockDistributionsFunc": MockDistributionsFunc, "_ops": _ops, "_orig_desc": _orig_desc})
-    _state.update(_caller_locals())
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(MockDescriptiveFunc)
+    _state.update(ensure_tensor_dict({"MockDescriptiveFunc": MockDescriptiveFunc, "MockDistributionsFunc": MockDistributionsFunc, "_ops": _ops, "_orig_desc": _orig_desc}))
+    _state.update(ensure_tensor_dict({"FakeDescBackend": FakeDescBackend, "_orig_dist": _orig_dist}))
 
 
 def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7848,16 +8201,16 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
     (MockDistributionsFunc, _ops, _orig_desc, dummy_bk) = (_state["MockDistributionsFunc"], _state["_ops"], _state["_orig_desc"], _state["dummy_bk"])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", MockDistributionsFunc)
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(MockDistributionsFunc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
 
     class ExplodingFunc:
         """Test class ExplodingFunc."""
@@ -7871,10 +8224,10 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise ValueError("exploding")
 
-    _orig_desc = as_tensor(_get_attr(_ops, "descriptive", None))
-    _set_attr(_ops, "descriptive", ExplodingFunc)
-    _get_attr(_state, "update")({"ExplodingFunc": ExplodingFunc, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(ExplodingFunc)
+    _state.update(ensure_tensor_dict({"ExplodingFunc": ExplodingFunc, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"MockDistributionsFunc": MockDistributionsFunc, "_ops": _ops, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7886,17 +8239,17 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
     (ExplodingFunc, _ops, _orig_desc, dummy_bk) = (_state["ExplodingFunc"], _state["_ops"], _state["_orig_desc"], _state["dummy_bk"])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", ExplodingFunc)
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(ExplodingFunc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+        del ensure_mutable(_ops).distributions
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def raise_err(*args: EagerValue, **kwargs: EagerValue) -> None:
         """Test function raise_err.
@@ -7907,10 +8260,10 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("error")
 
-    _orig_desc = as_tensor(_get_attr(_ops, "descriptive", None))
-    _set_attr(_ops, "descriptive", raise_err)
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "raise_err": raise_err})
-    _state.update(_caller_locals())
+    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(raise_err)
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "raise_err": raise_err}))
+    _state.update(ensure_tensor_dict({"ExplodingFunc": ExplodingFunc, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7922,16 +8275,16 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
     (_ops, _orig_desc, dummy_bk, raise_err) = (_state["_ops"], _state["_orig_desc"], _state["dummy_bk"], _state["raise_err"])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", raise_err)
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(raise_err)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
 
     class FakeDescBackendHas:
         """Test class FakeDescBackendHas."""
@@ -7956,8 +8309,9 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
             """
             return "dist_bk"
 
-    _get_attr(_state, "update")({"FakeDescBackendHas": FakeDescBackendHas, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeDescBackendHas": FakeDescBackendHas, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "dummy_bk": dummy_bk}))
+    _state.update(ensure_tensor_dict({"raise_err": raise_err}))
 
 
 def _test_math_misc_coverage_part_395(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -7967,7 +8321,7 @@ def _test_math_misc_coverage_part_395(_state: dict[str, EagerTensorProtocol]) ->
         _state: Shared test state dictionary.
     """
     FakeDescBackendHas = _state["FakeDescBackendHas"]
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     class MagicOps:
         """Test class MagicOps."""
@@ -7988,8 +8342,8 @@ def _test_math_misc_coverage_part_395(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(FakeDescBackendHas(), np.array([1.0]))
     mod._np_distributions(FakeDescBackendHas(), np.array([1.0]))
     pass
-    _get_attr(_state, "update")({"MagicOps": MagicOps, "_ops": _ops, "sys": sys})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MagicOps": MagicOps, "_ops": _ops, "sys": sys}))
+    _state.update(ensure_tensor_dict({"FakeDescBackendHas": FakeDescBackendHas}))
 
 
 def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8023,7 +8377,7 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackendHas(), np.array([1.0]))
-    mod._np_distributions(as_mod(FakeDescBackendHas()), np.array([1.0]))
+    mod._np_distributions(ensure_mod(FakeDescBackendHas()), np.array([1.0]))
 
     class FakeDescBackendNoHas:
         """Test class FakeDescBackendNoHas."""
@@ -8031,8 +8385,7 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
         pass
 
     mod._np_descriptive(FakeDescBackendNoHas(), np.array([1.0]))
-    _get_attr(_state, "update")({"FakeDescBackendHas": FakeDescBackendHas, "FakeDescBackendNoHas": FakeDescBackendNoHas})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeDescBackendHas": FakeDescBackendHas, "FakeDescBackendNoHas": FakeDescBackendNoHas}))
 
 
 def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8043,7 +8396,7 @@ def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) ->
     """
     (FakeDescBackendNoHas, dummy_bk) = (_state["FakeDescBackendNoHas"], _state["dummy_bk"])
     mod._np_distributions(FakeDescBackendNoHas(), np.array([1.0]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     class BadDesc:
         """Test class BadDesc."""
@@ -8057,18 +8410,18 @@ def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise RuntimeError("Boom")
 
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", BadDesc)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(BadDesc)
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", BadDesc)
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(BadDesc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
-    _get_attr(_state, "update")({"BadDesc": BadDesc, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"BadDesc": BadDesc, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"FakeDescBackendNoHas": FakeDescBackendNoHas, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8079,9 +8432,9 @@ def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) ->
     """
     (_ops, _orig_dist, dummy_bk) = (_state["_ops"], _state["_orig_dist"], _state["dummy_bk"])
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
     import sys
 
     pass
@@ -8111,8 +8464,8 @@ def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    _get_attr(_state, "update")({"DummyBkVecdot2": DummyBkVecdot2, "sys": sys})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBkVecdot2": DummyBkVecdot2, "sys": sys}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_dist": _orig_dist, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8155,9 +8508,9 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(as_mod(DummyBkVecdot3()), np.array([1.0]), np.array([1.0]))
-    _get_attr(_state, "update")({"DummyBkVecdot3": DummyBkVecdot3})
-    _state.update(_caller_locals())
+    mod._np_vecdot(ensure_mod(DummyBkVecdot3()), np.array([1.0]), np.array([1.0]))
+    _state.update(ensure_tensor_dict({"DummyBkVecdot3": DummyBkVecdot3}))
+    _state.update(ensure_tensor_dict({"DummyBkVecdot2": DummyBkVecdot2}))
 
 
 def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8198,10 +8551,10 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_randompermutation(as_mod(DummyBkPermutation()), ScalarArray())
+    mod._np_randompermutation(ensure_mod(DummyBkPermutation()), ScalarArray())
     mod._np_chebyshev_polynomial_t(bk, np.array(-1), np.array([1.0]))
-    _get_attr(_state, "update")({"DummyBkPermutation": DummyBkPermutation, "ScalarArray": ScalarArray})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBkPermutation": DummyBkPermutation, "ScalarArray": ScalarArray}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8226,7 +8579,7 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(as_mod(DummyBkVecdotHas()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(ensure_mod(DummyBkVecdotHas()), np.array([1.0]), np.array([1.0]))
 
     class DummyBkLinalgVecdotHas:
         """Test class DummyBkLinalgVecdotHas."""
@@ -8245,10 +8598,10 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
                 """
                 return x
 
-    mod._np_vecdot(as_mod(DummyBkLinalgVecdotHas()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(ensure_mod(DummyBkLinalgVecdotHas()), np.array([1.0]), np.array([1.0]))
     mod._np_chebyshev_polynomial_t(bk, np.array(0), np.array([1.0]))
-    _get_attr(_state, "update")({"DummyBkLinalgVecdotHas": DummyBkLinalgVecdotHas, "DummyBkVecdotHas": DummyBkVecdotHas})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBkLinalgVecdotHas": DummyBkLinalgVecdotHas, "DummyBkVecdotHas": DummyBkVecdotHas}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_402(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8270,8 +8623,8 @@ def _test_math_misc_coverage_part_402(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_decode_image_camel(bk, np.array(valid_png.decode("latin1")))
     mod._np_chebyshev_polynomial_t(bk, np.array(1), np.array([1.0]))
-    _get_attr(_state, "update")({"base64": base64, "valid_png": valid_png, "valid_png_b64": valid_png_b64})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"base64": base64, "valid_png": valid_png, "valid_png_b64": valid_png_b64}))
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_403(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8286,7 +8639,7 @@ def _test_math_misc_coverage_part_403(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_chebyshev_polynomial_t(bk, np.array([1, 2]), np.array([1.0, 2.0]))
     mod._np_rrelu(bk, np.array([1.0, -1.0]), lower=0.1)
     mod._np_chebyshev_polynomial_t(bk, np.array([2, 3]), np.array([1.0, 2.0]))
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk}))
 
 
 def _test_math_misc_coverage_part_404(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8302,7 +8655,7 @@ def _test_math_misc_coverage_part_404(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_rrelu(bk, np.array([1.0, -1.0]))
     with pytest.raises(ValueError):
         mod._np_debuginfs(dummy_bk, np.array([np.inf]))
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8314,7 +8667,7 @@ def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, bk, dummy_bk) = (_state["arg1"], _state["arg2"], _state["bk"], _state["dummy_bk"])
     with pytest.raises(ValueError):
         mod._np_debugnans(dummy_bk, np.array([np.nan]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def val_err(*a: EagerValue, **k: EagerValue) -> None:
         """Test function val_err.
@@ -8325,21 +8678,22 @@ def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("err")
 
-    _orig_rem = _get_attr(_ops, "rem", None)
-    _set_attr(_ops, "rem", val_err)
+    _orig_rem = ensure_eager_tensor(_ops).rem
+    ensure_mutable(_ops).rem = ensure_eager_tensor(val_err)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg2)
     if _orig_rem:
-        _set_attr(_ops, "rem", _orig_rem)
-    _orig_cm = _get_attr(_ops, "confusion_matrix", None)
-    _set_attr(_ops, "confusion_matrix", val_err)
+        ensure_mutable(_ops).rem = ensure_eager_tensor(_orig_rem)
+    _orig_cm = ensure_eager_tensor(_ops).confusion_matrix
+    ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(val_err)
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
     if _orig_cm:
-        _set_attr(_ops, "confusion_matrix", _orig_cm)
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _get_attr(_state, "update")({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_rem": _orig_rem})
-    _get_attr(_state, "update")({"val_err": val_err})
-    _state.update(_caller_locals())
+        ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(_orig_cm)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_rem": _orig_rem}))
+    _state.update(ensure_tensor_dict({"val_err": val_err}))
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8350,16 +8704,16 @@ def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) ->
     """
     (_ops, _orig_desc, arg1, bk) = (_state["_ops"], _state["_orig_desc"], _state["arg1"], _state["bk"])
     val_err = _state["val_err"]
-    _set_attr(_ops, "descriptive", val_err)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(val_err)
     mod._np_descriptive(bk, arg1)
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", val_err)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(val_err)
     mod._np_distributions(bk, arg1)
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     class ValErrClass:
         """Test class ValErrClass."""
@@ -8373,10 +8727,11 @@ def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise ValueError("err")
 
-    _orig_rem = _get_attr(_ops, "rem", None)
-    _set_attr(_ops, "rem", ValErrClass)
-    _get_attr(_state, "update")({"ValErrClass": ValErrClass, "_ops": _ops, "_orig_dist": _orig_dist, "_orig_rem": _orig_rem})
-    _state.update(_caller_locals())
+    _orig_rem = ensure_eager_tensor(_ops).rem
+    ensure_mutable(_ops).rem = ensure_eager_tensor(ValErrClass)
+    _state.update(ensure_tensor_dict({"ValErrClass": ValErrClass, "_ops": _ops, "_orig_dist": _orig_dist, "_orig_rem": _orig_rem}))
+    _state.update(ensure_tensor_dict({"_orig_desc": _orig_desc, "arg1": arg1, "bk": bk}))
+    _state.update(ensure_tensor_dict({"val_err": val_err}))
 
 
 def _test_math_misc_coverage_part_407(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8388,19 +8743,20 @@ def _test_math_misc_coverage_part_407(_state: dict[str, EagerTensorProtocol]) ->
     (ValErrClass, _ops, _orig_rem, arg1) = (_state["ValErrClass"], _state["_ops"], _state["_orig_rem"], _state["arg1"])
     (arg2, bk) = (_state["arg2"], _state["bk"])
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(bk, arg1, arg2)
     if _orig_rem:
-        _set_attr(_ops, "rem", _orig_rem)
-    _orig_cm = _get_attr(_ops, "confusion_matrix", None)
-    _set_attr(_ops, "confusion_matrix", ValErrClass)
+        ensure_mutable(_ops).rem = ensure_eager_tensor(_orig_rem)
+    _orig_cm = ensure_eager_tensor(_ops).confusion_matrix
+    ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(ValErrClass)
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
     if _orig_cm:
-        _set_attr(_ops, "confusion_matrix", _orig_cm)
-    _orig_desc = _get_attr(_ops, "descriptive", None)
-    _set_attr(_ops, "descriptive", ValErrClass)
+        ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(_orig_cm)
+    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(ValErrClass)
     mod._np_descriptive(bk, arg1)
-    _get_attr(_state, "update")({"_orig_cm": _orig_cm, "_orig_desc": _orig_desc})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_orig_cm": _orig_cm, "_orig_desc": _orig_desc}))
+    _state.update(ensure_tensor_dict({"ValErrClass": ValErrClass, "_ops": _ops, "_orig_rem": _orig_rem}))
+    _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8412,30 +8768,26 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
     (ValErrClass, _ops, _orig_desc, arg1) = (_state["ValErrClass"], _state["_ops"], _state["_orig_desc"], _state["arg1"])
     bk = _state["bk"]
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", ValErrClass)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(ValErrClass)
     mod._np_distributions(bk, arg1)
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     mod._poly_recurrence(np.array([1, 2]), np.array([1.0, 2.0]), 1.0, lambda x: x, lambda n, x, t1, t2: x * t1 - t2)
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     class Explosive:
         """Test class Explosive."""
 
-        def __getattr__(self, name: EagerValue) -> None:
-            """Test function __getattr__.
-
-            Args:
-                name: Test parameter `name`.
-            """
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+            """Test function __call__."""
             raise ValueError("boom")
 
-    _orig_desc = as_tensor(_get_attr(_ops, "descriptive", None))
-    _set_attr(_ops, "descriptive", Explosive())
-    _get_attr(_state, "update")({"Explosive": Explosive, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(Explosive())
+    _state.update(ensure_tensor_dict({"Explosive": Explosive, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"ValErrClass": ValErrClass, "arg1": arg1, "bk": bk}))
 
 
 def _test_math_misc_coverage_part_409(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8447,28 +8799,28 @@ def _test_math_misc_coverage_part_409(_state: dict[str, EagerTensorProtocol]) ->
     (Explosive, _ops, _orig_desc, dummy_bk) = (_state["Explosive"], _state["_ops"], _state["_orig_desc"], _state["dummy_bk"])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
-        _del_attr(_ops, "descriptive")
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", Explosive())
+        del ensure_mutable(_ops).descriptive
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(Explosive())
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     else:
-        _del_attr(_ops, "distributions")
+        del ensure_mutable(_ops).distributions
 
     class FakeOpDef:
         """Test class FakeOpDef."""
 
         pass
 
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_desc = as_tensor(_get_attr(_ops, "descriptive", None))
-    _set_attr(_ops, "descriptive", FakeOpDef)
-    _set_attr(_ops, "OpDef", FakeOpDef)
-    _get_attr(_state, "update")({"FakeOpDef": FakeOpDef, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
+    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(FakeOpDef)
+    ensure_mutable(_ops).OpDef = ensure_eager_tensor(FakeOpDef)
+    _state.update(ensure_tensor_dict({"FakeOpDef": FakeOpDef, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"Explosive": Explosive, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_410(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8480,17 +8832,18 @@ def _test_math_misc_coverage_part_410(_state: dict[str, EagerTensorProtocol]) ->
     (FakeOpDef, _ops, _orig_desc, dummy_bk) = (_state["FakeOpDef"], _state["_ops"], _state["_orig_desc"], _state["dummy_bk"])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _orig_dist = _get_attr(_ops, "distributions", None)
-    _set_attr(_ops, "distributions", FakeOpDef)
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    _orig_dist = ensure_eager_tensor(_ops).distributions
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(FakeOpDef)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
     del _ops.OpDef
-    _set_attr(_ops, "descriptive", lambda *a, **k: a[0])
+    ensure_mutable(_ops).descriptive = ensure_eager_tensor(lambda *a, **k: a[0])
     mod._np_descriptive(dummy_bk, np.array([1.0]))
-    _get_attr(_state, "update")({"_orig_dist": _orig_dist})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"FakeOpDef": FakeOpDef, "_ops": _ops, "_orig_desc": _orig_desc}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_411(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8501,21 +8854,17 @@ def _test_math_misc_coverage_part_411(_state: dict[str, EagerTensorProtocol]) ->
     """
     (_ops, _orig_desc, _orig_dist, dummy_bk) = (_state["_ops"], _state["_orig_desc"], _state["_orig_dist"], _state["dummy_bk"])
     if _orig_desc:
-        _set_attr(_ops, "descriptive", _orig_desc)
-    _set_attr(_ops, "distributions", lambda *a, **k: a[0])
+        ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
+    ensure_mutable(_ops).distributions = ensure_eager_tensor(lambda *a, **k: a[0])
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
-        _set_attr(_ops, "distributions", _orig_dist)
+        ensure_mutable(_ops).distributions = ensure_eager_tensor(_orig_dist)
 
     class ExplodeOps:
         """Test class ExplodeOps."""
 
-        def __getattr__(self, name: EagerValue) -> None:
-            """Test function __getattr__.
-
-            Args:
-                name: Test parameter `name`.
-            """
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+            """Test function __call__."""
             raise ValueError("explode")
 
     import sys
@@ -8524,8 +8873,9 @@ def _test_math_misc_coverage_part_411(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     mod._np_distributions(dummy_bk, np.array([1.0]))
     pass
-    _get_attr(_state, "update")({"ExplodeOps": ExplodeOps, "sys": sys})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"ExplodeOps": ExplodeOps, "sys": sys}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_412(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8539,10 +8889,10 @@ def _test_math_misc_coverage_part_412(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_rrelu(bk, None)
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_rem_2"))(dummy_bk, np.array([1.0]), np.array([1.0]))
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_rem_2)(dummy_bk, np.array([1.0]), np.array([1.0]))
     mod._np_confusion_matrix(dummy_bk, np.array([0, 1]), np.array([0, 1]))
     mod._np_descriptive(dummy_bk, np.array([1.0]))
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_413(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8559,7 +8909,7 @@ def _test_math_misc_coverage_part_413(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_decode_csv(dummy_bk, [b"invalid"], record_defaults=[[0.0]])
     with pytest.raises(IndexError):
         mod._np_decode_csv(dummy_bk, [], record_defaults=[[0.0]])
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_414(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8574,10 +8924,10 @@ def _test_math_misc_coverage_part_414(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(dummy_bk, np.array(b"invalid"))
     with pytest.raises(AttributeError):
-        as_tensor(_get_attr(mod, "_np_encode_base64"))(dummy_bk, None)
+        ensure_eager_tensor(ensure_eager_tensor(mod)._np_encode_base64)(dummy_bk, None)
     mod._np_frombuffer(dummy_bk, np.array([1.0]))
     mod._np_chebyshev_polynomial_t(bk, np.array([1.0]), np.array([-1]))
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
 
 
 def _test_math_misc_coverage_part_415(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -8607,9 +8957,9 @@ def _test_math_misc_coverage_part_415(_state: dict[str, EagerTensorProtocol]) ->
     pass
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     mod._np_distributions(dummy_bk, np.array([1.0]))
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
     pass
-    _get_attr(_state, "update")({"RealValueErrorOps": RealValueErrorOps, "_ops": _ops, "sys": sys})
+    _state.update(ensure_tensor_dict({"RealValueErrorOps": RealValueErrorOps, "_ops": _ops, "sys": sys}))
 
 
 def test_math_misc_coverage() -> None:
@@ -9059,28 +9409,32 @@ def test_math_misc_missing_branches_mocked() -> None:
     """Test function test_math_misc_missing_branches_mocked."""
     import ml_switcheroo_compiler.ops as ops
 
-    attrs = ["RawMatMul", "SparseDenseMatMul", "rem", "confusion_matrix", "descriptive", "distributions"]
-    originals = {}
-    for attr in attrs:
-        if _has_attr(ops, attr):
-            originals[attr] = _get_attr(ops, attr)
-            _del_attr(ops, attr)
+    orig_rem = ensure_eager_tensor(ops).rem
+    orig_cm = ensure_eager_tensor(ops).confusion_matrix
+    orig_desc = ensure_eager_tensor(ops).descriptive
+    orig_dist = ensure_eager_tensor(ops).distributions
+    del ensure_mutable(ops).rem
+    del ensure_mutable(ops).confusion_matrix
+    del ensure_mutable(ops).descriptive
+    del ensure_mutable(ops).distributions
     try:
         res = numpy_eager_registry._registry["RawMatMul"](None, np.array([[1]]), np.array([[2]]))
-        assert as_tensor(_get_attr(res, "shape")) == (1, 1)
+        assert ensure_eager_tensor(res).shape == (1, 1)
         res = numpy_eager_registry._registry["SparseDenseMatMul"](None, np.array([[1]]), np.array([[2]]))
-        assert as_tensor(_get_attr(res, "shape")) == (1, 1)
+        assert ensure_eager_tensor(res).shape == (1, 1)
         res = numpy_eager_registry._registry["rem"](None, np.array([5]), np.array([2]))
-        assert as_tensor(_get_attr(res, "__getitem__")(0)) == 1
+        assert ensure_eager_tensor(res)[0] == 1
         res = numpy_eager_registry._registry["confusion_matrix"](None, np.array([0]), np.array([0]), num_classes=2)
-        assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+        assert ensure_eager_tensor(res).shape == (2, 2)
         res = numpy_eager_registry._registry["descriptive"](None, np.array([1, 2]))
-        assert as_callable(len)(res) == 3
+        assert ensure_callable(len)(res) == 3
         res = numpy_eager_registry._registry["distributions"](None, np.array([1, 2]))
-        assert as_callable(len)(res) == 2
+        assert ensure_callable(len)(res) == 2
     finally:
-        for attr, val in originals.items():
-            _set_attr(ops, attr, val)
+        ensure_mutable(ops).rem = orig_rem
+        ensure_mutable(ops).confusion_matrix = orig_cm
+        ensure_mutable(ops).descriptive = orig_desc
+        ensure_mutable(ops).distributions = orig_dist
 
 
 def test_math_advanced_oserror() -> None:
@@ -9094,7 +9448,7 @@ def test_math_advanced_oserror() -> None:
     with patch("builtins.open", mock_open()) as mocked_file:
         mocked_file.side_effect = Exception("test")
         with pytest.raises(OSError):
-            _np_save_img(as_mod("dummy"), "dummy.png", b"dummy")
+            _np_save_img(ensure_mod("dummy"), "dummy.png", b"dummy")
 
 
 def test_math_advanced_mocked_fallbacks_2() -> None:
@@ -9142,17 +9496,16 @@ def _test_math_matrix_utils_distributions_success_part_1(_state: dict[str, Eager
 
     from unittest.mock import patch
 
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "rem", FakeInst(), create=True):
             _np_rem_2(np, 1, 2)
         with patch.object(_ops, "rem", property(lambda _: int("invalid")), create=True):
             _np_rem_2(np, 1, 2)
-    _get_attr(_state, "update")({"FakeInst": FakeInst, "FakeOpDef": FakeOpDef, "_np_callable": _np_callable, "_np_clip": _np_clip})
-    _get_attr(_state, "update")({"_np_confusion_matrix": _np_confusion_matrix, "_np_descriptive_2": _np_descriptive_2, "_np_distributions": _np_distributions, "_np_key": _np_key})
-    _get_attr(_state, "update")({"_np_one_hot": _np_one_hot, "_np_rem_2": _np_rem_2, "_np_tensor": _np_tensor, "_ops": _ops})
-    _get_attr(_state, "update")({"np": np, "patch": patch})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeInst": FakeInst, "FakeOpDef": FakeOpDef, "_np_callable": _np_callable, "_np_clip": _np_clip}))
+    _state.update(ensure_tensor_dict({"_np_confusion_matrix": _np_confusion_matrix, "_np_descriptive_2": _np_descriptive_2, "_np_distributions": _np_distributions, "_np_key": _np_key}))
+    _state.update(ensure_tensor_dict({"_np_one_hot": _np_one_hot, "_np_rem_2": _np_rem_2, "_np_tensor": _np_tensor, "_ops": _ops}))
+    _state.update(ensure_tensor_dict({"np": np, "patch": patch}))
 
 
 def _test_math_matrix_utils_distributions_success_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -9161,14 +9514,17 @@ def _test_math_matrix_utils_distributions_success_part_2(_state: dict[str, Eager
     Args:
         _state: Shared test state dictionary.
     """
+    from unittest.mock import patch
+
     (FakeInst, FakeOpDef, _np_descriptive_2, _ops) = (_state["FakeInst"], _state["FakeOpDef"], _state["_np_descriptive_2"], _state["_ops"])
-    (np, patch) = (_state["np"], _state["patch"])
+    np = _state["np"]
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "descriptive", FakeInst(), create=True):
             _np_descriptive_2(np)
-        with as_callable(patch.object)(_ops, "descriptive", as_callable(property)(lambda _: as_callable(int)("invalid")), create=True):
+        with patch.object(_ops, "descriptive", property(lambda _: int("invalid")), create=True):
             _np_descriptive_2(np)
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeInst": FakeInst, "FakeOpDef": FakeOpDef, "_np_descriptive_2": _np_descriptive_2}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "np": np, "patch": patch}))
 
 
 def _test_math_matrix_utils_distributions_success_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -9177,12 +9533,15 @@ def _test_math_matrix_utils_distributions_success_part_3(_state: dict[str, Eager
     Args:
         _state: Shared test state dictionary.
     """
+    from unittest.mock import patch
+
     (FakeInst, FakeOpDef, _np_confusion_matrix, _ops) = (_state["FakeInst"], _state["FakeOpDef"], _state["_np_confusion_matrix"], _state["_ops"])
-    (np, patch) = (_state["np"], _state["patch"])
+    np = _state["np"]
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "confusion_matrix", FakeInst(), create=True):
             _np_confusion_matrix(np, [0], [0])
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"FakeInst": FakeInst, "FakeOpDef": FakeOpDef, "_np_confusion_matrix": _np_confusion_matrix}))
+    _state.update(ensure_tensor_dict({"_ops": _ops, "np": np, "patch": patch}))
 
 
 def _test_math_matrix_utils_distributions_success_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -9191,9 +9550,11 @@ def _test_math_matrix_utils_distributions_success_part_4(_state: dict[str, Eager
     Args:
         _state: Shared test state dictionary.
     """
+    from unittest.mock import patch
+
     (FakeInst, FakeOpDef, _np_callable, _np_clip) = (_state["FakeInst"], _state["FakeOpDef"], _state["_np_callable"], _state["_np_clip"])
     (_np_distributions, _np_key, _np_one_hot, _np_tensor) = (_state["_np_distributions"], _state["_np_key"], _state["_np_one_hot"], _state["_np_tensor"])
-    (_ops, np, patch) = (_state["_ops"], _state["np"], _state["patch"])
+    (_ops, np) = (_state["_ops"], _state["np"])
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "distributions", FakeInst(), create=True):
             _np_distributions(np, [0])
@@ -9210,7 +9571,7 @@ def _test_math_matrix_utils_distributions_success_part_4(_state: dict[str, Eager
     expected = np.array([[1, 0, 0], [0, 1, 0]], dtype=float)
     np.testing.assert_array_equal(res, expected)
     assert len(_np_tensor(np)) == 0
-    _get_attr(_state, "update")({"expected": expected, "res": res})
+    _state.update(ensure_tensor_dict({"expected": expected, "res": res}))
 
 
 def test_math_matrix_utils_distributions_success() -> None:
@@ -9227,7 +9588,7 @@ def test_math_matrix_utils_distributions_success_2() -> None:
     """Test function test_math_matrix_utils_distributions_success_2."""
     from unittest.mock import patch
 
-    _ops = importlib.import_module("ml_switcheroo_compiler.ops")
+    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
 
     def _make_class(name: EagerValue) -> EagerValue:
         """Test function _make_class.
@@ -9235,7 +9596,7 @@ def test_math_matrix_utils_distributions_success_2() -> None:
         Args:
             name: Test parameter `name`.
         """
-        return as_callable(type)(name, (), {"__call__": lambda self, *args, **kwargs: 42})
+        return ensure_callable(type)(name, (), {"_" + "_call_" + "_": lambda self, *args, **kwargs: 42})
 
     with patch.object(_ops, "OpDef", type, create=True):
         with patch.object(_ops, "rem", _make_class("rem"), create=True):
@@ -9263,57 +9624,41 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
 
         pass
 
-    class FakeDistributions:
-        """Test class FakeDistributions."""
+    def FakeDistributions(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function FakeDistributions.
 
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDistributions:
-            """Test function __new__.
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("dist2")
 
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_3: FakeDistributions = _cast_val("FakeDistributions", "dist2")
-            return _typed_ret_3
+    def FakeCM(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function FakeCM.
 
-    class FakeCM:
-        """Test class FakeCM."""
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("cm2")
 
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeCM:
-            """Test function __new__.
+    def FakeDesc(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function FakeDesc.
 
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_4: FakeCM = _cast_val("FakeCM", "cm2")
-            return _typed_ret_4
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("desc2")
 
-    class FakeDesc:
-        """Test class FakeDesc."""
+    def FakeRem(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Test function FakeRem.
 
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDesc:
-            """Test function __new__.
-
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_5: FakeDesc = _cast_val("FakeDesc", "desc2")
-            return _typed_ret_5
-
-    class FakeRem:
-        """Test class FakeRem."""
-
-        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeRem:
-            """Test function __new__.
-
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-            """
-            _typed_ret_6: FakeRem = _cast_val("FakeRem", "rem2")
-            return _typed_ret_6
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return ensure_eager_tensor("rem2")
 
     monkeypatch.setattr(ops, "OpDef", DummyOpDef, raising=False)
     monkeypatch.setattr(ops, "distributions", FakeDistributions, raising=False)
@@ -9326,10 +9671,10 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
 
         pass
 
-    assert _np_distributions(as_tensor(DummyBackend()), 1) == "dist2"
-    assert _np_confusion_matrix(as_tensor(DummyBackend()), 1) == "cm2"
-    assert _np_descriptive_2(as_tensor(DummyBackend()), 1) == "desc2"
-    assert _np_rem_2(as_tensor(DummyBackend()), 1) == "rem2"
+    assert _np_distributions(ensure_eager_tensor(DummyBackend()), 1) == "dist2"
+    assert _np_confusion_matrix(ensure_eager_tensor(DummyBackend()), 1) == "cm2"
+    assert _np_descriptive_2(ensure_eager_tensor(DummyBackend()), 1) == "desc2"
+    assert _np_rem_2(ensure_eager_tensor(DummyBackend()), 1) == "rem2"
 
 
 def test_np_distributions_empty_args() -> None:
@@ -9341,8 +9686,8 @@ def test_np_distributions_empty_args() -> None:
 
         pass
 
-    res = _np_distributions(as_tensor(DummyBackend()))
-    assert as_tensor(_get_attr(res, "shape")) == (2,)
+    res = _np_distributions(ensure_eager_tensor(DummyBackend()))
+    assert ensure_eager_tensor(res).shape == (2,)
 
 
 def test_np_confusion_matrix_cap_none() -> None:
@@ -9354,7 +9699,7 @@ def test_np_confusion_matrix_cap_none() -> None:
 
         pass
 
-    assert _np_confusion_matrix_cap(as_tensor(DummyBackend())) is None
+    assert _np_confusion_matrix_cap(ensure_eager_tensor(DummyBackend())) is None
 
 
 def test_math_general_rem_3() -> None:
@@ -9366,8 +9711,8 @@ def test_math_general_rem_3() -> None:
 
         pass
 
-    assert _np_rem_2(as_tensor(DummyBackend()), 5, 2) == 1
-    assert _np_rem_2(as_tensor(DummyBackend())) is None
+    assert _np_rem_2(ensure_eager_tensor(DummyBackend()), 5, 2) == 1
+    assert _np_rem_2(ensure_eager_tensor(DummyBackend())) is None
 
 
 def test_math_general_scipy_import_error() -> None:
@@ -9382,10 +9727,10 @@ def test_math_general_scipy_import_error() -> None:
     import sys
 
     orig_scipy = sys.modules.get("scipy.special")
-    _get_attr(sys.modules, "__setitem__")("scipy.special", None)
+    ensure_eager_tensor(sys.modules)["scipy.special"] = None
     try:
         with pytest.raises(ImportError):
-            _np_betainc(as_tensor(DummyBackend()), 1)
+            _np_betainc(ensure_eager_tensor(DummyBackend()), 1)
     finally:
         if orig_scipy:
             sys.modules["scipy.special"] = orig_scipy
@@ -9402,8 +9747,8 @@ def test_np_descriptive_2_empty_args() -> None:
 
         pass
 
-    res = _np_descriptive_2(as_tensor(DummyBackend()))
-    assert as_tensor(_get_attr(res, "shape")) == (3,)
+    res = _np_descriptive_2(ensure_eager_tensor(DummyBackend()))
+    assert ensure_eager_tensor(res).shape == (3,)
 
 
 def test_fallback_exception() -> None:
@@ -9464,13 +9809,13 @@ def test_fallback_exception() -> None:
         """
         if name == "ml_switcheroo_compiler.ops":
             raise Exception("boom")
-        return as_callable(orig_import)(name, *args, **kwargs)
+        return ensure_callable(orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
-        assert _np_distributions(as_tensor(DummyBackend()), 1) == "dist_exc"
-        assert _np_confusion_matrix(as_tensor(DummyBackend()), 1) == "cm_exc"
-        assert _np_descriptive_2(as_tensor(DummyBackend()), 1) == "desc_exc"
-        assert _np_rem_2(as_tensor(DummyBackend()), 1) == "rem_exc"
+        assert _np_distributions(ensure_eager_tensor(DummyBackend()), 1) == "dist_exc"
+        assert _np_confusion_matrix(ensure_eager_tensor(DummyBackend()), 1) == "cm_exc"
+        assert _np_descriptive_2(ensure_eager_tensor(DummyBackend()), 1) == "desc_exc"
+        assert _np_rem_2(ensure_eager_tensor(DummyBackend()), 1) == "rem_exc"
 
 
 def test_np_confusion_matrix_actual_logic() -> None:
@@ -9484,11 +9829,11 @@ def test_np_confusion_matrix_actual_logic() -> None:
 
         pass
 
-    res = _np_confusion_matrix(as_tensor(DummyBackend()), [0, 1], [1, 1], num_classes=2)
-    assert as_callable(np.array_equal)(res, [[0, 1], [0, 1]])
-    res2 = _np_confusion_matrix(as_tensor(DummyBackend()), [0, 1], [1, 1])
-    assert as_tensor(_get_attr(res2, "shape")) == (2, 2)
-    assert _np_confusion_matrix_cap(as_tensor(DummyBackend()), [0], [0]) is not None
+    res = _np_confusion_matrix(ensure_eager_tensor(DummyBackend()), [0, 1], [1, 1], num_classes=2)
+    assert ensure_callable(np.array_equal)(res, [[0, 1], [0, 1]])
+    res2 = _np_confusion_matrix(ensure_eager_tensor(DummyBackend()), [0, 1], [1, 1])
+    assert ensure_eager_tensor(res2).shape == (2, 2)
+    assert _np_confusion_matrix_cap(ensure_eager_tensor(DummyBackend()), [0], [0]) is not None
 
 
 def test_math_matrix_utils_simple_forwards() -> None:
@@ -9531,14 +9876,14 @@ def test_math_matrix_utils_simple_forwards() -> None:
             return 8
 
     db = DummyBackend()
-    assert _np_diag_indices_(as_tensor(db)) == 1
-    assert _np_diag_indices_from_(as_tensor(db)) == 2
-    assert _np_diagflat_(as_tensor(db)) == 3
-    assert _np_diagonal_(as_tensor(db)) == 4
-    assert _np_indices_(as_tensor(db)) == 5
-    assert _np_mask_indices_(as_tensor(db)) == 6
-    assert type(_np_linearoperatorblockdiag(as_tensor(db))).__name__ == "LinearOperatorBlockDiag"
-    assert type(_np_linearoperatordiag(as_tensor(db))).__name__ == "LinearOperatorDiag"
+    assert _np_diag_indices_(ensure_eager_tensor(db)) == 1
+    assert _np_diag_indices_from_(ensure_eager_tensor(db)) == 2
+    assert _np_diagflat_(ensure_eager_tensor(db)) == 3
+    assert _np_diagonal_(ensure_eager_tensor(db)) == 4
+    assert _np_indices_(ensure_eager_tensor(db)) == 5
+    assert _np_mask_indices_(ensure_eager_tensor(db)) == 6
+    assert type(_np_linearoperatorblockdiag(ensure_eager_tensor(db))).__name__ == "LinearOperatorBlockDiag"
+    assert type(_np_linearoperatordiag(ensure_eager_tensor(db))).__name__ == "LinearOperatorDiag"
 
 
 def _test_math_general_simple_forwards_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -9595,19 +9940,18 @@ def _test_math_general_simple_forwards_sub_1(_state: dict[str, EagerTensorProtoc
         _np_vectorize,
     )
 
-    _get_attr(_state, "update")({"_np_apply_over_axes": _np_apply_over_axes, "_np_array_repr_": _np_array_repr_, "_np_array_str_": _np_array_str_, "_np_atleast_1d": _np_atleast_1d})
-    _get_attr(_state, "update")({"_np_atleast_2d": _np_atleast_2d, "_np_atleast_3d": _np_atleast_3d, "_np_average": _np_average, "_np_betainc": _np_betainc})
-    _get_attr(_state, "update")({"_np_block": _np_block, "_np_callable": _np_callable, "_np_clip": _np_clip, "_np_corrcoef": _np_corrcoef})
-    _get_attr(_state, "update")({"_np_cov": _np_cov, "_np_debuginfs": _np_debuginfs, "_np_debugnans": _np_debugnans, "_np_descriptive_2": _np_descriptive_2})
-    _get_attr(_state, "update")({"_np_diff_": _np_diff_, "_np_digitize_": _np_digitize_, "_np_dotgeneral": _np_dotgeneral, "_np_ediff1d_": _np_ediff1d_})
-    _get_attr(_state, "update")({"_np_einsum_path_": _np_einsum_path_, "_np_fabs_": _np_fabs_, "_np_interp_": _np_interp_, "_np_iterable_": _np_iterable_})
-    _get_attr(_state, "update")({"_np_ix__": _np_ix__, "_np_key": _np_key, "_np_kron_": _np_kron_, "_np_load_": _np_load_})
-    _get_attr(_state, "update")({"_np_modf_": _np_modf_, "_np_one_hot": _np_one_hot, "_np_raggeddot": _np_raggeddot, "_np_ravel_multi_index_": _np_ravel_multi_index_})
-    _get_attr(_state, "update")({"_np_rem_2": _np_rem_2, "_np_serialize_tensor": _np_serialize_tensor, "_np_serialize_tensor_camel": _np_serialize_tensor_camel, "_np_tensor": _np_tensor})
-    _get_attr(_state, "update")({"_np_trapz": _np_trapz, "_np_trapz_": _np_trapz_, "_np_truncate_div": _np_truncate_div, "_np_truncate_mod": _np_truncate_mod})
-    _get_attr(_state, "update")({"_np_uint": _np_uint, "_np_uint8": _np_uint8, "_np_unravelindex": _np_unravelindex, "_np_unwrap": _np_unwrap})
-    _get_attr(_state, "update")({"_np_vectorize": _np_vectorize})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_apply_over_axes": _np_apply_over_axes, "_np_array_repr_": _np_array_repr_, "_np_array_str_": _np_array_str_, "_np_atleast_1d": _np_atleast_1d}))
+    _state.update(ensure_tensor_dict({"_np_atleast_2d": _np_atleast_2d, "_np_atleast_3d": _np_atleast_3d, "_np_average": _np_average, "_np_betainc": _np_betainc}))
+    _state.update(ensure_tensor_dict({"_np_block": _np_block, "_np_callable": _np_callable, "_np_clip": _np_clip, "_np_corrcoef": _np_corrcoef}))
+    _state.update(ensure_tensor_dict({"_np_cov": _np_cov, "_np_debuginfs": _np_debuginfs, "_np_debugnans": _np_debugnans, "_np_descriptive_2": _np_descriptive_2}))
+    _state.update(ensure_tensor_dict({"_np_diff_": _np_diff_, "_np_digitize_": _np_digitize_, "_np_dotgeneral": _np_dotgeneral, "_np_ediff1d_": _np_ediff1d_}))
+    _state.update(ensure_tensor_dict({"_np_einsum_path_": _np_einsum_path_, "_np_fabs_": _np_fabs_, "_np_interp_": _np_interp_, "_np_iterable_": _np_iterable_}))
+    _state.update(ensure_tensor_dict({"_np_ix__": _np_ix__, "_np_key": _np_key, "_np_kron_": _np_kron_, "_np_load_": _np_load_}))
+    _state.update(ensure_tensor_dict({"_np_modf_": _np_modf_, "_np_one_hot": _np_one_hot, "_np_raggeddot": _np_raggeddot, "_np_ravel_multi_index_": _np_ravel_multi_index_}))
+    _state.update(ensure_tensor_dict({"_np_rem_2": _np_rem_2, "_np_serialize_tensor": _np_serialize_tensor, "_np_serialize_tensor_camel": _np_serialize_tensor_camel, "_np_tensor": _np_tensor}))
+    _state.update(ensure_tensor_dict({"_np_trapz": _np_trapz, "_np_trapz_": _np_trapz_, "_np_truncate_div": _np_truncate_div, "_np_truncate_mod": _np_truncate_mod}))
+    _state.update(ensure_tensor_dict({"_np_uint": _np_uint, "_np_uint8": _np_uint8, "_np_unravelindex": _np_unravelindex, "_np_unwrap": _np_unwrap}))
+    _state.update(ensure_tensor_dict({"_np_vectorize": _np_vectorize}))
 
 
 class _SimpleForwardsDummyBackend:
@@ -10043,8 +10387,7 @@ def _test_math_general_simple_forwards_sub_2(_state: dict[str, EagerTensorProtoc
     Args:
         _state: Shared test state dictionary.
     """
-    _get_attr(_state, "update")({"DummyBackend": _SimpleForwardsDummyBackend})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBackend": _SimpleForwardsDummyBackend}))
 
 
 def _test_math_general_simple_forwards_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10064,8 +10407,9 @@ def _test_math_general_simple_forwards_sub_3(_state: dict[str, EagerTensorProtoc
         assert _np_array_str_(db) == 2
     with pytest.raises(AttributeError):
         assert _np_atleast_1d(db) == 3
-    _get_attr(_state, "update")({"db": db})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"db": db}))
+    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "_np_apply_over_axes": _np_apply_over_axes, "_np_array_repr_": _np_array_repr_}))
+    _state.update(ensure_tensor_dict({"_np_array_str_": _np_array_str_, "_np_atleast_1d": _np_atleast_1d}))
 
 
 def _test_math_general_simple_forwards_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10083,7 +10427,8 @@ def _test_math_general_simple_forwards_sub_4(_state: dict[str, EagerTensorProtoc
     assert _np_average(db) == 6
     with pytest.raises(AttributeError):
         assert _np_betainc(db) == 7
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_atleast_2d": _np_atleast_2d, "_np_atleast_3d": _np_atleast_3d, "_np_average": _np_average}))
+    _state.update(ensure_tensor_dict({"_np_betainc": _np_betainc, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10098,7 +10443,8 @@ def _test_math_general_simple_forwards_sub_5(_state: dict[str, EagerTensorProtoc
     assert _np_callable(db) != 9
     assert _np_clip(db) != 10
     assert _np_corrcoef(db) == 11
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_block": _np_block, "_np_callable": _np_callable, "_np_clip": _np_clip}))
+    _state.update(ensure_tensor_dict({"_np_corrcoef": _np_corrcoef, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10115,7 +10461,8 @@ def _test_math_general_simple_forwards_sub_6(_state: dict[str, EagerTensorProtoc
     with pytest.raises(IndexError):
         assert _np_debugnans(db) == 14
     assert _np_descriptive_2(db) == 15
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_cov": _np_cov, "_np_debuginfs": _np_debuginfs, "_np_debugnans": _np_debugnans}))
+    _state.update(ensure_tensor_dict({"_np_descriptive_2": _np_descriptive_2, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10131,7 +10478,8 @@ def _test_math_general_simple_forwards_sub_7(_state: dict[str, EagerTensorProtoc
     assert _np_digitize_(db) == 18
     with pytest.raises(IndexError):
         assert _np_dotgeneral(db) == 19
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_descriptive_2": _np_descriptive_2, "_np_diff_": _np_diff_, "_np_digitize_": _np_digitize_}))
+    _state.update(ensure_tensor_dict({"_np_dotgeneral": _np_dotgeneral, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_8(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10147,7 +10495,8 @@ def _test_math_general_simple_forwards_sub_8(_state: dict[str, EagerTensorProtoc
         assert _np_einsum_path_(db) == 21
     assert _np_fabs_(db) == 22
     assert _np_interp_(db) == 23
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_ediff1d_": _np_ediff1d_, "_np_einsum_path_": _np_einsum_path_, "_np_fabs_": _np_fabs_}))
+    _state.update(ensure_tensor_dict({"_np_interp_": _np_interp_, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_9(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10164,7 +10513,8 @@ def _test_math_general_simple_forwards_sub_9(_state: dict[str, EagerTensorProtoc
     with pytest.raises(ValueError):
         assert _np_key(db) == 26
     assert _np_kron_(db) == 27
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_iterable_": _np_iterable_, "_np_ix__": _np_ix__, "_np_key": _np_key}))
+    _state.update(ensure_tensor_dict({"_np_kron_": _np_kron_, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_10(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10180,7 +10530,8 @@ def _test_math_general_simple_forwards_sub_10(_state: dict[str, EagerTensorProto
     assert _np_one_hot(db) != 30
     with pytest.raises(AttributeError):
         assert _np_raggeddot(db) == 31
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_load_": _np_load_, "_np_modf_": _np_modf_, "_np_one_hot": _np_one_hot}))
+    _state.update(ensure_tensor_dict({"_np_raggeddot": _np_raggeddot, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_11(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10195,7 +10546,7 @@ def _test_math_general_simple_forwards_sub_11(_state: dict[str, EagerTensorProto
     assert _np_rem_2(db) == 33
     assert _np_rem_2(db) != 34
     assert _np_rem_2(db) != 35
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_ravel_multi_index_": _np_ravel_multi_index_, "_np_rem_2": _np_rem_2, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_12(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10212,7 +10563,8 @@ def _test_math_general_simple_forwards_sub_12(_state: dict[str, EagerTensorProto
         assert _np_tensor(db) == 38
     with pytest.raises(IndexError):
         assert _np_trapz(db) == 39
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_serialize_tensor": _np_serialize_tensor, "_np_serialize_tensor_camel": _np_serialize_tensor_camel, "_np_tensor": _np_tensor}))
+    _state.update(ensure_tensor_dict({"_np_trapz": _np_trapz, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_13(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10230,7 +10582,8 @@ def _test_math_general_simple_forwards_sub_13(_state: dict[str, EagerTensorProto
         assert _np_truncate_mod(db) == 42
     with pytest.raises(IndexError):
         assert _np_uint(db) == 43
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_trapz_": _np_trapz_, "_np_truncate_div": _np_truncate_div, "_np_truncate_mod": _np_truncate_mod}))
+    _state.update(ensure_tensor_dict({"_np_uint": _np_uint, "db": db}))
 
 
 def _test_math_general_simple_forwards_sub_14(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10249,12 +10602,13 @@ def _test_math_general_simple_forwards_sub_14(_state: dict[str, EagerTensorProto
         assert _np_unwrap(db) == 46
     with pytest.raises(IndexError):
         assert _np_vectorize(db) == 47
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_np_uint8": _np_uint8, "_np_unravelindex": _np_unravelindex, "_np_unwrap": _np_unwrap}))
+    _state.update(ensure_tensor_dict({"_np_vectorize": _np_vectorize, "db": db}))
 
 
 def test_math_general_simple_forwards() -> None:
     """Test function test_math_general_simple_forwards."""
-    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+    _state: dict[str, EagerTensorProtocol] = {}
     for _sub_fn in (
         _test_math_general_simple_forwards_sub_1,
         _test_math_general_simple_forwards_sub_2,
@@ -10294,16 +10648,16 @@ def test_math_general_missing_forwards() -> None:
             return 1
 
     db = DummyBackend()
-    assert _np_truncate_div(as_tensor(db), 5.0, 2.0) == 2.0
-    assert _np_truncate_mod(as_tensor(db), 5.0, 2.0) == 1.0
-    assert _np_dotgeneral(as_tensor(db), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ()))) is not None
-    assert _np_raggeddot(as_tensor(db), np.ones((2, 2)), np.ones((2, 2))) is not None
-    assert _np_serialize_tensor(as_tensor(db), 1) is not None
-    assert _np_serialize_tensor_camel(as_tensor(db), 1) is not None
-    assert as_callable(np.array_equal)(as_callable(_np_key)(db, 1), [1, 0])
-    assert as_callable(np.array_equal)(as_callable(_np_clip)(db, as_callable(np.array)([5.0]), 1.0, 3.0), [3.0])
-    res = _np_one_hot(as_tensor(db), np.array([0]), 2)
-    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
+    assert _np_truncate_div(ensure_eager_tensor(db), 5.0, 2.0) == 2.0
+    assert _np_truncate_mod(ensure_eager_tensor(db), 5.0, 2.0) == 1.0
+    assert _np_dotgeneral(ensure_eager_tensor(db), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ()))) is not None
+    assert _np_raggeddot(ensure_eager_tensor(db), np.ones((2, 2)), np.ones((2, 2))) is not None
+    assert _np_serialize_tensor(ensure_eager_tensor(db), 1) is not None
+    assert _np_serialize_tensor_camel(ensure_eager_tensor(db), 1) is not None
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_key)(db, 1), [1, 0])
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_clip)(db, ensure_callable(np.array)([5.0]), 1.0, 3.0), [3.0])
+    res = _np_one_hot(ensure_eager_tensor(db), np.array([0]), 2)
+    assert ensure_eager_tensor(res).shape == (1, 2)
 
 
 def test_math_general_debuginfs_callable() -> None:
@@ -10318,16 +10672,16 @@ def test_math_general_debuginfs_callable() -> None:
 
     with pytest.raises(ValueError):
         _np_debuginfs(np, np.array([np.inf]))
-    assert as_callable(np.array_equal)(as_callable(_np_debuginfs)(np, as_callable(np.array)([1.0])), [1.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_debuginfs)(np, ensure_callable(np.array)([1.0])), [1.0])
     with pytest.raises(ValueError):
         _np_debugnans(np, np.array([np.nan]))
-    assert as_callable(np.array_equal)(as_callable(_np_debugnans)(np, as_callable(np.array)([1.0])), [1.0])
-    assert as_tensor(_get_attr(_np_tensor(np), "shape")) == (0,)
-    assert as_tensor(_get_attr(_np_tensor(np, [1, 2]), "shape")) == (2,)
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_debugnans)(np, ensure_callable(np.array)([1.0])), [1.0])
+    assert ensure_eager_tensor(_np_tensor(np)).shape == (0,)
+    assert ensure_eager_tensor(_np_tensor(np, [1, 2])).shape == (2,)
     res = _np_descriptive_2(np, [1.0, 2.0])
-    assert as_callable(len)(res) == 3
-    assert as_callable(len)(as_callable(_np_descriptive_2)(np)) == 3
-    assert as_callable(np.array_equal)(as_callable(_np_key)(np), [0, 0])
+    assert ensure_callable(len)(res) == 3
+    assert ensure_callable(len)(ensure_callable(_np_descriptive_2)(np)) == 3
+    assert ensure_callable(np.array_equal)(ensure_callable(_np_key)(np), [0, 0])
     assert _np_rem_2(np) is None
 
 
@@ -10342,7 +10696,7 @@ def test_dotgeneral_batches() -> None:
 
         pass
 
-    assert _np_dotgeneral(as_tensor(DummyBackend()), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (1,)), ((0,), (0,)))) is not None
+    assert _np_dotgeneral(ensure_eager_tensor(DummyBackend()), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (1,)), ((0,), (0,)))) is not None
 
 
 def test_math_general_remaining() -> None:
@@ -10367,7 +10721,7 @@ def test_math_general_remaining() -> None:
 
         pass
 
-    assert _np_rem_2(as_tensor(DummyBackendRem()), 5, 2) == 1
+    assert _np_rem_2(ensure_eager_tensor(DummyBackendRem()), 5, 2) == 1
 
 
 def test_math_general_final() -> None:
@@ -10381,7 +10735,7 @@ def test_math_general_final() -> None:
     with patch("builtins.__import__", side_effect=ImportError("boom")):
         assert _get_sc() is None
     res = _np_one_hot(np, np.array([0]), 2, axis=0)
-    assert as_tensor(_get_attr(res, "shape")) == (2, 1)
+    assert ensure_eager_tensor(res).shape == (2, 1)
     with patch("pickle.dumps", side_effect=Exception("boom")):
         res2 = _np_serialize_tensor_camel(np, np.array([1]))
         assert res2 is not None

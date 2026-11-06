@@ -6,6 +6,8 @@ import typing
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
     from ml_switcheroo_compiler.backends.formatters import CodeFormatter
@@ -32,11 +34,11 @@ class FallbackPrefixProtocol(typing.Protocol):
         """
         ...
 
-    def __init__(self, graph: AttributeValue = None) -> None:
+    def __init__(self, graph: EagerValue = None) -> None:
         """Initialize the protocol generator.
 
         Args:
-            graph (AttributeValue): Optional computation graph.
+            graph (EagerValue): Optional computation graph.
         """
         ...
 
@@ -83,10 +85,10 @@ class CommonASTVisitor:
     indent_level: int
     code: list[str]
     var_names: dict[str, str]
-    _cholesky_vjp_imported: bool
-    _lu_vjp_imported: bool
-    _qr_vjp_imported: bool
-    _svd_vjp_imported: bool
+    _cholesky_vjp_imported: bool = False
+    _lu_vjp_imported: bool = False
+    _qr_vjp_imported: bool = False
+    _svd_vjp_imported: bool = False
     _generator: FallbackPrefixProtocol | BaseGenerator | None = None
 
     def __init__(

@@ -7,7 +7,12 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import AttrValue, VariadicCallableProtocol, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    AttrValue,
+    VariadicCallableProtocol,
+    invoke_callable,
+)
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 
 from .utils import GradValue
 
@@ -40,7 +45,10 @@ def jit(fun: GradValue, options: JitOptions | GradValue = None) -> VariadicCalla
     """
     _ = options if options is not None else JitOptions()
 
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+    def wrapped(
+        *args: GradValue,
+        **kwargs: GradValue,
+    ) -> GradValue:
         """Execute JIT-wrapped function `fun`.
 
         Args:

@@ -11,7 +11,7 @@ from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -84,8 +84,8 @@ def test_dot_infer_shape_nd_contractions() -> None:
 
         shape_metadata = ()
 
-    assert as_callable(op.infer_shape)(as_callable(DummyWithMetadata)(), as_callable(DummyWithMetadata)()) == (3, 4)
-    assert as_callable(op.infer_shape)(as_callable(DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithMetadata)(), ensure_callable(DummyWithMetadata)()) == (3, 4)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 

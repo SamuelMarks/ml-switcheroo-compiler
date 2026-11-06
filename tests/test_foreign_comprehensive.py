@@ -9,9 +9,8 @@ from collections.abc import Callable
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.foreign import ForeignCall
-from tests.testing_utils import as_callable, as_tensor, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_list
 
 
 def test_foreign_call_introspection() -> None:
@@ -28,7 +27,7 @@ def test_foreign_call_introspection() -> None:
     fc = ForeignCall()
 
     # Test typing hints
-    assert as_tensor(fc.infer_shape(my_complex_func)) == as_tensor((int, int, int))
+    assert ensure_eager_tensor(fc.infer_shape(my_complex_func)) == ensure_eager_tensor((int, int, int))
 
     # Test kwargs
     assert fc.infer_shape(my_complex_func, output_shape=(4, 5)) == (4, 5)
@@ -48,7 +47,7 @@ def test_foreign_call_introspection() -> None:
             """Call."""
             return {"a": (2, 3), "b": (4, 5)}
 
-    assert fc.infer_shape(as_tensor(ComplexCallable())) == ()
+    assert fc.infer_shape(ensure_eager_tensor(ComplexCallable())) == ()
 
     # Test obj with shapes
     class WithShape:
@@ -68,7 +67,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shape = (6, 6)
 
-    assert as_callable(fc.infer_shape)(as_callable(WithOutputShape)()) == (6, 6)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithOutputShape)()) == (6, 6)
 
     class WithOutputShapes:
         """Mock."""
@@ -77,7 +76,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shapes = [(7, 7), (8, 8)]
 
-    assert as_callable(fc.infer_shape)(as_callable(WithOutputShapes)()) == (7, 7)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithOutputShapes)()) == (7, 7)
 
 
 def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -97,9 +96,9 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
 
         def __init__(self) -> None:
             """Init."""
-            self.output_shapes = as_tensor_list([])
+            self.output_shapes = ensure_tensor_list([])
 
-    assert as_callable(fc.infer_shape)(as_callable(EmptyOutputShapes)()) == ()
+    assert ensure_callable(fc.infer_shape)(ensure_callable(EmptyOutputShapes)()) == ()
 
     # bad output_shape
     class BadOutputShape:
@@ -109,7 +108,7 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.output_shape = 5
 
-    assert as_callable(fc.infer_shape)(as_callable(BadOutputShape)()) == (5,)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(BadOutputShape)()) == (5,)
 
     # subgraph handling
     class MockSubNode:
@@ -119,8 +118,7 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.shape_metadata = (11, 11)
 
-    _get_attr(_state, "update")({"BadOutputShape": BadOutputShape, "EmptyOutputShapes": EmptyOutputShapes, "MockSubNode": MockSubNode, "fc": fc})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"BadOutputShape": BadOutputShape, "EmptyOutputShapes": EmptyOutputShapes, "MockSubNode": MockSubNode, "fc": fc}))
 
 
 def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -146,7 +144,7 @@ def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTens
             """Init."""
             self.subgraph = MockSubgraph()
 
-    assert as_callable(fc.infer_shape)(as_callable(WithSubgraph)()) == (11, 11)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithSubgraph)()) == (11, 11)
 
     # typing.get_type_hints failure fallback
     def failing_typing_hints() -> None:
@@ -162,8 +160,8 @@ def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTens
         pass
 
     assert fc.infer_shape(empty_callable) == ()
-    _get_attr(_state, "update")({"MockSubgraph": MockSubgraph, "WithSubgraph": WithSubgraph, "empty_callable": empty_callable, "failing_typing_hints": failing_typing_hints})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MockSubgraph": MockSubgraph, "WithSubgraph": WithSubgraph, "empty_callable": empty_callable, "failing_typing_hints": failing_typing_hints}))
+    _state.update(ensure_tensor_dict({"MockSubNode": MockSubNode, "fc": fc}))
 
 
 def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -193,9 +191,12 @@ def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTens
 
     assert fc.infer_shape(ast_int_return) == ()
 
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     # Fallthrough
-    assert as_callable(fc.infer_shape)(as_callable(object)()) == ()
-    _get_attr(_state, "update")({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple})
+    assert ensure_callable(fc.infer_shape)(ensure_callable(_BareDummy)()) == ()
+    _state.update(ensure_tensor_dict({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple}))
 
 
 def test_foreign_call_introspection_branches() -> None:
@@ -226,7 +227,7 @@ def test_foreign_call_output_shape_scalar() -> None:
             """Init."""
             self.output_shape = 5
 
-    assert as_callable(fc.infer_shape)(as_callable(WithScalarOutShape)()) == (5,)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithScalarOutShape)()) == (5,)
 
 
 def test_foreign_call_inspect_signature() -> None:
@@ -243,7 +244,7 @@ def test_foreign_call_inspect_signature() -> None:
     MyCallable.__call__.__annotations__["return"] = tuple[int, int]
 
     # typing.get_type_hints doesn't work directly on objects usually without accessing __call__
-    assert as_tensor(fc.infer_shape(as_tensor(MyCallable()))) == as_tensor((int, int))
+    assert ensure_eager_tensor(fc.infer_shape(ensure_eager_tensor(MyCallable()))) == ensure_eager_tensor((int, int))
 
 
 def test_foreign_call_fallback_args() -> None:
@@ -291,7 +292,7 @@ def test_foreign_call_fallback_exceptions() -> None:
         raise OSError("Cannot get source")
 
     original_getsource = inspect.getsource
-    _set_attr(inspect, "getsource", mock_getsource)
+    ensure_mutable(inspect).getsource = ensure_eager_tensor(mock_getsource)
     try:
         assert fc.infer_shape(bad_ast_func) == ()
     finally:
@@ -315,7 +316,7 @@ def test_foreign_call_out_shape_tuple_branch() -> None:
             """Init."""
             self.output_shape = (5, 5)
 
-    assert as_callable(fc.infer_shape)(as_callable(WithTupleOutShape)()) == (5, 5)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithTupleOutShape)()) == (5, 5)
 
 
 def test_foreign_call_out_shape_kwarg_tuple_branch() -> None:
@@ -351,7 +352,7 @@ def test_foreign_call_exception_branch_inspect_signature() -> None:
         """
         raise ValueError("Cannot get sig")
 
-    _set_attr(inspect, "signature", failing_sig)
+    ensure_mutable(inspect).signature = ensure_eager_tensor(failing_sig)
     try:
 
         def another_func() -> None:
@@ -377,7 +378,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert as_callable(fc.infer_shape)(as_callable(WithEmptyOutputShapes)()) == ()
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithEmptyOutputShapes)()) == ()
 
 
 def test_foreign_call_out_shape_tuple_branch_2() -> None:
@@ -391,7 +392,7 @@ def test_foreign_call_out_shape_tuple_branch_2() -> None:
             """Init."""
             self.output_shape = [5, 5]
 
-    assert as_callable(fc.infer_shape)(as_callable(WithTupleOutShape2)()) == (5, 5)
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithTupleOutShape2)()) == (5, 5)
 
 
 def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
@@ -403,9 +404,9 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
 
         def __init__(self) -> None:
             """Init."""
-            self.output_shapes = as_tensor([[]])
+            self.output_shapes = ensure_eager_tensor([[]])
 
-    assert as_callable(fc.infer_shape)(as_callable(WithEmptyOutputShapes2)()) == ()
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithEmptyOutputShapes2)()) == ()
 
     class WithEmptyOutputShapes3:
         """Mock."""
@@ -414,7 +415,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert as_callable(fc.infer_shape)(as_callable(WithEmptyOutputShapes3)()) == ()
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithEmptyOutputShapes3)()) == ()
 
 
 def test_foreign_call_out_nodes_metadata_branch() -> None:
@@ -441,4 +442,4 @@ def test_foreign_call_out_nodes_metadata_branch() -> None:
             """Init."""
             self.subgraph = MockSubgraphNoMetadata()
 
-    assert as_callable(fc.infer_shape)(as_callable(WithSubgraphNoMetadata)()) == ()
+    assert ensure_callable(fc.infer_shape)(ensure_callable(WithSubgraphNoMetadata)()) == ()

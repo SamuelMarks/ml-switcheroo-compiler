@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.random.continuous.dirichlet import dirichlet
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -30,8 +30,8 @@ def test_dirichlet(mocker: EagerTensorProtocol) -> None:
             self.shape = ()
 
     t = MockTensor()
-    res = as_callable(dirichlet)(t, t)
+    res = ensure_callable(dirichlet)(t, t)
     assert res is not None
 
-    res2 = as_callable(dirichlet)(t, t, shape=(2, 3), dtype=DType.Float64)
+    res2 = ensure_callable(dirichlet)(t, t, shape=(2, 3), dtype=DType.Float64)
     assert res2 is not None

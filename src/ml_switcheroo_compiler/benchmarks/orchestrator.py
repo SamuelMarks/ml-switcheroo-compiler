@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import multiprocessing
 import pathlib
 import typing
+from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import as_float
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.benchmarks.config_models import (
     BenchmarkPlan,
@@ -17,7 +18,7 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
 )
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -25,6 +26,34 @@ ProfilerMetrics = dict[str, typing.Union[list[float], "float"]]
 BenchmarkResult = tuple[str, typing.Union[ProfilerMetrics, "str"]]
 
 
+def _to_metric_float(val: float | list[float] | int | str | None) -> float:
+    """Coerce a statistical metric value to float.
+
+    Args:
+        val (float | list[float] | int | str | None): Metric value.
+
+    Returns:
+        float: Coerced float value.
+    """
+    if isinstance(val, (int, float)):
+        return float(val)
+    return 0.0
+
+
+@typing.runtime_checkable
+class _ProfilerFactoryProtocol(typing.Protocol):
+    """Protocol for zero-argument profiler class constructors."""
+
+    def __call__(self) -> _ProfilerProtocol:
+        """Instantiate profiler.
+
+        Returns:
+            _ProfilerProtocol: Profiler instance.
+        """
+        ...
+
+
+@typing.runtime_checkable
 class _ProfilerProtocol(typing.Protocol):
     """Internal protocol defining the profiling execution signature."""
 
@@ -51,6 +80,55 @@ class _ProfilerProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
+class _ExecuteOpBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `execute_op`."""
+
+    def execute_op(self, op_name: str, *args: int | EvalValue, **kwargs: str) -> EvalValue:
+        """Execute a backend operation by name.
+
+        Args:
+            op_name (str): Operation name.
+            *args (int | EvalValue): Positional arguments.
+            **kwargs (str): Keyword arguments.
+
+        Returns:
+            EvalValue: Operation output.
+        """
+        ...
+
+
+def _is_profiler_factory(val: TensorOrScalar) -> typing.TypeGuard[_ProfilerFactoryProtocol]:
+    """Type guard narrowing `val` to `_ProfilerFactoryProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate profiler class.
+
+    Returns:
+        bool: True if callable.
+    """
+    return callable(val)
+
+
+def _instantiate_profiler(mod_name: str, cls_name: str) -> _ProfilerProtocol:
+    """Import `mod_name` and instantiate profiler class `cls_name`.
+
+    Args:
+        mod_name (str): Module path.
+        cls_name (str): Class name inside `mod_name`.
+
+    Returns:
+        _ProfilerProtocol: Instantiated profiler.
+    """
+    mod = importlib.import_module(mod_name)
+    members = dict(inspect.getmembers(mod))
+    if cls_name not in members:
+        raise AttributeError(f"module {mod_name!r} has no attribute {cls_name!r}")
+    profiler_cls: TensorOrScalar = members[cls_name]
+    assert _is_profiler_factory(profiler_cls)
+    return profiler_cls()
+
+
 def _isolated_worker(
     profiler_cls_tuple: tuple[str, str],
     graph: IRGraph,
@@ -72,9 +150,7 @@ def _isolated_worker(
         output_queue (multiprocessing.Queue): Queue to communicate results back.
     """
     try:
-        mod = importlib.import_module(profiler_cls_tuple[0])
-        profiler_cls = _get_attr(mod, profiler_cls_tuple[1])
-        profiler = profiler_cls()
+        profiler = _instantiate_profiler(profiler_cls_tuple[0], profiler_cls_tuple[1])
         metrics: ProfilerMetrics = profiler.profile_graph(
             graph=graph,
             inputs=inputs,
@@ -136,10 +212,7 @@ class BenchmarkOrchestrator:
 
         if profile is not None and profile.profiler_module and profile.profiler_class:
             try:
-                mod = importlib.import_module(profile.profiler_module)
-                profiler_cls = _get_attr(mod, profile.profiler_class)
-                _typed_ret_2: _ProfilerProtocol = _cast_val(_ProfilerProtocol, profiler_cls())
-                return _typed_ret_2
+                return _instantiate_profiler(profile.profiler_module, profile.profiler_class)
             except ImportError as err:
                 raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
 
@@ -195,10 +268,9 @@ class BenchmarkOrchestrator:
             raise RuntimeError(f"Isolated benchmark run for backend '{backend_name}' terminated unexpectedly.")
 
         status, payload = queue.get()
-        if status != "ok":
+        if status != "ok" or not isinstance(payload, dict):
             raise RuntimeError(f"Isolated execution failed: {payload}")
-        _typed_ret_1: ProfilerMetrics = _cast_val(ProfilerMetrics, payload)
-        return _typed_ret_1
+        return payload
 
     def _run_single(
         self,
@@ -235,15 +307,14 @@ class BenchmarkOrchestrator:
 
         # Construct inputs from plan or graph declarations
         inputs_dict: dict[str, EvalValue] = {}
-        input_names: list[str] = list(_get_attr(graph, "inputs", []))
-        if not input_names:
-            input_names = ["in_0"]
+        input_names: list[str] = list(graph.inputs) if graph.inputs else ["in_0"]
 
-        np_backend = BackendRegistry.get("numpy")
+        np_backend: TensorOrScalar = BackendRegistry.get("numpy")
         for inp in input_names:
-            node = graph.nodes.get(inp) if _get_attr(graph, "nodes", None) else None
-            node_attrs = _get_attr(node, "attributes", {}) or {}
-            node_shape = node_attrs.get("shape")
+            node = graph.nodes.get(inp) if graph.nodes else None
+            node_attrs = (node.attributes or {}) if node is not None else {}
+            raw_shape = node_attrs.get("shape")
+            node_shape: list[int] = [int(d) for d in raw_shape if isinstance(d, int)] if isinstance(raw_shape, (list, tuple, Sequence)) and not isinstance(raw_shape, (str, bytes)) else []
             is_weight = bool(node_attrs.get("is_weight", False))
 
             if is_weight and node_shape:
@@ -251,12 +322,12 @@ class BenchmarkOrchestrator:
             else:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
-            if _has_attr(np_backend, "execute_op"):
+            if isinstance(np_backend, _ExecuteOpBackendProtocol):
                 inputs_dict[inp] = np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32")
             else:
                 inputs_dict[inp] = [0.0]
 
-        should_isolate: bool = isolate if isolate is not None else _get_attr(self.plan, "isolate_process", False)
+        should_isolate: bool = isolate if isolate is not None else bool(self.plan.isolate_process)
         if should_isolate:
             return self._run_isolated(
                 graph=graph,
@@ -320,14 +391,14 @@ class BenchmarkOrchestrator:
                     raw_latencies = metrics.get("latencies", [])
                     lat_list: list[float] = [float(x) for x in raw_latencies] if isinstance(raw_latencies, list) and raw_latencies else [0.0]
                     stat_metrics = compute_statistical_metrics(lat_list)
-                    mean_lat: float = float(as_float(stat_metrics["mean_ms"]))
+                    mean_lat: float = _to_metric_float(stat_metrics["mean_ms"])
 
                     peak_mem_raw = metrics.get("peak_memory_mb")
                     peak_mem: float | None = float(peak_mem_raw) if isinstance(peak_mem_raw, (int, float)) else None
 
-                    p50: float = float(as_float(stat_metrics["p50_ms"]))
-                    p95: float = float(as_float(stat_metrics["p95_ms"]))
-                    p99: float = float(as_float(stat_metrics["p99_ms"]))
+                    p50: float = _to_metric_float(stat_metrics["p50_ms"])
+                    p95: float = _to_metric_float(stat_metrics["p95_ms"])
+                    p99: float = _to_metric_float(stat_metrics["p99_ms"])
 
                     throughput: float = (1000.0 / mean_lat) * batch_size if mean_lat > 0.0 else 0.0
 

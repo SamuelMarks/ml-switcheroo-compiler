@@ -10,8 +10,7 @@ import libcst as cst
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attr_val, as_attrs
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_attr_val, ensure_attrs
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
@@ -47,7 +46,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if self.parent_scope and name in self.parent_scope:
             if name not in self.graph.nodes:
                 self.graph.nodes[name] = IRNode(id=name, op_type="Input", inputs=[])
-                if _has_attr(self.graph, "inputs") and isinstance(self.graph.inputs, list):
+                if isinstance(self.graph.inputs, list):
                     if name not in self.graph.inputs:
                         self.graph.inputs.append(name)
             self.var_table[name] = name
@@ -357,7 +356,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
 
         self._parse_call_args(node.args, inputs, attributes)
 
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=as_attrs(attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=ensure_attrs(attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
         return False
@@ -419,7 +418,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             id=node_id,
             op_type="Map",
             inputs=inputs,
-            attributes={"target_var": _get_attr(node.for_in.target, "value", "x")},
+            attributes={"target_var": node.for_in.target.value if isinstance(node.for_in.target, cst.Name) else "x"},
         )
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
@@ -458,8 +457,8 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self.var_table[k] = v
 
         ir_node: IRNode = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes={})
-        ir_node.attributes["true_branch"] = as_attr_val(true_branch)
-        ir_node.attributes["false_branch"] = as_attr_val(false_branch)
+        ir_node.attributes["true_branch"] = ensure_attr_val(true_branch)
+        ir_node.attributes["false_branch"] = ensure_attr_val(false_branch)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -490,7 +489,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self.var_table[k] = v
 
         ir_node: IRNode = IRNode(id=node_id, op_type="WhileLoop", inputs=inputs, attributes={})
-        ir_node.attributes["body_subgraph"] = as_attr_val(body_subgraph)
+        ir_node.attributes["body_subgraph"] = ensure_attr_val(body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -519,7 +518,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         body_subgraph = body_visitor.graph
 
         ir_node: IRNode = IRNode(id=node_id, op_type="Scan", inputs=inputs, attributes={"target_var": target_name})
-        ir_node.attributes["body_subgraph"] = as_attr_val(body_subgraph)
+        ir_node.attributes["body_subgraph"] = ensure_attr_val(body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -547,8 +546,8 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self.var_table[k] = v
 
         ir_node: IRNode = IRNode(id=node_id, op_type="TryExcept", inputs=[], attributes={})
-        ir_node.attributes["try_subgraph"] = as_attr_val(try_subgraph)
-        ir_node.attributes["fallback_subgraph"] = as_attr_val(fallback_subgraph)
+        ir_node.attributes["try_subgraph"] = ensure_attr_val(try_subgraph)
+        ir_node.attributes["fallback_subgraph"] = ensure_attr_val(fallback_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -674,7 +673,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                         inputs.append(self.var_table[slice_elem.value.value])
                     attributes["index_var"] = slice_elem.value.value
 
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=as_attrs(attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=ensure_attrs(attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 

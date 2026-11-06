@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.state_lowering import state_lowering_pass
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_state_lowering_pass() -> None:
@@ -78,9 +78,9 @@ def test_state_lowering_pass_class() -> None:
     pass_pt = StateLoweringPass(target_framework="pytorch")
     g = IRGraph()
     n1 = IRNode(id="weight", op_type="Input", attributes={"is_state": True, "param_name": "linear.weight"})
-    _obj_set_attr(n1, "shape_metadata", {"shape": (4, 4)})
+    ensure_mutable(n1).shape_metadata = ensure_eager_tensor({"shape": (4, 4)})
     buf = IRNode(id="mean", op_type="Input", attributes={"is_state": True, "is_buffer": True, "param_name": "running_mean"})
-    _obj_set_attr(buf, "shape_metadata", {"shape": (4,)})
+    ensure_mutable(buf).shape_metadata = ensure_eager_tensor({"shape": (4,)})
     x = IRNode(id="x", op_type="Input", attributes={"is_state": False})
     out = IRNode(id="out", op_type="MatMul", inputs=["x", "weight"])
     g.nodes = NodeDict({"weight": n1, "mean": buf, "x": x, "out": out})

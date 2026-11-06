@@ -8,6 +8,7 @@ from collections.abc import Sequence
 import pydantic
 
 from ml_switcheroo_compiler.core.shape import AttrValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 
 
 class _PositionalConfigModel(pydantic.BaseModel):
@@ -22,7 +23,8 @@ class _PositionalConfigModel(pydantic.BaseModel):
             *args (AttrValue): Positional field values.
             **kwargs (AttrValue): Keyword field values.
         """
-        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
+        pos_kw: dict[str, AttrValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        super().__init__(**{**pos_kw, **kwargs})
 
 
 class ConvConfig(_PositionalConfigModel):
@@ -112,7 +114,8 @@ class BlurConfig(_PositionalConfigModel):
             *args (AttrValue): Positional field values.
             **kwargs (AttrValue): Keyword field values.
         """
-        merged = {**dict(zip(type(self).model_fields.keys(), args)), **kwargs}
+        pos_kw: dict[str, AttrValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        merged = {**pos_kw, **kwargs}
         if "kernel_size" not in merged or "sigma" not in merged:
             msg = "BlurConfig.__init__() missing required arguments: 'kernel_size' and 'sigma'"
             raise TypeError(msg)

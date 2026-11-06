@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.numpy.eager import vision_bbox as vision_bbox
-from ml_switcheroo_compiler.core.shape import _has_attr
+from tests.testing_utils import ensure_eager_tensor
 
 
 def test_vision_bbox_module() -> None:
     """Verify vision bbox module structure and exports."""
-    assert _has_attr(vision_bbox, "__all__")
+    assert ensure_eager_tensor(vision_bbox).__all__ is not None
     assert vision_bbox.__all__ == []

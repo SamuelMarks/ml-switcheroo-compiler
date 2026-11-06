@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.ops.distributed_ops import (
     AllGather,
     AllReduce,
@@ -42,7 +41,7 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     reduce_scatter,
     shard_tensor,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, get_backend_member, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -81,22 +80,21 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     import ml_switcheroo_compiler.ops.distributed_ops as dist
 
-    orig_dist_backend = as_tensor(_get_attr(dist, "get_active_backend"))
-    orig_reg_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = _has_attr(reg, "_ACTIVE_BACKEND")
-    _set_attr(dist, "get_active_backend", lambda: DummyBackend())
-    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    orig_dist_backend = ensure_eager_tensor(ensure_eager_tensor(dist).get_active_backend)
+    orig_reg_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
+    ensure_mutable(dist).get_active_backend = ensure_eager_tensor(lambda: DummyBackend())
+    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
-    assert as_tensor(_get_attr(shard_tensor(t, None, None), "shape")) == (1,)
-    assert as_tensor(_get_attr(nccl_all_reduce(t), "shape")) == (1,)
-    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config})
-    _get_attr(_state, "update")({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend})
-    _get_attr(_state, "update")({"reg": reg, "t": t})
-    _state.update(_caller_locals())
+    assert ensure_eager_tensor(shard_tensor(t, None, None)).shape == (1,)
+    assert ensure_eager_tensor(nccl_all_reduce(t)).shape == (1,)
+    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config}))
+    _state.update(ensure_tensor_dict({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend}))
+    _state.update(ensure_tensor_dict({"reg": reg, "t": t}))
 
 
 def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -106,18 +104,18 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert as_tensor(_get_attr(as_callable(hierarchical_copy_all_reduce)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(as_callable(broadcast)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(as_callable(all_gather)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(as_callable(reduce)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(as_callable(all_reduce)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(as_callable(reduce_scatter)(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(all_to_all(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(broadcast_arrays(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(broadcast_to(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(broadcast_to_rank(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(broadcasted_iota(t), "shape")) == (1,)
-    assert as_tensor(_get_attr(pbroadcast(t), "shape")) == (1,)
+    assert ensure_eager_tensor(ensure_callable(hierarchical_copy_all_reduce)(t)).shape == (1,)
+    assert ensure_eager_tensor(ensure_callable(broadcast)(t)).shape == (1,)
+    assert ensure_eager_tensor(ensure_callable(all_gather)(t)).shape == (1,)
+    assert ensure_eager_tensor(ensure_callable(reduce)(t)).shape == (1,)
+    assert ensure_eager_tensor(ensure_callable(all_reduce)(t)).shape == (1,)
+    assert ensure_eager_tensor(ensure_callable(reduce_scatter)(t)).shape == (1,)
+    assert ensure_eager_tensor(all_to_all(t)).shape == (1,)
+    assert ensure_eager_tensor(broadcast_arrays(t)).shape == (1,)
+    assert ensure_eager_tensor(broadcast_to(t)).shape == (1,)
+    assert ensure_eager_tensor(broadcast_to_rank(t)).shape == (1,)
+    assert ensure_eager_tensor(broadcasted_iota(t)).shape == (1,)
+    assert ensure_eager_tensor(pbroadcast(t)).shape == (1,)
 
     assert ShardTensor().infer_shape(t) == (1,)
     assert NcclAllReduce().infer_shape(t) == (1,)
@@ -129,7 +127,7 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     assert ReduceScatter().infer_shape(t) == (1,)
     assert AllToAll().infer_shape() == ()
     assert BroadcastArrays().infer_shape() == ()
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"t": t}))
 
 
 def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -151,12 +149,12 @@ def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     assert Ppermute().infer_shape(t) == (1,)
     assert PsumScatter().infer_shape(t) == (None,)
 
-    _set_attr(config, "eager_mode", False)
+    ensure_mutable(config).eager_mode = ensure_eager_tensor(False)
 
     from unittest.mock import patch
 
-    _get_attr(_state, "update")({"patch": patch})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"patch": patch}))
+    _state.update(ensure_tensor_dict({"config": config, "t": t}))
 
 
 def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -168,14 +166,14 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
     config, dist, has_reg_backend, orig_dist_backend = _state["config"], _state["dist"], _state["has_reg_backend"], _state["orig_dist_backend"]
     orig_reg_backend, patch, reg, t = _state["orig_reg_backend"], _state["patch"], _state["reg"], _state["t"]
     with patch("ml_switcheroo_compiler.ops.distributed_ops._emit_shape_node", return_value="emitted"):
-        assert as_callable(shard_tensor)(t, None, None) == "emitted"
-        assert as_callable(nccl_all_reduce)(t) == "emitted"
-        assert as_callable(hierarchical_copy_all_reduce)(t) == "emitted"
-        assert as_callable(broadcast)(t) == "emitted"
-        assert as_callable(all_gather)(t) == "emitted"
-        assert as_callable(reduce)(t) == "emitted"
-        assert as_callable(all_reduce)(t) == "emitted"
-        assert as_callable(reduce_scatter)(t) == "emitted"
+        assert ensure_callable(shard_tensor)(t, None, None) == "emitted"
+        assert ensure_callable(nccl_all_reduce)(t) == "emitted"
+        assert ensure_callable(hierarchical_copy_all_reduce)(t) == "emitted"
+        assert ensure_callable(broadcast)(t) == "emitted"
+        assert ensure_callable(all_gather)(t) == "emitted"
+        assert ensure_callable(reduce)(t) == "emitted"
+        assert ensure_callable(all_reduce)(t) == "emitted"
+        assert ensure_callable(reduce_scatter)(t) == "emitted"
         assert all_to_all(t) == "emitted"
         assert broadcast_arrays(t) == "emitted"
         assert broadcast_to(t) == "emitted"
@@ -183,10 +181,10 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         assert broadcasted_iota(t) == "emitted"
         assert pbroadcast(t) == "emitted"
 
-    _set_attr(config, "eager_mode", True)
-    _set_attr(dist, "get_active_backend", orig_dist_backend)
+    ensure_mutable(config).eager_mode = ensure_eager_tensor(True)
+    ensure_mutable(dist).get_active_backend = ensure_eager_tensor(orig_dist_backend)
     if has_reg_backend:
-        _set_attr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
+        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(orig_reg_backend)
     else:
         del reg._ACTIVE_BACKEND
 

@@ -12,14 +12,13 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-GenericConvConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd"), "GenericConvConfig"))
+GenericConvConfig = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd")).GenericConvConfig)
 
 
 def test_conv_nd_extra() -> None:
@@ -35,20 +34,20 @@ def test_conv_nd_extra() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv1d") as mock_conv1d:
             mock_conv1d.return_value = "res"
-            as_callable(conv)(t1_1d, t2_1d, conf_1d)
+            ensure_callable(conv)(t1_1d, t2_1d, conf_1d)
             assert mock_conv1d.called
         t1_depth_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
         t2_depth_1d = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv1d") as mock_dw:
             mock_dw.return_value = "res"
-            as_callable(depthwise_conv)(t1_depth_1d, t2_depth_1d, conf_1d)
+            ensure_callable(depthwise_conv)(t1_depth_1d, t2_depth_1d, conf_1d)
             assert mock_dw.called
         t1_sep_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
         t2_sep_dw = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
         t2_sep_pw = Tensor(np.ones((4, 2, 1)), TensorConfig((4, 2, 1), "float32", device))
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv1d") as mock_sep:
             mock_sep.return_value = "res"
-            as_callable(separable_conv)(t1_sep_1d, t2_sep_dw, t2_sep_pw, conf_1d)
+            ensure_callable(separable_conv)(t1_sep_1d, t2_sep_dw, t2_sep_pw, conf_1d)
             assert mock_sep.called
 
 
@@ -92,16 +91,16 @@ def test_conv_nd_2d_3d() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv2d") as mock_conv2d:
             mock_conv2d.return_value = "res"
-            as_callable(conv)(t1_2d, t2_2d, conf)
+            ensure_callable(conv)(t1_2d, t2_2d, conf)
             assert mock_conv2d.called
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv3d") as mock_conv3d:
             mock_conv3d.return_value = "res"
-            as_callable(conv)(t1_3d, t2_3d, conf)
+            ensure_callable(conv)(t1_3d, t2_3d, conf)
             assert mock_conv3d.called
         with pytest.raises(ValueError):
-            as_callable(depthwise_conv)(t1_3d, t2_3d, conf)
+            ensure_callable(depthwise_conv)(t1_3d, t2_3d, conf)
         with pytest.raises(ValueError):
-            as_callable(separable_conv)(t1_3d, t2_3d, t2_3d, conf)
+            ensure_callable(separable_conv)(t1_3d, t2_3d, t2_3d, conf)
 
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
@@ -136,34 +135,34 @@ def test_conv_nd_coverage() -> None:
 
         import ml_switcheroo_compiler.ops.nn.conv_nd as conv_nd_mod
 
-        _set_attr(conv_nd_mod, "_emit_linalg_node", dummy_emit)
+        ensure_mutable(conv_nd_mod)._emit_linalg_node = ensure_eager_tensor(dummy_emit)
         assert conv_transpose(t_1d, w_1d) == "emitted"
         config.eager_mode = True
         global_tracing_state.is_tracing = False
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv1d") as mock_c1:
         mock_c1.return_value = "c1"
-        assert as_tensor(conv(t_1d, w_1d)) == as_tensor("c1")
+        assert ensure_eager_tensor(conv(t_1d, w_1d)) == ensure_eager_tensor("c1")
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv2d") as mock_c2:
         mock_c2.return_value = "c2"
-        assert as_tensor(conv(t_2d, w_2d)) == as_tensor("c2")
+        assert ensure_eager_tensor(conv(t_2d, w_2d)) == ensure_eager_tensor("c2")
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv3d") as mock_c3:
         mock_c3.return_value = "c3"
-        assert as_tensor(conv(t_3d, w_3d)) == as_tensor("c3")
+        assert ensure_eager_tensor(conv(t_3d, w_3d)) == ensure_eager_tensor("c3")
     with pytest.raises(ValueError):
         conv(Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))))
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv1d") as mock_d1:
         mock_d1.return_value = "d1"
-        assert as_tensor(depthwise_conv(t_1d, w_1d)) == as_tensor("d1")
+        assert ensure_eager_tensor(depthwise_conv(t_1d, w_1d)) == ensure_eager_tensor("d1")
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv2d") as mock_d2:
         mock_d2.return_value = "d2"
-        assert as_tensor(depthwise_conv(t_2d, w_2d)) == as_tensor("d2")
+        assert ensure_eager_tensor(depthwise_conv(t_2d, w_2d)) == ensure_eager_tensor("d2")
     with pytest.raises(ValueError):
         depthwise_conv(t_3d, w_3d)
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv1d") as mock_s1:
         mock_s1.return_value = "s1"
-        assert as_tensor(separable_conv(t_1d, w_1d, w_1d)) == as_tensor("s1")
+        assert ensure_eager_tensor(separable_conv(t_1d, w_1d, w_1d)) == ensure_eager_tensor("s1")
     with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv2d") as mock_s2:
         mock_s2.return_value = "s2"
-        assert as_tensor(separable_conv(t_2d, w_2d, w_2d)) == as_tensor("s2")
+        assert ensure_eager_tensor(separable_conv(t_2d, w_2d, w_2d)) == ensure_eager_tensor("s2")
     with pytest.raises(ValueError):
         separable_conv(t_3d, w_3d, w_3d)

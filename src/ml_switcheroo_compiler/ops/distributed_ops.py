@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -29,7 +36,7 @@ def shard_tensor(tensor: Tensor, device_mesh: TensorOrScalar, layout: TensorOrSc
             device_mesh=device_mesh,
             layout=layout,
         )
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("ShardTensor", [tensor], {"device_mesh": device_mesh, "layout": layout}, tensor.shape, tensor.dtype)
 
 
@@ -49,8 +56,7 @@ class ShardTensor(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_1
+        return extract_shape(tensor)
 
 
 def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
@@ -65,8 +71,9 @@ def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = _get_attr(backend, "execute_op")("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        kw_nccl: dict[str, TensorOrScalar] = {"op_type": op_type}
+        data = backend.execute_op("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), **kw_nccl)
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("NcclAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -86,8 +93,7 @@ class NcclAllReduce(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_2
+        return extract_shape(tensor)
 
 
 def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
@@ -102,8 +108,9 @@ def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Tensor
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = _get_attr(backend, "execute_op")("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        kw_hier: dict[str, TensorOrScalar] = {"op_type": op_type}
+        data = backend.execute_op("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), **kw_hier)
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("HierarchicalCopyAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -123,8 +130,7 @@ class HierarchicalCopyAllReduce(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_3
+        return extract_shape(tensor)
 
 
 def broadcast(tensor: Tensor, root_rank: int = 0) -> TensorOrScalar:
@@ -140,7 +146,7 @@ def broadcast(tensor: Tensor, root_rank: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Broadcast", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), root_rank=root_rank)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("Broadcast", [tensor], {"root_rank": root_rank}, tensor.shape, tensor.dtype)
 
 
@@ -160,8 +166,7 @@ class Broadcast(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_4
+        return extract_shape(tensor)
 
 
 def all_gather(tensor: Tensor, axis: int = 0) -> TensorOrScalar:
@@ -177,7 +182,7 @@ def all_gather(tensor: Tensor, axis: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AllGather", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), axis=axis)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("AllGather", [tensor], {"axis": axis}, tensor.shape, tensor.dtype)  # simplified shape
 
 
@@ -197,9 +202,9 @@ class AllGather(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = list(_get_attr(tensor, "shape", ()))
-        world_size = int(as_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        shape = list(extract_shape(tensor))
+        world_size = int(ensure_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] * world_size
         return tuple(shape)
@@ -218,13 +223,13 @@ def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> TensorOr
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = _get_attr(backend, "execute_op")(
+        kw_red: dict[str, TensorOrScalar] = {"root_rank": root_rank, "op_type": op_type}
+        data = backend.execute_op(
             "Reduce",
             (tensor.data if type(tensor).__name__ == "Tensor" else tensor),
-            root_rank=root_rank,
-            op_type=op_type,
+            **kw_red,
         )
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("Reduce", [tensor], {"root_rank": root_rank, "op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -244,8 +249,7 @@ class Reduce(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_5: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_5
+        return extract_shape(tensor)
 
 
 def all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
@@ -260,8 +264,9 @@ def all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = _get_attr(backend, "execute_op")("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        kw_ar: dict[str, TensorOrScalar] = {"op_type": op_type}
+        data = backend.execute_op("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), **kw_ar)
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("AllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -281,8 +286,7 @@ class AllReduce(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_6: TensorOrScalar = _get_attr(tensor, "shape", ())
-        return _typed_ret_6
+        return extract_shape(tensor)
 
 
 def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> TensorOrScalar:
@@ -298,8 +302,9 @@ def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Tenso
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = _get_attr(backend, "execute_op")("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
+        kw_rs: dict[str, TensorOrScalar] = {"op_type": op_type, "axis": axis}
+        data = backend.execute_op("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), **kw_rs)
+        return Tensor(data, TensorConfig(extract_shape(data, tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("ReduceScatter", [tensor], {"op_type": op_type, "axis": axis}, tensor.shape, tensor.dtype)
 
 
@@ -319,12 +324,32 @@ class ReduceScatter(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = list(_get_attr(tensor, "shape", ()))
-        world_size = int(as_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
-        axis = int(as_int(kwargs.get("axis", 0)))
+        shape = list(extract_shape(tensor))
+        world_size = int(ensure_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(ensure_int(kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] // world_size
         return tuple(shape)
+
+
+def _broadcast_arg_shapes(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> TensorOrScalar:
+    """Broadcast shapes of all `ShapeProtocol` operands in `args`.
+
+    Args:
+        args (Sequence[EagerTensorProtocol | TensorOrScalar]): Candidate operands.
+
+    Returns:
+        TensorOrScalar: Broadcasted shape tuple.
+    """
+    from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+    shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
+    if not shapes:
+        return ()
+    res = shapes[0]
+    for s in shapes[1:]:
+        res = broadcast_shapes(res, s)
+    return res
 
 
 @register_op("AllToAll")
@@ -343,16 +368,7 @@ class AllToAll(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        _typed_ret_7: TensorOrScalar = res
-        return _typed_ret_7
+        return _broadcast_arg_shapes(args)
 
 
 @register_op("BroadcastArrays")
@@ -371,16 +387,7 @@ class BroadcastArrays(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        _typed_ret_8: TensorOrScalar = res
-        return _typed_ret_8
+        return _broadcast_arg_shapes(args)
 
 
 @register_op("BroadcastTo")
@@ -399,18 +406,9 @@ class BroadcastTo(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
         if "shape" in kwargs:
             return kwargs["shape"]
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        _typed_ret_9: TensorOrScalar = res
-        return _typed_ret_9
+        return _broadcast_arg_shapes(args)
 
 
 @register_op("BroadcastToRank")
@@ -430,9 +428,10 @@ class BroadcastToRank(OpDef):
             tuple[int, ...]: Result.
         """
         rank = kwargs.get("rank", 1)
-        if args and _has_attr(args[0], "shape"):
-            shape = args[0].shape
-            return (1,) * (int(as_int(rank)) - len(shape)) + tuple(shape) if len(shape) < int(as_int(rank)) else shape
+        raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
+        if raw_args and isinstance(raw_args[0], ShapeProtocol):
+            shape = raw_args[0].shape
+            return (1,) * (int(ensure_int(rank)) - len(shape)) + tuple(shape) if len(shape) < int(ensure_int(rank)) else shape
         return ()
 
 
@@ -452,16 +451,7 @@ class BroadcastedIota(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        _typed_ret_10: TensorOrScalar = res
-        return _typed_ret_10
+        return _broadcast_arg_shapes(args)
 
 
 @register_op("Pbroadcast")
@@ -480,16 +470,7 @@ class Pbroadcast(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        _typed_ret_11: TensorOrScalar = res
-        return _typed_ret_11
+        return _broadcast_arg_shapes(args)
 
 
 def all_to_all(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -504,7 +485,7 @@ def all_to_all(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
     """
     if config.eager_mode:
         return get_active_backend().execute_op("AllToAll", *args, **kwargs)
-    return _emit_shape_node("AllToAll", list(args), kwargs, _get_attr(args[0], "shape", ()) if args else (), _get_attr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node("AllToAll", list(args), kwargs, extract_shape(args[0]) if args else (), extract_dtype(args[0]) if args else "float32")
 
 
 def broadcast_arrays(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -519,7 +500,7 @@ def broadcast_arrays(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastArrays", *args, **kwargs)
-    return _emit_shape_node("BroadcastArrays", list(args), kwargs, _get_attr(args[0], "shape", ()) if args else (), _get_attr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node("BroadcastArrays", list(args), kwargs, extract_shape(args[0]) if args else (), extract_dtype(args[0]) if args else "float32")
 
 
 def broadcast_to(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -534,7 +515,7 @@ def broadcast_to(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastTo", *args, **kwargs)
-    return _emit_shape_node("BroadcastTo", list(args), kwargs, _get_attr(args[0], "shape", ()) if args else (), _get_attr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node("BroadcastTo", list(args), kwargs, extract_shape(args[0]) if args else (), extract_dtype(args[0]) if args else "float32")
 
 
 def broadcast_to_rank(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -549,7 +530,7 @@ def broadcast_to_rank(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastToRank", *args, **kwargs)
-    return _emit_shape_node("BroadcastToRank", list(args), kwargs, _get_attr(args[0], "shape", ()) if args else (), _get_attr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node("BroadcastToRank", list(args), kwargs, extract_shape(args[0]) if args else (), extract_dtype(args[0]) if args else "float32")
 
 
 def broadcasted_iota(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -579,7 +560,7 @@ def pbroadcast(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
     """
     if config.eager_mode:
         return get_active_backend().execute_op("Pbroadcast", *args, **kwargs)
-    return _emit_shape_node("Pbroadcast", list(args), kwargs, _get_attr(args[0], "shape", ()) if args else (), _get_attr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node("Pbroadcast", list(args), kwargs, extract_shape(args[0]) if args else (), extract_dtype(args[0]) if args else "float32")
 
 
 @register_op("Pmax")
@@ -599,8 +580,7 @@ class Pmax(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        _typed_ret_12: TensorOrScalar = _get_attr(x, "shape", ())
-        return _typed_ret_12
+        return extract_shape(x)
 
 
 @register_op("Pmin")
@@ -620,8 +600,7 @@ class Pmin(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        _typed_ret_13: TensorOrScalar = _get_attr(x, "shape", ())
-        return _typed_ret_13
+        return extract_shape(x)
 
 
 @register_op("Outfeed")
@@ -660,8 +639,7 @@ class Pshuffle(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        _typed_ret_14: TensorOrScalar = _get_attr(x, "shape", ())
-        return _typed_ret_14
+        return extract_shape(x)
 
 
 @register_op("Pswapaxes")
@@ -681,11 +659,11 @@ class Pswapaxes(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        shape = list(_get_attr(x, "shape", ()))
+        shape = list(extract_shape(x))
         if not shape:
             return ()
-        axis1 = int(as_int(kwargs.get("axis1", args[1] if len(args) > 1 else 0)))
-        axis2 = int(as_int(kwargs.get("axis2", args[2] if len(args) > 2 else 1)))
+        axis1 = int(ensure_int(kwargs.get("axis1", args[1] if len(args) > 1 else 0)))
+        axis2 = int(ensure_int(kwargs.get("axis2", args[2] if len(args) > 2 else 1)))
         if axis1 < 0:
             axis1 += len(shape)
         if axis2 < 0:
@@ -712,8 +690,7 @@ class Ppermute(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        _typed_ret_15: TensorOrScalar = _get_attr(x, "shape", ())
-        return _typed_ret_15
+        return extract_shape(x)
 
 
 @register_op("PsumScatter")
@@ -733,12 +710,13 @@ class PsumScatter(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        scatter_dimension = int(as_int(kwargs.get("scatter_dimension", 0)))
+        scatter_dimension = int(ensure_int(kwargs.get("scatter_dimension", 0)))
         world_size = kwargs.get("world_size")
-        shape = list(_get_attr(x, "shape", ()))
+        shape: list[int | None] = list(extract_shape(x))
         if shape and 0 <= scatter_dimension < len(shape):
-            if world_size is not None and shape[scatter_dimension] is not None:
-                shape[scatter_dimension] = shape[scatter_dimension] // int(as_int(world_size))
+            cur_dim = shape[scatter_dimension]
+            if world_size is not None and cur_dim is not None:
+                shape[scatter_dimension] = cur_dim // int(ensure_int(world_size))
             else:
                 shape[scatter_dimension] = None
         return tuple(shape)

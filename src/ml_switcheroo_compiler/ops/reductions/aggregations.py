@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
@@ -142,7 +142,7 @@ class NaryMathOp(OpDef):
         inputs = args[0] if len(args) > 0 else kwargs.get("inputs")
         # Assume all inputs have the same shape
         if isinstance(inputs, (list, tuple)) and len(inputs) > 0:
-            _typed_ret_1: tuple[int, ...] = _get_attr(inputs[0], "shape", ())
+            _typed_ret_1: tuple[int, ...] = extract_shape(inputs[0])
             return _typed_ret_1
         return ()
 

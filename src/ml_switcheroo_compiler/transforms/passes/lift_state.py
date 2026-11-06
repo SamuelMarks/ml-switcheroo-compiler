@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import typing
+from collections.abc import Iterable, Mapping
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, _cast_val
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
+    PureStateCallableProtocol,
     StateEntry,
     StateLiftingPass,
     _get_node_items,
@@ -20,14 +22,28 @@ from ml_switcheroo_compiler.transforms.passes.state_lifting import (
 StateValue = StateEntry
 
 
+def _is_nested_state_dict(
+    val: StateValue | dict[str, StateValue | dict[str, StateValue]] | None,
+) -> typing.TypeGuard[dict[str, StateValue | dict[str, StateValue]]]:
+    """Type guard narrowing `val` to a nested state dictionary.
+
+    Args:
+        val (StateValue | dict[str, StateValue | dict[str, StateValue]] | None): Candidate value.
+
+    Returns:
+        bool: True if `val` is a dictionary.
+    """
+    return isinstance(val, dict)
+
+
 def flatten_state_dict(
-    state_dict: dict[str, StateValue | dict[str, StateValue]],
+    state_dict: Mapping[str, StateValue],
     prefix: str = "",
 ) -> dict[str, StateValue]:
     """Flatten a nested state dictionary into a dot-delimited flat map.
 
     Args:
-        state_dict (dict[str, StateValue | dict[str, StateValue]]): Nested state dictionary.
+        state_dict (Mapping[str, StateValue]): Nested state dictionary.
         prefix (str): Key prefix for recursion.
 
     Returns:
@@ -37,7 +53,11 @@ def flatten_state_dict(
     for k, v in state_dict.items():
         new_key: str = f"{prefix}.{k}" if prefix else k
         if isinstance(v, dict):
-            flat.update(flatten_state_dict(v, new_key))
+            sub_map: dict[str, StateValue] = {}
+            for sk, sv in v.items():
+                if isinstance(sk, str):
+                    sub_map[sk] = sv
+            flat.update(flatten_state_dict(sub_map, new_key))
         else:
             flat[new_key] = v
     return flat
@@ -57,11 +77,15 @@ def unflatten_state_dict(
     nested: dict[str, StateValue | dict[str, StateValue]] = {}
     for k, v in flat_state.items():
         parts: list[str] = k.split(".")
-        d: dict[str, StateValue] = nested
+        d: dict[str, StateValue | dict[str, StateValue]] = nested
         for part in parts[:-1]:
-            if part not in d:
-                d[part] = {}
-            d = _cast_val(dict[str, StateValue], d[part])
+            existing = d.get(part)
+            if _is_nested_state_dict(existing):
+                d = existing
+            else:
+                sub_dict: dict[str, StateValue | dict[str, StateValue]] = {}
+                d[part] = sub_dict
+                d = sub_dict
         d[parts[-1]] = v
     return nested
 
@@ -129,14 +153,14 @@ def lift_module_state(container: TensorOrScalar) -> tuple[dict[str, StateValue],
 
 def lift_state(
     container: TypedVariadicCallable[TensorOrScalar],
-) -> tuple[dict[str, StateValue], TypedVariadicCallable[tuple[StateValue, dict[str, StateValue]]]]:
+) -> tuple[dict[str, StateValue], PureStateCallableProtocol]:
     """Functionalize a callable variable container into pure signature (state, *args) -> (out, new_state).
 
     Args:
         container (TypedVariadicCallable[TensorOrScalar]): Callable stateful container.
 
     Returns:
-        tuple[dict[str, StateValue], TypedVariadicCallable[tuple[StateValue, dict[str, StateValue]]]]: Initial state dict and pure callable.
+        tuple[dict[str, StateValue], PureStateCallableProtocol]: Initial state dict and pure callable.
     """
     return StateLiftingPass().functionalize(container)
 

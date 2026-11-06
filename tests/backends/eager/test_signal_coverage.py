@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.eager.signal as signal_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ops.configs import BlurConfig
-from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray, ensure_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class MockCpuResult:
@@ -140,7 +140,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
+        return ensure_ndarray(ensure_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -155,7 +155,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return ensure_ndarray(ensure_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -185,7 +185,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -205,7 +205,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -277,16 +277,14 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> EagerCallableProtocol:
-        """Delegate to numpy module.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            EagerCallableProtocol: Resolved callable attribute.
-        """
-        return as_callable(_get_attr(np, name))
+    arange = staticmethod(np.arange)
+    meshgrid = staticmethod(np.meshgrid)
+    exp = staticmethod(np.exp)
+    sum = staticmethod(np.sum)
+    zeros_like = staticmethod(np.zeros_like)
+    expand_dims = staticmethod(np.expand_dims)
+    reshape = staticmethod(np.reshape)
+    median = staticmethod(np.median)
 
     def pad(
         self,
@@ -304,6 +302,7 @@ class SignalBackendWrapper:
         Returns:
             np.ndarray: Padded array.
         """
+        _ = mode
         (b0, b1), (c0, c1), (h0, h1), (w0, w1) = pad_width
         b, c, h, w = arr.shape
         padded = np.zeros((b + b0 + b1, c + c0 + c1, h + h0 + h1, w + w0 + w1), dtype=arr.dtype)
@@ -344,23 +343,28 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-        """Dynamically return callable only on second check.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            TypedVariadicCallable[np.ndarray]: Function result.
-
-        Raises:
-            AttributeError: On first check.
-        """
+    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Return callable only on second check."""
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
         if count == 0:
             raise AttributeError(f"Initial check fails for {name}")
         return lambda *args, **kwargs: np.ones((2, 2))
+
+    @property
+    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic uniform attribute."""
+        return self._get_fn("uniform")
+
+    @property
+    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic normal attribute."""
+        return self._get_fn("normal")
+
+    @property
+    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic randint attribute."""
+        return self._get_fn("randint")
 
 
 class MockBackendWithFallback:
@@ -502,13 +506,13 @@ def test_signal_coverage() -> None:
     backend = SignalBackendWrapper()
 
     # 1. Gaussian kernel calculation
-    k = as_callable(signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
-    assert as_tensor(_get_attr(k, "shape")) == (3, 3)
-    as_callable(np.testing.assert_allclose)(as_callable(float)(as_callable(np.sum)(k)), 1.0, atol=1e-5)
+    k = ensure_callable(signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
+    assert ensure_eager_tensor(k).shape == (3, 3)
+    ensure_callable(np.testing.assert_allclose)(ensure_callable(float)(ensure_callable(np.sum)(k)), 1.0, atol=1e-5)
 
     # 2. _apply_conv2d_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        as_callable(signal_mod._apply_conv2d_batch)(backend, as_callable(np.ones)((3, 3)), k, "reflect")
+        ensure_callable(signal_mod._apply_conv2d_batch)(backend, ensure_callable(np.ones)((3, 3)), k, "reflect")
 
     # 3. _get_blur_config with config_obj None and with dict
     cfg1 = signal_mod._get_blur_config({"kernel_size": (5, 5), "sigma": (2.0, 2.0), "data_format": "NCHW"}, None)
@@ -523,9 +527,9 @@ def test_signal_coverage() -> None:
     assert cfg2.data_format == "None"
 
     # Fallback when kwargs does not have get attribute
-    cfg_no_get = as_callable(signal_mod._get_blur_config)(None, None)
-    assert as_tensor(cfg_no_get.kernel_size) == (3, 3)
-    assert as_tensor(cfg_no_get.data_format) is None
+    cfg_no_get = ensure_callable(signal_mod._get_blur_config)(None, None)
+    assert ensure_eager_tensor(cfg_no_get.kernel_size) == (3, 3)
+    assert ensure_eager_tensor(cfg_no_get.data_format) is None
 
     # When config_obj is provided
     custom_cfg = BlurConfig(kernel_size=(3, 3), sigma=(0.5, 0.5))
@@ -533,15 +537,15 @@ def test_signal_coverage() -> None:
 
     # 4. gaussian_blur_eager full execution
     imgs = np.ones((1, 2, 8, 8), dtype=np.float32)
-    blurred = as_callable(signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
-    assert as_tensor(_get_attr(blurred, "shape")) == (1, 2, 8, 8)
+    blurred = ensure_callable(signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
+    assert ensure_eager_tensor(blurred).shape == (1, 2, 8, 8)
 
     # 5. _apply_median_filter_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        as_callable(signal_mod._apply_median_filter_batch)(backend, as_callable(np.ones)((2, 2)), (3, 3), "same")
+        ensure_callable(signal_mod._apply_median_filter_batch)(backend, ensure_callable(np.ones)((2, 2)), (3, 3), "same")
 
     # 6. median_filter_eager with same padding and reflect padding
-    med_same = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
-    assert as_tensor(_get_attr(med_same, "shape")) == (1, 2, 8, 8)
-    med_reflect = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
-    assert as_tensor(_get_attr(med_reflect, "shape")) == (1, 2, 8, 8)
+    med_same = ensure_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
+    assert ensure_eager_tensor(med_same).shape == (1, 2, 8, 8)
+    med_reflect = ensure_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
+    assert ensure_eager_tensor(med_reflect).shape == (1, 2, 8, 8)

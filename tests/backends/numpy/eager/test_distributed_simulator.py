@@ -7,13 +7,12 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-numpy_eager_registry = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
+numpy_eager_registry = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager")).numpy_eager_registry)
 
 
 def test_numpy_distributed_simulators() -> None:
@@ -26,20 +25,20 @@ def test_numpy_distributed_simulators() -> None:
     tensor = np.array([1, 2, 3])
 
     # AllGather
-    gathered = as_callable(numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
-    assert as_tensor(_get_attr(gathered, "shape")) == (1, 3)
+    gathered = ensure_callable(numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
+    assert ensure_eager_tensor(gathered).shape == (1, 3)
 
     # AllReduce
-    reduced = as_callable(numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
-    as_callable(np.testing.assert_array_equal)(reduced, tensor)
+    reduced = ensure_callable(numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
+    ensure_callable(np.testing.assert_array_equal)(reduced, tensor)
 
     # ReduceScatter
-    scattered = as_callable(numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
-    as_callable(np.testing.assert_array_equal)(scattered, tensor)
+    scattered = ensure_callable(numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
+    ensure_callable(np.testing.assert_array_equal)(scattered, tensor)
 
     # AllToAll
-    all_to_all = as_callable(numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
-    as_callable(np.testing.assert_array_equal)(all_to_all, tensor)
+    all_to_all = ensure_callable(numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
+    ensure_callable(np.testing.assert_array_equal)(all_to_all, tensor)
 
 
 def test_numpy_distributed_all_reduce_ring_branches() -> None:
@@ -78,7 +77,7 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
                 """
                 return np.array([1, 2])
 
-        as_callable(ctx.all_reduce_ring)(as_callable(np.array)([1, 2, 3]), op_type="dummy", backend_module=as_callable(DummyBackend)())
+        ensure_callable(ctx.all_reduce_ring)(ensure_callable(np.array)([1, 2, 3]), op_type="dummy", backend_module=ensure_callable(DummyBackend)())
         ctx.all_gather_tensors(np.array([1, 2, 3]))
     assert ctx.world_size == 2
 

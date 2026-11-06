@@ -6,7 +6,6 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.shape_system import (
     SymBinaryOp,
     SymConst,
@@ -15,7 +14,7 @@ from ml_switcheroo_compiler.ir.shape_system import (
     SymUnaryOp,
     SymVar,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -142,7 +141,7 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return as_tensor(_get_attr(env, "__getitem__")("x") > 10)
+        return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 10)
 
     def cond_2(env: EagerValue) -> EagerValue:
         """Check if x > 0.
@@ -150,12 +149,12 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return as_tensor(_get_attr(env, "__getitem__")("x") > 0)
+        return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 0)
 
-    piecewise = as_callable(SymPiecewise)(
+    piecewise = ensure_callable(SymPiecewise)(
         cases=[
-            (cond_1, as_callable(SymConst)(100)),
-            (cond_2, as_callable(SymConst)(50)),
+            (cond_1, ensure_callable(SymConst)(100)),
+            (cond_2, ensure_callable(SymConst)(50)),
         ],
         default=SymConst(0),
     )

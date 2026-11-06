@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
@@ -31,7 +31,7 @@ def _emit_segment_op(
     if num_segments is not None:
         attributes["num_segments"] = num_segments
 
-    data_shape = _get_attr(data, "shape", ())
+    data_shape = extract_shape(data)
     if num_segments is not None:
         out_shape = (num_segments, *data_shape[1:]) if len(data_shape) > 0 else (num_segments,)
     else:

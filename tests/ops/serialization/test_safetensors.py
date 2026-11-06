@@ -9,9 +9,8 @@ import struct
 import tempfile
 import typing
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -50,24 +49,24 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
         assert fmt.load(f.name) == {}
     with tempfile.NamedTemporaryFile() as f:
         weights = {"a": MockNumpy(b"data1", "float32", (1,)), "b": MockNumpy(b"data2", "float64", (1,)), "c": MockNumpy(b"data3", "unknown", (1,)), "skip_me": "not_numpy"}
-        as_callable(fmt.save)(weights, f.name)
+        ensure_callable(fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
         del mock_backend.from_buffer
         loaded = fmt.load(f.name)
         assert "a" in loaded
-        assert as_tensor(loaded["a"]["buffer"]) == as_tensor(b"data1")
-        assert as_tensor(loaded["a"]["dtype"]) == as_tensor("F32")
-        assert as_tensor(loaded["a"]["shape"]) == as_tensor([1])
+        assert ensure_eager_tensor(loaded["a"]["buffer"]) == ensure_eager_tensor(b"data1")
+        assert ensure_eager_tensor(loaded["a"]["dtype"]) == ensure_eager_tensor("F32")
+        assert ensure_eager_tensor(loaded["a"]["shape"]) == ensure_eager_tensor([1])
         assert "b" in loaded
-        assert as_tensor(loaded["b"]["dtype"]) == as_tensor("F64")
+        assert ensure_eager_tensor(loaded["b"]["dtype"]) == ensure_eager_tensor("F64")
         assert "c" in loaded
-        assert as_tensor(loaded["c"]["dtype"]) == as_tensor("F32")
+        assert ensure_eager_tensor(loaded["c"]["dtype"]) == ensure_eager_tensor("F32")
     with tempfile.NamedTemporaryFile() as f:
-        as_callable(fmt.save)(weights, f.name)
+        ensure_callable(fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-        _set_attr(mock_backend.from_buffer, "side_effect", lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
+        ensure_mutable(mock_backend.from_buffer).side_effect = ensure_eager_tensor(lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
         loaded2 = fmt.load(f.name)
-        assert as_tensor(loaded2["a"]["buf"]) == as_tensor(b"data1")
+        assert ensure_eager_tensor(loaded2["a"]["buf"]) == ensure_eager_tensor(b"data1")
     with tempfile.NamedTemporaryFile() as f:
         header = {"__metadata__": {"foo": "bar"}, "a": {"dtype": "F32", "shape": [1], "data_offsets": [0, 5]}}
         header_bytes = json.dumps(header).encode("utf-8")
@@ -119,5 +118,5 @@ def test_safetensors_save_continue() -> None:
                 """Return empty bytes."""
                 return b""
 
-        as_callable(fmt.save)({"a": as_callable(MissingAttr1)(), "b": as_callable(MissingAttr2)(), "c": as_callable(MissingAttr3)(), "d": as_callable(MissingAttr4)()}, f.name)
+        ensure_callable(fmt.save)({"a": ensure_callable(MissingAttr1)(), "b": ensure_callable(MissingAttr2)(), "c": ensure_callable(MissingAttr3)(), "d": ensure_callable(MissingAttr4)()}, f.name)
         assert os.path.exists(f.name)

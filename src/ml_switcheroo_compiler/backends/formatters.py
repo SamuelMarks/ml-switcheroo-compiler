@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+import typing
+
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+
+
+@typing.runtime_checkable
+class _OpTypeNodeProtocol(typing.Protocol):
+    """Protocol for nodes exposing `.op_type`."""
+
+    op_type: str
 
 
 class FormatterContext(pydantic.BaseModel):
@@ -119,7 +128,7 @@ class FallbackHandler:
         """
         ctx: FormatterContext = FormatterContext(
             prefix=prefix,
-            op_type=_get_attr(node, "op_type", "Unknown"),
+            op_type=str(node.op_type) if isinstance(node, _OpTypeNodeProtocol) else "Unknown",
             input_vars=input_vars,
             kwargs=kwargs,
         )

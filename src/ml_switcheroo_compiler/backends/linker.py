@@ -15,6 +15,7 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
     Returns:
             Optional[str]: Result.
     """
+    frame = None
     try:
         frame = inspect.currentframe()
         if frame is None:

@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.image import ImageASTVisitor
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -25,7 +24,7 @@ class DummyVisitor(ImageASTVisitor):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        _set_attr(self, "_generator", DummyGenerator())
+        ensure_mutable(self)._generator = ensure_eager_tensor(DummyGenerator())
 
 
 class DummyNode:
@@ -39,26 +38,26 @@ def test_image_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert as_callable(vis.visit_AdjustBrightness)(node, ["a"], delta=0.5) == "bk_adjust_brightness(a, 0.5)"
-    assert as_callable(vis.visit_AdjustBrightness)(node, ["a"]) == "bk_adjust_brightness(a, 0.0)"
+    assert ensure_callable(vis.visit_AdjustBrightness)(node, ["a"], delta=0.5) == "bk_adjust_brightness(a, 0.5)"
+    assert ensure_callable(vis.visit_AdjustBrightness)(node, ["a"]) == "bk_adjust_brightness(a, 0.0)"
 
-    assert as_callable(vis.visit_AdjustContrast)(node, ["a"], contrast_factor=2.0) == "bk_adjust_contrast(a, 2.0)"
-    assert as_callable(vis.visit_AdjustContrast)(node, ["a"]) == "bk_adjust_contrast(a, 1.0)"
+    assert ensure_callable(vis.visit_AdjustContrast)(node, ["a"], contrast_factor=2.0) == "bk_adjust_contrast(a, 2.0)"
+    assert ensure_callable(vis.visit_AdjustContrast)(node, ["a"]) == "bk_adjust_contrast(a, 1.0)"
 
-    assert as_callable(vis.visit_AdjustHue)(node, ["a"], delta=0.2) == "bk_adjust_hue(a, 0.2)"
-    assert as_callable(vis.visit_AdjustHue)(node, ["a"]) == "bk_adjust_hue(a, 0.0)"
+    assert ensure_callable(vis.visit_AdjustHue)(node, ["a"], delta=0.2) == "bk_adjust_hue(a, 0.2)"
+    assert ensure_callable(vis.visit_AdjustHue)(node, ["a"]) == "bk_adjust_hue(a, 0.0)"
 
-    assert as_callable(vis.visit_AdjustSaturation)(node, ["a"], saturation_factor=1.5) == "bk_adjust_saturation(a, 1.5)"
-    assert as_callable(vis.visit_AdjustSaturation)(node, ["a"]) == "bk_adjust_saturation(a, 1.0)"
+    assert ensure_callable(vis.visit_AdjustSaturation)(node, ["a"], saturation_factor=1.5) == "bk_adjust_saturation(a, 1.5)"
+    assert ensure_callable(vis.visit_AdjustSaturation)(node, ["a"]) == "bk_adjust_saturation(a, 1.0)"
 
-    assert as_callable(vis.visit_AffineGenerator)(node, ["a"], batch_size=2) == "bk_affine_generator(2, a)"
-    assert as_callable(vis.visit_AffineGenerator)(node, ["a"]) == "bk_affine_generator(1, a)"
+    assert ensure_callable(vis.visit_AffineGenerator)(node, ["a"], batch_size=2) == "bk_affine_generator(2, a)"
+    assert ensure_callable(vis.visit_AffineGenerator)(node, ["a"]) == "bk_affine_generator(1, a)"
 
-    assert as_callable(vis.visit_AffineGrid)(node, ["a"], size=(1, 2), align_corners=True) == "bk_affine_grid(a, size=(1, 2), align_corners=True)"
-    assert as_callable(vis.visit_AffineGrid)(node, ["a"]) == "bk_affine_grid(a, size=(), align_corners=False)"
+    assert ensure_callable(vis.visit_AffineGrid)(node, ["a"], size=(1, 2), align_corners=True) == "bk_affine_grid(a, size=(1, 2), align_corners=True)"
+    assert ensure_callable(vis.visit_AffineGrid)(node, ["a"]) == "bk_affine_grid(a, size=(), align_corners=False)"
 
-    assert as_callable(vis.visit_AffineTransform)(node, ["a", "b"], interpolation="bilinear") == "bk_affine_transform(a, b, interpolation='bilinear')"
-    assert as_callable(vis.visit_AffineTransform)(node, ["a", "b"]) == "bk_affine_transform(a, b, interpolation='nearest')"
+    assert ensure_callable(vis.visit_AffineTransform)(node, ["a", "b"], interpolation="bilinear") == "bk_affine_transform(a, b, interpolation='bilinear')"
+    assert ensure_callable(vis.visit_AffineTransform)(node, ["a", "b"]) == "bk_affine_transform(a, b, interpolation='nearest')"
 
-    assert as_callable(vis.visit_AugMix)(node, ["a"]) == "bk_augmix(a)"
-    assert as_callable(vis.visit_AutoContrast)(node, ["a"]) == "bk_auto_contrast(a)"
+    assert ensure_callable(vis.visit_AugMix)(node, ["a"]) == "bk_augmix(a)"
+    assert ensure_callable(vis.visit_AutoContrast)(node, ["a"]) == "bk_auto_contrast(a)"

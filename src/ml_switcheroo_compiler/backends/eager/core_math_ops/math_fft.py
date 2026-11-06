@@ -8,11 +8,10 @@ import typing  # noqa: F401
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    as_tensor,
+    ensure_eager_tensor,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @global_eager_registry.register("Fft")
@@ -27,7 +26,7 @@ def _fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fft(*args, **kwargs) if fft_mod else None
 
 
@@ -43,7 +42,7 @@ def _rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.rfft(*args, **kwargs) if fft_mod else None
 
 
@@ -59,7 +58,7 @@ def _fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fft2(*args, **kwargs) if fft_mod else None
 
 
@@ -86,16 +85,16 @@ def _slice_fftconvolve_output(
     """
     if mode == "same":
         slices = [slice((s2[i] - 1) // 2, (s2[i] - 1) // 2 + s1[i]) for i in range(ndim)]
-        return as_tensor(out)[tuple(slices)]
+        return ensure_eager_tensor(out)[tuple(slices)]
     if mode == "valid":
         slices = []
         for i in range(ndim):
             start = s2[i] - 1
             length = s1[i] - s2[i] + 1
             if length < 1:
-                return as_tensor(_get_attr(np_mod, "empty")((0,) * ndim, dtype=_get_attr(out, "dtype")))
+                return ensure_eager_tensor(get_backend_member(np_mod, "empty")((0,) * ndim, dtype=get_backend_member(out, "dtype")))
             slices.append(slice(start, start + length))
-        return as_tensor(out)[tuple(slices)]
+        return ensure_eager_tensor(out)[tuple(slices)]
     return out
 
 
@@ -114,12 +113,12 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     if len(args) < 2 or args[0] is None or args[1] is None:
         return None
 
-    fft_mod = _get_attr(backend_module, "fft", None)
-    if _has_attr(fft_mod, "fftconvolve"):
-        return as_tensor(_get_attr(fft_mod, "fftconvolve")(*args, **kwargs))
-    signal_mod = _get_attr(backend_module, "signal", None)
-    if _has_attr(signal_mod, "fftconvolve"):
-        return as_tensor(_get_attr(signal_mod, "fftconvolve")(*args, **kwargs))
+    fft_mod = get_backend_member(backend_module, "fft", None)
+    if has_backend_member(fft_mod, "fftconvolve"):
+        return ensure_eager_tensor(get_backend_member(fft_mod, "fftconvolve")(*args, **kwargs))
+    signal_mod = get_backend_member(backend_module, "signal", None)
+    if has_backend_member(signal_mod, "fftconvolve"):
+        return ensure_eager_tensor(get_backend_member(signal_mod, "fftconvolve")(*args, **kwargs))
 
     in1, in2 = args[0], args[1]
     mode = kwargs.get("mode", "full")
@@ -135,7 +134,7 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     conv_shape = [s1[i] + s2[i] - 1 for i in range(ndim)]
 
     is_real = not (np_mod.iscomplexobj(a1) or np_mod.iscomplexobj(a2))
-    fft_lib = _get_attr(np_mod, "fft")
+    fft_lib = get_backend_member(np_mod, "fft")
 
     if is_real:
         f1 = fft_lib.rfftn(a1, s=conv_shape, axes=axes)
@@ -161,7 +160,7 @@ def _fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftfreq(*args, **kwargs) if fft_mod else None
 
 
@@ -177,7 +176,7 @@ def _fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
@@ -193,9 +192,9 @@ def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
-    if _has_attr(fft_mod, "fftnd"):
-        return as_tensor(_get_attr(fft_mod, "fftnd")(*args, **kwargs))
+    fft_mod = get_backend_member(backend_module, "fft", None)
+    if has_backend_member(fft_mod, "fftnd"):
+        return ensure_eager_tensor(get_backend_member(fft_mod, "fftnd")(*args, **kwargs))
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
@@ -211,7 +210,7 @@ def _fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftshift(*args, **kwargs) if fft_mod else None
 
 
@@ -227,7 +226,7 @@ def _ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifft(*args, **kwargs) if fft_mod else None
 
 
@@ -243,7 +242,7 @@ def _ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifft2(*args, **kwargs) if fft_mod else None
 
 
@@ -259,7 +258,7 @@ def _ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifftn(*args, **kwargs) if fft_mod else None
 
 
@@ -275,7 +274,7 @@ def _ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
+    fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifftshift(*args, **kwargs) if fft_mod else None
 
 
@@ -291,7 +290,7 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    fft_mod = _get_attr(backend_module, "fft", None)
-    if fft_mod and _has_attr(fft_mod, "hfft"):
-        return as_tensor(fft_mod.hfft(*args, **kwargs))
+    fft_mod = get_backend_member(backend_module, "fft", None)
+    if fft_mod and has_backend_member(fft_mod, "hfft"):
+        return ensure_eager_tensor(fft_mod.hfft(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs)

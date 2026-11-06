@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.eager.core_group_ops as group_ops_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
-from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray, ensure_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class MockCpuResult:
@@ -139,7 +139,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
+        return ensure_ndarray(ensure_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -154,7 +154,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return ensure_ndarray(ensure_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -184,7 +184,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -204,7 +204,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
+        dim_val: tuple[int, ...] = ensure_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -276,16 +276,14 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> EagerCallableProtocol:
-        """Delegate to numpy module.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            EagerCallableProtocol: Resolved callable attribute.
-        """
-        return as_callable(_get_attr(np, name))
+    arange = staticmethod(np.arange)
+    meshgrid = staticmethod(np.meshgrid)
+    exp = staticmethod(np.exp)
+    sum = staticmethod(np.sum)
+    zeros_like = staticmethod(np.zeros_like)
+    expand_dims = staticmethod(np.expand_dims)
+    reshape = staticmethod(np.reshape)
+    median = staticmethod(np.median)
 
     def pad(
         self,
@@ -303,6 +301,7 @@ class SignalBackendWrapper:
         Returns:
             np.ndarray: Padded array.
         """
+        _ = mode
         (b0, b1), (c0, c1), (h0, h1), (w0, w1) = pad_width
         b, c, h, w = arr.shape
         padded = np.zeros((b + b0 + b1, c + c0 + c1, h + h0 + h1, w + w0 + w1), dtype=arr.dtype)
@@ -343,23 +342,28 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-        """Dynamically return callable only on second check.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            TypedVariadicCallable[np.ndarray]: Function result.
-
-        Raises:
-            AttributeError: On first check.
-        """
+    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Return callable only on second check."""
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
         if count == 0:
             raise AttributeError(f"Initial check fails for {name}")
         return lambda *args, **kwargs: np.ones((2, 2))
+
+    @property
+    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic uniform attribute."""
+        return self._get_fn("uniform")
+
+    @property
+    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic normal attribute."""
+        return self._get_fn("normal")
+
+    @property
+    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+        """Dynamic randint attribute."""
+        return self._get_fn("randint")
 
 
 class MockBackendWithFallback:
@@ -511,39 +515,39 @@ def test_core_group_ops_coverage() -> None:
     failing_backend = MockFailingAxisBackend(torch_backend)
     x_test = np.ones((2, 4, 8, 8))
 
-    mean_res = as_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "mean", x_test, (2, 3))
-    assert as_tensor(_get_attr(mean_res, "shape")) == (2, 4, 1, 1)
+    mean_res = ensure_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "mean", x_test, (2, 3))
+    assert ensure_eager_tensor(mean_res).shape == (2, 4, 1, 1)
 
-    var_res = as_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "variance", x_test, (2, 3))
-    assert as_tensor(_get_attr(var_res, "shape")) == (2, 4, 1, 1)
+    var_res = ensure_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "variance", x_test, (2, 3))
+    assert ensure_eager_tensor(var_res).shape == (2, 4, 1, 1)
 
     # 4. _group_mean and _group_variance with positional groups vs kwarg groups
     x = np.ones((2, 4, 8, 8), dtype=np.float32)
 
     # kwarg groups and negative axis
     mean_kw = group_ops_mod._group_mean(np, x, groups=2, axis=-1)
-    assert as_tensor(_get_attr(mean_kw, "shape")) == (2, 1, 1, 2, 1)
+    assert ensure_eager_tensor(mean_kw).shape == (2, 1, 1, 2, 1)
 
     # positional groups and non-negative axis
     mean_pos = group_ops_mod._group_mean(np, x, 2, axis=1)
-    assert as_tensor(_get_attr(mean_pos, "shape")) == (2, 2, 1, 1, 1)
+    assert ensure_eager_tensor(mean_pos).shape == (2, 2, 1, 1, 1)
 
     # positional groups with string conversion fallback
     str_group = MockStringConvertibleGroup("2")
-    mean_str = group_ops_mod._group_mean(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(_get_attr(mean_str, "shape")) == (2, 2, 1, 1, 1)
+    mean_str = group_ops_mod._group_mean(np, x, ensure_eager_tensor(str_group), axis=1)
+    assert ensure_eager_tensor(mean_str).shape == (2, 2, 1, 1, 1)
 
     # variance kwarg groups and negative axis
     var_kw = group_ops_mod._group_variance(np, x, groups=2, axis=-1)
-    assert as_tensor(_get_attr(var_kw, "shape")) == (2, 1, 1, 2, 1)
+    assert ensure_eager_tensor(var_kw).shape == (2, 1, 1, 2, 1)
 
     # variance positional groups
     var_pos = group_ops_mod._group_variance(np, x, 2, axis=1)
-    assert as_tensor(_get_attr(var_pos, "shape")) == (2, 2, 1, 1, 1)
+    assert ensure_eager_tensor(var_pos).shape == (2, 2, 1, 1, 1)
 
     # variance with string group
-    var_str = group_ops_mod._group_variance(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(_get_attr(var_str, "shape")) == (2, 2, 1, 1, 1)
+    var_str = group_ops_mod._group_variance(np, x, ensure_eager_tensor(str_group), axis=1)
+    assert ensure_eager_tensor(var_str).shape == (2, 2, 1, 1, 1)
 
     # 5. _apply_affine_transform with weight and bias combinations
     out = np.ones((2, 4, 8, 8), dtype=np.float32)
@@ -551,24 +555,24 @@ def test_core_group_ops_coverage() -> None:
     bias = np.full((4,), 0.5, dtype=np.float32)
 
     aff_both = group_ops_mod._apply_affine_transform(np, out, 1, weight=weight, bias=bias)
-    as_callable(np.testing.assert_allclose)(aff_both, as_callable(np.full)((2, 4, 8, 8), 2.5))
+    ensure_callable(np.testing.assert_allclose)(aff_both, ensure_callable(np.full)((2, 4, 8, 8), 2.5))
 
     aff_w_only = group_ops_mod._apply_affine_transform(np, out, 1, weight=weight, bias=None)
-    as_callable(np.testing.assert_allclose)(aff_w_only, as_callable(np.full)((2, 4, 8, 8), 2.0))
+    ensure_callable(np.testing.assert_allclose)(aff_w_only, ensure_callable(np.full)((2, 4, 8, 8), 2.0))
 
     aff_b_only = group_ops_mod._apply_affine_transform(np, out, 1, weight=None, bias=bias)
-    as_callable(np.testing.assert_allclose)(aff_b_only, as_callable(np.full)((2, 4, 8, 8), 1.5))
+    ensure_callable(np.testing.assert_allclose)(aff_b_only, ensure_callable(np.full)((2, 4, 8, 8), 1.5))
 
     aff_none = group_ops_mod._apply_affine_transform(np, out, 1, weight=None, bias=None)
-    as_callable(np.testing.assert_allclose)(aff_none, out)
+    ensure_callable(np.testing.assert_allclose)(aff_none, out)
 
     # 6. _group_norm with negative axis and with positive axis
     gn_neg = group_ops_mod._group_norm(np, x, groups=2, axis=-1, weight=np.ones(8), bias=np.zeros(8))
-    assert as_tensor(_get_attr(gn_neg, "shape")) == as_tensor(_get_attr(x, "shape"))
+    assert ensure_eager_tensor(gn_neg).shape == ensure_eager_tensor(x).shape
 
     gn_pos = group_ops_mod._group_norm(np, x, 2, axis=1)
-    assert as_tensor(_get_attr(gn_pos, "shape")) == as_tensor(_get_attr(x, "shape"))
+    assert ensure_eager_tensor(gn_pos).shape == ensure_eager_tensor(x).shape
 
     # group norm with string group positional
-    gn_str = group_ops_mod._group_norm(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(_get_attr(gn_str, "shape")) == as_tensor(_get_attr(x, "shape"))
+    gn_str = group_ops_mod._group_norm(np, x, ensure_eager_tensor(str_group), axis=1)
+    assert ensure_eager_tensor(gn_str).shape == ensure_eager_tensor(x).shape

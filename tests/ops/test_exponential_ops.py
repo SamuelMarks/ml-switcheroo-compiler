@@ -10,10 +10,9 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -31,14 +30,14 @@ def test_exp_op() -> None:
     """Test function test_exp_op."""
     a = Tensor(np.array([0, 1, 2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Exp", a)
-    as_callable(np.testing.assert_array_almost_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([1, np.e, np.e**2], dtype=np.float32), decimal=6)
+    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([1, np.e, np.e**2], dtype=np.float32), decimal=6)
 
 
 def test_log_op() -> None:
     """Test function test_log_op."""
     a = Tensor(np.array([1, np.e, np.e**2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Log", a)
-    as_callable(np.testing.assert_array_almost_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([0, 1, 2], dtype=np.float32), decimal=6)
+    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([0, 1, 2], dtype=np.float32), decimal=6)
 
 
 def test_pow_op() -> None:
@@ -46,4 +45,4 @@ def test_pow_op() -> None:
     a = Tensor(np.array([1, 2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     b = Tensor(np.array([2, 3, 2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Power", a, b)
-    as_callable(np.testing.assert_array_almost_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([1, 8, 9], dtype=np.float32), decimal=6)
+    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([1, 8, 9], dtype=np.float32), decimal=6)

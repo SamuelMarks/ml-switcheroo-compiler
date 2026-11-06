@@ -2,17 +2,37 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor, get_active_backend
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node, _extract_shape_dtype
 from ml_switcheroo_compiler.tracing import builder
+
+
+@typing.runtime_checkable
+class _UnstackBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `.unstack`."""
+
+    unstack: TensorOrScalar
 
 
 def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | Sequence[int], axis: int) -> TensorOrScalar:  #
@@ -29,14 +49,15 @@ def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | S
     if not isinstance(split_size_or_sections, int):
         return len(split_size_or_sections) + 1
 
-    if _get_attr(input, "shape", None) is None:
+    if not isinstance(input, ShapeProtocol) or input.shape is None:
         return split_size_or_sections
 
     if split_size_or_sections <= 0:
         return 1
 
-    if _get_attr(input, "shape") and _get_attr(input, "shape")[axis] % split_size_or_sections == 0:
-        return as_tensor(_get_attr(input, "shape")[axis] // split_size_or_sections)
+    in_shape = extract_shape(input)
+    if in_shape and in_shape[axis] % split_size_or_sections == 0:
+        return ensure_eager_tensor(in_shape[axis] // split_size_or_sections)
 
     return split_size_or_sections
 
@@ -54,9 +75,9 @@ def _validate_split_axis(input: TensorOrScalar, axis: int) -> TensorOrScalar:  #
     Raises:
         ValueError: An exception.
     """
-    shape = _get_attr(input, "shape", None)
-    if shape is None:
+    if not isinstance(input, ShapeProtocol) or input.shape is None:
         return axis
+    shape = extract_shape(input)
     rank = len(shape)
     if not (0 <= axis < rank or -rank <= axis < 0):
         raise ValueError(f"Split axis {axis} is out of bounds for tensor of rank {rank}.")
@@ -80,20 +101,20 @@ def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: i
     """
     if config.eager_mode:
         backend = get_active_backend()
-        input_data = _get_attr(input, "data", input)
+        input_data = extract_data(input)
         datas = backend.execute_op("Split", input_data, split_size, axis=axis)
-        input_dtype = _get_attr(input, "dtype", _get_attr(backend.array(input_data), "dtype"))
-        input_device = _get_attr(input, "device", config.default_device)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), input_dtype, input_device)) for d in _get_attr(datas, "__iter__")())
+        input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(backend.array(input_data), None))
+        input_device = extract_device(input, config.default_device)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
 
     inputs = [input]
-    out_shape = _get_attr(inputs[0], "shape") if len(inputs) > 0 else ()
+    out_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
     node = _emit_shape_node(
         "Split",
         inputs,
         {"split_size_or_sections": split_size, "axis": axis},
         out_shape,
-        _get_attr(inputs[0], "dtype") if len(inputs) > 0 else DType.Float32,
+        _extract_shape_dtype(inputs[0], DType.Float32) if len(inputs) > 0 else DType.Float32,
     )
 
     out_tensors = []
@@ -122,20 +143,20 @@ def _split_sections(  # pylint: disable=too-many-locals
     """
     if config.eager_mode:
         backend = get_active_backend()
-        input_data = _get_attr(input, "data", input)
+        input_data = extract_data(input)
         datas = backend.execute_op("Split", input_data, sections, axis=axis)
-        input_dtype = _get_attr(input, "dtype", _get_attr(backend.array(input_data), "dtype"))
-        input_device = _get_attr(input, "device", config.default_device)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), input_dtype, input_device)) for d in _get_attr(datas, "__iter__")())
+        input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(backend.array(input_data), None))
+        input_device = extract_device(input, config.default_device)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
 
     inputs = [input]
-    out_shape = _get_attr(inputs[0], "shape") if len(inputs) > 0 else ()
+    out_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
     node = _emit_shape_node(
         "Split",
         inputs,
         {"split_size_or_sections": sections, "axis": axis},
         out_shape,
-        _get_attr(inputs[0], "dtype") if len(inputs) > 0 else DType.Float32,
+        _extract_shape_dtype(inputs[0], DType.Float32) if len(inputs) > 0 else DType.Float32,
     )
 
     out_tensors = []
@@ -161,11 +182,11 @@ def split(
         Sequence: Result.
     """
     valid_axis = _validate_split_axis(input, axis)
-    num_splits = _calculate_num_splits(input, split_size_or_sections, as_int(valid_axis))
+    num_splits = _calculate_num_splits(input, split_size_or_sections, ensure_int(valid_axis))
 
     if isinstance(split_size_or_sections, int):
-        return _split_even(input, split_size_or_sections, as_int(valid_axis), as_int(num_splits))
-    return _split_sections(input, split_size_or_sections, as_int(valid_axis), as_int(num_splits))
+        return _split_even(input, split_size_or_sections, ensure_int(valid_axis), ensure_int(num_splits))
+    return _split_sections(input, split_size_or_sections, ensure_int(valid_axis), ensure_int(num_splits))
 
 
 def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
@@ -179,14 +200,15 @@ def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
         Sequence: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        datas = backend.execute_op("Unstack", _get_attr(input, "data"), axis=axis) if _has_attr(backend, "unstack") else backend.execute_op("Moveaxis", _get_attr(input, "data"), axis, 0)
-        input_data = _get_attr(input, "data", input)
-        input_dtype = _get_attr(input, "dtype", _get_attr(backend.array(input_data), "dtype"))
-        input_device = _get_attr(input, "device", config.default_device)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), input_dtype, input_device)) for d in _get_attr(datas, "__iter__")())
+        backend: TensorOrScalar = get_active_backend()
+        act_backend = get_active_backend()
+        in_data = extract_data(input)
+        datas = act_backend.execute_op("Unstack", in_data, axis=axis) if isinstance(backend, _UnstackBackendProtocol) else act_backend.execute_op("Moveaxis", in_data, axis, 0)
+        input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(act_backend.array(in_data), None))
+        input_device = extract_device(input, config.default_device)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
     inputs = [input]
-    base_shape = _get_attr(inputs[0], "shape") if len(inputs) > 0 else ()
+    base_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
     rank = len(base_shape)
     norm_axis = axis if axis >= 0 else axis + rank
     if rank > 0 and 0 <= norm_axis < rank:
@@ -201,7 +223,7 @@ def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
             inputs,
             {"axis": axis, "index": i},
             out_shape,
-            _get_attr(inputs[0], "dtype") if len(inputs) > 0 else DType.Float32,
+            _extract_shape_dtype(inputs[0], DType.Float32) if len(inputs) > 0 else DType.Float32,
         )
         for i in range(n_slices)
     )
@@ -224,15 +246,15 @@ def array_split(
     """
     if config.eager_mode:
         backend = get_active_backend()
-        datas = backend.execute_op("ArraySplit", _get_attr(ary, "data"), indices_or_sections, axis=axis)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), _get_attr(ary, "dtype"), _get_attr(ary, "device"))) for d in _get_attr(datas, "__iter__")())
+        datas = backend.execute_op("ArraySplit", extract_data(ary), indices_or_sections, axis=axis)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
     return (
         _emit_shape_node(
             "ArraySplit",
             [ary],
             {"indices_or_sections": indices_or_sections, "axis": axis},
-            _get_attr(ary, "shape"),
-            _get_attr(ary, "dtype"),
+            extract_shape(ary),
+            _extract_shape_dtype(ary, None),
         ),
     )
 
@@ -249,23 +271,24 @@ def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """
     if config.eager_mode:
         backend = get_active_backend()
-        datas = backend.execute_op("Vsplit", _get_attr(ary, "data"), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), _get_attr(ary, "dtype"), _get_attr(ary, "device"))) for d in _get_attr(datas, "__iter__")())
+        datas = backend.execute_op("Vsplit", extract_data(ary), indices_or_sections)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
 
+    ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Vsplit", [ary], {"indices_or_sections": indices_or_sections}, _get_attr(ary, "shape"), _get_attr(ary, "dtype"))
+    node = _emit_shape_node("Vsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
     out_tensors = []
 
     # Calculate output shapes
     out_shapes = []
     if isinstance(indices_or_sections, int):
-        s = list(_get_attr(ary, "shape"))
+        s = list(ary_shape)
         if len(s) > 0:
             s[0] = s[0] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
         # Just approximate
-        out_shapes = [_get_attr(ary, "shape")] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary_shape] * num_splits
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -287,21 +310,22 @@ def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """
     if config.eager_mode:
         backend = get_active_backend()
-        datas = backend.execute_op("Hsplit", _get_attr(ary, "data"), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), _get_attr(ary, "dtype"), _get_attr(ary, "device"))) for d in _get_attr(datas, "__iter__")())
+        datas = backend.execute_op("Hsplit", extract_data(ary), indices_or_sections)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
 
+    ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Hsplit", [ary], {"indices_or_sections": indices_or_sections}, _get_attr(ary, "shape"), _get_attr(ary, "dtype"))
+    node = _emit_shape_node("Hsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
     out_tensors = []
 
     out_shapes = []
     if isinstance(indices_or_sections, int):
-        s = list(_get_attr(ary, "shape"))
+        s = list(ary_shape)
         if len(s) > 1:
             s[1] = s[1] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [_get_attr(ary, "shape")] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary_shape] * num_splits
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -323,21 +347,22 @@ def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """
     if config.eager_mode:
         backend = get_active_backend()
-        datas = backend.execute_op("Dsplit", _get_attr(ary, "data"), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(_get_attr(d, "shape"), _get_attr(ary, "dtype"), _get_attr(ary, "device"))) for d in _get_attr(datas, "__iter__")())
+        datas = backend.execute_op("Dsplit", extract_data(ary), indices_or_sections)
+        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
 
+    ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Dsplit", [ary], {"indices_or_sections": indices_or_sections}, _get_attr(ary, "shape"), _get_attr(ary, "dtype"))
+    node = _emit_shape_node("Dsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
     out_tensors = []
 
     out_shapes = []
     if isinstance(indices_or_sections, int):
-        s = list(_get_attr(ary, "shape"))
+        s = list(ary_shape)
         if len(s) > 2:
             s[2] = s[2] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [_get_attr(ary, "shape")] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary_shape] * num_splits
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -362,7 +387,7 @@ class GetItemOp(OpDef):
             tuple[int, ...]: Inferred shape.
         """
         x = args[0] if args else None
-        return tuple(_get_attr(x, "shape", ()))
+        return extract_shape(x)
 
 
 old_split = split
@@ -382,6 +407,6 @@ class Unstack(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        input_shape = args[0].shape
-        axis = kwargs.get("axis", 0)
-        return tuple([as_tensor(input_shape)[: int(as_int(axis))] + as_tensor(input_shape)[int(as_tensor(axis) + 1) :]] * int(as_int(_get_attr(input_shape, "__getitem__")(axis))))
+        input_shape = extract_shape(args[0])
+        ax = int(ensure_int(kwargs.get("axis", 0)))
+        return tuple([ensure_eager_tensor(input_shape)[:ax] + ensure_eager_tensor(input_shape)[ax + 1 :]] * int(input_shape[ax]))

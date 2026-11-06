@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import typing  # noqa: F401
-from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.splitting import split
@@ -40,7 +39,8 @@ def lstm_cell(
         z = add(z, bias)
 
     # Split z into i, f, c_bar, o
-    i, f, c_bar, o = _cast_val(TypedVariadicCallable[Sequence[Tensor]], split)(z, 4, axis=-1)
+    parts = [ensure_tensor(t) for t in ensure_eager_list(split(z, 4, axis=-1))]
+    i, f, c_bar, o = parts[0], parts[1], parts[2], parts[3]
 
     i = _sigmoid(i)
     f = _sigmoid(f)

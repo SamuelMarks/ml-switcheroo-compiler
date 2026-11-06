@@ -10,8 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_partition, _mlx_zeros
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -36,7 +35,7 @@ def test_mlx_eager_topk_fallback(monkeypatch: EagerTensorProtocol) -> None:
         monkeypatch: Test parameter `monkeypatch`.
     """
     mock_backend_module = MagicMock()
-    if _has_attr(mock_backend_module, "topk"):
+    if has_backend_member(mock_backend_module, "topk"):
         del mock_backend_module.topk
     mock_backend_module.partition = MagicMock(return_value=np.array([[1, 2, 3]]))
     res = _mlx_partition(mock_backend_module, np.array([[3, 1, 2]]), k=2, return_indices=False)
@@ -60,7 +59,7 @@ def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) ->
             return "int32"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=as_tensor(dtype_obj)) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=ensure_eager_tensor(dtype_obj)) == "mock_zeros"
 
 
 def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: EagerTensorProtocol) -> None:
@@ -72,7 +71,7 @@ def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: EagerTensorProtocol
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_zeros
 
     mock_backend_module = MagicMock()
-    if _has_attr(mock_backend_module, "float64"):
+    if has_backend_member(mock_backend_module, "float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_mlx_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
@@ -88,7 +87,7 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_zeros
 
     mock_backend_module = MagicMock()
-    if _has_attr(mock_backend_module, "float64"):
+    if has_backend_member(mock_backend_module, "float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
@@ -101,7 +100,7 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
             return "float64"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=as_tensor(dtype_obj)) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=ensure_eager_tensor(dtype_obj)) == "mock_zeros"
 
 
 def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorProtocol) -> None:
@@ -111,7 +110,7 @@ def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorPr
         monkeypatch: Test parameter `monkeypatch`.
     """
     mock_backend_module = MagicMock()
-    if _has_attr(mock_backend_module, "float64"):
+    if has_backend_member(mock_backend_module, "float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
@@ -145,9 +144,9 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
     from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        as_callable(execute_op)(None, "FakeOp", dim=1)
+        ensure_callable(execute_op)(None, "FakeOp", dim=1)
     global_eager_registry.register("TestGlobalMlx")(lambda *args, **kwargs: "global_hit")
-    assert as_callable(execute_op)(None, "TestGlobalMlx") == "global_hit"
+    assert ensure_callable(execute_op)(None, "TestGlobalMlx") == "global_hit"
 
     class MockMXMap:
         """Test class MockMXMap."""
@@ -166,11 +165,10 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
 
     import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
 
-    orig_mx = as_tensor(_get_attr(mx_eager, "mx"))
-    _set_attr(mx_eager, "mx", MockMXMap())
-    _get_attr(_state, "update")({"MockMXMap": MockMXMap, "execute_op": execute_op, "global_eager_registry": global_eager_registry, "mx_eager": mx_eager})
-    _get_attr(_state, "update")({"orig_mx": orig_mx})
-    _state.update(_caller_locals())
+    orig_mx = ensure_eager_tensor(ensure_eager_tensor(mx_eager).mx)
+    ensure_mutable(mx_eager).mx = ensure_eager_tensor(MockMXMap())
+    _state.update(ensure_tensor_dict({"MockMXMap": MockMXMap, "execute_op": execute_op, "global_eager_registry": global_eager_registry, "mx_eager": mx_eager}))
+    _state.update(ensure_tensor_dict({"orig_mx": orig_mx}))
 
 
 def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -185,7 +183,7 @@ def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtoco
         assert execute_op(None, "Sub") == "sub"
         assert execute_op(None, "Div") == "div"
     finally:
-        _set_attr(mx_eager, "mx", orig_mx)
+        ensure_mutable(mx_eager).mx = ensure_eager_tensor(orig_mx)
 
     class MockMXLinalg:
         """Test class MockMXLinalg."""
@@ -199,11 +197,11 @@ def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtoco
 
         linalg = MockMXLinalg()
 
-    _set_attr(mx_eager, "mx", MockMXMain())
+    ensure_mutable(mx_eager).mx = ensure_eager_tensor(MockMXMain())
     try:
         assert execute_op(None, "MyLinalgFunc") == "linalg"
     finally:
-        _set_attr(mx_eager, "mx", orig_mx)
+        ensure_mutable(mx_eager).mx = ensure_eager_tensor(orig_mx)
     func = mx_eager.mlx_eager_registry.get("ScatterNd")
 
     class DummyShape:
@@ -211,8 +209,8 @@ def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtoco
 
         data = [1, 2]
 
-    _get_attr(_state, "update")({"DummyShape": DummyShape, "MockMXLinalg": MockMXLinalg, "MockMXMain": MockMXMain, "func": func})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "MockMXLinalg": MockMXLinalg, "MockMXMain": MockMXMain, "func": func}))
+    _state.update(ensure_tensor_dict({"execute_op": execute_op, "mx_eager": mx_eager, "orig_mx": orig_mx}))
 
 
 def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -264,13 +262,13 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
                     """
                     pass
 
-            return as_tensor(DummyRes())
+            return ensure_eager_tensor(DummyRes())
 
-    assert as_callable(func)(as_callable(MockMXScatter)(), as_callable(DummyIndices)(), as_callable(DummyUpdates)(), as_callable(DummyShape)()) is not None
-    assert as_callable(func)(as_callable(MockMXScatter)(), as_callable(DummyIndices)(), as_callable(DummyUpdates)(), shape=as_callable(DummyShape)()) is not None
+    assert ensure_callable(func)(ensure_callable(MockMXScatter)(), ensure_callable(DummyIndices)(), ensure_callable(DummyUpdates)(), ensure_callable(DummyShape)()) is not None
+    assert ensure_callable(func)(ensure_callable(MockMXScatter)(), ensure_callable(DummyIndices)(), ensure_callable(DummyUpdates)(), shape=ensure_callable(DummyShape)()) is not None
     func = mx_eager.mlx_eager_registry.get("Reshape")
-    _get_attr(_state, "update")({"DummyIndices": DummyIndices, "DummyUpdates": DummyUpdates, "MockMXScatter": MockMXScatter, "func": func})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyIndices": DummyIndices, "DummyUpdates": DummyUpdates, "MockMXScatter": MockMXScatter, "func": func}))
+    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "mx_eager": mx_eager}))
 
 
 def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -300,8 +298,8 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             """
             return shape
 
-    assert as_callable(func)(as_callable(MockMXReshape)(), "x", as_callable(DummyShapeList)()) == [1, 2]
-    assert as_callable(func)(as_callable(MockMXReshape)(), input="x", shape=as_callable(DummyShapeList)()) == [1, 2]
+    assert ensure_callable(func)(ensure_callable(MockMXReshape)(), "x", ensure_callable(DummyShapeList)()) == [1, 2]
+    assert ensure_callable(func)(ensure_callable(MockMXReshape)(), input="x", shape=ensure_callable(DummyShapeList)()) == [1, 2]
 
     class DummyMXWithFloat32:
         """Test class DummyMXWithFloat32."""
@@ -317,10 +315,10 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             """
             return dtype
 
-    assert as_callable(mx_eager._mlx_zeros)(as_callable(DummyMXWithFloat32)(), [1], dtype="bfloat16") == "mock_float32"
+    assert ensure_callable(mx_eager._mlx_zeros)(ensure_callable(DummyMXWithFloat32)(), [1], dtype="bfloat16") == "mock_float32"
     func = mx_eager.mlx_eager_registry.get("NanToNum")
-    _get_attr(_state, "update")({"DummyMXWithFloat32": DummyMXWithFloat32, "DummyShapeList": DummyShapeList, "MockMXReshape": MockMXReshape, "func": func})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyMXWithFloat32": DummyMXWithFloat32, "DummyShapeList": DummyShapeList, "MockMXReshape": MockMXReshape, "func": func}))
+    _state.update(ensure_tensor_dict({"mx_eager": mx_eager}))
 
 
 def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -343,7 +341,7 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
             """
             return kwargs
 
-    res = as_callable(func)(as_callable(MockMXNan)(), "x", nan=None, posinf=None)
+    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", nan=None, posinf=None)
     assert "nan" not in res or res["nan"] is None
 
     class DummyItemData:
@@ -358,11 +356,11 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
 
         data = DummyData()
 
-    res = as_callable(func)(as_callable(MockMXNan)(), "x", posinf=as_callable(DummyItemData)())
+    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", posinf=ensure_callable(DummyItemData)())
     assert res["posinf"] == 1.0
-    res = as_callable(func)(as_callable(MockMXNan)(), "x", invalid_key=1.0)
+    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", invalid_key=1.0)
     assert "invalid_key" not in res
-    _get_attr(_state, "update")({"DummyItemData": DummyItemData, "MockMXNan": MockMXNan, "res": res})
+    _state.update(ensure_tensor_dict({"DummyItemData": DummyItemData, "MockMXNan": MockMXNan, "res": res}))
 
 
 def test_mlx_eager_missing_coverage() -> None:

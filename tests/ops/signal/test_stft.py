@@ -8,11 +8,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.signal import Istft, Stft, istft, stft
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -26,11 +25,11 @@ def test_stft_istft_eager() -> None:
 
     # stft
     Zxx = stft(x, nfft=16, noverlap=8)
-    assert as_tensor(_get_attr(Zxx, "shape")) == (10, 9, 11)
+    assert ensure_eager_tensor(Zxx).shape == (10, 9, 11)
 
     # istft
-    xrec = as_callable(istft)(Zxx, nfft=16, noverlap=8)
-    assert as_tensor(_get_attr(xrec, "shape")) == (10, 96)  # (11 - 1) * 8 + 16 = 80 + 16 = 96
+    xrec = ensure_callable(istft)(Zxx, nfft=16, noverlap=8)
+    assert ensure_eager_tensor(xrec).shape == (10, 96)  # (11 - 1) * 8 + 16 = 80 + 16 = 96
 
 
 def test_stft_istft_tracing() -> None:
@@ -42,44 +41,44 @@ def test_stft_istft_tracing() -> None:
     global_tracing_state.start_tracing()
     # stft
     Zxx = stft(x, nfft=16, noverlap=8)
-    assert as_tensor(_get_attr(Zxx, "shape")) == (10, 9, 11)
+    assert ensure_eager_tensor(Zxx).shape == (10, 9, 11)
 
     # istft
-    xrec = as_callable(istft)(Zxx, nfft=16, noverlap=8)
-    assert as_tensor(_get_attr(xrec, "shape")) == (10, 96)
+    xrec = ensure_callable(istft)(Zxx, nfft=16, noverlap=8)
+    assert ensure_eager_tensor(xrec).shape == (10, 96)
     global_tracing_state.stop_tracing()
 
 
 def test_stft_istft_infer_shape_invalid() -> None:
     """Test coverage for invalid shapes in infer_shape."""
     s = Stft()
-    assert as_callable(s.infer_shape)(None, nfft=16, noverlap=8) == ()
+    assert ensure_callable(s.infer_shape)(None, nfft=16, noverlap=8) == ()
 
     class Dummy:
         """Test class Dummy."""
 
         pass
 
-    assert as_callable(s.infer_shape)(as_callable(Dummy)(), nfft=16, noverlap=8) == ()
+    assert ensure_callable(s.infer_shape)(ensure_callable(Dummy)(), nfft=16, noverlap=8) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = ()
 
-    assert as_callable(s.infer_shape)(as_callable(DummyShape)(), nfft=16, noverlap=8) == ()
+    assert ensure_callable(s.infer_shape)(ensure_callable(DummyShape)(), nfft=16, noverlap=8) == ()
 
     i = Istft()
-    assert as_callable(i.infer_shape)(None, nfft=16, noverlap=8) == ()
-    assert as_callable(i.infer_shape)(as_callable(Dummy)(), nfft=16, noverlap=8) == ()
-    assert as_callable(i.infer_shape)(as_callable(DummyShape)(), nfft=16, noverlap=8) == ()
+    assert ensure_callable(i.infer_shape)(None, nfft=16, noverlap=8) == ()
+    assert ensure_callable(i.infer_shape)(ensure_callable(Dummy)(), nfft=16, noverlap=8) == ()
+    assert ensure_callable(i.infer_shape)(ensure_callable(DummyShape)(), nfft=16, noverlap=8) == ()
 
     class DummyShape1D:
         """Test class DummyShape1D."""
 
         shape = (10,)
 
-    assert as_callable(i.infer_shape)(as_callable(DummyShape1D)(), nfft=16, noverlap=8) == ()
+    assert ensure_callable(i.infer_shape)(ensure_callable(DummyShape1D)(), nfft=16, noverlap=8) == ()
 
 
 def test_stft_istft_invalid_overlap() -> None:
@@ -93,7 +92,7 @@ def test_stft_istft_invalid_overlap() -> None:
 
     with pytest.raises(ValueError, match="noverlap must be less than nfft"):
         Zxx = stft(x, nfft=16, noverlap=8)
-        as_callable(istft)(Zxx, nfft=16, noverlap=16)
+        ensure_callable(istft)(Zxx, nfft=16, noverlap=16)
 
     config.eager_mode = False
     global_tracing_state.start_tracing()

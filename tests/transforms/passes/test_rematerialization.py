@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_rematerialization_pass() -> None:
@@ -15,7 +15,7 @@ def test_rematerialization_pass() -> None:
     assert _estimate_memory(n1) == 4.0
 
     n2 = IRNode(id="n2", op_type="Add")
-    _obj_set_attr(n2, "shape_metadata", 5)
+    ensure_mutable(n2).shape_metadata = ensure_eager_tensor(5)
     assert _estimate_memory(n2) == 4.0
 
     n3 = IRNode(id="n3", op_type="Add")
@@ -127,7 +127,7 @@ def test_rematerialization_branch_coverage() -> None:
 
     # test _estimate_compute with int shape
     n_int = IRNode(id="n_int", op_type="Add")
-    _obj_set_attr(n_int, "shape_metadata", 5)
+    ensure_mutable(n_int).shape_metadata = ensure_eager_tensor(5)
     assert _estimate_compute(n_int, {}) == 1.0
 
     g = IRGraph()

@@ -14,7 +14,15 @@ from types import ModuleType
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bytes, as_int_list, as_str, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    ensure_bytes,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_int_list,
+    ensure_str,
+)
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -23,35 +31,106 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
     query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _is_rocm_tpl_opt(val: EagerValue) -> typing.TypeGuard[HardwareTemplateConfig | None]:
+    """Type guard narrowing `val` to `HardwareTemplateConfig | None`.
+
+    Args:
+        val (EagerValue): Candidate template entry.
+
+    Returns:
+        bool: Always True.
+    """
+    return val is None or isinstance(val, (HardwareTemplateConfig, dict))
+
+
+def _as_rocm_tpl_opt(val: EagerValue) -> HardwareTemplateConfig | None:
+    """Narrow `val` to `HardwareTemplateConfig | None`.
+
+    Args:
+        val (EagerValue): Candidate template entry.
+
+    Returns:
+        HardwareTemplateConfig | None: Narrowed template.
+    """
+    assert _is_rocm_tpl_opt(val)
+    return val
+
+
+def _node_inputs_list(node: EagerValue) -> list[str]:
+    """Return string list of input IDs on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        list[str]: Node input IDs.
+    """
+    raw = get_backend_member(node, "inputs", [])
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    return []
+
+
+def _graph_str_list(graph: EagerValue, attr: str) -> list[str]:
+    """Return string list attribute (`inputs` or `outputs`) on `graph`.
+
+    Args:
+        graph (EagerValue): Target graph.
+        attr (str): Attribute name.
+
+    Returns:
+        list[str]: List of string identifiers.
+    """
+    raw = get_backend_member(graph, attr, [])
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    return []
+
+
+def _graph_nodes_values(graph: IRGraph) -> list[IRNode]:
+    """Return list of nodes from `graph.nodes`.
+
+    Args:
+        graph (IRGraph): Target graph.
+
+    Returns:
+        list[IRNode]: Graph nodes.
+    """
+    return list(graph.nodes.values()) if get_backend_member(graph, "nodes", None) else []
+
 
 cupy: ModuleType | None = None
 
 KernelArgType = typing.Union[ctypes.c_void_p, int, float, str, "None"]
 
 
-def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
+def _calculate_node_bytes(node: EagerTensorProtocol | IRNode) -> tuple[int, int]:
     """Calculate total number of elements and allocated byte size for an IRNode.
 
     Args:
-        node (IRNode): The IR node.
+        node (EagerTensorProtocol | IRNode): The IR node.
 
     Returns:
         tuple[int, int]: (num_elements, total_bytes).
     """
-    shape = _get_attr(node, "shape_metadata", None)
-    if shape:
+    shape = get_backend_member(node, "shape_metadata", None)
+    if isinstance(shape, (list, tuple)) and shape:
         num_elements = 1
         for d in shape:
-            num_elements *= int(d)
+            if isinstance(d, (int, float, str)):
+                num_elements *= int(d)
     else:
         num_elements = 1024
     bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if _has_attr(node, "attributes") else "float32"
+    raw_attrs = get_backend_member(node, "attributes", {})
+    dtype = raw_attrs.get("dtype", "float32") if isinstance(raw_attrs, dict) else "float32"
     if dtype in ("float64", "int64", "double"):
         bytes_per_elem = 8
     elif dtype in ("float16", "int16", "bfloat16"):
@@ -90,14 +169,14 @@ def _prepare_rocm_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) ->
     input_buffers: dict[str, bytes] = {}
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if _has_attr(arg, "tobytes"):
-            input_buffers[input_name] = _get_attr(arg, "tobytes")()
+        if has_backend_member(arg, "tobytes"):
+            input_buffers[input_name] = ensure_bytes(get_backend_member(arg, "tobytes")())
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif _has_attr(arg, "data") and _has_attr(_get_attr(arg, "data"), "tobytes"):
-            input_buffers[input_name] = _get_attr(arg, "data").tobytes()
+        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
+            input_buffers[input_name] = ensure_bytes(get_backend_member(arg, "data").tobytes())
         else:
-            input_buffers[input_name] = as_bytes(arg)
+            input_buffers[input_name] = ensure_bytes(arg)
     return input_buffers
 
 
@@ -113,11 +192,11 @@ def _evaluate_rocm_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: _get_attr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
-    return as_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+    return ensure_eager_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 ROCM_SYNTH_MATH_MAP: dict[str, str] = {
@@ -190,17 +269,21 @@ class RocmCodeGenerator(BaseGenerator):
         yaml_path: str = os.path.join(os.path.dirname(__file__), "rocm_templates.yaml")
         self.config = load_hardware_templates(yaml_dir, yaml_path)
 
-    def _ensure_template(self, node: IRNode, node_idx: int) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
+    def _ensure_template(
+        self,
+        node: EagerTensorProtocol | IRNode,
+        node_idx: int,
+    ) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
         Args:
-            node (IRNode): Target IR node.
+            node (EagerTensorProtocol | IRNode): Target IR node.
             node_idx (int): Current node index.
 
         Returns:
             Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
         """
-        op_type = _get_attr(node, "op_type", "")
+        op_type = get_backend_member(node, "op_type", "")
         if op_type.lower() in ("input", "output", "fusedelementwise"):
             return None
         if "unsupported" in op_type.lower():
@@ -208,8 +291,10 @@ class RocmCodeGenerator(BaseGenerator):
         tpl = self.config.templates.get(op_type.lower())
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = _get_attr(node, "inputs", []) or []
-            scalar_expr = _get_attr(node, "attributes", {}).get("scalar_expr")
+            inps = _node_inputs_list(node)
+            raw_attrs = get_backend_member(node, "attributes", {})
+            raw_se = raw_attrs.get("scalar_expr") if isinstance(raw_attrs, dict) else None
+            scalar_expr = str(raw_se) if raw_se is not None else None
             body = _synthesize_rocm_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
@@ -221,7 +306,7 @@ class RocmCodeGenerator(BaseGenerator):
 
     def _free_dead_buffers(
         self,
-        node: IRNode,
+        node: EagerTensorProtocol | IRNode,
         node_buffers: dict[str, str],
         last_consumer: dict[str, str],
         outputs_set: set[str],
@@ -231,14 +316,14 @@ class RocmCodeGenerator(BaseGenerator):
         """Emit hipFree calls for dead input buffers whose lifetime has ended.
 
         Args:
-            node (IRNode): The active IRNode.
+            node (EagerTensorProtocol | IRNode): The active IRNode.
             node_buffers (dict[str, str]): Variable map for allocated device buffers.
             last_consumer (dict[str, str]): Liveness map for last consumers.
             outputs_set (set[str]): Graph output node names.
             inputs_set (set[str]): Graph input node names.
             hip (list[str]): Output ROCm HIP source lines.
         """
-        for inp in _get_attr(node, "inputs", []):
+        for inp in _node_inputs_list(node):
             if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
                 buf_to_free = node_buffers.get(inp)
                 if buf_to_free:
@@ -246,7 +331,7 @@ class RocmCodeGenerator(BaseGenerator):
 
     def _allocate_node_outputs(
         self,
-        node: IRNode,
+        node: EagerTensorProtocol | IRNode,
         node_idx: int,
         node_buffers: dict[str, str],
         bytes_alloc: int,
@@ -255,7 +340,7 @@ class RocmCodeGenerator(BaseGenerator):
         """Allocate device buffers for single or multiple node outputs.
 
         Args:
-            node (IRNode): Target IR node.
+            node (EagerTensorProtocol | IRNode): Target IR node.
             node_idx (int): Current node index.
             node_buffers (dict[str, str]): Variable map for allocated device buffers.
             bytes_alloc (int): Total allocated bytes per output buffer.
@@ -264,7 +349,8 @@ class RocmCodeGenerator(BaseGenerator):
         Returns:
             str: Output argument name or comma-separated names.
         """
-        raw_outs = _get_attr(node, "attributes", {}).get("outputs") or (node.outputs if _has_attr(node, "outputs") and len(node.outputs) > 1 else None)
+        raw_attrs = get_backend_member(node, "attributes", {})
+        raw_outs = (raw_attrs.get("outputs") if isinstance(raw_attrs, dict) else None) or (node.outputs if has_backend_member(node, "outputs") and len(node.outputs) > 1 else None)
         if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
             out_names: list[str] = []
             for out_idx, out_id in enumerate(raw_outs):
@@ -273,11 +359,11 @@ class RocmCodeGenerator(BaseGenerator):
                 out_names.append(sub_out_name)
                 hip.append(f"    float* {sub_out_name};")
                 hip.append(f"    HIP_CHECK(hipMalloc(&{sub_out_name}, {bytes_alloc}));")
-            node_buffers[node.id] = out_names[0]
+            node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_names[0]
             return ", ".join(out_names)
 
         out_name = f"d_out_{node_idx}"
-        node_buffers[node.id] = out_name
+        node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_name
         hip.append(f"    float* {out_name};")
         hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
         return out_name
@@ -303,10 +389,10 @@ class RocmCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             hip (list[str]): Output ROCm HIP source lines.
         """
-        op_type = _get_attr(node, "op_type", "")
+        op_type = get_backend_member(node, "op_type", "")
         if op_type.lower() == "fusedelementwise":
             out_name = f"d_out_{node_idx}"
-            node_buffers[node.id] = out_name
+            node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_name
             num_elements, bytes_alloc = _calculate_node_bytes(node)
             hip.append(f"    float* {out_name};")
             hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
@@ -324,13 +410,13 @@ class RocmCodeGenerator(BaseGenerator):
             return
         num_elements, bytes_alloc = _calculate_node_bytes(node)
         out_name = self._allocate_node_outputs(node, node_idx, node_buffers, bytes_alloc, hip)
-        wg = as_int_list(_get_attr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = ensure_int_list(get_backend_member(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
         (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
         hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
-        kernel_fn = _extract_kernel_name(_get_attr(tpl, "get")("body", ""), op_type.lower())
+        kernel_fn = _extract_kernel_name(ensure_str(get_backend_member(tpl, "get")("body", "")), op_type.lower())
         hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
         hip.append("    HIP_CHECK(hipGetLastError());")
 
@@ -371,12 +457,14 @@ class RocmCodeGenerator(BaseGenerator):
             "",
         ]
 
-        for node_idx, node in enumerate(_get_attr(self.graph, "nodes", {}).values()):
-            op_type = _get_attr(node, "op_type", "")
+        for node_idx, node in enumerate(_graph_nodes_values(self.graph)):
+            op_type = get_backend_member(node, "op_type", "")
             if op_type.lower() == "fusedelementwise":
-                scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
-                in_params = ", ".join([f"const float* in_{k}" for k in range(len(node.inputs))])
-                load_lines = "\n".join([f"        float in{k} = in_{k}[idx];" for k in range(len(node.inputs))])
+                raw_attrs = get_backend_member(node, "attributes", {})
+                scalar_expr = str(raw_attrs.get("scalar_expr", "in0")) if isinstance(raw_attrs, dict) else "in0"
+                in_list = _node_inputs_list(node)
+                in_params = ", ".join([f"const float* in_{k}" for k in range(len(in_list))])
+                load_lines = "\n".join([f"        float in{k} = in_{k}[idx];" for k in range(len(in_list))])
                 hip.append(f"__global__ void fused_elementwise_kernel_{node_idx}({in_params}, float* out, int N) {{")
                 hip.append("    int idx = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;")
                 hip.append("    if (idx < N) {")
@@ -388,19 +476,21 @@ class RocmCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    hip.append(_get_attr(tpl, "get")("body", ""))
+                    hip.append(ensure_str(get_backend_member(tpl, "get")("body", "")))
 
         hip.append("void evaluate_rocm(const std::vector<float*>& inputs, std::vector<float*>& outputs) {")
         hip.append("    // 1. Dynamic Memory Allocation (Host to Device)")
 
-        node_buffers: dict[str, str] = {inp_name: f"inputs[{i}]" for i, inp_name in enumerate(_get_attr(self.graph, "inputs", []))}
+        graph_inps = _graph_str_list(self.graph, "inputs")
+        graph_outs = _graph_str_list(self.graph, "outputs")
+        node_buffers: dict[str, str] = {inp_name: f"inputs[{i}]" for i, inp_name in enumerate(graph_inps)}
         last_consumer = compute_liveness(self.graph)
-        outputs_set = set(_get_attr(self.graph, "outputs", []))
-        inputs_set = set(_get_attr(self.graph, "inputs", []))
+        outputs_set: set[str] = set(graph_outs)
+        inputs_set: set[str] = set(graph_inps)
 
         node_idx = 0
-        for node in _get_attr(self.graph, "nodes", {}).values():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in _graph_nodes_values(self.graph):
+            if get_backend_member(node, "op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, hip)
             node_idx += 1
@@ -441,9 +531,9 @@ class RocmCodeGenerator(BaseGenerator):
                 try:
                     runner_inst = ROCmRunner()
                     input_buffers = _prepare_rocm_input_buffers(graph, args)
-                    out_dict = _get_attr(runner_inst, "execute_graph")(graph, input_buffers)
+                    out_dict = get_backend_member(runner_inst, "execute_graph")(graph, input_buffers)
                     if len(graph.outputs) == 1:
-                        return as_tensor(out_dict.get(graph.outputs[0]))
+                        return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -474,14 +564,14 @@ def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ct
         if isinstance(a, ctypes.c_void_p):
             c_args.append(a)
         elif isinstance(a, int):
-            c_args.append(ctypes.cast(ctypes.byref(ctypes.c_int32(a)), ctypes.c_void_p))
+            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_int32(a))))
         elif isinstance(a, float):
-            c_args.append(ctypes.cast(ctypes.byref(ctypes.c_float(a)), ctypes.c_void_p))
-        elif _has_attr(a, "value"):
-            c_args.append(ctypes.c_void_p(_get_attr(a, "value")))
+            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_float(a))))
+        elif has_backend_member(a, "value"):
+            c_args.append(ctypes.c_void_p(ensure_int(get_backend_member(a, "value"))))
         else:
             c_args.append(ctypes.c_void_p(int(a) if a is not None else 0))
-    return (ctypes.c_void_p * len(c_args))(*[ctypes.cast(ctypes.byref(arg_obj), ctypes.c_void_p).value for arg_obj in c_args])
+    return (ctypes.c_void_p * len(c_args))(*[ctypes.c_void_p(ctypes.addressof(arg_obj)).value for arg_obj in c_args])
 
 
 class ROCmRunner:
@@ -496,16 +586,16 @@ class ROCmRunner:
         """
         if cupy is not None:
             try:
-                return bool(_has_attr(cupy.cuda, "is_hip") and cupy.cuda.is_hip)
+                return bool(has_backend_member(cupy.cuda, "is_hip") and cupy.cuda.is_hip)
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         try:
             hip_path = ctypes.util.find_library("amdhip64") or ctypes.util.find_library("hip_hcc")
             if hip_path:
                 lib = ctypes.cdll.LoadLibrary(hip_path)
-                if _has_attr(lib, "hipInit") and lib.hipInit(0) == 0:
+                if has_backend_member(lib, "hipInit") and lib.hipInit(0) == 0:
                     count = ctypes.c_int()
-                    if _has_attr(lib, "hipGetDeviceCount") and lib.hipGetDeviceCount(ctypes.byref(count)) == 0:
+                    if has_backend_member(lib, "hipGetDeviceCount") and lib.hipGetDeviceCount(ctypes.byref(count)) == 0:
                         return count.value > 0
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -522,7 +612,7 @@ class ROCmRunner:
         self.rocm_lib: ctypes.CDLL | None = None
         self._ctx: ctypes.c_void_p | None = None
 
-        if cupy is not None and _get_attr(_get_attr(cupy, "cuda", None), "is_hip", False):
+        if cupy is not None and get_backend_member(get_backend_member(cupy, "cuda", None), "is_hip", False):
             self.mode = "cupy"
         else:
             self.mode = "ctypes"
@@ -563,11 +653,11 @@ class ROCmRunner:
             device_ptr (ctypes.c_void_p): Device pointer.
             host_data (bytes): Data to write.
         """
-        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy" and cupy is not None:
-            arr = cupy.asarray(memoryview(host_data).cast("B"))
+            arr = cupy.asarray(bytearray(host_data), dtype="uint8")
             dst = cupy.ndarray(arr.shape, dtype=arr.dtype, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, arr.nbytes, device_ptr), 0))
             dst.set(arr)
             return
@@ -587,13 +677,13 @@ class ROCmRunner:
         Returns:
             bytes: Read data.
         """
-        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
             return b"\x00" * size
 
         if self.mode == "cupy" and cupy is not None:
             src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
             arr = src.get()
-            return as_bytes(arr.tobytes())
+            return ensure_bytes(arr.tobytes())
 
         if self.rocm_lib:
             host_data = ctypes.create_string_buffer(size)
@@ -609,7 +699,7 @@ class ROCmRunner:
         Args:
             device_ptr (ctypes.c_void_p): Device pointer.
         """
-        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy":
@@ -660,7 +750,7 @@ class ROCmRunner:
             log_buf = ctypes.create_string_buffer(log_size.value)
             hiprtc_lib.hiprtcGetProgramLog(prog, log_buf)
             log_msg = log_buf.value.decode("utf-8", errors="replace")
-            if _has_attr(hiprtc_lib, "hiprtcDestroyProgram"):
+            if has_backend_member(hiprtc_lib, "hiprtcDestroyProgram"):
                 hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
             raise RuntimeError(f"HIPRTC compilation failed: {log_msg}")
 
@@ -668,7 +758,7 @@ class ROCmRunner:
         hiprtc_lib.hiprtcGetCodeSize(prog, ctypes.byref(code_size))
         code_buf = ctypes.create_string_buffer(code_size.value)
         hiprtc_lib.hiprtcGetCode(prog, code_buf)
-        if _has_attr(hiprtc_lib, "hiprtcDestroyProgram"):
+        if has_backend_member(hiprtc_lib, "hiprtcDestroyProgram"):
             hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
         return code_buf.raw
 
@@ -739,8 +829,8 @@ class ROCmRunner:
         """
         if self.mode == "cupy" and cupy is not None:
             stream = cupy.cuda.Stream()
-            ptr_val = _get_attr(stream, "ptr", 0)
-            return ctypes.c_void_p(int(ptr_val) if isinstance(ptr_val, (int, float)) else 1000)
+            ptr_val = get_backend_member(stream, "ptr", 1000)
+            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
         if self.rocm_lib:
             stream = ctypes.c_void_p()
             res = self.rocm_lib.hipStreamCreate(ctypes.byref(stream))
@@ -786,7 +876,7 @@ class ROCmRunner:
         if not self.rocm_lib:
             return
 
-        if _has_attr(self.rocm_lib, "hipDeviceSynchronize"):
+        if has_backend_member(self.rocm_lib, "hipDeviceSynchronize"):
             res = self.rocm_lib.hipDeviceSynchronize()
             if res != 0:
                 raise RuntimeError(f"hipDeviceSynchronize failed with error code {res}")
@@ -819,7 +909,7 @@ class ROCmRunner:
 
     def _dispatch_compute_node(
         self,
-        node: IRNode,
+        node: EagerTensorProtocol | IRNode,
         node_idx: int,
         generator: RocmCodeGenerator,
         tmp_code_path: str | None,
@@ -828,7 +918,7 @@ class ROCmRunner:
         """Dispatch compute kernel execution for a single IRNode.
 
         Args:
-            node (IRNode): The IR node to execute.
+            node (EagerTensorProtocol | IRNode): The IR node to execute.
             node_idx (int): Current node execution index.
             generator (RocmCodeGenerator): ROCm code generator holding op templates.
             tmp_code_path (Optional[str]): Compiled code object file path.
@@ -837,26 +927,26 @@ class ROCmRunner:
         num_elements, byte_size = _calculate_node_bytes(node)
         out_ptr = self.allocate_buffer(byte_size)
         if out_ptr is not None:
-            device_buffers[node.id] = out_ptr
+            device_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_ptr
 
-        op_type = _get_attr(node, "op_type", "").lower()
+        op_type = get_backend_member(node, "op_type", "").lower()
         if op_type == "fusedelementwise":
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
         else:
-            tpl_opt = _cast_val("HardwareTemplateConfig | None", generator.config.templates.get(op_type))
+            tpl_opt = _as_rocm_tpl_opt(generator.config.templates.get(op_type))
             if tpl_opt is None:
                 return
             tpl = tpl_opt
-            kernel_fn = _extract_kernel_name(as_str(tpl.get("body", "")), op_type)
+            kernel_fn = _extract_kernel_name(ensure_str(tpl.get("body", "")), op_type)
 
-        block_cfg, grid_cfg = query_optimal_launch_geometry(
-            _get_attr(node, "shape_metadata", None) or (num_elements,),
-        )
+        raw_sh = get_backend_member(node, "shape_metadata", None)
+        shape_arg: tuple[int | str, ...] = tuple(int(x) if isinstance(x, (int, float)) else str(x) for x in raw_sh) if isinstance(raw_sh, (list, tuple)) and raw_sh else (num_elements,)
+        block_cfg, grid_cfg = query_optimal_launch_geometry(shape_arg)
         block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
         grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
 
-        kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in _get_attr(node, "inputs", []) if inp in device_buffers]
+        kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in _node_inputs_list(node) if inp in device_buffers]
         if out_ptr is not None:
             kernel_args.append(out_ptr)
         kernel_args.append(num_elements)
@@ -897,8 +987,8 @@ class ROCmRunner:
                 tmp_code_path = tf.name
 
         try:
-            for node in _get_attr(graph, "nodes", {}).values():
-                if _get_attr(node, "op_type", "") == "Input":
+            for node in _graph_nodes_values(graph):
+                if get_backend_member(node, "op_type", "") == "Input":
                     continue
                 self._dispatch_compute_node(node, node_idx, generator, tmp_code_path, device_buffers)
                 node_idx += 1
@@ -908,12 +998,12 @@ class ROCmRunner:
             if tmp_code_path and os.path.exists(tmp_code_path):
                 os.remove(tmp_code_path)
 
-        outputs_set = _get_attr(graph, "outputs", [])
+        outputs_list = _graph_str_list(graph, "outputs")
         output_data: dict[str, bytes] = {}
 
-        for out_name in outputs_set:
-            node = graph.nodes.get(out_name)
-            _, byte_size = _calculate_node_bytes(node) if node else (1024, 4096)
+        for out_name in outputs_list:
+            out_node = graph.nodes.get(out_name)
+            _, byte_size = _calculate_node_bytes(out_node) if out_node else (1024, 4096)
             out_buf = device_buffers.get(out_name)
             if out_buf is not None:
                 output_data[out_name] = self.read_buffer(out_buf, byte_size)

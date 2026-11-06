@@ -8,18 +8,17 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp, register_vjp
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 try:
     get_vjp("ExpandDims")
 except ValueError:
 
-    @as_callable(register_vjp)("ExpandDims")
+    @ensure_callable(register_vjp)("ExpandDims")
     def _expand_vjp(graph: EagerValue, node: EagerValue, cotangent: EagerValue) -> EagerValue:
         """Test function _expand_vjp.
 
@@ -33,8 +32,8 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         sqz_id = uuid.uuid4().hex
-        sqz_node = as_callable(LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(_get_attr(node, "attributes")).get)("axis", 0)})
-        _get_attr(_get_attr(graph, "nodes"), "__setitem__")(sqz_id, sqz_node)
+        sqz_node = ensure_callable(LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": ensure_callable(ensure_eager_tensor(ensure_eager_tensor(node).attributes).get)("axis", 0)})
+        ensure_eager_tensor(ensure_eager_tensor(graph).nodes)[sqz_id] = sqz_node
         return (sqz_id,)
 
 
@@ -42,7 +41,7 @@ try:
     get_vjp("Squeeze")
 except ValueError:
 
-    @as_callable(register_vjp)("Squeeze")
+    @ensure_callable(register_vjp)("Squeeze")
     def _squeeze_vjp(graph: EagerValue, node: EagerValue, cotangent: EagerValue) -> EagerValue:
         """Test function _squeeze_vjp.
 
@@ -56,8 +55,8 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         exp_id = uuid.uuid4().hex
-        exp_node = as_callable(LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(_get_attr(node, "attributes")).get)("axis", 0)})
-        _get_attr(_get_attr(graph, "nodes"), "__setitem__")(exp_id, exp_node)
+        exp_node = ensure_callable(LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": ensure_callable(ensure_eager_tensor(ensure_eager_tensor(node).attributes).get)("axis", 0)})
+        ensure_eager_tensor(ensure_eager_tensor(graph).nodes)[exp_id] = exp_node
         return (exp_id,)
 
 
@@ -75,7 +74,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return as_callable(Tensor)(val, as_callable(TensorConfig)(shape, DType.Float32, as_callable(Device)("cpu")))
+    return ensure_callable(Tensor)(val, ensure_callable(TensorConfig)(shape, DType.Float32, ensure_callable(Device)("cpu")))
 
 
 def test_shape_rules() -> None:
@@ -115,22 +114,22 @@ def test_shape_rules() -> None:
 
     x = make_tensor([[1.0, 2.0], [3.0, 4.0]])
     cot_res = make_tensor([1.0, 1.0, 1.0, 1.0])
-    out, vjp_fn = as_callable(vjp)(f_reshape, x)
-    assert as_callable(len)(as_callable(vjp_fn)(cot_res)) == 1
+    out, vjp_fn = ensure_callable(vjp)(f_reshape, x)
+    assert ensure_callable(len)(ensure_callable(vjp_fn)(cot_res)) == 1
 
     cot_t = make_tensor([[1.0, 1.0], [1.0, 1.0]])
-    out, vjp_fn = as_callable(vjp)(f_transpose, x)
-    assert as_callable(len)(as_callable(vjp_fn)(cot_t)) == 1
+    out, vjp_fn = ensure_callable(vjp)(f_transpose, x)
+    assert ensure_callable(len)(ensure_callable(vjp_fn)(cot_t)) == 1
 
     x2 = make_tensor([1.0, 2.0])
-    out, vjp_fn = as_callable(vjp)(f_expand, x2)
+    out, vjp_fn = ensure_callable(vjp)(f_expand, x2)
     cot_exp = make_tensor([[1.0, 2.0]])
-    assert as_callable(len)(as_callable(vjp_fn)(cot_exp)) == 1
+    assert ensure_callable(len)(ensure_callable(vjp_fn)(cot_exp)) == 1
 
     x3 = make_tensor([[1.0, 2.0]])
-    out, vjp_fn = as_callable(vjp)(f_squeeze, x3)
+    out, vjp_fn = ensure_callable(vjp)(f_squeeze, x3)
     cot_sqz = make_tensor([1.0, 2.0])
-    assert as_callable(len)(as_callable(vjp_fn)(cot_sqz)) == 1
+    assert ensure_callable(len)(ensure_callable(vjp_fn)(cot_sqz)) == 1
 
 
 def test_nn_rules() -> None:
@@ -165,8 +164,8 @@ def test_nn_rules() -> None:
 
     for f in [f_relu, f_sigmoid, f_softmax]:
         try:
-            out, vjp_fn = as_callable(vjp)(f, x)
-            grads = as_callable(vjp_fn)(cot)
-            assert as_callable(len)(grads) == 1
+            out, vjp_fn = ensure_callable(vjp)(f, x)
+            grads = ensure_callable(vjp_fn)(cot)
+            assert ensure_callable(len)(grads) == 1
         except Exception as e:
             print(f"Failed {f}: {e}")

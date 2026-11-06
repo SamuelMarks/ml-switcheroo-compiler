@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.io.async_io import (
     AsyncIOFuture,
@@ -21,6 +20,7 @@ from ml_switcheroo_compiler.ops.io.async_io import (
     nonblocking_save,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import ensure_eager_tensor, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -76,7 +76,7 @@ async def test_nonblocking_load_and_save_eager_async() -> None:
             # Load asynchronously
             load_fut = nonblocking_load(file_path, shape=(2, 2))
             loaded = await load_fut
-            assert isinstance(loaded, np.ndarray) or _has_attr(loaded, "shape")
+            assert isinstance(loaded, np.ndarray) or has_backend_member(loaded, "shape")
             np.testing.assert_allclose(np.asarray(loaded), arr)
     finally:
         config.eager_mode = orig_eager
@@ -98,7 +98,7 @@ def test_nonblocking_load_and_save_eager_sync_fallback() -> None:
             load_fut = nonblocking_load(file_path, shape=(3,))
             assert load_fut.done()
             res = load_fut.result()
-            np.testing.assert_allclose(np.asarray(_get_attr(res, "data", res)), arr)
+            np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res).data), arr)
     finally:
         config.eager_mode = orig_eager
 

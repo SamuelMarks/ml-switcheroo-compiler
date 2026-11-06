@@ -6,9 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -26,8 +25,8 @@ def test_evaluation_strategy_base() -> None:
             Args:
                 ctx: Test parameter `ctx`.
             """
-            return as_callable(as_tensor(_get_attr(super(), "evaluate")))(ctx)
+            return ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).evaluate))(ctx)
 
-    ctx = as_callable(EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
+    ctx = ensure_callable(EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     with pytest.raises(NotImplementedError):
         DummyStrategy().evaluate(ctx)

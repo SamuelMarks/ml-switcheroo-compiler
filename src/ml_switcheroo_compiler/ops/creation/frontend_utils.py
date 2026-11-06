@@ -3,19 +3,84 @@
 from __future__ import annotations
 
 import logging
+import typing
 import uuid
 from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_eager_list, as_int, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_list, ensure_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol,
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for objects exposing a `.value` attribute."""
+
+    value: TensorOrScalar
+
+
+@typing.runtime_checkable
+class _NameHolderProtocol(typing.Protocol):
+    """Protocol for objects exposing a `.name` attribute."""
+
+    name: TensorOrScalar
+
+
+@typing.runtime_checkable
+class _NdimProtocol(typing.Protocol):
+    """Protocol for arrays exposing `.ndim`."""
+
+    ndim: int
+
+
+@typing.runtime_checkable
+class _TolistProtocol(typing.Protocol):
+    """Protocol for arrays exposing `.tolist()`."""
+
+    def tolist(self) -> TensorOrScalar:
+        """Convert array to nested Python list.
+
+        Returns:
+            TensorOrScalar: Nested Python list.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ItemProtocol(typing.Protocol):
+    """Protocol for arrays exposing `.item()`."""
+
+    def item(self) -> TensorOrScalar:
+        """Extract scalar Python value.
+
+        Returns:
+            TensorOrScalar: Scalar value.
+        """
+        ...
+
+
+def _dtype_to_str(dtype: TensorOrScalar) -> str:
+    """Resolve `dtype` to its string identifier.
+
+    Args:
+        dtype (TensorOrScalar): Data type object or string.
+
+    Returns:
+        str: String representation of `dtype`.
+    """
+    return str(dtype.value if isinstance(dtype, _ValueHolderProtocol) else (dtype.name if isinstance(dtype, _NameHolderProtocol) else dtype))
 
 
 def _emit_creation_node(
@@ -47,7 +112,7 @@ def _emit_creation_node(
         id=out_id,
         op_type=op_type,
         inputs=[],
-        attributes={**as_attrs(attributes or {}), "dtype": dtype.value},
+        attributes={**ensure_attrs(attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
@@ -55,7 +120,7 @@ def _emit_creation_node(
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
+        dtype=_dtype_to_str(dtype),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
@@ -81,17 +146,21 @@ def _emit_constant_node(
         raise RuntimeError(msg)
 
     out_id = str(uuid.uuid4())
+    dt_str = _dtype_to_str(dtype)
     val_arr = get_active_backend().array(
         value,
-        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
+        dtype=dt_str,
     )
-    shape = tuple(_get_attr(val_arr, "shape"))
+    raw_arr: TensorOrScalar = val_arr
+    shape = extract_shape(raw_arr)
+    ndim_val = raw_arr.ndim if isinstance(raw_arr, _NdimProtocol) else len(shape)
+    val_attr: TensorOrScalar = raw_arr.tolist() if ndim_val > 0 and isinstance(raw_arr, _TolistProtocol) else (raw_arr.item() if isinstance(raw_arr, _ItemProtocol) else val_arr)
 
     node = LogicalNode(
         id=out_id,
         op_type="Constant",
         inputs=[],
-        attributes={"value": _get_attr(val_arr, "tolist")() if _get_attr(val_arr, "ndim") > 0 else _get_attr(val_arr, "item")()},
+        attributes=ensure_attrs({"value": val_attr}),
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
@@ -99,7 +168,7 @@ def _emit_constant_node(
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
+        dtype=dt_str,
     )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
@@ -121,7 +190,7 @@ class FromDlpack(OpDef):
             tuple[int, ...]: Inferred tensor shape tuple.
         """
         obj = args[0] if len(args) > 0 else kwargs.get("ext_tensor", kwargs.get("tensor"))
-        return tuple(_get_attr(obj, "shape", _get_attr(obj, "shape_metadata", ())))
+        return extract_shape(obj)
 
 
 @register_op("Frompyfunc")
@@ -143,8 +212,8 @@ class Frompyfunc(OpDef):
         _ = kwargs
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        inps = args[3:] if len(args) > 3 else args
-        shapes = [_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", ())) for inp in inps if _has_attr(inp, "shape") or _has_attr(inp, "shape_metadata")]
+        inps: Sequence[TensorOrScalar] = args[3:] if len(args) > 3 else args
+        shapes = [extract_shape(inp) for inp in inps if isinstance(inp, (ShapeProtocol, ShapeMetadataProtocol))]
         if not shapes:
             return ()
         res = shapes[0]
@@ -174,17 +243,17 @@ class Geomspace(OpDef):
         raw_num = kwargs.get("num", args[2] if len(args) > 2 else 50)
         num: int = 50
         try:
-            num = int(as_int(raw_num))
+            num = int(ensure_int(raw_num))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         raw_axis = kwargs.get("axis", 0)
         axis: int = 0
         try:
-            axis = int(as_int(raw_axis))
+            axis = int(ensure_int(raw_axis))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        shape1 = _get_attr(start, "shape", _get_attr(start, "shape_metadata", ()))
-        shape2 = _get_attr(stop, "shape", _get_attr(stop, "shape_metadata", ()))
+        shape1 = extract_shape(start)
+        shape2 = extract_shape(stop)
         b_shape = shape1 if len(shape1) > len(shape2) else shape2
         if not b_shape:
             return (num,)
@@ -214,10 +283,10 @@ class Geometric(OpDef):
         p = args[0] if len(args) > 0 else kwargs.get("p")
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
         if size is None:
-            return tuple(_get_attr(p, "shape", _get_attr(p, "shape_metadata", ())))
+            return extract_shape(p)
         if isinstance(size, int):
             return (size,)
-        return tuple(int(as_int(d)) for d in as_eager_list(size))
+        return tuple(int(ensure_int(d)) for d in ensure_eager_list(size))
 
 
 def from_dlpack(obj: TensorOrScalar) -> TensorOrScalar:

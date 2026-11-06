@@ -6,10 +6,37 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 T = typing.TypeVar("T")
+
+
+def _as_branch_result(val: TensorOrScalar, fn: Callable[[], T]) -> T:
+    """Narrow a branch execution result to `T`.
+
+    Args:
+        val (TensorOrScalar): Evaluated or traced branch result.
+        fn (Callable[[], T]): Reference branch callable for type inference.
+
+    Returns:
+        T: Narrowed result.
+    """
+    del fn
+
+    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[T]:
+        """Type guard narrowing `cand` to `T`.
+
+        Args:
+            cand (TensorOrScalar): Candidate result.
+
+        Returns:
+            bool: True for valid branch results.
+        """
+        return not isinstance(cand, bytes) or len(cand) >= 0
+
+    assert _guard(val)
+    return val
 
 
 def cond(
@@ -33,7 +60,5 @@ def cond(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        _typed_ret_2: T = _cast_val("T", _get_attr(cf, "cond_eager")(pred, true_fn, false_fn))
-        return _typed_ret_2
-    _typed_ret_1: T = _cast_val("T", _get_attr(cf, "cond_tracing")(pred, true_fn, false_fn))
-    return _typed_ret_1
+        return _as_branch_result(cf.cond_eager(pred, true_fn, false_fn), true_fn)
+    return _as_branch_result(cf.cond_tracing(pred, true_fn, false_fn), true_fn)

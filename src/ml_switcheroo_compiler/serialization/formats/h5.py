@@ -6,7 +6,7 @@ import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
-from ml_switcheroo_compiler.core.shape import _cast_val, _has_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
@@ -20,6 +20,69 @@ except ImportError:
 
 if typing.TYPE_CHECKING:
     import h5py as h5py_types
+
+
+@typing.runtime_checkable
+class _LoadH5BackendProtocol(typing.Protocol):
+    """Protocol for backends implementing custom `load_h5`."""
+
+    def load_h5(self, filepath: str) -> dict[str, TensorLike]:
+        """Load HDF5 weights via backend hook.
+
+        Args:
+            filepath (str): Path to HDF5 file.
+
+        Returns:
+            dict[str, TensorLike]: Loaded weights dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SaveH5BackendProtocol(typing.Protocol):
+    """Protocol for backends implementing custom `save_h5`."""
+
+    def save_h5(self, weights_np: dict[str, TensorLike], filepath: str) -> None:
+        """Save HDF5 weights via backend hook.
+
+        Args:
+            weights_np (dict[str, TensorLike]): Weights dictionary.
+            filepath (str): Destination file path.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _NumpyConvertibleProtocol(typing.Protocol):
+    """Protocol for tensors supporting `.numpy()`."""
+
+    def numpy(self) -> TensorLike:
+        """Convert to NumPy array.
+
+        Returns:
+            TensorLike: NumPy array.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DataFieldProtocol(typing.Protocol):
+    """Protocol for wrapper tensors exposing `.data`."""
+
+    data: TensorLike | _NumpyConvertibleProtocol | _ToListConvertibleProtocol
+
+
+@typing.runtime_checkable
+class _ToListConvertibleProtocol(typing.Protocol):
+    """Protocol for array-like objects supporting `.tolist()`."""
+
+    def tolist(self) -> list[int]:
+        """Convert to Python list.
+
+        Returns:
+            list[int]: Nested Python list.
+        """
+        ...
 
 
 class H5WeightFormat(WeightLoader, WeightSaver):
@@ -39,10 +102,9 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        if _has_attr(backend, "load_h5"):
-            _typed_ret_1: dict[str, TensorLike] = _cast_val(dict[str, TensorLike], backend.load_h5(filepath))
-            return _typed_ret_1
+        backend: TensorOrScalar = get_active_backend()
+        if isinstance(backend, _LoadH5BackendProtocol):
+            return dict(backend.load_h5(filepath))
 
         if h5py is None:
             raise ImportError("h5py is required for H5 weight loading. Please install h5py.")
@@ -76,8 +138,8 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        if _has_attr(backend, "save_h5"):
+        backend: TensorOrScalar = get_active_backend()
+        if isinstance(backend, _SaveH5BackendProtocol):
             backend.save_h5(weights_np, filepath)
             return
 
@@ -85,13 +147,15 @@ class H5WeightFormat(WeightLoader, WeightSaver):
             raise ImportError("h5py is required for H5 weight saving. Please install h5py.")
 
         with h5py.File(filepath, "w") as f:
+            from ml_switcheroo_compiler.backends.protocols import ensure_callable, get_backend_member, has_backend_member
+
             for k, v in weights_np.items():
                 val_data: TensorLike | list[int] = v
-                if _has_attr(v, "numpy"):
-                    val_data = v.numpy()
-                elif _has_attr(v, "data") and _has_attr(v.data, "numpy"):
-                    val_data = v.data.numpy()
-                elif _has_attr(v, "tolist"):
-                    val_data = v.tolist()
+                if has_backend_member(v, "numpy"):
+                    val_data = ensure_callable(get_backend_member(v, "numpy"))()
+                elif has_backend_member(v, "data") and has_backend_member(get_backend_member(v, "data"), "numpy"):
+                    val_data = ensure_callable(get_backend_member(get_backend_member(v, "data"), "numpy"))()
+                elif has_backend_member(v, "tolist"):
+                    val_data = ensure_callable(get_backend_member(v, "tolist"))()
                 f.create_dataset(k, data=val_data)
             del weights_np

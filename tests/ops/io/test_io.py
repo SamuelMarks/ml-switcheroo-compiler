@@ -11,11 +11,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.ops.io import SparsePlus, SparseSigmoid, _fallback_load, set_default_stream, set_memory_limit, set_wired_limit, sparse_plus, sparse_sigmoid
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -118,11 +117,10 @@ def _test_io_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert isinstance(gfile_stat(__file__), dict)
     gfile_makedirs("test_dir_to_make")
     os.rmdir("test_dir_to_make")
-    _get_attr(_state, "update")({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter, "config": config, "decode_bmp": decode_bmp})
-    _get_attr(_state, "update")({"decode_gif": decode_gif, "decode_jpeg": decode_jpeg, "decode_png": decode_png, "gfile_copy": gfile_copy})
-    _get_attr(_state, "update")({"gfile_glob": gfile_glob, "gfile_makedirs": gfile_makedirs, "gfile_stat": gfile_stat, "global_tracing_state": global_tracing_state})
-    _get_attr(_state, "update")({"os": os, "save_safetensors": save_safetensors, "tempfile": tempfile})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter, "config": config, "decode_bmp": decode_bmp}))
+    _state.update(ensure_tensor_dict({"decode_gif": decode_gif, "decode_jpeg": decode_jpeg, "decode_png": decode_png, "gfile_copy": gfile_copy}))
+    _state.update(ensure_tensor_dict({"gfile_glob": gfile_glob, "gfile_makedirs": gfile_makedirs, "gfile_stat": gfile_stat, "global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"os": os, "save_safetensors": save_safetensors, "tempfile": tempfile}))
 
 
 def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -144,8 +142,8 @@ def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
             del mock_get.return_value.execute_op
             pass
-    _get_attr(_state, "update")({"dst": dst, "mock_fb": mock_fb, "mock_get": mock_get, "src": src})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dst": dst, "mock_fb": mock_fb, "mock_get": mock_get, "src": src}))
+    _state.update(ensure_tensor_dict({"gfile_copy": gfile_copy, "os": os, "tempfile": tempfile}))
 
 
 def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -172,8 +170,9 @@ def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         pass
         pass
         pass
-    _get_attr(_state, "update")({"mock_backend": mock_backend})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_backend": mock_backend}))
+    _state.update(ensure_tensor_dict({"decode_bmp": decode_bmp, "decode_gif": decode_gif, "decode_jpeg": decode_jpeg}))
+    _state.update(ensure_tensor_dict({"decode_png": decode_png}))
 
 
 def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -204,8 +203,8 @@ def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
         assert writer.write("data") is None
         with writer:
             pass
-    _get_attr(_state, "update")({"mock_backend": mock_backend, "opt": opt, "writer": writer})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_backend": mock_backend, "opt": opt, "writer": writer}))
+    _state.update(ensure_tensor_dict({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter}))
 
 
 def _test_io_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -218,7 +217,7 @@ def _test_io_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.save") as mock_save:
         save_safetensors("path", {})
         mock_save.assert_called_once()
-    _get_attr(_state, "update")({"mock_save": mock_save})
+    _state.update(ensure_tensor_dict({"mock_save": mock_save}))
 
 
 def test_io_functions() -> None:
@@ -275,8 +274,8 @@ def test_io_stubs() -> None:
         pass
     with tempfile.TemporaryDirectory() as tmpdir:
         fh = io.TFRecordWriter(os.path.join(tmpdir, "path"))
-        assert as_callable(fh.write)(None) is None
-        assert as_callable(fh.close)() is None
+        assert ensure_callable(fh.write)(None) is None
+        assert ensure_callable(fh.close)() is None
 
 
 def test_io_reading_writing() -> None:
@@ -290,7 +289,7 @@ def test_io_reading_writing() -> None:
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, "test.txt")
-                assert isinstance(as_callable(write_file)(path, "hello world"), Tensor)
+                assert isinstance(ensure_callable(write_file)(path, "hello world"), Tensor)
                 assert isinstance(read_file(path), Tensor)
                 path_npy = os.path.join(d, "test.npy")
                 t = Tensor(np.array([1, 2, 3]), TensorConfig((3,), "int64", "cpu"))
@@ -363,11 +362,11 @@ def test_numpy_io_eager_and_format_fallback() -> None:
 
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
         assert load("x") == "executed"
-        assert as_tensor(save("x", [1])) == as_tensor("executed")
-        assert as_tensor(savez("x", [1])) == as_tensor("executed")
-        assert as_tensor(savez_compressed("x", [1])) == as_tensor("executed")
-        assert as_tensor(save_gguf("x", {"t": [1]})) == as_tensor("executed")
-    assert as_callable(_fallback_load)(123) is None
+        assert ensure_eager_tensor(save("x", [1])) == ensure_eager_tensor("executed")
+        assert ensure_eager_tensor(savez("x", [1])) == ensure_eager_tensor("executed")
+        assert ensure_eager_tensor(savez_compressed("x", [1])) == ensure_eager_tensor("executed")
+        assert ensure_eager_tensor(save_gguf("x", {"t": [1]})) == ensure_eager_tensor("executed")
+    assert ensure_callable(_fallback_load)(123) is None
     assert _fallback_load("test.bin") is None
     with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
         assert _fallback_load("test.h5") == "h5load"
@@ -388,8 +387,8 @@ def test_numpy_io_infer_shape_args() -> None:
             """
             self.shape = shape
 
-    assert as_callable(Load)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
-    assert as_callable(Save)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
-    assert as_callable(Savez)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
-    assert as_callable(SavezCompressed)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
-    assert as_callable(SaveGguf)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
+    assert ensure_callable(Load)().infer_shape(ensure_callable(DummyNode)((2, 2)), ensure_callable(DummyNode)((2, 2))) == (2, 2)
+    assert ensure_callable(Save)().infer_shape(ensure_callable(DummyNode)((2, 2)), ensure_callable(DummyNode)((2, 2))) == (2, 2)
+    assert ensure_callable(Savez)().infer_shape(ensure_callable(DummyNode)((2, 2)), ensure_callable(DummyNode)((2, 2))) == (2, 2)
+    assert ensure_callable(SavezCompressed)().infer_shape(ensure_callable(DummyNode)((2, 2)), ensure_callable(DummyNode)((2, 2))) == (2, 2)
+    assert ensure_callable(SaveGguf)().infer_shape(ensure_callable(DummyNode)((2, 2)), ensure_callable(DummyNode)((2, 2))) == (2, 2)

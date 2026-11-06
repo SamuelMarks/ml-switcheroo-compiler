@@ -9,7 +9,6 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.api import grad
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -22,7 +21,7 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorization_pass,
     vectorize_graph,
 )
-from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -108,7 +107,7 @@ def test_vectorization_pass_inlining() -> None:
         id="vmap_node",
         op_type="Vmap",
         inputs=["x_batched"],
-        attributes=as_attrs({"body": body, "in_axes": 0, "out_axes": 0}),
+        attributes=ensure_attrs({"body": body, "in_axes": 0, "out_axes": 0}),
         shape_metadata=(3, 4),
     )
     outer.outputs = ["vmap_node"]
@@ -135,11 +134,11 @@ def test_eager_vmap_nested() -> None:
             return add(t, t)
 
         v_inner = vmap(double, in_axes=0, out_axes=0)
-        v_outer = as_callable(vmap)(v_inner, in_axes=0, out_axes=0)
-        res = as_callable(v_outer)(x)
+        v_outer = ensure_callable(vmap)(v_inner, in_axes=0, out_axes=0)
+        res = ensure_callable(v_outer)(x)
 
         expected = x_data * 2
-        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected)
+        ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(ensure_eager_tensor(res).data), expected)
 
 
 def test_eager_vmap_grad() -> None:
@@ -160,11 +159,11 @@ def test_eager_vmap_grad() -> None:
 
         grad_fn = grad(loss_fn)
         v_grad = vmap(grad_fn, in_axes=0, out_axes=0)
-        res = as_callable(v_grad)(x)
+        res = ensure_callable(v_grad)(x)
 
         # d/dt(t^2) = 2*t
         expected = 2.0 * x_data
-        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected, rtol=1e-4)
+        ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(ensure_eager_tensor(res).data), expected, rtol=1e-4)
 
 
 def test_eager_grad_vmap() -> None:
@@ -191,12 +190,12 @@ def test_eager_grad_vmap() -> None:
             Args:
                 t: Test parameter `t`.
             """
-            return as_tensor_obj(as_callable(reduce_sum)(as_callable(v_f)(t)))
+            return ensure_tensor_obj(ensure_callable(reduce_sum)(ensure_callable(v_f)(t)))
 
         grad_vmap = grad(total_loss)
         res = grad_vmap(x)
         expected = 2.0 * x_data
-        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected, rtol=1e-4)
+        ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(ensure_eager_tensor(res).data), expected, rtol=1e-4)
 
 
 def test_vectorization_helpers() -> None:
@@ -254,9 +253,8 @@ def _test_vectorization_exhaustive_branches_part_1(_state: dict[str, EagerTensor
     # 4. Policy prepend_batch_dim with "shape" (without "newshape") and with "newshape"
     g_prepend = IRGraph(name="prepend")
     g_prepend.inputs = ["x"]
-    _get_attr(_state, "update")({"g_inputs": g_inputs, "g_neg": g_neg, "g_prepend": g_prepend, "patch": patch})
-    _get_attr(_state, "update")({"vec_inp": vec_inp, "vec_neg": vec_neg})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_inputs": g_inputs, "g_neg": g_neg, "g_prepend": g_prepend, "patch": patch}))
+    _state.update(ensure_tensor_dict({"vec_inp": vec_inp, "vec_neg": vec_neg}))
 
 
 def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -281,9 +279,9 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
         attributes={"newshape": (2, 3)},
         shape_metadata=(2, 3),
     )
-    _set_attr(g_prepend, "outputs", ["bcast", "resh"])
+    ensure_mutable(g_prepend).outputs = ensure_eager_tensor(["bcast", "resh"])
 
-    vec_prep = as_callable(vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
+    vec_prep = ensure_callable(vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
     assert vec_prep.nodes["bcast"].attributes["shape"] == (5, 2, 3)
     assert vec_prep.nodes["resh"].attributes["newshape"] == (5, 2, 3)
 
@@ -302,7 +300,7 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
         id="vmap_tuple",
         op_type="Vmap",
         inputs=["x_in"],
-        attributes=as_attrs({"body": body_v, "in_axes": (0,), "out_axes": 0}),
+        attributes=ensure_attrs({"body": body_v, "in_axes": (0,), "out_axes": 0}),
         shape_metadata=(4,),
     )
     outer_tuple.outputs = ["vmap_tuple"]
@@ -313,9 +311,9 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
     outer_no_shape = IRGraph(name="outer_no_shape")
     outer_no_shape.inputs = ["x_no_s"]
     outer_no_shape.nodes["x_no_s"] = IRNode(id="x_no_s", op_type="Input", inputs=[], shape_metadata=None)
-    _get_attr(_state, "update")({"body_v": body_v, "opt_tuple": opt_tuple, "outer_no_shape": outer_no_shape, "outer_tuple": outer_tuple})
-    _get_attr(_state, "update")({"vec_prep": vec_prep})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"body_v": body_v, "opt_tuple": opt_tuple, "outer_no_shape": outer_no_shape, "outer_tuple": outer_tuple}))
+    _state.update(ensure_tensor_dict({"vec_prep": vec_prep}))
+    _state.update(ensure_tensor_dict({"g_prepend": g_prepend}))
 
 
 def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -329,10 +327,10 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         id="vmap_no_s",
         op_type="Vmap",
         inputs=["x_no_s"],
-        attributes=as_attrs({"body": body_v, "in_axes": 0, "out_axes": 0}),
+        attributes=ensure_attrs({"body": body_v, "in_axes": 0, "out_axes": 0}),
     )
-    _set_attr(outer_no_shape, "outputs", ["vmap_no_s"])
-    opt_no_s = as_callable(vectorization_pass)(outer_no_shape)
+    ensure_mutable(outer_no_shape).outputs = ensure_eager_tensor(["vmap_no_s"])
+    opt_no_s = ensure_callable(vectorization_pass)(outer_no_shape)
     assert "vmap_no_s" in opt_no_s.nodes
 
     # Case where axis >= len(shape) -> axis=5, shape has len 1 -> fallback batch_size=1
@@ -343,7 +341,7 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         id="vmap_oob",
         op_type="Vmap",
         inputs=["x_in2"],
-        attributes=as_attrs({"body": body_v, "in_axes": (5,), "out_axes": 0}),
+        attributes=ensure_attrs({"body": body_v, "in_axes": (5,), "out_axes": 0}),
         shape_metadata=(4,),
     )
     outer_oob.outputs = ["vmap_oob"]
@@ -370,9 +368,9 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
     b_in_node = IRNode(id="b_in_list", op_type="Input", inputs=[], shape_metadata=(1,))
     b_out_node = IRNode(id="b_add_list", op_type="Add", inputs=["b_in_list", "b_in_list"], shape_metadata=(1,))
     mock_body_list = MockGraphNodesList(inputs=["b_in_list"], outputs=["b_add_list"], nodes=[b_in_node, b_out_node])
-    _get_attr(_state, "update")({"MockGraphNodesList": MockGraphNodesList, "b_in_node": b_in_node, "b_out_node": b_out_node, "mock_body_list": mock_body_list})
-    _get_attr(_state, "update")({"opt_no_s": opt_no_s, "opt_oob": opt_oob, "outer_oob": outer_oob})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MockGraphNodesList": MockGraphNodesList, "b_in_node": b_in_node, "b_out_node": b_out_node, "mock_body_list": mock_body_list}))
+    _state.update(ensure_tensor_dict({"opt_no_s": opt_no_s, "opt_oob": opt_oob, "outer_oob": outer_oob}))
+    _state.update(ensure_tensor_dict({"body_v": body_v, "outer_no_shape": outer_no_shape}))
 
 
 def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -389,7 +387,7 @@ def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensor
         id="vmap_list",
         op_type="Vmap",
         inputs=["x_list"],
-        attributes=as_attrs({"body": mock_body_list, "in_axes": 0, "out_axes": 0}),
+        attributes=ensure_attrs({"body": mock_body_list, "in_axes": 0, "out_axes": 0}),
     )
     outer_list.outputs = ["vmap_list"]
     opt_list = vectorization_pass(outer_list)
@@ -430,11 +428,11 @@ def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensor
         id="vmap_dict",
         op_type="Vmap",
         inputs=["x_dict"],
-        attributes=as_attrs({"body": mock_body_dict, "in_axes": 0, "out_axes": 0}),
+        attributes=ensure_attrs({"body": mock_body_dict, "in_axes": 0, "out_axes": 0}),
     )
-    _get_attr(_state, "update")({"LogicalNode": LogicalNode, "MockGraphNodesDict": MockGraphNodesDict, "mock_body_dict": mock_body_dict, "opt_list": opt_list})
-    _get_attr(_state, "update")({"outer_dict": outer_dict, "outer_list": outer_list, "pure_logical_node": pure_logical_node})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"LogicalNode": LogicalNode, "MockGraphNodesDict": MockGraphNodesDict, "mock_body_dict": mock_body_dict, "opt_list": opt_list}))
+    _state.update(ensure_tensor_dict({"outer_dict": outer_dict, "outer_list": outer_list, "pure_logical_node": pure_logical_node}))
+    _state.update(ensure_tensor_dict({"mock_body_list": mock_body_list}))
 
 
 def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -444,10 +442,10 @@ def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensor
         _state: Shared test state dictionary.
     """
     outer_dict = _state["outer_dict"]
-    _set_attr(outer_dict, "outputs", ["vmap_dict"])
-    opt_dict = as_callable(vectorization_pass)(outer_dict)
+    ensure_mutable(outer_dict).outputs = ensure_eager_tensor(["vmap_dict"])
+    opt_dict = ensure_callable(vectorization_pass)(outer_dict)
     assert "vmap_dict" in opt_dict.nodes
-    _get_attr(_state, "update")({"opt_dict": opt_dict})
+    _state.update(ensure_tensor_dict({"opt_dict": opt_dict}))
 
 
 def test_vectorization_exhaustive_branches() -> None:

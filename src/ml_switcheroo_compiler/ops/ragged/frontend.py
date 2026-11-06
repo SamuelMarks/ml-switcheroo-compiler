@@ -4,15 +4,33 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import as_callable
+from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_list
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 RaggedArg = typing.Union[Tensor, int, float, str, bool, list[int], tuple[int, ...], "None"]
 RaggedKwarg = typing.Union[int, float, str, bool, tuple[int, ...], "None"]
+
+
+def _is_ragged_tensor_res(val: TensorOrScalar) -> typing.TypeGuard[Tensor | tuple[Tensor, ...]]:
+    """Type guard narrowing `val` to `Tensor | tuple[Tensor, ...]`.
+
+    Args:
+        val (TensorOrScalar): Emitted node result.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
 
 
 def _ragged_op(
@@ -35,30 +53,28 @@ def _ragged_op(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op(op_name, *[_get_attr(a, "data", a) for a in args], **kwargs)
+        data = backend.execute_op(op_name, *[extract_data(a) for a in args], **kwargs)
         return Tensor(
             data,
             TensorConfig(
-                _get_attr(data, "shape", ()),
-                _get_attr(args[0], "dtype", "float32") if args else "float32",
-                _get_attr(args[0], "device", "cpu") if args else "cpu",
+                extract_shape(data),
+                extract_dtype(args[0], "float32") if args else "float32",
+                extract_device(args[0], "cpu") if args else "cpu",
             ),
         )
 
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
     tensor_inputs = [a for a in args if isinstance(a, Tensor)]
-    _typed_ret_1: Tensor | tuple[Tensor, ...] = _cast_val(
-        "Tensor | tuple[Tensor, ...]",
-        as_callable(_emit_linalg_node)(
-            op_name,
-            tensor_inputs,
-            kwargs,
-            [tuple(_get_attr(out_shape, "__iter__")())],
-            [_get_attr(args[0], "dtype", "float32") if args else "float32"],
-        ),
+    raw_res: TensorOrScalar = ensure_callable(_emit_linalg_node)(
+        op_name,
+        tensor_inputs,
+        kwargs,
+        [tuple(ensure_eager_list(out_shape))],
+        [extract_dtype(args[0], "float32") if args else "float32"],
     )
-    return _typed_ret_1
+    assert _is_ragged_tensor_res(raw_res)
+    return raw_res
 
 
 def ragged_constant(*args: RaggedArg, **kwargs: RaggedKwarg) -> Tensor | tuple[Tensor, ...]:

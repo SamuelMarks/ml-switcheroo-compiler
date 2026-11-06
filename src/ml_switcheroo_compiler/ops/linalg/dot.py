@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_list, ensure_shape
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.linalg.utils import _extract_linalg_shape
 
 
 def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
@@ -19,7 +24,8 @@ def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
     Returns:
         bool: Result.
     """
-    return _has_attr(obj, "shape") and bool(_get_attr(obj, "shape"))
+    raw_obj: TensorOrScalar = obj
+    return isinstance(raw_obj, ShapeProtocol) and bool(raw_obj.shape)
 
 
 def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
@@ -31,15 +37,7 @@ def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     Returns:
         tuple[int, ...]: Extracted shape tuple.
     """
-    if _has_attr(obj, "shape"):
-        return tuple(int(d) for d in _get_attr(obj, "shape"))
-    if _has_attr(obj, "shape_metadata"):
-        sm = _get_attr(obj, "shape_metadata")
-        if sm:
-            return tuple(int(d) for d in sm)
-    if isinstance(obj, (list, tuple)):
-        return tuple(int(d) for d in obj if isinstance(d, (int, float)))
-    return ()
+    return _extract_linalg_shape(obj)
 
 
 def _compute_dot_contraction_shape(shape_a: tuple[int, ...], shape_b: tuple[int, ...]) -> tuple[int, ...]:
@@ -114,7 +112,7 @@ class DotGeneral(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
+        shapes = [extract_shape(a) for a in args if isinstance(a, ShapeProtocol)]
         if not shapes:
             return ()
         res = shapes[0]
@@ -134,13 +132,16 @@ class DotGeneral(OpDef):
         Returns:
             tuple: Result.
         """
-        contracting, batch = _get_attr(dimension_numbers, "__iter__")()
-        lhs_contracting, rhs_contracting = _get_attr(contracting, "__iter__")()
-        lhs_batch, rhs_batch = _get_attr(batch, "__iter__")()
+        dim_nums = ensure_eager_list(dimension_numbers)
+        contracting, batch = ensure_eager_list(dim_nums[0]), ensure_eager_list(dim_nums[1])
+        lhs_contracting, rhs_contracting = ensure_shape(contracting[0]), ensure_shape(contracting[1])
+        lhs_batch, rhs_batch = ensure_shape(batch[0]), ensure_shape(batch[1])
+        l_shape = ensure_shape(lhs_shape)
+        r_shape = ensure_shape(rhs_shape)
 
-        out_shape = [_get_attr(lhs_shape, "__getitem__")(b) for b in _get_attr(lhs_batch, "__iter__")()]
-        out_shape.extend([_get_attr(lhs_shape, "__getitem__")(i) for i in range(_get_attr(lhs_shape, "__len__")()) if i not in _get_attr(lhs_contracting + lhs_batch, "__iter__")()])
-        out_shape.extend([_get_attr(rhs_shape, "__getitem__")(i) for i in range(_get_attr(rhs_shape, "__len__")()) if i not in _get_attr(rhs_contracting + rhs_batch, "__iter__")()])
+        out_shape = [l_shape[b] for b in lhs_batch]
+        out_shape.extend([l_shape[i] for i in range(len(l_shape)) if i not in (lhs_contracting + lhs_batch)])
+        out_shape.extend([r_shape[i] for i in range(len(r_shape)) if i not in (rhs_contracting + rhs_batch)])
 
         return tuple(out_shape)
 
@@ -247,8 +248,8 @@ class Pdot(OpDef):
         del kwargs
         lhs = args[0]
         rhs = args[1]
-        lhs_shape = _get_attr(lhs, "shape", lhs if isinstance(lhs, tuple) else ())
-        rhs_shape = _get_attr(rhs, "shape", rhs if isinstance(rhs, tuple) else ())
+        lhs_shape = _extract_linalg_shape(lhs)
+        rhs_shape = _extract_linalg_shape(rhs)
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 

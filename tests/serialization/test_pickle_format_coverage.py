@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -191,6 +191,6 @@ def test_pickle_format(tmp_path: Path) -> None:
     fmt = PickleWeightFormat()
     filepath = str(tmp_path / "model.pkl")
     data = {"w": [1.0, 2.0, 3.0], "b": 0.5}
-    as_callable(fmt.save)(data, filepath)
+    ensure_callable(fmt.save)(data, filepath)
     loaded = fmt.load(filepath)
     assert loaded == data

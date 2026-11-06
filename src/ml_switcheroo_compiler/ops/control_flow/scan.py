@@ -6,11 +6,38 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 
-Carry = typing.TypeVar("Carry")
+Carry = typing.TypeVar("Carry", bound=TensorOrScalar)
 OutElem = typing.TypeVar("OutElem")
+
+
+def _as_scan_result(val: TensorOrScalar, init: Carry) -> tuple[Carry, Tensor]:
+    """Narrow a scan execution result to `tuple[Carry, Tensor]`.
+
+    Args:
+        val (TensorOrScalar): Evaluated or traced scan result.
+        init (Carry): Initial carry reference for type inference.
+
+    Returns:
+        tuple[Carry, Tensor]: Narrowed `(carry, ys)` pair.
+    """
+    del init
+
+    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[tuple[Carry, Tensor]]:
+        """Type guard narrowing `cand` to `tuple[Carry, Tensor]`.
+
+        Args:
+            cand (TensorOrScalar): Candidate value.
+
+        Returns:
+            bool: True if cand is a tuple.
+        """
+        return isinstance(cand, tuple)
+
+    assert _guard(val)
+    return val
 
 
 def scan(
@@ -36,7 +63,5 @@ def scan(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        _typed_ret_2: tuple[Carry, Tensor] = _cast_val(tuple[Carry, Tensor], _get_attr(cf, "scan_eager")(f, init, xs, length))
-        return _typed_ret_2
-    _typed_ret_1: tuple[Carry, Tensor] = _cast_val(tuple[Carry, Tensor], _get_attr(cf, "scan_tracing")(f, init, xs, length))
-    return _typed_ret_1
+        return _as_scan_result(cf.scan_eager(f, init, xs, length), init)
+    return _as_scan_result(cf.scan_tracing(f, init, xs, length), init)

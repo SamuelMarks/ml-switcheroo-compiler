@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.raw_ops import RawConv2D, RawMatMul, RawMerge, RawOp, RawSwitch
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -15,7 +15,7 @@ def test_raw_ops_definitions() -> None:
     """Verify RawOp base class and dynamic control flow raw operation definitions."""
     raw = RawOp()
     assert raw.infer_shape() == ()
-    assert as_callable(raw.infer_shape)((1, 2), flag=True) == ()
+    assert ensure_callable(raw.infer_shape)((1, 2), flag=True) == ()
 
     assert RawSwitch().op_name == "RawSwitch"
     assert RawMerge().op_name == "RawMerge"

@@ -11,10 +11,9 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
-from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     pass
@@ -232,9 +231,9 @@ def test_pass_manager_nodes_list() -> None:
 
     IRValidator()
     mock_g = MockGraph()
-    as_callable(IRValidator.check_shapes)(mock_g)
-    h = as_callable(_graph_hash)(mock_g)
-    assert isinstance(as_tensor(h), str)
+    ensure_callable(IRValidator.check_shapes)(mock_g)
+    h = ensure_callable(_graph_hash)(mock_g)
+    assert isinstance(ensure_eager_tensor(h), str)
 
 
 def test_pass_pipeline_load_and_prerequisites() -> None:
@@ -296,7 +295,7 @@ def test_pass_manager_coverage_branches() -> None:
 
     g_list = IRGraph()
     n_item = IRNode(id="n1", op_type="Input")
-    _obj_set_attr(g_list, "nodes", [n_item])
+    ensure_mutable(g_list).nodes = ensure_eager_tensor([n_item])
     snap = _snapshot_graph(g_list)
     assert "n1" in snap["nodes"]
     _restore_graph(g_list, snap)
@@ -307,11 +306,11 @@ def test_pass_manager_coverage_branches() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = as_tensor_dict({})
+            self.nodes = ensure_tensor_dict({})
 
     dg = DummyGraphWithoutIO()
-    as_callable(_restore_graph)(dg, snap)
-    as_callable(_restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
+    ensure_callable(_restore_graph)(dg, snap)
+    ensure_callable(_restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
     from ml_switcheroo_ir import LogicalGraph
 
     lg = LogicalGraph("test_lg")
@@ -340,7 +339,7 @@ def test_pass_manager_coverage_branches() -> None:
 
         max_iterations = 2
 
-    _set_attr(pm_conv, "convergence_criteria", MockConvergence())
+    ensure_mutable(pm_conv).convergence_criteria = ensure_eager_tensor(MockConvergence())
     g_conv = IRGraph()
     g_conv.nodes["n"] = IRNode(id="n", op_type="Input", shape_metadata=())
     res_conv = pm_conv.run_until_converged(g_conv)

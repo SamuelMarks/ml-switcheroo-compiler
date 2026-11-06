@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -22,16 +21,16 @@ def test_mlx_types() -> None:
 
     from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
-    res = as_callable(zeros)(None, (2, 2))
-    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    res = ensure_callable(zeros)(None, (2, 2))
+    assert ensure_eager_tensor(res).shape == (2, 2)
 
-    res = as_callable(array)(None, [1.0, 2.0])
-    assert as_tensor(_get_attr(res, "shape")) == (2,)
+    res = ensure_callable(array)(None, [1.0, 2.0])
+    assert ensure_eager_tensor(res).shape == (2,)
 
-    res = as_callable(asarray)(None, [1.0, 2.0])
-    assert as_tensor(_get_attr(res, "shape")) == (2,)
+    res = ensure_callable(asarray)(None, [1.0, 2.0])
+    assert ensure_eager_tensor(res).shape == (2,)
 
-    res = as_callable(item)(None, as_callable(array)(None, 42.0))
+    res = ensure_callable(item)(None, ensure_callable(array)(None, 42.0))
     assert res == 42.0
 
 
@@ -56,8 +55,8 @@ def test_mlx_types_asarray_fallback(monkeypatch: EagerTensorProtocol) -> None:
             """
             return "array_called"
 
-    as_callable(monkeypatch.setattr)(types_mod, "mx", as_callable(MockMX)())
-    res = as_callable(asarray)(None, [1.0])
+    ensure_callable(monkeypatch.setattr)(types_mod, "mx", ensure_callable(MockMX)())
+    res = ensure_callable(asarray)(None, [1.0])
     assert res == "array_called"
 
 
@@ -82,6 +81,6 @@ def test_mlx_types_asarray_success(monkeypatch: EagerTensorProtocol) -> None:
             """
             return "asarray_called"
 
-    as_callable(monkeypatch.setattr)(types_mod, "mx", as_callable(MockMXWithAsarray)())
-    res = as_callable(asarray)(None, [1.0])
+    ensure_callable(monkeypatch.setattr)(types_mod, "mx", ensure_callable(MockMXWithAsarray)())
+    res = ensure_callable(asarray)(None, [1.0])
     assert res == "asarray_called"

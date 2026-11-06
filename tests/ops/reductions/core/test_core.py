@@ -7,7 +7,7 @@ import typing
 from pytest_mock import MockerFixture
 
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -29,15 +29,15 @@ def test_reduction_op_call(mocker: MockerFixture) -> None:
 
     # Test passing arguments
     res = op(axis=0)
-    assert as_tensor(res) == as_tensor("result")
+    assert ensure_eager_tensor(res) == ensure_eager_tensor("result")
     mock_dispatch.assert_called_with("MockReduction", axis=0)
 
     res = op(keepdims=True)
-    assert as_tensor(res) == as_tensor("result")
+    assert ensure_eager_tensor(res) == ensure_eager_tensor("result")
     mock_dispatch.assert_called_with("MockReduction", keepdims=True)
 
     res = op(axis=1, keepdims=False)
-    assert as_tensor(res) == as_tensor("result")
+    assert ensure_eager_tensor(res) == ensure_eager_tensor("result")
     mock_dispatch.assert_called_with("MockReduction", axis=1, keepdims=False)
 
 

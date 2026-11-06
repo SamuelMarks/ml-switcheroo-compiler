@@ -10,7 +10,6 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.ragged.frontend import (
     _ragged_op,
@@ -31,7 +30,7 @@ from ml_switcheroo_compiler.ops.ragged.frontend import (
     ragged_stack_dynamic_partitions,
     ragged_tensor_to_dense,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -58,7 +57,7 @@ def test_ragged_frontend_eager_dispatch() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2), dtype=np.float32)
 
-        assert as_callable(ragged_constant)([[1, 2], [3]]) is not None
+        assert ensure_callable(ragged_constant)([[1, 2], [3]]) is not None
         assert ragged_cross(t, t) is not None
         assert ragged_cross_hashed(t, t) is not None
         assert ragged_range(t) is not None
@@ -77,8 +76,8 @@ def test_ragged_frontend_eager_dispatch() -> None:
 
         # Test with no args in eager mode (hits args[0] else branch)
         res_no_args = _ragged_op("RaggedConstant")
-        assert as_tensor(_get_attr(res_no_args, "dtype")) == "float32"
-        assert "cpu" in str(as_tensor(_get_attr(res_no_args, "device")))
+        assert ensure_eager_tensor(ensure_eager_tensor(res_no_args).dtype) == "float32"
+        assert "cpu" in str(ensure_eager_tensor(ensure_eager_tensor(res_no_args).device))
 
 
 def test_ragged_frontend_tracing_dispatch() -> None:
@@ -89,7 +88,7 @@ def test_ragged_frontend_tracing_dispatch() -> None:
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         mock_emit.return_value = t
 
-        assert id(as_callable(ragged_constant)([[1, 2], [3]])) == id(t)
+        assert id(ensure_callable(ragged_constant)([[1, 2], [3]])) == id(t)
         assert ragged_cross(t, t) is t
         assert ragged_cross_hashed(t, t) is t
         assert ragged_range(t) is t

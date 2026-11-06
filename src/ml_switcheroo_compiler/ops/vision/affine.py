@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_ac
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -40,7 +40,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AffineTransform", images.data, transforms.data, interpolation=interpolation)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), DType.Int32, images.device))
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
@@ -67,7 +67,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), angles.dtype, angles.device),
+            TensorConfig(extract_shape(backend.array(data)), angles.dtype, angles.device),
         )
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
@@ -89,7 +89,7 @@ def random_flip(images: Tensor, mode: TensorOrScalar = "horizontal_and_vertical"
         data = backend.execute_op("RandomFlip", images.data, mode=mode, seed=seed)
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
 
     kwargs = {"mode": mode, "seed": seed}
@@ -123,7 +123,7 @@ def random_rotation(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomRotation",
@@ -152,7 +152,7 @@ def random_crop(images: Tensor, size: TensorOrScalar, seed: TensorOrScalar = Non
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RandomCrop", images.data, size=size, seed=seed)
-        new_shape = list(_get_attr(backend.array(data), "shape"))
+        new_shape = list(extract_shape(backend.array(data)))
         return Tensor(backend.array(data), TensorConfig(tuple(new_shape), images.dtype, images.device))
 
     kwargs = {"size": size, "seed": seed}
@@ -187,7 +187,7 @@ def random_zoom(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomZoom",
@@ -232,7 +232,7 @@ def random_translation(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomTranslation",
@@ -275,7 +275,7 @@ def random_shear(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomShear",
@@ -315,7 +315,7 @@ def random_perspective(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomPerspective",
@@ -357,7 +357,7 @@ def random_elastic_transform(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(extract_shape(backend.array(data)), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomElasticTransform",
@@ -386,7 +386,7 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), theta.dtype, theta.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), theta.dtype, theta.device))
     return _emit_shape_node("AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype)
 
 
@@ -419,7 +419,7 @@ def grid_sample(
             padding_mode=padding_mode,
             align_corners=align_corners,
         )
-        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
     return _emit_shape_node(
         "GridSample",
         [input, grid],
@@ -446,7 +446,7 @@ class AffineGenerator(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_1: TensorOrScalar = _get_attr(inputs, "shape", ())
+        _typed_ret_1: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_1
 
 
@@ -467,7 +467,7 @@ class AffineGrid(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_2: TensorOrScalar = _get_attr(inputs, "shape", ())
+        _typed_ret_2: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_2
 
 
@@ -488,7 +488,7 @@ class AffineTransform(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_3: TensorOrScalar = _get_attr(inputs, "shape", ())
+        _typed_ret_3: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_3
 
 
@@ -509,5 +509,5 @@ class PerspectiveTransform(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        _typed_ret_4: TensorOrScalar = _get_attr(inputs, "shape", ())
+        _typed_ret_4: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_4

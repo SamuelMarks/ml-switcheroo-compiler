@@ -15,9 +15,9 @@ import tempfile
 import typing
 from collections.abc import Callable  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int_or_seq
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-from ml_switcheroo_compiler.ir.core import as_graph, as_opt_graph
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_float, ensure_int_or_seq
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.ir.core import as_opt_graph, ensure_graph
 
 AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
 
@@ -26,6 +26,59 @@ import yaml
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _as_attr_val(val: EagerValue) -> AttrType:
+    """Narrow an `EagerValue` attribute to `AttrType`.
+
+    Args:
+        val (EagerValue): Candidate attribute value.
+
+    Returns:
+        AttrType: Narrowed attribute value.
+    """
+
+    def _guard(cand: EagerValue) -> typing.TypeGuard[AttrType]:
+        """Validate `cand` is a valid `AttrType`.
+
+        Args:
+            cand (EagerValue): Candidate value.
+
+        Returns:
+            bool: True if valid.
+        """
+        return cand is None or isinstance(cand, (int, float, str, bool, list, tuple, dict))
+
+    assert _guard(val)
+    return val
+
+
+def _node_inputs_list(node: EagerValue) -> list[str]:
+    """Return string list of input IDs on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        list[str]: Node input IDs.
+    """
+    raw = get_backend_member(node, "inputs", [])
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    return []
+
+
+def _node_attrs_dict(node: EagerValue) -> dict[str, AttrType]:
+    """Return attributes dictionary on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        dict[str, AttrType]: Attributes mapping.
+    """
+    raw = get_backend_member(node, "attributes", {})
+    return {str(k): _as_attr_val(v) for k, v in raw.items()} if isinstance(raw, dict) else {}
 
 
 def get_supported_mlir_dialects() -> tuple[str, ...]:
@@ -70,7 +123,7 @@ class CppGenerator(BaseGenerator):
             use_openmp (bool): The use_openmp parameter.
             strict (bool): Whether to raise UnimplementedMathError on unsupported operations.
         """
-        super().__init__(graph=as_graph(graph))
+        super().__init__(graph=ensure_graph(graph))
         self.use_simd = use_simd
         self.use_openmp = use_openmp
         self.strict = strict
@@ -85,15 +138,16 @@ class CppGenerator(BaseGenerator):
         Returns:
             list[int]: Result.
         """
-        shape: tuple[int, ...] | int | float | None = _get_attr(node, "shape_metadata", None)
+        shape = get_backend_member(node, "shape_metadata", None)
         if not shape:
             return [1]
         if isinstance(shape, (int, float)):
             return [int(shape)]
         res: list[int] = []
-        for s in shape:
-            res.append(int(s))
-        return res
+        for s in shape if isinstance(shape, (list, tuple)) else []:
+            if isinstance(s, (int, float, str)):
+                res.append(int(s))
+        return res or [1]
 
     def _dispatch_unmapped_op_fallback(self, node: IRNode, op: str) -> None:
         """Handle unmapped operation with strict error policy or safe runtime polyfill.
@@ -120,7 +174,7 @@ class CppGenerator(BaseGenerator):
         out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
         clean_id = node.id
         self.lines.append(f"    NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}")
-        inputs = _get_attr(node, "inputs", []) or []
+        inputs = get_backend_member(node, "inputs", []) or []
         if len(inputs) > 0:
             in0 = inputs[0]
             self.lines.append("    #pragma omp simd")
@@ -204,7 +258,9 @@ class CppGenerator(BaseGenerator):
                 self._visit_node(node, graph_to_use)
 
         out_idx = 0
-        for out_name in _get_attr(graph_to_use, "outputs", []):
+        raw_outs = get_backend_member(graph_to_use, "outputs", [])
+        for out_name_raw in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
+            out_name = str(out_name_raw)
             if out_name in graph_to_use.nodes:
                 clean_out = graph_to_use.nodes[out_name].id
                 self.lines.append(f"    if (outputs && outputs[{out_idx}]) {{")
@@ -246,7 +302,7 @@ class CppGenerator(BaseGenerator):
             self.lines = old_lines
 
         template = get_cpp_template("if_op")
-        body = _get_attr(template["body"], "format")(cond_var=cond_var, then_body="\n".join(then_lines) + "\n" if then_lines else "", else_body="\n".join(else_lines) + "\n" if else_lines else "")
+        body = str(template["body"]).format(cond_var=cond_var, then_body="\n".join(then_lines) + "\n" if then_lines else "", else_body="\n".join(else_lines) + "\n" if else_lines else "")
         self.lines.extend(body.strip().split("\n"))
 
     def _collect_subgraph_lines(self, subgraph: IRGraph | None, graph_to_use: IRGraph | None) -> list[str]:
@@ -301,19 +357,20 @@ class CppGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         self._emit_loop_annotations(attrs)
 
-        raw_cond: EagerValue = attrs.get("cond")
+        raw_attrs_e = get_backend_member(node, "attributes", {})
+        raw_cond: EagerValue = raw_attrs_e.get("cond") if isinstance(raw_attrs_e, dict) else None
         cond_graph: IRGraph | None = raw_cond if isinstance(raw_cond, IRGraph) else None
         cond_lines = self._collect_subgraph_lines(cond_graph, graph_to_use)
 
-        raw_body: EagerValue = attrs.get("body")
+        raw_body: EagerValue = raw_attrs_e.get("body") if isinstance(raw_attrs_e, dict) else None
         body_graph: IRGraph | None = raw_body if isinstance(raw_body, IRGraph) else None
         body_lines = self._collect_subgraph_lines(body_graph, graph_to_use)
 
         template = get_cpp_template("loop_op")
-        body = _get_attr(template["body"], "format")(
+        body = str(template["body"]).format(
             cond_body="\n".join(cond_lines) + "\n" if cond_lines else "",
             loop_body="\n".join(body_lines) + "\n" if body_lines else "",
         )
@@ -330,7 +387,7 @@ class CppGenerator(BaseGenerator):
 
         template: dict[str, str | EagerValue] = get_cpp_template("conv2d")
 
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = []
         if graph_to_use:
             input_nodes = [graph_to_use.nodes.get(inp) for inp in inputs_list]
@@ -345,8 +402,8 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        stride: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("stride", 1))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        stride: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("stride", 1))
         stride_h: int = int(stride[0]) if isinstance(stride, (tuple, list)) else int(stride)
         stride_w: int = int(stride[1]) if isinstance(stride, (tuple, list)) else int(stride)
 
@@ -384,10 +441,11 @@ class CppGenerator(BaseGenerator):
         template: dict[str, str | EagerValue] = get_cpp_template("scan")
         out_shape: list[int] = self._get_shape(node)
         out_shape_str = "{" + ",".join(map(str, out_shape)) + "}"
+        in_list = _node_inputs_list(node)
         expr_args: dict[str, AttrType] = {
             "clean_id": node.id.replace("-", "_"),
             "out_shape_str": out_shape_str,
-            "in0": _get_attr(node, "inputs", ["dummy"])[0] if _get_attr(node, "inputs", []) else "dummy",
+            "in0": in_list[0] if in_list else "dummy",
         }
         body: str = str(template["body"]).format(**expr_args)
         for line in body.split("\n"):
@@ -425,7 +483,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("conv3d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = []
         if graph_to_use:
             input_nodes = [graph_to_use.nodes.get(inp) for inp in inputs_list]
@@ -440,8 +498,8 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 5:
             shape = [1] * (5 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        stride: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("stride", [1, 1, 1]))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        stride: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("stride", [1, 1, 1]))
         if isinstance(stride, int):
             stride_d = stride_h = stride_w = stride
         elif len(stride) >= 3:
@@ -484,7 +542,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("maxpool3d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -493,12 +551,12 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 5:
             shape = [1] * (5 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        ksize: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("kernel_size", [2, 2, 2]))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        ksize: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("kernel_size", [2, 2, 2]))
         kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
         kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
         kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
-        stride: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("stride", [kd, kh, kw]))
+        stride: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("stride", [kd, kh, kw]))
         stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
         stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
         stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
@@ -536,7 +594,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("avgpool3d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -545,12 +603,12 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 5:
             shape = [1] * (5 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        ksize: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("kernel_size", [2, 2, 2]))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        ksize: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("kernel_size", [2, 2, 2]))
         kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
         kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
         kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
-        stride: int | tuple[int, ...] | list[int] = as_int_or_seq(attrs.get("stride", [kd, kh, kw]))
+        stride: int | tuple[int, ...] | list[int] = ensure_int_or_seq(attrs.get("stride", [kd, kh, kw]))
         stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
         stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
         stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
@@ -588,7 +646,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("layernorm")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         d_val: int = shape[-1] if shape else 1
         has_gamma: str = "true" if len(inputs_list) > 1 else "false"
@@ -620,7 +678,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("batchnorm")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         channels: int = shape[1] if len(shape) > 1 else 1
         spatial: int = 1
@@ -666,7 +724,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("rmsnorm")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         d_val: int = shape[-1] if shape else 1
         has_gamma: str = "true" if len(inputs_list) > 1 else "false"
@@ -694,12 +752,12 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("slice")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         rank: int = len(shape)
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        starts: int | tuple[int, ...] = as_int_or_seq(attrs.get("starts", [0] * rank))
-        strides: int | tuple[int, ...] = as_int_or_seq(attrs.get("strides", [1] * rank))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        starts: int | tuple[int, ...] = ensure_int_or_seq(attrs.get("starts", [0] * rank))
+        strides: int | tuple[int, ...] = ensure_int_or_seq(attrs.get("strides", [1] * rank))
         starts_list: list[int] = [starts] * rank if isinstance(starts, int) else list(starts[:rank])
         strides_list: list[int] = [strides] * rank if isinstance(strides, int) else list(strides[:rank])
 
@@ -728,12 +786,12 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("pad")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         rank: int = len(shape)
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
-        paddings: int | tuple[int, ...] = as_int_or_seq(attrs.get("paddings", [0] * rank))
-        pad_val: float = float(as_float(attrs.get("constant_value", 0.0)))
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
+        paddings: int | tuple[int, ...] = ensure_int_or_seq(attrs.get("paddings", [0] * rank))
+        pad_val: float = float(ensure_float(attrs.get("constant_value", 0.0)))
         pad_low: list[int] = []
         if isinstance(paddings, int):
             pad_low = [paddings] * rank
@@ -765,7 +823,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("gather_nd")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         idx_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1]
         index_depth: int = idx_shape[-1] if idx_shape else 1
@@ -792,7 +850,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("scatter_nd")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         idx_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1]
         index_depth: int = idx_shape[-1] if idx_shape else 1
@@ -821,7 +879,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("maxpool2d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -830,7 +888,7 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         if is_global:
             kh: int = in0_shape[2]
             kw: int = in0_shape[3]
@@ -874,7 +932,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("avgpool2d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -883,7 +941,7 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         if is_global:
             kh: int = in0_shape[2]
             kw: int = in0_shape[3]
@@ -926,13 +984,13 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("groupnorm")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         has_gamma: str = "true" if len(inputs_list) > 1 else "false"
         has_beta: str = "true" if len(inputs_list) > 2 else "false"
         gamma_var: str = inputs_list[1] if len(inputs_list) > 1 else (inputs_list[0] if len(inputs_list) > 0 else "dummy")
         beta_var: str = inputs_list[2] if len(inputs_list) > 2 else (inputs_list[0] if len(inputs_list) > 0 else "dummy")
         shape: list[int] = self._get_shape(node)
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         raw_ng = attrs.get("num_groups", attrs.get("groups", 1))
         num_groups: int = int(raw_ng) if isinstance(raw_ng, (int, float, str)) else 1
         raw_eps = attrs.get("eps", attrs.get("epsilon", 1e-5))
@@ -975,7 +1033,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("softmax")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         D: int = shape[-1] if shape else 1
         expr_args: dict[str, AttrType] = {
@@ -998,7 +1056,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("logsoftmax")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         D: int = shape[-1] if shape else 1
         expr_args: dict[str, AttrType] = {
@@ -1021,7 +1079,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("warp_shuffle_reduce")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         expr_args: dict[str, AttrType] = {
             "clean_id": node.id.replace("-", "_"),
@@ -1042,7 +1100,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("shared_memory_tree_reduce")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         shape: list[int] = self._get_shape(node)
         expr_args: dict[str, AttrType] = {
             "clean_id": node.id.replace("-", "_"),
@@ -1063,7 +1121,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("tiled_matmul_2d")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1]
         shape: list[int] = self._get_shape(node)
@@ -1094,7 +1152,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("conv2d_shared_halo")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
         w_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else ([1, 1, 1, 1] if len(in0_shape) >= 4 else [1, 1, 3, 3])
@@ -1106,7 +1164,7 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         stride: AttrType = attrs.get("stride", 1)
         stride_h: int = int(stride[0]) if isinstance(stride, (tuple, list)) and isinstance(stride[0], (int, float, str)) else (int(stride) if isinstance(stride, (int, float, str)) else 1)
         stride_w: int = int(stride[1]) if isinstance(stride, (tuple, list)) and len(stride) > 1 and isinstance(stride[1], (int, float, str)) else stride_h
@@ -1142,7 +1200,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("maxpool2d_dynamic")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -1151,7 +1209,7 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         ksize: AttrType = attrs.get("kernel_size", [2, 2])
         kh: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 and isinstance(ksize[0], (int, float, str)) else (int(ksize) if isinstance(ksize, int) else 2)
         kw: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 and isinstance(ksize[1], (int, float, str)) else kh
@@ -1196,7 +1254,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
         template: dict[str, str | EagerValue] = get_cpp_template("avgpool2d_dynamic")
-        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        inputs_list: list[str] = _node_inputs_list(node)
         input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
         in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
         shape: list[int] = self._get_shape(node)
@@ -1205,7 +1263,7 @@ class CppGenerator(BaseGenerator):
         if len(shape) < 4:
             shape = [1] * (4 - len(shape)) + shape
 
-        attrs: dict[str, AttrType] = _get_attr(node, "attributes", {})
+        attrs: dict[str, AttrType] = _node_attrs_dict(node)
         ksize: AttrType = attrs.get("kernel_size", [2, 2])
         kh: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 and isinstance(ksize[0], (int, float, str)) else (int(ksize) if isinstance(ksize, int) else 2)
         kw: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 and isinstance(ksize[1], (int, float, str)) else kh
@@ -1323,7 +1381,7 @@ class CppGenerator(BaseGenerator):
         mapping: dict[str, AttrType] = dict(raw_mapping) if (raw_mapping and raw_mapping.get("template")) else {}
 
         op_key = op.lower()
-        num_inputs = len(_get_attr(node, "inputs", []) or [])
+        num_inputs = len(get_backend_member(node, "inputs", []) or [])
         is_registered = op in OPS_REGISTRY or op_key in OPS_REGISTRY
         decl_op = get_cpp_operation(op_key, num_inputs=num_inputs, allow_synth=not self.strict and is_registered)
         if decl_op is None:
@@ -1334,9 +1392,9 @@ class CppGenerator(BaseGenerator):
         elif mapping.get("scalar_expr") == "in0_val":
             mapping["scalar_expr"] = decl_op.scalar_expr
 
-        if _get_attr(decl_op, "init_val", None) is not None and "init_val" not in mapping:
+        if get_backend_member(decl_op, "init_val", None) is not None and "init_val" not in mapping:
             mapping["init_val"] = decl_op.init_val
-        if _get_attr(decl_op, "final_combine", None) is not None and "final_combine" not in mapping:
+        if get_backend_member(decl_op, "final_combine", None) is not None and "final_combine" not in mapping:
             mapping["final_combine"] = decl_op.final_combine
         return mapping
 
@@ -1353,12 +1411,12 @@ class CppGenerator(BaseGenerator):
         in0_var = node.inputs[0] if len(node.inputs) > 0 else "dummy"
         in1_var = node.inputs[1] if len(node.inputs) > 1 else in0_var
         in2_var = node.inputs[2] if len(node.inputs) > 2 else in0_var
-        if graph_to_use and _has_attr(graph_to_use, "edges"):
+        if graph_to_use and has_backend_member(graph_to_use, "edges"):
             for edge in graph_to_use.edges:
-                tgt = _get_attr(edge, "target", _get_attr(edge, "target_node", None))
-                src = _get_attr(edge, "source", _get_attr(edge, "source_node", None))
-                if tgt == node.id and _get_attr(edge, "source_idx", 0) > 0:
-                    t_idx = _get_attr(edge, "target_idx", 0)
+                tgt = get_backend_member(edge, "target", get_backend_member(edge, "target_node", None))
+                src = get_backend_member(edge, "source", get_backend_member(edge, "source_node", None))
+                if tgt == node.id and get_backend_member(edge, "source_idx", 0) > 0:
+                    t_idx = get_backend_member(edge, "target_idx", 0)
                     if t_idx == 0:
                         in0_var = str(src)
                     elif t_idx == 1:
@@ -1413,7 +1471,7 @@ class CppGenerator(BaseGenerator):
             if line.strip():
                 self.lines.append(f"    {line}")
 
-        if _has_attr(node, "outputs") and len(node.outputs) > 1:
+        if has_backend_member(node, "outputs") and len(node.outputs) > 1:
             for idx, out_id in enumerate(node.outputs):
                 self.lines.append(f"    NDArrayView<float> {out_id} = {node.id}; // multi-output alias {idx}")
 
@@ -1542,14 +1600,15 @@ class LLVMCPPRunner:
         try:
             subprocess.run(compile_cmd, check=True, capture_output=True)
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            err_out = _get_attr(e, "stderr", b"").decode() if _get_attr(e, "stderr", None) else str(e)
+            raw_err = get_backend_member(e, "stderr", None)
+            err_out = raw_err.decode() if isinstance(raw_err, bytes) else (str(raw_err) if raw_err else str(e))
             shutil.rmtree(temp_dir, ignore_errors=True)
             raise RuntimeError(f"Compilation failed: {err_out}") from e
 
         try:
             lib: ctypes.CDLL = ctypes.CDLL(lib_file)
-            if _has_attr(lib, entry_point):
-                compute_func = _get_attr(lib, entry_point)
+            if has_backend_member(lib, entry_point):
+                compute_func = get_backend_member(lib, entry_point)
             else:
                 shutil.rmtree(temp_dir, ignore_errors=True)
                 raise RuntimeError(f"Function '{entry_point}' not found in compiled library. Ensure it is exported with extern \"C\".")

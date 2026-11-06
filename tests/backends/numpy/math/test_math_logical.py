@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
     _np_not_equal,
     _np_where,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -32,7 +32,7 @@ def test_not_equal() -> None:
     Returns:
         None
     """
-    assert _np_not_equal(np, 1, 2)
+    assert _np_not_equal(ensure_eager_tensor(np), 1, 2)
 
 
 def test_greater() -> None:
@@ -41,7 +41,7 @@ def test_greater() -> None:
     Returns:
         None
     """
-    assert _np_greater(np, 2, 1)
+    assert _np_greater(ensure_eager_tensor(np), 2, 1)
 
 
 def test_greater_equal() -> None:
@@ -50,7 +50,7 @@ def test_greater_equal() -> None:
     Returns:
         None
     """
-    assert _np_greater_equal(np, 2, 2)
+    assert _np_greater_equal(ensure_eager_tensor(np), 2, 2)
 
 
 def test_less() -> None:
@@ -59,7 +59,7 @@ def test_less() -> None:
     Returns:
         None
     """
-    assert _np_less(np, 1, 2)
+    assert _np_less(ensure_eager_tensor(np), 1, 2)
 
 
 def test_less_equal() -> None:
@@ -68,7 +68,7 @@ def test_less_equal() -> None:
     Returns:
         None
     """
-    assert _np_less_equal(np, 2, 2)
+    assert _np_less_equal(ensure_eager_tensor(np), 2, 2)
 
 
 def test_logical_and() -> None:
@@ -77,7 +77,7 @@ def test_logical_and() -> None:
     Returns:
         None
     """
-    assert _np_logical_and(np, True, True)
+    assert _np_logical_and(ensure_eager_tensor(np), True, True)
 
 
 def test_logical_or() -> None:
@@ -86,7 +86,7 @@ def test_logical_or() -> None:
     Returns:
         None
     """
-    assert _np_logical_or(np, True, False)
+    assert _np_logical_or(ensure_eager_tensor(np), True, False)
 
 
 def test_logical_not() -> None:
@@ -95,7 +95,7 @@ def test_logical_not() -> None:
     Returns:
         None
     """
-    assert _np_logical_not(np, False)
+    assert _np_logical_not(ensure_eager_tensor(np), False)
 
 
 def test_logical_xor() -> None:
@@ -104,7 +104,7 @@ def test_logical_xor() -> None:
     Returns:
         None
     """
-    assert _np_logical_xor(np, True, False)
+    assert _np_logical_xor(ensure_eager_tensor(np), True, False)
 
 
 def test_where() -> None:
@@ -113,8 +113,8 @@ def test_where() -> None:
     Returns:
         None
     """
-    res = _np_where(np, np.array([True, False]), 1, 0)
-    assert as_callable(np.array_equal)(res, [1, 0])
+    res = _np_where(ensure_eager_tensor(np), np.array([True, False]), 1, 0)
+    assert ensure_callable(np.array_equal)(res, [1, 0])
 
 
 def test_assert() -> None:
@@ -123,6 +123,6 @@ def test_assert() -> None:
     Returns:
         None
     """
-    _np_assert(np, True)
+    _np_assert(ensure_eager_tensor(np), True)
     with pytest.raises(AssertionError, match="Assertion failed."):
-        _np_assert(np, False)
+        _np_assert(ensure_eager_tensor(np), False)

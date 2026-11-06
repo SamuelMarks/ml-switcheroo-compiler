@@ -336,11 +336,11 @@ class Polynomial(IRPolynomial):
         sorted_monos = sorted(self.terms.keys(), key=self._monomial_sort_key)
         return "".join(self._format_monomial_term(i, mono, self.terms[mono]) for i, mono in enumerate(sorted_monos))
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | Polynomial) -> bool:
         """Evaluate equality between two polynomials.
 
         Args:
-            other (TensorOrScalar): Other object to compare against.
+            other (TensorOrScalar | Polynomial): Other object to compare against.
 
         Returns:
             bool: True if both polynomials have identical canonical terms.
@@ -446,25 +446,10 @@ def _eval_binary_int_op(op: str, v1: int, v2: int) -> int | None:
     return fn(v1, v2) if fn is not None else None
 
 
-if typing.TYPE_CHECKING:
-
-    class _SymNodeBase:
-        """Type-checking base class for SymNode."""
-
-    class _SymBinaryOpBase:
-        """Type-checking base class for SymBinaryOp."""
-
-    class _SymUnaryOpBase:
-        """Type-checking base class for SymUnaryOp."""
-
-    class _SymIntBase:
-        """Type-checking base class for SymInt."""
-
-else:
-    _SymNodeBase = IRSymNode
-    _SymBinaryOpBase = IRSymBinaryOp
-    _SymUnaryOpBase = IRSymUnaryOp
-    _SymIntBase = IRSymInt
+_SymNodeBase = IRSymNode
+_SymBinaryOpBase = IRSymBinaryOp
+_SymUnaryOpBase = IRSymUnaryOp
+_SymIntBase = IRSymInt
 
 
 @typing.runtime_checkable
@@ -827,11 +812,11 @@ class SymConst(SymNode):
         """
         return f"SymConst({self.value})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
         """Check equality with constant.
 
         Args:
-            other (TensorOrScalar): Other object.
+            other (TensorOrScalar | SymNode | SymInt): Other object.
 
         Returns:
             bool: True if values match.
@@ -923,11 +908,11 @@ class SymVar(SymNode):
         """
         return f"SymVar({self.name!r})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
         """Check equality with another variable.
 
         Args:
-            other (TensorOrScalar): Other object.
+            other (TensorOrScalar | SymNode | SymInt): Other object.
 
         Returns:
             bool: True if variable names match.
@@ -1273,11 +1258,11 @@ class SymBinaryOp(SymNode, _SymBinaryOpBase):
         """
         return f"SymBinaryOp({self.op!r}, {self.left!r}, {self.right!r})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
         """Check structural equality with another binary operation node.
 
         Args:
-            other (TensorOrScalar): Other object.
+            other (TensorOrScalar | SymNode | SymInt): Other object.
 
         Returns:
             bool: True if other is a SymBinaryOp with identical op, left, and right operands.
@@ -1445,11 +1430,11 @@ class SymPiecewise(SymNode):
             vars_set.update(expr.free_vars())
         return vars_set
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
         """Check structural equality.
 
         Args:
-            other (TensorOrScalar): Other object.
+            other (TensorOrScalar | SymNode | SymInt): Other object.
 
         Returns:
             bool: True if cases and default match.
@@ -1825,11 +1810,11 @@ class SymInt(_SymIntBase):
         """
         return hash(self.expr)
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
         """Evaluate __eq__ operation using canonical polynomial consistency.
 
         Args:
-            other (TensorOrScalar): The other object to compare.
+            other (TensorOrScalar | SymNode | SymInt): The other object to compare.
 
         Returns:
             bool: True if expressions are mathematically consistent.

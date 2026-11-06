@@ -6,8 +6,7 @@ import importlib.util
 import sys
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
 
 try:
     _has_pkg = importlib.util.find_spec("tensorflow") is not None
@@ -27,11 +26,11 @@ class _TFGeneratorClassProtocol(typing.Protocol):
     execute_op: EagerValue
 
 
-def _is_tf_gen_cls(cls_obj: StructuralOperandProtocol) -> typing.TypeGuard[_TFGeneratorClassProtocol]:
+def _is_tf_gen_cls(cls_obj: type) -> typing.TypeGuard[_TFGeneratorClassProtocol]:
     """Type guard narrowing `cls_obj` to `_TFGeneratorClassProtocol`.
 
     Args:
-        cls_obj (StructuralOperandProtocol): Target class.
+        cls_obj (type): Target class.
 
     Returns:
         bool: Always True.
@@ -39,6 +38,6 @@ def _is_tf_gen_cls(cls_obj: StructuralOperandProtocol) -> typing.TypeGuard[_TFGe
     return cls_obj is not None
 
 
-_raw_tf_cls: StructuralOperandProtocol = TensorFlowCodeGenerator
+_raw_tf_cls: type = TensorFlowCodeGenerator
 assert _is_tf_gen_cls(_raw_tf_cls)
-_raw_tf_cls.execute_op = as_callable(classmethod)(execute_op)
+_raw_tf_cls.execute_op = ensure_callable(classmethod)(execute_op)

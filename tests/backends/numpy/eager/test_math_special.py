@@ -9,8 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as ma
 import ml_switcheroo_compiler.backends.numpy.eager.math_special as ms
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -18,7 +17,9 @@ if typing.TYPE_CHECKING:
 
 def test_math_advanced_coverage() -> None:
     """Test function test_math_advanced_coverage."""
-    ops = [_get_attr(ma, name) for name in dir(ma) if name.startswith("_") and callable(_get_attr(ma, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(ma).items() if name.startswith("_") and callable(fn)]
     for op in ops:
         arg = np.array([1.0, 2.0])
         sig = inspect.signature(op)
@@ -27,9 +28,9 @@ def test_math_advanced_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                as_callable(args_to_pass.append)(1)
+                ensure_callable(args_to_pass.append)(1)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -43,7 +44,9 @@ def test_math_advanced_coverage() -> None:
 
 def test_math_special_coverage() -> None:
     """Test function test_math_special_coverage."""
-    ops = [_get_attr(ms, name) for name in dir(ms) if name.startswith("_") and callable(_get_attr(ms, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(ms).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -52,9 +55,9 @@ def test_math_special_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                as_callable(args_to_pass.append)(1)
+                ensure_callable(args_to_pass.append)(1)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -63,6 +66,6 @@ def test_math_special_coverage() -> None:
             op(*args_to_pass[:-1])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
-    ms._np_expint(np, np.array([1.0, 2.0]))
-    as_callable(ms._np_expint)(np, x=np.array([1.0, 2.0]), n=1)
+    ms._np_expint(ensure_eager_tensor(np), np.array([1.0, 2.0]))
+    ensure_callable(ms._np_expint)(np, x=np.array([1.0, 2.0]), n=1)
     assert callable(test_math_special_coverage)

@@ -30,8 +30,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing import (
     _tensor_scatter_min,
     _tensor_scatter_update,
 )
-from ml_switcheroo_compiler.core.shape import _cast_val
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -42,7 +41,7 @@ def test_gather_nd_helper() -> None:
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[0, 0], [1, 1]])
     res = _gather_nd(x, indices)
-    as_callable(np.testing.assert_allclose)(res, [1, 4])
+    ensure_callable(np.testing.assert_allclose)(res, [1, 4])
 
 
 def test_scatter_nd_helper() -> None:
@@ -51,7 +50,7 @@ def test_scatter_nd_helper() -> None:
     updates = np.array([1, 4])
     res = _scatter_nd(indices, updates, (2, 2))
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_scatter_helper() -> None:
@@ -62,7 +61,7 @@ def test_scatter_helper() -> None:
     res = _scatter(x, index, src, dim=1)
     # put_along_axis replaces
     expected = np.array([[2, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_scatter_add_helper() -> None:
@@ -72,7 +71,7 @@ def test_scatter_add_helper() -> None:
     src = np.array([[1, 2], [3, 4]])
     res = _scatter_add(x, index, src, dim=1)
     expected = np.array([[3, 0], [0, 7]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_tensor_scatter_update_helper() -> None:
@@ -82,11 +81,11 @@ def test_tensor_scatter_update_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_update(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res1, expected)
+    ensure_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_update(tensor, [[0, 0], [1, 1]], updates)
-    as_callable(np.testing.assert_allclose)(res2, expected)
+    ensure_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_add_helper() -> None:
@@ -96,11 +95,11 @@ def test_tensor_scatter_add_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_add(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res1, expected)
+    ensure_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_add(tensor, [[0, 0], [1, 1]], updates)
-    as_callable(np.testing.assert_allclose)(res2, expected)
+    ensure_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_max_helper() -> None:
@@ -110,11 +109,11 @@ def test_tensor_scatter_max_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_max(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res1, expected)
+    ensure_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_max(tensor, [[0, 0], [1, 1]], updates)
-    as_callable(np.testing.assert_allclose)(res2, expected)
+    ensure_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_min_helper() -> None:
@@ -124,20 +123,20 @@ def test_tensor_scatter_min_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_min(tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    as_callable(np.testing.assert_allclose)(res1, expected)
+    ensure_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_min(tensor, [[0, 0], [1, 1]], updates)
-    as_callable(np.testing.assert_allclose)(res2, expected)
+    ensure_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_np_take_along_axis() -> None:
     """Test _np_take_along_axis."""
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[1, 0], [0, 1]])
-    res = _np_take_along_axis(np, x, indices, axis=1)
+    res = _np_take_along_axis(ensure_eager_tensor(np), x, indices, axis=1)
     expected = np.take_along_axis(x, indices, axis=1)
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_update() -> None:
@@ -159,9 +158,9 @@ def test_np_tensor_scatter_update() -> None:
         """
         return _tensor_scatter_update(t, idx, u)
 
-    res = _np_tensor_scatter_update(np, tensor, indices, updates)
+    res = _np_tensor_scatter_update(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_add() -> None:
@@ -169,9 +168,9 @@ def test_np_tensor_scatter_add() -> None:
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_tensor_scatter_add(np, tensor, indices, updates)
+    res = _np_tensor_scatter_add(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_max() -> None:
@@ -179,9 +178,9 @@ def test_np_tensor_scatter_max() -> None:
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_tensor_scatter_max(np, tensor, indices, updates)
+    res = _np_tensor_scatter_max(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_min() -> None:
@@ -189,26 +188,26 @@ def test_np_tensor_scatter_min() -> None:
     tensor = np.ones((2, 2)) * 5
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_tensor_scatter_min(np, tensor, indices, updates)
+    res = _np_tensor_scatter_min(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_gather_nd() -> None:
     """Test _np_gather_nd."""
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[0, 0], [1, 1]])
-    res = _np_gather_nd(np, x, indices)
-    as_callable(np.testing.assert_allclose)(res, [1, 4])
+    res = _np_gather_nd(ensure_eager_tensor(np), x, indices)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 4])
 
 
 def test_np_scatter_nd() -> None:
     """Test _np_scatter_nd."""
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_scatter_nd(np, indices, updates, (2, 2))
+    res = _np_scatter_nd(ensure_eager_tensor(np), indices, updates, (2, 2))
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter() -> None:
@@ -216,9 +215,9 @@ def test_np_scatter() -> None:
     x = np.zeros((2, 2))
     index = np.array([[0, 0], [1, 1]])
     src = np.array([[1, 2], [3, 4]])
-    res = _np_scatter(np, x, index, src, dim=1)
+    res = _np_scatter(ensure_eager_tensor(np), x, index, src, dim=1)
     expected = np.array([[2, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_add() -> None:
@@ -226,16 +225,16 @@ def test_np_scatter_add() -> None:
     x = np.zeros((2, 2))
     index = np.array([[0, 0], [1, 1]])
     src = np.array([[1, 2], [3, 4]])
-    res = _np_scatter_add(np, x, index, src, dim=1)
+    res = _np_scatter_add(ensure_eager_tensor(np), x, index, src, dim=1)
     expected = np.array([[2, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_apply() -> None:
     """Test _np_scatter_apply."""
     x = np.zeros((2, 2))
-    res = _np_scatter_apply(np, _cast_val("IndexingContext", None), x)
-    as_callable(np.testing.assert_allclose)(res, x)
+    res = ensure_callable(_np_scatter_apply)(np, None, x)
+    ensure_callable(np.testing.assert_allclose)(res, x)
 
 
 def test_np_scatter_max() -> None:
@@ -243,9 +242,9 @@ def test_np_scatter_max() -> None:
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_scatter_max(np, tensor, indices, updates)
+    res = _np_scatter_max(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_min() -> None:
@@ -253,9 +252,9 @@ def test_np_scatter_min() -> None:
     tensor = np.ones((2, 2)) * 5
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
-    res = _np_scatter_min(np, tensor, indices, updates)
+    res = _np_scatter_min(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_mul() -> None:
@@ -263,9 +262,9 @@ def test_np_scatter_mul() -> None:
     tensor = np.ones((2, 2)) * 2
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([2, 4])
-    res = _np_scatter_mul(np, tensor, indices, updates)
+    res = _np_scatter_mul(ensure_eager_tensor(np), tensor, indices, updates)
     expected = np.array([[4, 2], [2, 8]])
-    as_callable(np.testing.assert_allclose)(res, expected)
+    ensure_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_tuple_instances() -> None:
@@ -282,14 +281,14 @@ def test_tuple_instances() -> None:
     updates = np.array([1, 4])
     t = np.zeros((2, 2))
 
-    res = as_callable(_tensor_scatter_update)(t, idx, updates)
+    res = ensure_callable(_tensor_scatter_update)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = as_callable(_tensor_scatter_add)(t, idx, updates)
+    res = ensure_callable(_tensor_scatter_add)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = as_callable(_tensor_scatter_max)(t, idx, updates)
+    res = ensure_callable(_tensor_scatter_max)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = as_callable(_tensor_scatter_min)(t, idx, updates)
+    res = ensure_callable(_tensor_scatter_min)(t, idx, updates)
     assert res[0, 0] == 0

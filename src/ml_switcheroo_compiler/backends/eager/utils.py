@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member, has_backend_member
 
 
 def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None) -> BackendModuleProtocol:
@@ -16,14 +15,14 @@ def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None
     Returns:
         BackendModuleProtocol: Resolved execution backend module.
     """
-    if backend_module is not None and _has_attr(backend_module, "zeros") and _has_attr(backend_module, "asarray"):
-        resolved = as_mod(_get_attr(backend_module, "numpy", backend_module))
+    if backend_module is not None and has_backend_member(backend_module, "zeros") and has_backend_member(backend_module, "asarray"):
+        resolved = ensure_mod(get_backend_member(backend_module, "numpy", backend_module))
         return resolved
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
     active = get_active_backend()
-    backend_cls = BackendRegistry.get("numpy") if not _has_attr(active, "get_module") else active
-    mod: BackendModuleProtocol = backend_cls.get_module()
+    backend_cls = BackendRegistry.get("numpy") if not has_backend_member(active, "get_module") else active
+    mod: BackendModuleProtocol = ensure_mod(backend_cls.get_module())
     return mod
 
 
@@ -38,13 +37,13 @@ def _to_numpy_array(np_mod: BackendModuleProtocol | EagerValue, x: EagerTensorPr
     Returns:
         EagerValue: Array representation in the target module.
     """
-    tensor = as_tensor(x)
-    mod = as_mod(np_mod)
-    if _has_attr(x, "numpy") and callable(_get_attr(x, "numpy")):
+    tensor = ensure_eager_tensor(x)
+    mod = ensure_mod(np_mod)
+    if has_backend_member(x, "numpy") and callable(get_backend_member(x, "numpy")):
         return tensor.numpy()
-    if name == "torch" and _has_attr(x, "detach"):
+    if name == "torch" and has_backend_member(x, "detach"):
         return tensor.detach().cpu().numpy()
-    return mod.asarray(tensor) if _has_attr(np_mod, "asarray") else x
+    return mod.asarray(tensor) if has_backend_member(np_mod, "asarray") else x
 
 
 def _torch_from_numpy(out: EagerValue, ref: EagerValue = None) -> EagerValue:
@@ -108,10 +107,10 @@ def _from_numpy_array(
         return _mlx_from_numpy(out)
     if name.startswith("jax"):
         return _jax_from_numpy(out)
-    if _has_attr(backend_module, "array"):
-        mod = as_mod(backend_module)
-        if original_tensor is not None and _has_attr(original_tensor, "dtype"):
-            return mod.array(out, dtype=_get_attr(original_tensor, "dtype"))
+    if has_backend_member(backend_module, "array"):
+        mod = ensure_mod(backend_module)
+        if original_tensor is not None and has_backend_member(original_tensor, "dtype"):
+            return mod.array(out, dtype=get_backend_member(original_tensor, "dtype"))
         return mod.array(out)
     return out
 

@@ -2,10 +2,43 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+import typing
+from collections.abc import Mapping
+
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from ml_switcheroo_compiler.serialization.utils import parse_npz
+
+
+@typing.runtime_checkable
+class _LoadNpzBackendProtocol(typing.Protocol):
+    """Protocol for backends implementing custom `load_npz`."""
+
+    def load_npz(self, filepath: str) -> dict[str, TensorLike]:
+        """Load `.npz` weights via backend hook.
+
+        Args:
+            filepath (str): Path to `.npz` archive.
+
+        Returns:
+            dict[str, TensorLike]: Loaded weights mapping.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SaveNpzBackendProtocol(typing.Protocol):
+    """Protocol for backends implementing custom `save_npz`."""
+
+    def save_npz(self, weights_np: TensorOrScalar, filepath: str) -> None:
+        """Save `.npz` weights via backend hook.
+
+        Args:
+            weights_np (TensorOrScalar): Weights dictionary.
+            filepath (str): Destination `.npz` path.
+        """
+        ...
 
 
 class NpzWeightFormat(WeightLoader, WeightSaver):
@@ -22,11 +55,10 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         """
         import ml_switcheroo_compiler.backends.registry as registry
 
-        backend = registry.get_active_backend()
-        if _has_attr(backend, "load_npz"):
+        backend: TensorOrScalar = registry.get_active_backend()
+        if isinstance(backend, _LoadNpzBackendProtocol):
             try:
-                _typed_ret_1: dict[str, TensorLike] = _cast_val("dict[str, TensorLike]", backend.load_npz(filepath))
-                return _typed_ret_1
+                return dict(backend.load_npz(filepath))
             except Exception as e:
                 import warnings
 
@@ -46,9 +78,10 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         """
         import ml_switcheroo_compiler.backends.registry as registry
 
-        backend = registry.get_active_backend()
-        if _has_attr(backend, "save_npz"):
+        backend: TensorOrScalar = registry.get_active_backend()
+        if isinstance(backend, _SaveNpzBackendProtocol):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()
-        _get_attr(np_mod, "savez")(filepath, **dict(_get_attr(weights_np, "items")()))
+        assert isinstance(weights_np, Mapping)
+        np_mod.savez(filepath, **{str(k): v for k, v in weights_np.items()})

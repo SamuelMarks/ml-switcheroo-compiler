@@ -13,9 +13,10 @@ import ml_switcheroo_compiler.backends.pyarrow_compute as pa_mod
 import ml_switcheroo_compiler.ops.info_and_histograms as iah_mod
 import ml_switcheroo_compiler.ops.text as text_mod
 from ml_switcheroo_compiler.backends.awkward.generator import AwkwardGenerator
+from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 from ml_switcheroo_compiler.backends.numpy import distributed as bnp_dist_mod
 from ml_switcheroo_compiler.backends.pyarrow_compute.generator import PyArrowComputeGenerator
-from ml_switcheroo_compiler.core.shape import _has_attr
+from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 
 
 class _DummyGenerator:
@@ -189,16 +190,23 @@ def test_package_inits() -> None:
         None
     """
     assert awk_mod.AwkwardGenerator is AwkwardGenerator
-    assert _has_attr(awk_mod.AwkwardGenerator, "zeros")
-    assert _has_attr(awk_mod.AwkwardGenerator, "array")
-    assert _has_attr(awk_mod.AwkwardGenerator, "get_layout")
+    assert callable(awk_mod.AwkwardGenerator.zeros)
+    assert callable(awk_mod.AwkwardGenerator.array)
+    assert callable(awk_mod.AwkwardGenerator.get_layout)
     assert "AwkwardGenerator" in awk_mod.__all__
 
     assert pa_mod.PyArrowComputeGenerator is PyArrowComputeGenerator
-    assert _has_attr(pa_mod.PyArrowComputeGenerator, "zeros")
-    assert _has_attr(pa_mod.PyArrowComputeGenerator, "to_table")
-    assert _has_attr(pa_mod.PyArrowComputeGenerator, "from_arrow")
+    assert callable(pa_mod.PyArrowComputeGenerator.zeros)
+    assert callable(pa_mod.PyArrowComputeGenerator.to_table)
+    assert callable(pa_mod.PyArrowComputeGenerator.from_arrow)
     assert "PyArrowComputeGenerator" in pa_mod.__all__
+
+    assert SparseGenerator.zeros((2, 2)).shape == (2, 2)
+    assert SparseGenerator.array([1.0, 0.0], dtype="float32").shape == (2,)
+    assert SparseGenerator.asarray([1.0, 0.0]).shape == (2,)
+    assert SparseGenerator.item([3.5]) == 3.5
+    assert SparseGenerator.execute_op("Add", SparseGenerator.array([1.0]), SparseGenerator.array([2.0])) is not None
+    assert KerasCodeGenerator.execute_op("Add", [1.0], [2.0]) is not None
 
     assert cmo_mod._accumulate_n is not None
     assert bnp_mod.NumpyGenerator is not None

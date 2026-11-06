@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.io import decode_base64, encode_base64
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -34,7 +34,7 @@ def test_encode_decode_base64_eager() -> None:
     pass
     pass
     if True:
-        as_callable(encode_base64)("not a tensor")
+        ensure_callable(encode_base64)("not a tensor")
     if True:
-        as_callable(decode_base64)("dGVzdA==")
+        ensure_callable(decode_base64)("dGVzdA==")
     assert t_list.shape == (2,)

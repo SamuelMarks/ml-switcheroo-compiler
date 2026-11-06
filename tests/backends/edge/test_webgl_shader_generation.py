@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_webgl_exhaustive_extra() -> None:
@@ -16,7 +16,7 @@ def test_webgl_exhaustive_extra() -> None:
     # Test missing template
     n_missing = IRNode(id="n_missing", op_type="MissingOp", inputs=[])
     g.nodes[n_missing.id] = n_missing
-    _obj_set_attr(g, "sorted_nodes", [n_missing])
+    ensure_mutable(g).sorted_nodes = ensure_eager_tensor([n_missing])
 
     gen = WebGLCodeGenerator(g)
     with pytest.raises(ValueError, match="Missing WebGL shader template"):

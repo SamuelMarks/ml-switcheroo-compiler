@@ -8,8 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import nn as nn_mod
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -27,53 +26,53 @@ def test_nn_ops() -> None:
     assert gelu_res.shape == (3,)
 
     # Relu
-    relu_res = nn_mod._np_relu(np, x)
-    assert as_callable(np.array_equal)(relu_res, [0.0, 0.0, 1.0])
-    assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("Relu")(np, x), [0.0, 0.0, 1.0])
+    relu_res = nn_mod._np_relu(ensure_eager_tensor(np), x)
+    assert ensure_callable(np.array_equal)(relu_res, [0.0, 0.0, 1.0])
+    assert ensure_callable(np.array_equal)(ensure_callable(numpy_eager_registry.get)("Relu")(np, x), [0.0, 0.0, 1.0])
 
     # AlphaDropout: not training, rate == 0, training with custom noise_shape and default noise_shape
-    assert as_callable(np.array_equal)(as_callable(nn_mod._np_alpha_dropout)(np, x, training=False), x)
-    assert as_callable(np.array_equal)(as_callable(nn_mod._np_alpha_dropout)(np, x, rate=0.0, training=True), x)
-    ad_train1 = nn_mod._np_alpha_dropout(np, x, rate=0.2, training=True, seed=42)
-    assert as_tensor(_get_attr(ad_train1, "shape")) == (3,)
-    ad_train2 = nn_mod._np_alpha_dropout(np, x, rate=0.2, training=True, seed=42, noise_shape=(3,))
-    assert as_tensor(_get_attr(ad_train2, "shape")) == (3,)
-    assert as_callable(numpy_eager_registry.get)("AlphaDropout")(np, x, training=False) is not None
+    assert ensure_callable(np.array_equal)(ensure_callable(nn_mod._np_alpha_dropout)(np, x, training=False), x)
+    assert ensure_callable(np.array_equal)(ensure_callable(nn_mod._np_alpha_dropout)(np, x, rate=0.0, training=True), x)
+    ad_train1 = nn_mod._np_alpha_dropout(ensure_eager_tensor(np), x, rate=0.2, training=True, seed=42)
+    assert ensure_eager_tensor(ad_train1).shape == (3,)
+    ad_train2 = nn_mod._np_alpha_dropout(ensure_eager_tensor(np), x, rate=0.2, training=True, seed=42, noise_shape=(3,))
+    assert ensure_eager_tensor(ad_train2).shape == (3,)
+    assert ensure_callable(numpy_eager_registry.get)("AlphaDropout")(np, x, training=False) is not None
 
     # ActivityRegularization
-    assert as_callable(np.array_equal)(as_callable(nn_mod._np_activity_regularization)(np, x), x)
-    assert as_callable(numpy_eager_registry.get)("ActivityRegularization")(np, x) is not None
+    assert ensure_callable(np.array_equal)(ensure_callable(nn_mod._np_activity_regularization)(np, x), x)
+    assert ensure_callable(numpy_eager_registry.get)("ActivityRegularization")(np, x) is not None
 
     # Dropout: not training, rate == 0, training with custom noise_shape and default noise_shape
-    assert as_callable(np.array_equal)(as_callable(nn_mod._np_dropout)(np, x, training=False), x)
-    assert as_callable(np.array_equal)(as_callable(nn_mod._np_dropout)(np, x, rate=0.0, training=True), x)
-    do_train1 = nn_mod._np_dropout(np, x, rate=0.2, training=True, seed=42)
-    assert as_tensor(_get_attr(do_train1, "shape")) == (3,)
-    do_train2 = nn_mod._np_dropout(np, x, rate=0.2, training=True, seed=42, noise_shape=(3,))
-    assert as_tensor(_get_attr(do_train2, "shape")) == (3,)
-    assert as_callable(numpy_eager_registry.get)("Dropout")(np, x, training=False) is not None
+    assert ensure_callable(np.array_equal)(ensure_callable(nn_mod._np_dropout)(np, x, training=False), x)
+    assert ensure_callable(np.array_equal)(ensure_callable(nn_mod._np_dropout)(np, x, rate=0.0, training=True), x)
+    do_train1 = nn_mod._np_dropout(ensure_eager_tensor(np), x, rate=0.2, training=True, seed=42)
+    assert ensure_eager_tensor(do_train1).shape == (3,)
+    do_train2 = nn_mod._np_dropout(ensure_eager_tensor(np), x, rate=0.2, training=True, seed=42, noise_shape=(3,))
+    assert ensure_eager_tensor(do_train2).shape == (3,)
+    assert ensure_callable(numpy_eager_registry.get)("Dropout")(np, x, training=False) is not None
 
     # TimeDistributed: len(shape) < 3 vs len(shape) >= 3
     x_2d = np.array([[-1.0, 2.0], [3.0, -4.0]])
-    td_2d = nn_mod._np_time_distributed(np, x_2d, wrapped_op_name="Relu")
-    assert as_callable(np.array_equal)(td_2d, [[0.0, 2.0], [3.0, 0.0]])
+    td_2d = nn_mod._np_time_distributed(ensure_eager_tensor(np), x_2d, wrapped_op_name="Relu")
+    assert ensure_callable(np.array_equal)(td_2d, [[0.0, 2.0], [3.0, 0.0]])
 
     x_3d = np.array([[[-1.0, 2.0]], [[3.0, -4.0]]])
-    td_3d = nn_mod._np_time_distributed(np, x_3d, wrapped_op_name="Relu")
-    assert as_callable(np.array_equal)(td_3d, [[[0.0, 2.0]], [[3.0, 0.0]]])
-    assert as_callable(numpy_eager_registry.get)("TimeDistributed")(np, x_2d, wrapped_op_name="Relu") is not None
+    td_3d = nn_mod._np_time_distributed(ensure_eager_tensor(np), x_3d, wrapped_op_name="Relu")
+    assert ensure_callable(np.array_equal)(td_3d, [[[0.0, 2.0]], [[3.0, 0.0]]])
+    assert ensure_callable(numpy_eager_registry.get)("TimeDistributed")(np, x_2d, wrapped_op_name="Relu") is not None
 
     # Rope
     rope_input = np.ones((2, 4, 8), dtype=np.float32)
-    rope_res1 = nn_mod._np_rope(np, rope_input)
-    assert as_tensor(_get_attr(rope_res1, "shape")) == (2, 4, 8)
-    rope_res2 = nn_mod._np_rope(np, rope_input, dim=8, offset=2, base=5000.0)
-    assert as_tensor(_get_attr(rope_res2, "shape")) == (2, 4, 8)
-    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Rope")(np, rope_input), "shape")) == (2, 4, 8)
+    rope_res1 = nn_mod._np_rope(ensure_eager_tensor(np), rope_input)
+    assert ensure_eager_tensor(rope_res1).shape == (2, 4, 8)
+    rope_res2 = nn_mod._np_rope(ensure_eager_tensor(np), rope_input, dim=8, offset=2, base=5000.0)
+    assert ensure_eager_tensor(rope_res2).shape == (2, 4, 8)
+    assert ensure_eager_tensor(ensure_callable(numpy_eager_registry.get)("Rope")(np, rope_input)).shape == (2, 4, 8)
 
     # Rrelu: not training vs training
-    rrelu_notrain = nn_mod._np_rrelu(np, x, training=False)
-    assert as_tensor(_get_attr(rrelu_notrain, "shape")) == (3,)
-    rrelu_train = nn_mod._np_rrelu(np, x, training=True)
-    assert as_tensor(_get_attr(rrelu_train, "shape")) == (3,)
-    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Rrelu")(np, x, training=False), "shape")) == (3,)
+    rrelu_notrain = nn_mod._np_rrelu(ensure_eager_tensor(np), x, training=False)
+    assert ensure_eager_tensor(rrelu_notrain).shape == (3,)
+    rrelu_train = nn_mod._np_rrelu(ensure_eager_tensor(np), x, training=True)
+    assert ensure_eager_tensor(rrelu_train).shape == (3,)
+    assert ensure_eager_tensor(ensure_callable(numpy_eager_registry.get)("Rrelu")(np, x, training=False)).shape == (3,)

@@ -30,9 +30,8 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
     translate_kwargs,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_dict
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -54,12 +53,12 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
             raise RuntimeError("Attr access failure")
 
     mod = BadModule()
-    fn = _resolve_custom_code("lambda x: x + 1", as_tensor(mod))
+    fn = _resolve_custom_code("lambda x: x + 1", ensure_eager_tensor(mod))
     assert callable(fn)
     assert fn(2) == 3
 
     # Invalid custom code syntax
-    assert _resolve_custom_code("lambda (: 123", as_tensor(mod)) is None
+    assert _resolve_custom_code("lambda (: 123", ensure_eager_tensor(mod)) is None
 
     # 2. _resolve_by_import failure
     assert _resolve_by_import("non_existent_module_xyz.some_attr") is None
@@ -79,15 +78,14 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
             Args:
                 x: Test parameter `x`.
             """
-            return as_tensor(x) * as_tensor(2)
+            return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
     dmod = DirectModule()
-    resolved = resolve_target_api("direct_func", backend_module=as_tensor(dmod))
+    resolved = resolve_target_api("direct_func", backend_module=ensure_eager_tensor(dmod))
     assert callable(resolved)
     assert resolved(5) == 10
-    _get_attr(_state, "update")({"BadModule": BadModule, "DirectModule": DirectModule, "dmod": dmod, "fn": fn})
-    _get_attr(_state, "update")({"mod": mod, "resolved": resolved})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"BadModule": BadModule, "DirectModule": DirectModule, "dmod": dmod, "fn": fn}))
+    _state.update(ensure_tensor_dict({"mod": mod, "resolved": resolved}))
 
 
 def _test_mapping_loader_resolution_and_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -96,14 +94,16 @@ def _test_mapping_loader_resolution_and_dispatch_part_2(_state: dict[str, EagerT
     Args:
         _state: Shared test state dictionary.
     """
-    dotted_mod = type("DottedMod", (), {})()
-    _set_attr(dotted_mod, "special.pkg.func", lambda: 99)
+    dotted_mod = type("DottedMod", (), {"special.pkg.func": staticmethod(lambda: 99)})()
     res_dotted = resolve_target_api("special.pkg.func", backend_module=dotted_mod)
     assert callable(res_dotted)
     assert res_dotted() == 99
 
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     # Unresolvable API
-    assert resolve_target_api("unresolvable_attr", backend_module=as_tensor(object())) is None
+    assert resolve_target_api("unresolvable_attr", backend_module=ensure_eager_tensor(_BareDummy())) is None
 
     # 4. _read_and_merge with various YAML shapes
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
@@ -115,9 +115,8 @@ def _test_mapping_loader_resolution_and_dispatch_part_2(_state: dict[str, EagerT
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
         f.write("- list_element_not_dict\n")
         f3 = f.name
-    _get_attr(_state, "update")({"dotted_mod": dotted_mod, "f": f, "f1": f1, "f2": f2})
-    _get_attr(_state, "update")({"f3": f3, "res_dotted": res_dotted})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dotted_mod": dotted_mod, "f": f, "f1": f1, "f2": f2}))
+    _state.update(ensure_tensor_dict({"f3": f3, "res_dotted": res_dotted}))
 
 
 def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -128,16 +127,16 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
     """
     f1, f2, f3 = _state["f1"], _state["f2"], _state["f3"]
     try:
-        t1 = as_tensor_dict({})
-        as_callable(_read_and_merge)(f1, t1)
+        t1 = ensure_tensor_dict({})
+        ensure_callable(_read_and_merge)(f1, t1)
         assert "not_dict" in t1
 
-        t2 = as_tensor_dict({})
-        as_callable(_read_and_merge)(f2, t2)
+        t2 = ensure_tensor_dict({})
+        ensure_callable(_read_and_merge)(f2, t2)
         assert "OpA" in t2
 
-        t3 = as_tensor_dict({})
-        as_callable(_read_and_merge)(f3, t3)
+        t3 = ensure_tensor_dict({})
+        ensure_callable(_read_and_merge)(f3, t3)
         assert t3 == {}
     finally:
         os.unlink(f1)
@@ -148,13 +147,13 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
             f.write("ignored")
         with open(os.path.join(tmpdir, "valid.yaml"), "w") as f:
             f.write("OpB: {target_api: b.c}\n")
-        target_dict = as_tensor_dict({})
-        as_callable(_load_yaml_dir)(tmpdir, target_dict)
+        target_dict = ensure_tensor_dict({})
+        ensure_callable(_load_yaml_dir)(tmpdir, target_dict)
         assert "OpB" in target_dict
 
     _load_yaml_dir("/path/does/not/exist", {})
-    _get_attr(_state, "update")({"f": f, "target_dict": target_dict, "tmpdir": tmpdir})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"f": f, "target_dict": target_dict, "tmpdir": tmpdir}))
+    _state.update(ensure_tensor_dict({"f1": f1, "f2": f2, "f3": f3}))
 
 
 def _test_mapping_loader_resolution_and_dispatch_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -209,14 +208,13 @@ def _test_mapping_loader_resolution_and_dispatch_part_4(_state: dict[str, EagerT
     res_m = dispatch_eager_op(
         "test_backend",
         "MethodOp",
-        [as_tensor(obj), "arg1"],
+        [ensure_eager_tensor(obj), "arg1"],
         {"b": 2},
-        backend_module=as_tensor(obj),
+        backend_module=ensure_eager_tensor(obj),
     )
     assert res_m == "method_result_arg1_2"
-    _get_attr(_state, "update")({"TargetObj": TargetObj, "_MAPPING_CACHE": _MAPPING_CACHE, "mock_mod": mock_mod, "obj": obj})
-    _get_attr(_state, "update")({"res_m": res_m, "res_std": res_std, "schema": schema, "trans": trans})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"TargetObj": TargetObj, "_MAPPING_CACHE": _MAPPING_CACHE, "mock_mod": mock_mod, "obj": obj}))
+    _state.update(ensure_tensor_dict({"res_m": res_m, "res_std": res_std, "schema": schema, "trans": trans}))
 
 
 def _test_mapping_loader_resolution_and_dispatch_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -235,10 +233,10 @@ def _test_mapping_loader_resolution_and_dispatch_part_5(_state: dict[str, EagerT
 
         pass
 
-    _set_attr(mock_mod, "run_method", lambda *a, **k: "fallback_func_result")
-    res_nometh = dispatch_eager_op("test_backend", "MethodOp", [as_tensor(DummyNoMethod())], {}, backend_module=mock_mod)
+    ensure_mutable(mock_mod).run_method = ensure_eager_tensor(lambda *a, **k: "fallback_func_result")
+    res_nometh = dispatch_eager_op("test_backend", "MethodOp", [ensure_eager_tensor(DummyNoMethod())], {}, backend_module=mock_mod)
     assert res_nometh == "fallback_func_result"
-    _get_attr(_state, "update")({"DummyNoMethod": DummyNoMethod, "res_nometh": res_nometh})
+    _state.update(ensure_tensor_dict({"DummyNoMethod": DummyNoMethod, "res_nometh": res_nometh}))
 
 
 def test_mapping_loader_resolution_and_dispatch() -> None:
@@ -256,23 +254,26 @@ def test_ir_to_ast_generation() -> None:
     """Verify code emission patterns and class generation in ir_to_ast."""
     # 1. _build_attribute_chain
     assert isinstance(_build_attribute_chain([]), cst.Name)
-    assert as_tensor(_get_attr(_build_attribute_chain([]), "value")) == "empty"
-    assert as_tensor(_get_attr(_build_attribute_chain(["single"]), "value")) == "single"
+    assert ensure_eager_tensor(ensure_eager_tensor(_build_attribute_chain([])).value) == "empty"
+    assert ensure_eager_tensor(ensure_eager_tensor(_build_attribute_chain(["single"])).value) == "single"
     chain = _build_attribute_chain(["a", "b", "c"])
     assert isinstance(chain, cst.Attribute)
 
     # 2. _emit_call_args with various attribute value types
+    class _BareAttrObj:
+        """Empty dummy class for custom_obj attribute."""
+
     node = IRNode(
         id="test_node",
         op_type="Add",
         inputs=["x", "y"],
-        attributes=as_attrs(
+        attributes=ensure_attrs(
             {
                 "dim": 1,
                 "epsilon": 1e-5,
                 "mode": "constant",
                 "flag": True,
-                "custom_obj": object(),  # triggers line 65 (else: cst.Name(str(v)))
+                "custom_obj": _BareAttrObj(),  # triggers line 65 (else: cst.Name(str(v)))
                 "is_parameter": True,  # should be skipped
             }
         ),
@@ -297,11 +298,11 @@ def test_ir_to_ast_generation() -> None:
     # Node with and without var_name
     add_named = IRNode(id="n0", op_type="Add", inputs=["x", "y"], attributes={"var_name": "res"})
     stmt_named = _emit_node_statement(add_named, "pytorch")
-    assert isinstance(as_tensor(_get_attr(as_tensor(_get_attr(stmt_named, "body")), "__getitem__")(0)), cst.Assign)
+    assert isinstance(ensure_eager_tensor(ensure_eager_tensor(stmt_named).body)[0], cst.Assign)
 
     add_unnamed = IRNode(id="n1", op_type="Add", inputs=["x", "y"])
     stmt_unnamed = _emit_node_statement(add_unnamed, "pytorch")
-    assert isinstance(as_tensor(_get_attr(as_tensor(_get_attr(stmt_unnamed, "body")), "__getitem__")(0)), cst.Expr)
+    assert isinstance(ensure_eager_tensor(ensure_eager_tensor(stmt_unnamed).body)[0], cst.Expr)
 
     # 4. emit_ir_to_class edge cases
     # Class with no user inputs (defaults to param x)
@@ -352,8 +353,7 @@ class ParamModel:
     nodes = list(g_param.nodes.values())
     assert any(n.attributes.get("param_name") == "channels" and n.attributes.get("value") == 64 for n in nodes)
     assert any(n.attributes.get("param_name") == "scale" and n.attributes.get("value") == 0.5 for n in nodes)
-    _get_attr(_state, "update")({"g_param": g_param, "nodes": nodes, "src_self": src_self})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"g_param": g_param, "nodes": nodes, "src_self": src_self}))
 
 
 def _test_ast_to_ir_lowering_and_scoping_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -414,10 +414,10 @@ elem2 = [1, 2][0]
 z = torch.add(x, y, dim=1, eps=0.001, mode='reflect', name=target_var, extra=[1, 2])
 """
     g_kw = parse_ast_to_ir(src_kwargs)
-    _get_attr(_state, "update")({"cf_types": cf_types, "g_binops": g_binops, "g_cf": g_cf, "g_kw": g_kw})
-    _get_attr(_state, "update")({"g_sub": g_sub, "op_types": op_types, "src_binops": src_binops, "src_cf": src_cf})
-    _get_attr(_state, "update")({"src_kwargs": src_kwargs, "src_sub": src_sub})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"cf_types": cf_types, "g_binops": g_binops, "g_cf": g_cf, "g_kw": g_kw}))
+    _state.update(ensure_tensor_dict({"g_sub": g_sub, "op_types": op_types, "src_binops": src_binops, "src_cf": src_cf}))
+    _state.update(ensure_tensor_dict({"src_kwargs": src_kwargs, "src_sub": src_sub}))
+    _state.update(ensure_tensor_dict({"nodes": nodes}))
 
 
 def _test_ast_to_ir_lowering_and_scoping_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -428,11 +428,11 @@ def _test_ast_to_ir_lowering_and_scoping_part_3(_state: dict[str, EagerTensorPro
     """
     g_kw = _state["g_kw"]
     add_node = next(n for n in g_kw.nodes.values() if n.op_type == "Add")
-    assert as_tensor(add_node.attributes["dim"]) == 1
-    assert as_tensor(add_node.attributes["eps"]) == 0.001
-    assert as_tensor(add_node.attributes["mode"]) == "reflect"
-    assert as_tensor(add_node.attributes["name"]) == "target_var"
-    assert as_tensor(add_node.attributes["extra"]) is None
+    assert ensure_eager_tensor(add_node.attributes["dim"]) == 1
+    assert ensure_eager_tensor(add_node.attributes["eps"]) == 0.001
+    assert ensure_eager_tensor(add_node.attributes["mode"]) == "reflect"
+    assert ensure_eager_tensor(add_node.attributes["name"]) == "target_var"
+    assert ensure_eager_tensor(add_node.attributes["extra"]) is None
 
     # 6. Nested calls and attributes in call arguments
     src_nested = """
@@ -466,10 +466,10 @@ foo = torch.split(x, 2)
     # Bare return
     src_ret_bare = "def f(x):\n    torch.relu(x)\n    return\n"
     g_rb = parse_ast_to_ir(src_ret_bare)
-    _get_attr(_state, "update")({"add_node": add_node, "g_nested": g_nested, "g_rb": g_rb, "g_rc": g_rc})
-    _get_attr(_state, "update")({"g_rn": g_rn, "g_unpack": g_unpack, "src_nested": src_nested, "src_ret_bare": src_ret_bare})
-    _get_attr(_state, "update")({"src_ret_call": src_ret_call, "src_ret_name": src_ret_name, "src_unpack_edge": src_unpack_edge, "top_add": top_add})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"add_node": add_node, "g_nested": g_nested, "g_rb": g_rb, "g_rc": g_rc}))
+    _state.update(ensure_tensor_dict({"g_rn": g_rn, "g_unpack": g_unpack, "src_nested": src_nested, "src_ret_bare": src_ret_bare}))
+    _state.update(ensure_tensor_dict({"src_ret_call": src_ret_call, "src_ret_name": src_ret_name, "src_unpack_edge": src_unpack_edge, "top_add": top_add}))
+    _state.update(ensure_tensor_dict({"g_kw": g_kw}))
 
 
 def _test_ast_to_ir_lowering_and_scoping_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -505,9 +505,9 @@ def _test_ast_to_ir_lowering_and_scoping_part_4(_state: dict[str, EagerTensorPro
     src_ret_unmapped = "def f():\n    return unmapped_call()\n"
     g_ru = parse_ast_to_ir(src_ret_unmapped)
     assert len(g_ru.outputs) == 0
-    _get_attr(_state, "update")({"g_aa": g_aa, "g_au": g_au, "g_oa": g_oa, "g_ru": g_ru})
-    _get_attr(_state, "update")({"g_uu": g_uu, "src_assign_attr": src_assign_attr, "src_assign_unmapped": src_assign_unmapped, "src_obj_attr": src_obj_attr})
-    _get_attr(_state, "update")({"src_ret_unmapped": src_ret_unmapped, "src_unpack_unmapped": src_unpack_unmapped})
+    _state.update(ensure_tensor_dict({"g_aa": g_aa, "g_au": g_au, "g_oa": g_oa, "g_ru": g_ru}))
+    _state.update(ensure_tensor_dict({"g_uu": g_uu, "src_assign_attr": src_assign_attr, "src_assign_unmapped": src_assign_unmapped, "src_obj_attr": src_obj_attr}))
+    _state.update(ensure_tensor_dict({"src_ret_unmapped": src_ret_unmapped, "src_unpack_unmapped": src_unpack_unmapped}))
 
 
 def test_ast_to_ir_lowering_and_scoping() -> None:
@@ -533,8 +533,8 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     cond_node = next(n for n in g_cond.nodes.values() if n.op_type == "Cond")
     assert "true_branch" in cond_node.attributes
     assert "false_branch" in cond_node.attributes
-    assert any(n.op_type == "Add" for n in as_tensor(cond_node.attributes["true_branch"]).nodes.values())
-    assert any(n.op_type == "Sub" for n in as_tensor(cond_node.attributes["false_branch"]).nodes.values())
+    assert any(n.op_type == "Add" for n in ensure_eager_tensor(cond_node.attributes["true_branch"]).nodes.values())
+    assert any(n.op_type == "Sub" for n in ensure_eager_tensor(cond_node.attributes["false_branch"]).nodes.values())
 
     src_while = """def loop_fn(cond, x):
     while cond:
@@ -544,7 +544,7 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     g_while = parse_ast_to_ir(src_while)
     while_node = next(n for n in g_while.nodes.values() if n.op_type == "WhileLoop")
     assert "body_subgraph" in while_node.attributes
-    assert any(n.op_type == "Add" for n in as_tensor(while_node.attributes["body_subgraph"]).nodes.values())
+    assert any(n.op_type == "Add" for n in ensure_eager_tensor(while_node.attributes["body_subgraph"]).nodes.values())
 
     src_for = """def scan_fn(items, accum):
     for item in items:
@@ -555,7 +555,7 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     scan_node = next(n for n in g_for.nodes.values() if n.op_type == "Scan")
     assert "body_subgraph" in scan_node.attributes
     assert scan_node.attributes["target_var"] == "item"
-    assert any(n.op_type == "Add" for n in as_tensor(scan_node.attributes["body_subgraph"]).nodes.values())
+    assert any(n.op_type == "Add" for n in ensure_eager_tensor(scan_node.attributes["body_subgraph"]).nodes.values())
 
     # Compound test expression in If
     src_cond_expr = """def branch_expr(x, y):
@@ -634,7 +634,7 @@ def test_ast_to_ir_exception_handling_and_roundtrip_control_flow() -> None:
     try_node = next(n for n in g.nodes.values() if n.op_type == "TryExcept")
     assert "try_subgraph" in try_node.attributes
     assert "fallback_subgraph" in try_node.attributes
-    assert any(n.op_type == "Assert" for n in as_tensor(try_node.attributes["fallback_subgraph"]).nodes.values())
+    assert any(n.op_type == "Assert" for n in ensure_eager_tensor(try_node.attributes["fallback_subgraph"]).nodes.values())
 
 
 def _test_ast_to_ir_scoped_visitor_resolution_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -670,7 +670,7 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_1(_state: dict[str, EagerTens
 
     # Case D: graph.inputs is not a list
     vis_d = ASTToIRVisitor(parent_scope={"p_var": "val"})
-    _obj_set_attr(vis_d.graph, "inputs", "not_a_list")
+    ensure_mutable(vis_d.graph).inputs = ensure_eager_tensor("not_a_list")
     res_d = vis_d._lookup_var("p_var")
     assert res_d == "p_var"
 
@@ -682,10 +682,9 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_1(_state: dict[str, EagerTens
     (a, b) = obj.pair
     return torch.add(a, b)
 """
-    _get_attr(_state, "update")({"ASTToIRVisitor": ASTToIRVisitor, "patch": patch, "res_a": res_a, "res_b": res_b})
-    _get_attr(_state, "update")({"res_c": res_c, "res_d": res_d, "src_attr_unpack": src_attr_unpack, "vis_a": vis_a})
-    _get_attr(_state, "update")({"vis_b": vis_b, "vis_c": vis_c, "vis_d": vis_d})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"ASTToIRVisitor": ASTToIRVisitor, "patch": patch, "res_a": res_a, "res_b": res_b}))
+    _state.update(ensure_tensor_dict({"res_c": res_c, "res_d": res_d, "src_attr_unpack": src_attr_unpack, "vis_a": vis_a}))
+    _state.update(ensure_tensor_dict({"vis_b": vis_b, "vis_c": vis_c, "vis_d": vis_d}))
 
 
 def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -694,8 +693,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
     Args:
         _state: Shared test state dictionary.
     """
-    ASTToIRVisitor, patch, src_attr_unpack = _state["ASTToIRVisitor"], _state["patch"], _state["src_attr_unpack"]
-    g_attr_unpack = as_callable(parse_ast_to_ir)(src_attr_unpack)
+    ASTToIRVisitor, src_attr_unpack = _state["ASTToIRVisitor"], _state["src_attr_unpack"]
+    g_attr_unpack = ensure_callable(parse_ast_to_ir)(src_attr_unpack)
     assert any(n.op_type == "GetItem" for n in g_attr_unpack.nodes.values())
 
     # 4. _handle_dict_unpack and _handle_unpack_assign with Dict target (lines 169-181, 199-202)
@@ -707,8 +706,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
             cst.StarredDictElement(value=cst.Name("rest")),  # non-DictElement
         ]
     )
-    assign_node = as_callable(cst.Assign)(
-        targets=[as_callable(cst.AssignTarget)(target=dict_target)],
+    assign_node = ensure_callable(cst.Assign)(
+        targets=[ensure_callable(cst.AssignTarget)(target=dict_target)],
         value=cst.Name("source_dict"),
     )
     vis_dict = ASTToIRVisitor()
@@ -719,10 +718,12 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
     assert "source_dict_node_dict_1" in vis_dict.graph.nodes
 
     # Dict unpack when val_node_id is None (covers branch 200->202)
-    assign_node_none = as_callable(cst.Assign)(
-        targets=[as_callable(cst.AssignTarget)(target=dict_target)],
+    assign_node_none = ensure_callable(cst.Assign)(
+        targets=[ensure_callable(cst.AssignTarget)(target=dict_target)],
         value=cst.Name("missing_dict"),
     )
+    from unittest.mock import patch
+
     with patch.object(vis_dict, "_resolve_target_val_node_id", return_value=None):
         handled_none = vis_dict._handle_unpack_assign(dict_target, assign_node_none)
         assert bool(handled_none) is True
@@ -761,11 +762,11 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
     return y
 """
     g_finally = parse_ast_to_ir(src_try_finally)
-    _get_attr(_state, "update")({"assign_node": assign_node, "assign_node_none": assign_node_none, "dict_target": dict_target, "g_attr_unpack": g_attr_unpack})
-    _get_attr(_state, "update")({"g_finally": g_finally, "g_try_exist": g_try_exist, "g_try_only": g_try_only, "handled": handled})
-    _get_attr(_state, "update")({"handled_none": handled_none, "src_try_finally": src_try_finally, "src_try_only_existing": src_try_only_existing, "src_try_pre_existing": src_try_pre_existing})
-    _get_attr(_state, "update")({"vis_dict": vis_dict})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"assign_node": assign_node, "assign_node_none": assign_node_none, "dict_target": dict_target, "g_attr_unpack": g_attr_unpack}))
+    _state.update(ensure_tensor_dict({"g_finally": g_finally, "g_try_exist": g_try_exist, "g_try_only": g_try_only, "handled": handled}))
+    _state.update(ensure_tensor_dict({"handled_none": handled_none, "src_try_finally": src_try_finally, "src_try_only_existing": src_try_only_existing, "src_try_pre_existing": src_try_pre_existing}))
+    _state.update(ensure_tensor_dict({"vis_dict": vis_dict}))
+    _state.update(ensure_tensor_dict({"ASTToIRVisitor": ASTToIRVisitor, "patch": patch, "src_attr_unpack": src_attr_unpack}))
 
 
 def _test_ast_to_ir_scoped_visitor_resolution_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -789,7 +790,7 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_3(_state: dict[str, EagerTens
 """
     g_bare = parse_ast_to_ir(src_raise_bare)
     assert any(n.op_type == "Assert" and n.attributes.get("exception") == "Exception" for n in g_bare.nodes.values())
-    _get_attr(_state, "update")({"g_bare": g_bare, "g_raise": g_raise, "src_raise_bare": src_raise_bare, "src_raise_name": src_raise_name})
+    _state.update(ensure_tensor_dict({"g_bare": g_bare, "g_raise": g_raise, "src_raise_bare": src_raise_bare, "src_raise_name": src_raise_name}))
 
 
 def test_ast_to_ir_scoped_visitor_resolution() -> None:

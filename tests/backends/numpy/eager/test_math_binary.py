@@ -9,8 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
 from ml_switcheroo_compiler.backends.numpy.eager.math_binary import _np_polygamma, _np_zeta
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -18,7 +17,9 @@ if typing.TYPE_CHECKING:
 
 def test_math_binary_coverage() -> None:
     """Test function test_math_binary_coverage."""
-    ops = [_get_attr(mb, name) for name in dir(mb) if name.startswith("_") and callable(_get_attr(mb, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(mb).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -27,9 +28,9 @@ def test_math_binary_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y"):
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -46,8 +47,8 @@ def test_polygamma_zeta_missing_args() -> None:
     import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
 
     arg = np.array([1.0, 2.0])
-    mb._np_polygamma(np, arg)
-    mb._np_zeta(np, arg)
+    mb._np_polygamma(ensure_eager_tensor(np), arg)
+    mb._np_zeta(ensure_eager_tensor(np), arg)
     assert callable(test_polygamma_zeta_missing_args)
 
 
@@ -74,27 +75,27 @@ def test_missing_math_binary() -> None:
             """
             return np.asarray(x)
 
-    res = mb._np_polygamma(as_mod(DummyBk()), np.array([1.0]), np.array([2.0]))
-    as_callable(np.testing.assert_array_almost_equal)(res, as_callable(np.array)([0.64493407]))
-    res2 = mb._np_zeta(as_mod(DummyBk()), np.array([1.0]), np.array([2.0]))
-    as_callable(np.testing.assert_array_almost_equal)(res2, as_callable(np.array)([as_callable(float)("inf")]))
-    mb._np_zeta(as_mod(DummyBk()), np.array([1.0]))
-    mb._np_zeta(as_mod(DummyBk()), np.array([1.0]), q=np.array([1.0]))
+    res = mb._np_polygamma(ensure_mod(DummyBk()), np.array([1.0]), np.array([2.0]))
+    ensure_callable(np.testing.assert_array_almost_equal)(res, ensure_callable(np.array)([0.64493407]))
+    res2 = mb._np_zeta(ensure_mod(DummyBk()), np.array([1.0]), np.array([2.0]))
+    ensure_callable(np.testing.assert_array_almost_equal)(res2, ensure_callable(np.array)([ensure_callable(float)("inf")]))
+    mb._np_zeta(ensure_mod(DummyBk()), np.array([1.0]))
+    mb._np_zeta(ensure_mod(DummyBk()), np.array([1.0]), q=np.array([1.0]))
 
 
 def test_polygamma_zeta_missing_args_2() -> None:
     """Test function test_polygamma_zeta_missing_args_2."""
     a = np.array([1.0])
-    res1 = _np_polygamma(np, a)
+    res1 = _np_polygamma(ensure_eager_tensor(np), a)
     assert np.all(res1 == 0.0)
-    res2 = _np_zeta(np, a)
+    res2 = _np_zeta(ensure_eager_tensor(np), a)
     assert np.all(res2 == 0.0)
 
 
 def test_polygamma_zeta_kwargs() -> None:
     """Test function test_polygamma_zeta_kwargs."""
     a = np.array([1.0])
-    res1 = _np_polygamma(np, a, x=a)
-    assert as_tensor(_get_attr(res1, "shape")) == (1,)
-    res2 = _np_zeta(np, a, q=a)
-    assert as_tensor(_get_attr(res2, "shape")) == (1,)
+    res1 = _np_polygamma(ensure_eager_tensor(np), a, x=a)
+    assert ensure_eager_tensor(res1).shape == (1,)
+    res2 = _np_zeta(ensure_eager_tensor(np), a, q=a)
+    assert ensure_eager_tensor(res2).shape == (1,)

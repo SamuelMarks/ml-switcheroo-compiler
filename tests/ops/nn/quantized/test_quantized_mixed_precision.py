@@ -7,8 +7,8 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -30,10 +30,9 @@ def _test_quantized_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
-    _get_attr(_state, "update")({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing})
-    _get_attr(_state, "update")({"q_ops": q_ops, "state": state})
-    _state.update(_caller_locals())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    _state.update(ensure_tensor_dict({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing}))
+    _state.update(ensure_tensor_dict({"q_ops": q_ops, "state": state}))
 
 
 def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -100,9 +99,9 @@ def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         assert q_ops.ComputeFloat8ScaleOp().infer_shape(DummyShape()) == (1, 2)
 
     finally:
-        _set_attr(config, "eager_mode", orig)
-        _set_attr(state.global_tracing_state, "is_tracing", orig_tracing)
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(config).eager_mode = ensure_eager_tensor(orig)
+        ensure_mutable(state.global_tracing_state).is_tracing = ensure_eager_tensor(orig_tracing)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
 
 
 def test_quantized_ops() -> None:

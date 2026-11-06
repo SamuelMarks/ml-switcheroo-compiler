@@ -12,7 +12,6 @@ from ml_switcheroo_ir import NodeDict
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import jvp, vjp
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
@@ -21,7 +20,7 @@ from ml_switcheroo_compiler.transforms.autodiff import _add_nodes, _is_zero_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import _parse_expression
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp, has_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp, has_vjp
-from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_tensor_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -63,11 +62,11 @@ def _finite_difference_grad(func: Callable[[Tensor], Tensor], x: Tensor, eps: fl
 
             x_arr[idx] = orig_val + eps
             pos_t: Tensor = _make_tensor(x_arr, x.shape)
-            f_pos: float = float(as_callable(np.sum)(as_callable(func)(pos_t).data))
+            f_pos: float = float(ensure_callable(np.sum)(ensure_callable(func)(pos_t).data))
 
             x_arr[idx] = orig_val - eps
             neg_t: Tensor = _make_tensor(x_arr, x.shape)
-            f_neg: float = float(as_callable(np.sum)(as_callable(func)(neg_t).data))
+            f_neg: float = float(ensure_callable(np.sum)(ensure_callable(func)(neg_t).data))
 
             num_grad[idx] = (f_pos - f_neg) / (2.0 * eps)
             x_arr[idx] = orig_val
@@ -86,16 +85,16 @@ def test_linear_algebra_vjp_rules() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_tensor_obj(dispatch_op("MatMul", a, b))
+        return ensure_tensor_obj(dispatch_op("MatMul", a, b))
 
     t_a: Tensor = _make_tensor([[1.0, 2.0], [3.0, 4.0]])
     t_b: Tensor = _make_tensor([[0.5, -0.5], [1.5, 0.0]])
     cot: Tensor = _make_tensor([[1.0, 1.0], [1.0, 1.0]])
 
-    out, vjp_fn = as_callable(vjp)(f_matmul, t_a, t_b)
+    out, vjp_fn = ensure_callable(vjp)(f_matmul, t_a, t_b)
     assert out is not None
-    grads = as_callable(vjp_fn)(cot)
-    assert as_callable(len)(grads) == 2
+    grads = ensure_callable(vjp_fn)(cot)
+    assert ensure_callable(len)(grads) == 2
 
     # 2. Transpose
     def f_transpose(x: Tensor) -> Tensor:
@@ -104,12 +103,12 @@ def test_linear_algebra_vjp_rules() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_tensor_obj(dispatch_op("Transpose", x))
+        return ensure_tensor_obj(dispatch_op("Transpose", x))
 
-    out_t, vjp_t = as_callable(vjp)(f_transpose, t_a)
-    grads_t = as_callable(vjp_t)(cot)
-    assert as_callable(len)(grads_t) == 1
-    assert as_tensor(_get_attr(as_tensor(_get_attr(grads_t, "__getitem__")(0)), "shape")) == as_tensor(_get_attr(t_a, "shape"))
+    out_t, vjp_t = ensure_callable(vjp)(f_transpose, t_a)
+    grads_t = ensure_callable(vjp_t)(cot)
+    assert ensure_callable(len)(grads_t) == 1
+    assert ensure_eager_tensor(grads_t)[0].shape == ensure_eager_tensor(t_a).shape
 
     # 3. Dot
     def f_dot(a: Tensor, b: Tensor) -> Tensor:
@@ -119,14 +118,14 @@ def test_linear_algebra_vjp_rules() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return as_tensor_obj(dispatch_op("Dot", a, b))
+        return ensure_tensor_obj(dispatch_op("Dot", a, b))
 
     d_a: Tensor = _make_tensor([1.0, 2.0, 3.0])
     d_b: Tensor = _make_tensor([4.0, 5.0, 6.0])
     cot_d: Tensor = _make_tensor([1.0, 1.0, 1.0])
-    out_d, vjp_d = as_callable(vjp)(f_dot, d_a, d_b)
-    grads_d = as_callable(vjp_d)(cot_d)
-    assert as_callable(len)(grads_d) == 2
+    out_d, vjp_d = ensure_callable(vjp)(f_dot, d_a, d_b)
+    grads_d = ensure_callable(vjp_d)(cot_d)
+    assert ensure_callable(len)(grads_d) == 2
 
 
 def test_activation_vjp_rules() -> None:
@@ -145,15 +144,15 @@ def test_activation_vjp_rules() -> None:
                 t: Test parameter `t`.
                 op_name: Test parameter `op_name`.
             """
-            return as_tensor_obj(dispatch_op(op_name, t))
+            return ensure_tensor_obj(dispatch_op(op_name, t))
 
-        out, vjp_fn = as_callable(vjp)(f_act, x)
+        out, vjp_fn = ensure_callable(vjp)(f_act, x)
         assert out is not None
-        grads = as_callable(vjp_fn)(cot)
-        assert as_callable(len)(grads) == 1
-        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(0)), "data")))
+        grads = ensure_callable(vjp_fn)(cot)
+        assert ensure_callable(len)(grads) == 1
+        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(ensure_eager_tensor(ensure_eager_tensor(grads)[0].data))
         num_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_act, x)
-        as_callable(np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
+        ensure_callable(np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
 
 
 def test_reduction_vjp_rules() -> None:
@@ -167,13 +166,13 @@ def test_reduction_vjp_rules() -> None:
         Args:
             t: Test parameter `t`.
         """
-        return as_tensor_obj(dispatch_op("ReduceSum", t))
+        return ensure_tensor_obj(dispatch_op("ReduceSum", t))
 
-    out_s, vjp_s = as_callable(vjp)(f_sum, x)
+    out_s, vjp_s = ensure_callable(vjp)(f_sum, x)
     cot_s: Tensor = _make_tensor(1.0)
-    grads_s = as_callable(vjp_s)(cot_s)
-    assert as_callable(len)(grads_s) == 1
-    assert as_tensor(_get_attr(as_tensor(_get_attr(grads_s, "__getitem__")(0)), "shape")) == as_tensor(_get_attr(x, "shape"))
+    grads_s = ensure_callable(vjp_s)(cot_s)
+    assert ensure_callable(len)(grads_s) == 1
+    assert ensure_eager_tensor(grads_s)[0].shape == ensure_eager_tensor(x).shape
 
     # 2. ReduceMean
     def f_mean(t: Tensor) -> Tensor:
@@ -182,11 +181,11 @@ def test_reduction_vjp_rules() -> None:
         Args:
             t: Test parameter `t`.
         """
-        return as_tensor_obj(dispatch_op("ReduceMean", t))
+        return ensure_tensor_obj(dispatch_op("ReduceMean", t))
 
-    out_m, vjp_m = as_callable(vjp)(f_mean, x)
-    grads_m = as_callable(vjp_m)(cot_s)
-    assert as_callable(len)(grads_m) == 1
+    out_m, vjp_m = ensure_callable(vjp)(f_mean, x)
+    grads_m = ensure_callable(vjp_m)(cot_s)
+    assert ensure_callable(len)(grads_m) == 1
 
 
 def test_loss_functions_vjp() -> None:
@@ -206,12 +205,12 @@ def test_loss_functions_vjp() -> None:
                 t: Test parameter `t`.
                 name: Test parameter `name`.
             """
-            return as_tensor_obj(dispatch_op(name, p, t))
+            return ensure_tensor_obj(dispatch_op(name, p, t))
 
-        out, vjp_fn = as_callable(vjp)(f_loss, pred, target)
+        out, vjp_fn = ensure_callable(vjp)(f_loss, pred, target)
         assert out is not None
-        grads = as_callable(vjp_fn)(cot)
-        assert as_callable(len)(grads) == 2
+        grads = ensure_callable(vjp_fn)(cot)
+        assert ensure_callable(len)(grads) == 2
 
 
 def test_normalization_and_spatial_vjp() -> None:
@@ -229,12 +228,12 @@ def test_normalization_and_spatial_vjp() -> None:
             g: Test parameter `g`.
             b: Test parameter `b`.
         """
-        return as_tensor_obj(dispatch_op("LayerNorm", inp, g, b))
+        return ensure_tensor_obj(dispatch_op("LayerNorm", inp, g, b))
 
-    out_ln, vjp_ln = as_callable(vjp)(f_ln, x, gamma, beta)
+    out_ln, vjp_ln = ensure_callable(vjp)(f_ln, x, gamma, beta)
     assert out_ln is not None
-    grads_ln = as_callable(vjp_ln)(cot)
-    assert as_callable(len)(grads_ln) == 3
+    grads_ln = ensure_callable(vjp_ln)(cot)
+    assert ensure_callable(len)(grads_ln) == 3
 
 
 def test_jvp_linear_algebra_and_activations() -> None:
@@ -248,9 +247,9 @@ def test_jvp_linear_algebra_and_activations() -> None:
         Args:
             t: Test parameter `t`.
         """
-        return as_tensor_obj(dispatch_op("Sigmoid", t))
+        return ensure_tensor_obj(dispatch_op("Sigmoid", t))
 
-    out, jvp_res = as_callable(jvp)(f_sig, (x,), (tan,))
+    out, jvp_res = ensure_callable(jvp)(f_sig, (x,), (tan,))
     assert out is not None
     assert jvp_res is not None
 
@@ -433,10 +432,10 @@ def test_rematerialization_error_and_high_cost_coverage() -> None:
 
     high_cost: LogicalNode = LogicalNode(id="hc1", op_type="MatMul", inputs=[], attributes={"rematerialize": False})
     rules: dict[str, list[str]] = {"high_cost_ops": ["MatMul"], "target_ops": ["Relu"]}
-    assert bool(as_callable(_should_rematerialize)(high_cost, rules)) is False
+    assert bool(ensure_callable(_should_rematerialize)(high_cost, rules)) is False
 
     target_node: LogicalNode = LogicalNode(id="t1", op_type="Relu", inputs=[], attributes={"checkpoint": True})
-    assert bool(as_callable(_should_rematerialize)(target_node, rules)) is True
+    assert bool(ensure_callable(_should_rematerialize)(target_node, rules)) is True
 
 
 def test_expanded_vjp_and_jvp_registry_rules() -> None:
@@ -475,14 +474,14 @@ def test_erf_and_outer_finite_difference_grad() -> None:
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return as_tensor_obj(dispatch_op("Erf", x))
+        return ensure_tensor_obj(dispatch_op("Erf", x))
 
     x: Tensor = _make_tensor([0.2, 0.5, -0.8, 1.2])
     num_grad_erf: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_erf, x)
 
     # Analytical derivative: 2 / sqrt(pi) * exp(-x^2)
     expected_erf_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = (2.0 / np.sqrt(np.pi)) * np.exp(-(np.array(x.data) ** 2))
-    as_callable(np.testing.assert_allclose)(num_grad_erf, expected_erf_grad, rtol=1e-3, atol=1e-3)
+    ensure_callable(np.testing.assert_allclose)(num_grad_erf, expected_erf_grad, rtol=1e-3, atol=1e-3)
 
     # 2. Outer product finite-difference verification
     u: Tensor = _make_tensor([1.0, 2.0, 3.0])
@@ -497,12 +496,12 @@ def test_erf_and_outer_finite_difference_grad() -> None:
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
         v_t: Tensor = _make_tensor(v_arr)
-        return as_tensor_obj(dispatch_op("Outer", u_in, v_t))
+        return ensure_tensor_obj(dispatch_op("Outer", u_in, v_t))
 
     num_grad_outer: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_outer, u)
     # Derivative wrt u of sum(u otimes v) is sum(v) for all entries
     expected_outer_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.full_like(u.data, np.sum(v_arr))
-    as_callable(np.testing.assert_allclose)(num_grad_outer, expected_outer_grad, rtol=1e-3, atol=1e-3)
+    ensure_callable(np.testing.assert_allclose)(num_grad_outer, expected_outer_grad, rtol=1e-3, atol=1e-3)
 
 
 def test_control_flow_adjoint_lowering() -> None:
@@ -536,7 +535,7 @@ def test_control_flow_adjoint_lowering() -> None:
         id="cond_node",
         op_type="Cond",
         inputs=["pred", "x"],
-        attributes=as_attrs({"then_branch": tb, "else_branch": eb}),
+        attributes=ensure_attrs({"then_branch": tb, "else_branch": eb}),
         shape_metadata=(2,),
     )
 
@@ -561,7 +560,7 @@ def test_control_flow_adjoint_lowering() -> None:
         id="scan_node",
         op_type="Scan",
         inputs=["carry", "xs"],
-        attributes=as_attrs({"body": body_g, "reverse": False}),
+        attributes=ensure_attrs({"body": body_g, "reverse": False}),
         shape_metadata=(2,),
     )
     adj_scan_vjp = _scan_vjp(g, scan_node, "cot_c")
@@ -577,7 +576,7 @@ def test_control_flow_adjoint_lowering() -> None:
         id="while_node",
         op_type="WhileLoop",
         inputs=["carry", "x"],
-        attributes=as_attrs({"body": body_g, "cond": tb}),
+        attributes=ensure_attrs({"body": body_g, "cond": tb}),
         shape_metadata=(2,),
     )
     adj_while_vjp = _while_loop_vjp(g, while_node, "cot_v")
@@ -614,7 +613,7 @@ def test_declarative_rematerialization_policies() -> None:
 
     # Custom path loading
     custom_cfg = load_rematerialization_rules("/nonexistent_path/remat.yaml")
-    assert isinstance(custom_cfg, object)
+    assert custom_cfg is not None
 
     # Empty policies fallback to target_ops
     from unittest.mock import patch

@@ -20,52 +20,46 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol as ShapeProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    _get_attr as _get_attr,
+    ensure_bool as ensure_bool,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    _has_attr as _has_attr,
+    ensure_bytes as ensure_bytes,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_bool as as_bool,
+    ensure_callable as ensure_callable,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_bytes as as_bytes,
+    ensure_eager_list as ensure_eager_list,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_callable as as_callable,
+    ensure_eager_tensor as ensure_eager_tensor,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_eager_list as as_eager_list,
+    ensure_float as ensure_float,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_float as as_float,
+    ensure_int as ensure_int,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_int as as_int,
+    ensure_opt_int as ensure_opt_int,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_opt_int as as_opt_int,
+    ensure_opt_int_seq as ensure_opt_int_seq,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_opt_int_seq as as_opt_int_seq,
+    ensure_opt_str as ensure_opt_str,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_opt_str as as_opt_str,
+    ensure_shape as ensure_shape,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_shape as as_shape,
+    ensure_str as ensure_str,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_str as as_str,
+    ensure_tensor_pair as ensure_tensor_pair,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    as_tensor as as_tensor,
-)
-from ml_switcheroo_compiler.backends.eager_registry import (
-    as_tensor_pair as as_tensor_pair,
-)
-from ml_switcheroo_compiler.backends.eager_registry import (
-    as_tensor_triple as as_tensor_triple,
+    ensure_tensor_triple as ensure_tensor_triple,
 )
 from ml_switcheroo_compiler.backends.protocols import (
     BackendModuleProtocol as BackendModuleProtocol,
@@ -74,7 +68,7 @@ from ml_switcheroo_compiler.backends.protocols import (
     BackendNamespaceProtocol as BackendNamespaceProtocol,
 )
 from ml_switcheroo_compiler.backends.protocols import (
-    as_mod as as_mod,
+    ensure_mod as ensure_mod,
 )
 from ml_switcheroo_compiler.core.config import config
 

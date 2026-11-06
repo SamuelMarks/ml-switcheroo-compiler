@@ -15,8 +15,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import (
     _resulttype,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
-from tests.testing_utils import as_callable, as_mod
+from tests.testing_utils import ensure_callable, ensure_mod, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -43,7 +42,7 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             return True
 
     acb = AllcloseBackend()
-    assert _allclose(as_mod(acb), [1.0], [1.0]) is True
+    assert _allclose(ensure_mod(acb), [1.0], [1.0]) is True
 
     # Case B: backend lacks allclose -> fallback to np.allclose
     class EmptyBackend:
@@ -68,9 +67,8 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             """Return item val."""
             return self.val
 
-    _get_attr(_state, "update")({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb})
-    _get_attr(_state, "update")({"eb": eb})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb}))
+    _state.update(ensure_tensor_dict({"eb": eb}))
 
 
 def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -109,12 +107,12 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
 
     assert (
         bool(
-            as_callable(_allclose)(
+            ensure_callable(_allclose)(
                 eb,
                 [1.0],
                 [1.0],
                 rtol=ItemObj(1e-4),
-                atol=as_callable(DataObj)(as_callable(ToListObj)([1e-6])),
+                atol=ensure_callable(DataObj)(ensure_callable(ToListObj)([1e-6])),
                 equal_nan=DataObj(False),
             )
         )
@@ -134,14 +132,14 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             """
             return "allclose_equiv"
 
-    assert _array_equiv(as_mod(ArrayEquivBackend()), [1], [1]) == "allclose_equiv"
+    assert _array_equiv(ensure_mod(ArrayEquivBackend()), [1], [1]) == "allclose_equiv"
     assert _array_equiv(EmptyBackend(), [1], [1]) is True
 
     # 3. _assert
     # Case A: condition is True -> returns None
     assert _assert(eb, True) is None
-    _get_attr(_state, "update")({"ArrayEquivBackend": ArrayEquivBackend, "DataObj": DataObj, "ToListObj": ToListObj})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"ArrayEquivBackend": ArrayEquivBackend, "DataObj": DataObj, "ToListObj": ToListObj}))
+    _state.update(ensure_tensor_dict({"EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "eb": eb}))
 
 
 def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -198,11 +196,11 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             return "result_type"
 
     tb = TypeBackend()
-    assert _promotetypes(as_mod(tb), "float32", "float64") == "promoted"
-    assert _resulttype(as_mod(tb), "int32", "float32") == "result_type"
-    _get_attr(_state, "update")({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data})
-    _get_attr(_state, "update")({"tb": tb})
-    _state.update(_caller_locals())
+    assert _promotetypes(ensure_mod(tb), "float32", "float64") == "promoted"
+    assert _resulttype(ensure_mod(tb), "int32", "float32") == "result_type"
+    _state.update(ensure_tensor_dict({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data}))
+    _state.update(ensure_tensor_dict({"tb": tb}))
+    _state.update(ensure_tensor_dict({"eb": eb}))
 
 
 def _test_math_testing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:

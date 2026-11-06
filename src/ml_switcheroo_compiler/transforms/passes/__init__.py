@@ -77,6 +77,7 @@ __all__ = [
     "mixed_precision_pass",
     "operator_fusion_pass",
     "parallel_scan_pass",
+    "polyfill_lowering_pass",
     "propagate_sharding",
     "rematerialization_pass",
     "shape_inference_pass",

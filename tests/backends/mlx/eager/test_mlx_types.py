@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -30,6 +30,8 @@ def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
             """
             return "array_" + str(data)
 
-    as_callable(mocker.patch.object)(types_mod, "mx", as_callable(DummyMX)())
+    from unittest.mock import patch
 
-    assert as_callable(asarray)(None, "foo") == "array_foo"
+    _ = mocker
+    with patch.object(types_mod, "mx", DummyMX()):
+        assert ensure_callable(asarray)(None, "foo") == "array_foo"

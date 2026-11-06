@@ -10,7 +10,7 @@ import pytest
 import ml_switcheroo_compiler.core.assertions as assertions
 from ml_switcheroo_compiler.core.assertions import clear_assertions, evaluate_assertions, record_assertion
 from ml_switcheroo_compiler.ops.control_flow import assert_value
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -46,8 +46,8 @@ def test_assertions() -> None:
             """
             return self.val
 
-    as_callable(record_assertion)(
-        as_callable(DummyProxy)(as_callable(np.array)([False])),
+    ensure_callable(record_assertion)(
+        ensure_callable(DummyProxy)(ensure_callable(np.array)([False])),
         "Proxy failed",
     )
     with pytest.raises(AssertionError, match="Proxy failed"):
@@ -90,7 +90,7 @@ def test_assertions_coverage() -> None:
             """
             return np.array([True, True])
 
-    assert bool(as_callable(assertions._evaluate_single_condition)(as_callable(NumpyCond)())) is True
+    assert bool(ensure_callable(assertions._evaluate_single_condition)(ensure_callable(NumpyCond)())) is True
 
     class NumpyCondFalse:
         """Condition helper returning a mixed NumPy array."""
@@ -103,7 +103,7 @@ def test_assertions_coverage() -> None:
             """
             return np.array([True, False])
 
-    assert bool(as_callable(assertions._evaluate_single_condition)(as_callable(NumpyCondFalse)())) is False
+    assert bool(ensure_callable(assertions._evaluate_single_condition)(ensure_callable(NumpyCondFalse)())) is False
 
     assert assertions._evaluate_single_condition(True) is True
     assert assertions._evaluate_single_condition(False) is False
@@ -128,7 +128,7 @@ def test_assertions_coverage() -> None:
             yield True
             yield True
 
-    assert bool(as_callable(assertions._evaluate_single_condition)(as_callable(ValueErrCond)())) is True
+    assert bool(ensure_callable(assertions._evaluate_single_condition)(ensure_callable(ValueErrCond)())) is True
 
     assertions.clear_assertions()
     assertions.record_assertion(True, "All good")

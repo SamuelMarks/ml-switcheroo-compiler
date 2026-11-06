@@ -9,10 +9,9 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.ops.eager_evaluator as eager_eval_mod
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -53,8 +52,9 @@ def test_eager_evaluator_full_coverage() -> None:
             Returns:
                 Tensor | None: Result.
             """
-            _typed_ret_1: Tensor | None = _cast_val("Tensor | None", as_tensor(_get_attr(super(), "evaluate"))(ctx))
-            return _typed_ret_1
+            from tests.testing_utils import ensure_tensor_obj
+
+            return ensure_tensor_obj(ensure_eager_tensor(ensure_eager_tensor(super()).evaluate)(ctx))
 
     dummy_ctx = eager_eval_mod.EvaluationContext(
         op_cls=OpDef,
@@ -117,26 +117,26 @@ def test_eager_evaluator_full_coverage() -> None:
     assert backend_strat.evaluate(ctx_be) == 888
 
     strat_custom = eager_eval_mod.EagerEvaluator._get_strategy(CustomEvalOp)
-    assert isinstance(as_tensor(strat_custom), eager_eval_mod.CustomEagerEvalStrategy)
+    assert isinstance(ensure_eager_tensor(strat_custom), eager_eval_mod.CustomEagerEvalStrategy)
 
     strat_be = eager_eval_mod.EagerEvaluator._get_strategy(OpDef)
-    assert isinstance(as_tensor(strat_be), eager_eval_mod.BackendExecuteOpStrategy)
+    assert isinstance(ensure_eager_tensor(strat_be), eager_eval_mod.BackendExecuteOpStrategy)
 
     t_in = Tensor(np.array([1.0, 2.0], dtype=np.float32), TensorConfig((2,), "float32", "cpu"))
-    packed_tuple = as_callable(eager_eval_mod.EagerEvaluator._pack_outputs)(
-        (as_callable(np.array)([1.0], dtype=np.float32), as_callable(DummyWithoutShape)()),
+    packed_tuple = ensure_callable(eager_eval_mod.EagerEvaluator._pack_outputs)(
+        (ensure_callable(np.array)([1.0], dtype=np.float32), ensure_callable(DummyWithoutShape)()),
         t_in,
         "cpu",
     )
-    assert isinstance(as_tensor(packed_tuple), tuple)
-    assert as_tensor(len(packed_tuple)) == 2
+    assert isinstance(ensure_eager_tensor(packed_tuple), tuple)
+    assert ensure_eager_tensor(len(packed_tuple)) == 2
 
-    packed_single_noshape = as_callable(eager_eval_mod.EagerEvaluator._pack_outputs)(
-        as_callable(DummyWithoutShape)(),
+    packed_single_noshape = ensure_callable(eager_eval_mod.EagerEvaluator._pack_outputs)(
+        ensure_callable(DummyWithoutShape)(),
         t_in,
         "cpu",
     )
-    assert isinstance(as_tensor(packed_single_noshape), Tensor)
+    assert isinstance(ensure_eager_tensor(packed_single_noshape), Tensor)
     assert packed_single_noshape.shape == ()
 
     with (

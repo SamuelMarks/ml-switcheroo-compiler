@@ -12,9 +12,8 @@ from ml_switcheroo_ir import NodeDict
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_list
+from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -33,9 +32,9 @@ def test_wasm_generate_fallback() -> None:
     """Test function test_wasm_generate_fallback."""
     graph = IRGraph()
     node = IRNode("Add", "add_1", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    _set_attr(node, "op_type", "Add")
+    ensure_mutable(node).op_type = ensure_eager_tensor("Add")
     graph.nodes["add_1"] = node
-    _obj_set_attr(graph, "sorted_nodes", [node])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = WasmCodeGenerator(graph, [])
@@ -53,38 +52,38 @@ def test_wasm_visit_methods() -> None:
     generator = WasmCodeGenerator(graph, [])
 
     node_conv = IRNode("Conv2D", "conv_1", inputs=["in1", "in2"])
-    _set_attr(node_conv, "attributes", {"strides": [1, 1], "padding": "SAME"})
-    as_callable(generator.visit_Conv2D)(node_conv, "Conv2D", "conv_1", ["in1", "in2"], [2, 2, 2, 2], 16)
+    ensure_mutable(node_conv).attributes = ensure_eager_tensor({"strides": [1, 1], "padding": "SAME"})
+    ensure_callable(generator.visit_Conv2D)(node_conv, "Conv2D", "conv_1", ["in1", "in2"], [2, 2, 2, 2], 16)
 
     node_max = IRNode("MaxPool2D", "max_1", inputs=["in1"])
-    _set_attr(node_max, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
-    as_callable(generator.visit_MaxPool2D)(node_max, "MaxPool2D", "max_1", ["in1"], [2, 2, 2, 2], 16)
+    ensure_mutable(node_max).attributes = ensure_eager_tensor({"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
+    ensure_callable(generator.visit_MaxPool2D)(node_max, "MaxPool2D", "max_1", ["in1"], [2, 2, 2, 2], 16)
 
     node_if = IRNode("If", "if_1", inputs=[])
-    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
-    as_callable(generator.visit_If)(node_if, "If", "if_1", [], [], 0)
+    ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
+    ensure_callable(generator.visit_If)(node_if, "If", "if_1", [], [], 0)
 
     node_concat = IRNode("Concat", "cat_1", inputs=["in1", "in2"])
-    _set_attr(node_concat, "attributes", {"axis": 0})
+    ensure_mutable(node_concat).attributes = ensure_eager_tensor({"axis": 0})
     pass  # (node_concat, "Concat", "cat_1", ["in1", "in2"], [4], 4)
 
     IRNode("Reshape", "res_1", inputs=["in1"])
     pass  # (node_reshape, "Reshape", "res_1", ["in1"], [4], 4)
 
     node_transpose = IRNode("Transpose", "trans_1", inputs=["in1"])
-    _set_attr(node_transpose, "attributes", {"axes": [1, 0]})
+    ensure_mutable(node_transpose).attributes = ensure_eager_tensor({"axes": [1, 0]})
     pass  # (node_transpose, "Transpose", "trans_1", ["in1"], [2, 2], 4)
 
     node_slice = IRNode("Slice", "slice_1", inputs=["in1"])
-    _set_attr(node_slice, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
+    ensure_mutable(node_slice).attributes = ensure_eager_tensor({"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
     pass  # (node_slice, "Slice", "slice_1", ["in1"], [1, 2], 2)
 
     node_gather = IRNode("Gather", "gath_1", inputs=["in1", "indices"])
-    _set_attr(node_gather, "attributes", {"axis": 0})
+    ensure_mutable(node_gather).attributes = ensure_eager_tensor({"axis": 0})
     pass  # (node_gather, "Gather", "gath_1", ["in1", "indices"], [1, 2], 2)
 
     node_cast = IRNode("Cast", "cast_1", inputs=["in1"])
-    _set_attr(node_cast, "attributes", {"to": "int32"})
+    ensure_mutable(node_cast).attributes = ensure_eager_tensor({"to": "int32"})
     pass  # (node_cast, "Cast", "cast_1", ["in1"], [2], 2)
 
     IRNode("Where", "wh_1", inputs=["cond", "x", "y"])
@@ -97,42 +96,42 @@ def test_wasm_coverage_methods() -> None:
     generator = WasmCodeGenerator(graph, [])
 
     node = IRNode("AvgPool2D", "avg_1", inputs=["in1"])
-    _set_attr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "SAME"})
-    as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_1", ["in1"], [2, 2, 2, 2], 16)
+    ensure_mutable(node).attributes = ensure_eager_tensor({"window_size": [2, 2], "stride": [2, 2], "padding": "SAME"})
+    ensure_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_1", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AvgPool2D", "avg_2", inputs=["in1"])
-    _set_attr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
-    as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_2", ["in1"], [2, 2, 2, 2], 16)
+    ensure_mutable(node).attributes = ensure_eager_tensor({"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
+    ensure_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_2", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AllReduce", "allr_1", inputs=["in1"])
-    as_callable(generator.visit_AllReduce)(node, "AllReduce", "allr_1", ["in1"], [4], 4)
+    ensure_callable(generator.visit_AllReduce)(node, "AllReduce", "allr_1", ["in1"], [4], 4)
 
     node = IRNode("AllGather", "allg_1", inputs=["in1"])
-    as_callable(generator.visit_AllGather)(node, "AllGather", "allg_1", ["in1"], [4], 4)
+    ensure_callable(generator.visit_AllGather)(node, "AllGather", "allg_1", ["in1"], [4], 4)
 
     node = IRNode("AllToAll", "allt_1", inputs=["in1"])
-    as_callable(generator.visit_AllToAll)(node, "AllToAll", "allt_1", ["in1"], [4], 4)
+    ensure_callable(generator.visit_AllToAll)(node, "AllToAll", "allt_1", ["in1"], [4], 4)
 
     node = IRNode("ReduceScatter", "reds_1", inputs=["in1"])
-    as_callable(generator.visit_ReduceScatter)(node, "ReduceScatter", "reds_1", ["in1"], [4], 4)
+    ensure_callable(generator.visit_ReduceScatter)(node, "ReduceScatter", "reds_1", ["in1"], [4], 4)
 
     node = IRNode("Cond", "cond_1", inputs=[])
-    _obj_set_attr(node, "attributes", {"true_branch": IRGraph(), "false_branch": IRGraph()})
-    as_callable(generator.visit_Cond)(node, "Cond", "cond_1", [], [], 0)
+    ensure_mutable(node).attributes = ensure_eager_tensor({"true_branch": IRGraph(), "false_branch": IRGraph()})
+    ensure_callable(generator.visit_Cond)(node, "Cond", "cond_1", [], [], 0)
 
     node = IRNode("Scan", "scan_1", inputs=[])
-    _obj_set_attr(node, "attributes", {"body": IRGraph()})
-    as_callable(generator.visit_Scan)(node, "Scan", "scan_1", [], [], 0)
+    ensure_mutable(node).attributes = ensure_eager_tensor({"body": IRGraph()})
+    ensure_callable(generator.visit_Scan)(node, "Scan", "scan_1", [], [], 0)
 
     node = IRNode("MatMul", "mat_1", inputs=["in1", "in2"])
-    _obj_set_attr(node, "shape_metadata", [2, 2])
+    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2])
     # To mock inputs shapes properly, we need to add nodes to graph
     n1 = IRNode("I", "in1", inputs=[])
-    _obj_set_attr(n1, "shape_metadata", [2, 2])
+    ensure_mutable(n1).shape_metadata = ensure_eager_tensor([2, 2])
     n2 = IRNode("I", "in2", inputs=[])
-    _obj_set_attr(n2, "shape_metadata", [2, 2])
-    _obj_set_attr(graph, "sorted_nodes", [n1, n2])
-    as_callable(generator.visit_MatMul)(node, "MatMul", "mat_1", ["in1", "in2"], [2, 2], 4)
+    ensure_mutable(n2).shape_metadata = ensure_eager_tensor([2, 2])
+    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([n1, n2])
+    ensure_callable(generator.visit_MatMul)(node, "MatMul", "mat_1", ["in1", "in2"], [2, 2], 4)
 
     node = IRNode("Log", "log_1", inputs=["in1"])
     node = IRNode("Exp", "exp_1", inputs=["in1"])
@@ -141,7 +140,7 @@ def test_wasm_coverage_methods() -> None:
     # Some helper methods
     assert generator._num_elements([2, 3]) == 6
 
-    assert as_callable(generator._num_elements)(4) == 1
+    assert ensure_callable(generator._num_elements)(4) == 1
 
     # Generate test function
 
@@ -161,7 +160,7 @@ def global_wasm_mock() -> Iterator[EagerValue]:
             OPS_REGISTRY[op] = {"variants": {}}
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
-        _get_attr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
+        ensure_eager_tensor(OPS_REGISTRY[op]["variants"])["edge_wasm_simd"] = {"template": "mock_template_" + op}
 
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
         mock_bodies = {
@@ -188,8 +187,8 @@ def global_wasm_mock() -> Iterator[EagerValue]:
 
                 path = Path(__file__).parent.parent.parent.parent / "src" / "ml_switcheroo_compiler" / "backends" / "edge" / "wasm_simd" / "wasm_templates" / "Conv3D.yaml"
                 with open(path) as f:
-                    return as_tensor(yaml.safe_load(f)["Conv3D"])
-            return {"body": as_callable(mock_bodies.get)(template_name, as_tensor("// ") + as_tensor(template_name))}
+                    return ensure_eager_tensor(yaml.safe_load(f)["Conv3D"])
+            return {"body": ensure_callable(mock_bodies.get)(template_name, ensure_eager_tensor("// ") + ensure_eager_tensor(template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
         try:
@@ -203,29 +202,29 @@ def test_wasm_coverage_unknown_op() -> None:
     """Test function test_wasm_coverage_unknown_op."""
     g = IRGraph()
     n = IRNode("dummy", "UnknownOp")
-    _obj_set_attr(n, "inputs", ("dummy_in",))
-    _obj_set_attr(n, "shape_metadata", 1)
+    ensure_mutable(n).inputs = ensure_eager_tensor(("dummy_in",))
+    ensure_mutable(n).shape_metadata = ensure_eager_tensor(1)
     g.inputs = []
-    _obj_set_attr(g, "outputs", [n])
-    _obj_set_attr(g, "_nodes", {"dummy": n})
+    ensure_mutable(g).outputs = ensure_eager_tensor([n])
+    ensure_mutable(g)._nodes = ensure_eager_tensor({"dummy": n})
     gen = WasmCodeGenerator(g)
     gen.var_names = {"dummy_in": "dummy_in"}
-    _set_attr(gen, "sorted_nodes", g.inputs + [n])
+    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor(g.inputs + [n])
     code = gen.generate()
     assert "Unimplemented UnknownOp" in code
 
     n2 = IRNode("dummy_sigmoid", "Sigmoid")
-    _obj_set_attr(n2, "inputs", ("dummy_in",))
-    _obj_set_attr(n2, "shape_metadata", 10)
-    _get_attr(_get_attr(g, "_nodes"), "__setitem__")("dummy_sigmoid", n2)
+    ensure_mutable(n2).inputs = ensure_eager_tensor(("dummy_in",))
+    ensure_mutable(n2).shape_metadata = ensure_eager_tensor(10)
+    ensure_eager_tensor(ensure_eager_tensor(g)._nodes)["dummy_sigmoid"] = n2
     gen.sorted_nodes.append(n2)
     code = gen.generate()
     assert "std::exp" in code
 
     n3 = IRNode("dummy_exp", "Exp")
-    _obj_set_attr(n3, "inputs", ("dummy_in",))
-    _obj_set_attr(n3, "shape_metadata", 10)
-    _get_attr(_get_attr(g, "_nodes"), "__setitem__")("dummy_exp", n3)
+    ensure_mutable(n3).inputs = ensure_eager_tensor(("dummy_in",))
+    ensure_mutable(n3).shape_metadata = ensure_eager_tensor(10)
+    ensure_eager_tensor(ensure_eager_tensor(g)._nodes)["dummy_exp"] = n3
     gen.sorted_nodes.append(n3)
     code = gen.generate()
     assert "std::exp" in code
@@ -337,9 +336,9 @@ def test_wasm_scalar_shapes3() -> None:
     n_conv.shape_metadata = (1, 16, 16, 16)
 
     in1 = IRNode("in1", "Input")
-    _obj_set_attr(in1, "shape_metadata", 5.0)
+    ensure_mutable(in1).shape_metadata = ensure_eager_tensor(5.0)
     in2 = IRNode("in2", "Input")
-    _obj_set_attr(in2, "shape_metadata", 5.0)
+    ensure_mutable(in2).shape_metadata = ensure_eager_tensor(5.0)
 
     g.nodes = NodeDict({"in1": in1, "in2": in2, "conv": n_conv})
     g.inputs = ["in1", "in2"]
@@ -361,7 +360,7 @@ def test_wasm_scalar_pool_norm() -> None:
     n_pool.shape_metadata = (1, 16, 8, 8)
 
     in1 = IRNode("in1", "Input")
-    _obj_set_attr(in1, "shape_metadata", 5.0)
+    ensure_mutable(in1).shape_metadata = ensure_eager_tensor(5.0)
 
     g.nodes = NodeDict({"in1": in1, "pool": n_pool})
     g.inputs = ["in1"]
@@ -374,7 +373,7 @@ def test_wasm_scalar_pool_norm() -> None:
     # LayerNorm with bad inputs
     g2 = IRGraph()
     in_ln = IRNode("in_ln", "Input")
-    _obj_set_attr(in_ln, "shape_metadata", 5.0)
+    ensure_mutable(in_ln).shape_metadata = ensure_eager_tensor(5.0)
     n_ln = IRNode("ln", "LayerNorm", inputs=["in_ln"], attributes={"padding": (1, 1)})
     n_ln.shape_metadata = (1, 16, 8, 8)
     g2.nodes = NodeDict({"in_ln": in_ln, "ln": n_ln})
@@ -571,7 +570,7 @@ def test_wasm_while_loop_coverage() -> None:
     body_graph.outputs = ["b_out"]
 
     g = IRGraph()
-    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=as_attrs({"body": body_graph}))
+    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=ensure_attrs({"body": body_graph}))
     n_while.shape_metadata = (1,)
 
     in1 = IRNode("in1", "Input")
@@ -606,7 +605,7 @@ def test_wasm_cond_coverage() -> None:
     else_graph.outputs = ["e_out"]
 
     g = IRGraph()
-    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=as_attrs({"then_branch": then_graph, "else_branch": else_graph}))
+    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=ensure_attrs({"then_branch": then_graph, "else_branch": else_graph}))
     n_cond.shape_metadata = (1,)
 
     cond_in = IRNode("cond_in", "Input")
@@ -627,18 +626,18 @@ def test_wasm_cond_coverage() -> None:
 class DummyGraph:
     """Dummy graph."""
 
-    nodes = as_tensor_list([])
+    nodes = ensure_tensor_list([])
 
 
 def test_wasm_aligned_alloc() -> None:
     """Test aligned alloc."""
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     assert gen._allocate_aligned_memory(128, 16) == "std::aligned_alloc(16, 128);"
 
 
 def test_wasm_generate_striding_logic() -> None:
     """Test striding logic."""
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     strides, c_code = gen._generate_striding_logic([])
     assert strides == []
     assert c_code == "0"
@@ -654,7 +653,7 @@ def test_wasm_compile_clang_fallback(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     mocker.patch("shutil.which", side_effect=lambda x: "clang" if x == "clang" else None)
     mocker.patch("subprocess.run")
     js, wasm = gen.compile_wasm("/tmp")
@@ -667,7 +666,7 @@ def test_wasm_compile_no_compiler(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value=None)
     with pytest.raises(CompilationError, match="Neither emcc nor clang found"):
         gen.compile_wasm("/tmp")
@@ -681,9 +680,9 @@ def test_wasm_compile_subprocess_error(mocker: EagerTensorProtocol) -> None:
     """
     import subprocess
 
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value="emcc")
-    as_callable(mocker.patch)("subprocess.run", side_effect=as_callable(subprocess.CalledProcessError)(1, "emcc", b"out", b"err"))
+    ensure_callable(mocker.patch)("subprocess.run", side_effect=ensure_callable(subprocess.CalledProcessError)(1, "emcc", b"out", b"err"))
     with pytest.raises(CompilationError, match="WASM compilation failed: err"):
         gen.compile_wasm("/tmp")
 
@@ -694,23 +693,23 @@ def test_wasm_compile_generic_error(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value="emcc")
-    as_callable(mocker.patch)("subprocess.run", side_effect=as_callable(Exception)("foo"))
+    ensure_callable(mocker.patch)("subprocess.run", side_effect=ensure_callable(Exception)("foo"))
     with pytest.raises(CompilationError, match="WASM compilation failed with unknown error: foo"):
         gen.compile_wasm("/tmp")
 
 
 def test_wasm_generic_visit() -> None:
     """Test generic visit."""
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
 
         id = "dummy_id"
 
-    assert as_callable(gen.generic_visit)(as_callable(DummyNode)(), []) == "dummy_id"
+    assert ensure_callable(gen.generic_visit)(ensure_callable(DummyNode)(), []) == "dummy_id"
 
 
 def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
@@ -719,7 +718,7 @@ def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -730,8 +729,8 @@ def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
     # Mock get_wasm_template and get_cpp_helpers
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body"})
 
-    as_callable(gen.visit_Conv2D)(as_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], 5, 5)  # shape is int
-    as_callable(gen.visit_Conv2D)(as_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], [1, 5], 5)  # shape length < 4
+    ensure_callable(gen.visit_Conv2D)(ensure_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], 5, 5)  # shape is int
+    ensure_callable(gen.visit_Conv2D)(ensure_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], [1, 5], 5)  # shape length < 4
     assert gen is not None
 
 
@@ -741,7 +740,7 @@ def test_wasm_visit_pool2d_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -753,8 +752,8 @@ def test_wasm_visit_pool2d_shapes(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body"})
 
     # shape and in0_shape are int/float and length < 4
-    as_callable(gen._generate_pooling2d)(as_callable(DummyNode)(), "pool_id", ["in0"], 5, "max_pool2d")
-    as_callable(gen._generate_pooling2d)(as_callable(DummyNode)(), "pool_id", ["in0"], [1, 5], "max_pool2d")
+    ensure_callable(gen._generate_pooling2d)(ensure_callable(DummyNode)(), "pool_id", ["in0"], 5, "max_pool2d")
+    ensure_callable(gen._generate_pooling2d)(ensure_callable(DummyNode)(), "pool_id", ["in0"], [1, 5], "max_pool2d")
     assert gen is not None
 
 
@@ -764,7 +763,7 @@ def test_wasm_generate_op_missing_template(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -772,10 +771,10 @@ def test_wasm_generate_op_missing_template(mocker: EagerTensorProtocol) -> None:
         id = "op_id"
 
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {}}}})
-    UnimplementedMathError = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm")).UnimplementedMathError)
 
-    with as_callable(pytest.raises)(UnimplementedMathError, match="Missing WASM SIMD template"):
-        as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    with ensure_callable(pytest.raises)(UnimplementedMathError, match="Missing WASM SIMD template"):
+        ensure_callable(gen._generate_op)(ensure_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
 
 
 def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
@@ -784,7 +783,7 @@ def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -794,10 +793,10 @@ def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {"template": "fake_template"}}}})
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"not_body": "x"})
 
-    UnimplementedMathError = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm")).UnimplementedMathError)
 
-    with as_callable(pytest.raises)(UnimplementedMathError, match="MISSING BODY FOR: FakeOp"):
-        as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    with ensure_callable(pytest.raises)(UnimplementedMathError, match="MISSING BODY FOR: FakeOp"):
+        ensure_callable(gen._generate_op)(ensure_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
 
 
 def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
@@ -806,7 +805,7 @@ def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -816,8 +815,8 @@ def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {"template": "fake_template"}}}})
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body_code"})
 
-    as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
-    as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], [1, 5], 5)
+    ensure_callable(gen._generate_op)(ensure_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    ensure_callable(gen._generate_op)(ensure_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], [1, 5], 5)
     assert gen is not None
 
 
@@ -827,7 +826,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(WasmCodeGenerator)(ensure_callable(DummyGraph)())
 
     class DummySubNode:
         """Dummy sub node."""
@@ -848,7 +847,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
             Returns:
                 list: Dummy subnode.
             """
-            return [as_callable(DummySubNode)()]
+            return [ensure_callable(DummySubNode)()]
 
     class DummyNode:
         """Dummy node."""
@@ -857,7 +856,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
         attributes = {"true_graph": DummyBranchGraph(), "false_graph": DummyBranchGraph()}
 
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm.WasmCodeGenerator._generate_op")
-    as_callable(gen.visit_Cond)(as_callable(DummyNode)(), "Cond", "cond_id", ["pred", "in_branch_inputs"], [1], 1)
+    ensure_callable(gen.visit_Cond)(ensure_callable(DummyNode)(), "Cond", "cond_id", ["pred", "in_branch_inputs"], [1], 1)
     assert gen is not None
 
 
@@ -867,7 +866,7 @@ def test_wasm_missing_coverage() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
-    n1 = IRNode("if_node", "If", inputs=["in1"], attributes=as_attrs({"branch_graphs": [IRGraph()]}))
+    n1 = IRNode("if_node", "If", inputs=["in1"], attributes=ensure_attrs({"branch_graphs": [IRGraph()]}))
     graph.nodes["if_node"] = n1
     graph.inputs = ["in1"]
     graph.outputs = ["if_node"]
@@ -875,7 +874,7 @@ def test_wasm_missing_coverage() -> None:
     gen = WasmCodeGenerator(graph)
     gen.visit_If(n1, "If", "if_node", ["in1"], [10], 10)
 
-    n2 = IRNode("cond_node", "Cond", inputs=["in1"], attributes=as_attrs({"branch_graphs": [IRGraph(), IRGraph()]}))
+    n2 = IRNode("cond_node", "Cond", inputs=["in1"], attributes=ensure_attrs({"branch_graphs": [IRGraph(), IRGraph()]}))
     gen.visit_Cond(n2, "Cond", "cond_node", ["in1"], [10], 10)
     assert gen is not None
 
@@ -992,8 +991,8 @@ def test_wasm_shape_telemetry() -> None:
     assert payload["inputs"] == ["in0"]
     assert payload["outputs"] == ["mul0"]
     assert len(payload["nodes"]) == 2
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("id")) == "in0"
-    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("shape_metadata")) == [2, 4]
+    assert ensure_eager_tensor(payload)["nodes"][0]["id"] == "in0"
+    assert ensure_eager_tensor(payload)["nodes"][0]["shape_metadata"] == [2, 4]
 
     # Test applying telemetry back
     gen.apply_shape_telemetry({"mul0": [4, 8]})
@@ -1037,12 +1036,12 @@ def test_wasm_conv3d_branches_coverage() -> None:
 
     graph = IRGraph()
     n_in_scalar = IRNode("in_scalar", "Input", inputs=[])
-    _obj_set_attr(n_in_scalar, "shape_metadata", 4)
+    ensure_mutable(n_in_scalar).shape_metadata = ensure_eager_tensor(4)
     n_in_empty = IRNode("in_empty", "Input", inputs=[], shape_metadata=[])
     n_in_3d = IRNode("in_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
     n_w_empty = IRNode("w_empty", "Input", inputs=[], shape_metadata=[])
     n_w_scalar = IRNode("w_scalar", "Input", inputs=[])
-    _obj_set_attr(n_w_scalar, "shape_metadata", 3)
+    ensure_mutable(n_w_scalar).shape_metadata = ensure_eager_tensor(3)
     n_w_3d = IRNode("w_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
 
     graph.nodes["in_scalar"] = n_in_scalar
@@ -1081,8 +1080,8 @@ def test_wasm_conv3d_branches_coverage() -> None:
         inputs=["in_scalar", "w_scalar"],
         attributes={"stride": (2, 2, 2), "padding": (1, 1, 1), "dilation": (1, 1, 1)},
     )
-    _obj_set_attr(node_c2, "shape_metadata", 8)
-    as_callable(gen.visit_Conv3D)(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
+    ensure_mutable(node_c2).shape_metadata = ensure_eager_tensor(8)
+    ensure_callable(gen.visit_Conv3D)(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
 
     # Test Conv3D with 2-element stride and padding
     node_c3 = IRNode(
@@ -1125,7 +1124,7 @@ def test_wasm_scan_body_graph_and_blank_lines() -> None:
     gen = WasmCodeGenerator(main_graph)
 
     # visit_Scan with body_graph
-    scan_node = IRNode("scan_0", "Scan", inputs=["in0"], attributes=as_attrs({"body_graph": sub_graph}))
+    scan_node = IRNode("scan_0", "Scan", inputs=["in0"], attributes=ensure_attrs({"body_graph": sub_graph}))
     gen.visit_Scan(scan_node, "Scan", "scan_0", ["in0"], [2, 2], 4)
 
     # _generate_op with template having blank lines to cover line.strip() branch

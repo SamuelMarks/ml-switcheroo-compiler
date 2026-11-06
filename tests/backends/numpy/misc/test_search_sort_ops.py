@@ -7,8 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops import _np_argsort, _np_partition, _np_percentile, _np_quantile, _np_search_sorted, _np_setdiff1d, _np_setxor1d, _np_sort, _np_sort_complex, _np_sort_key_val, _np_top_k, _np_unique
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -18,59 +17,59 @@ def test_sort_key_val() -> None:
     """Test function test_sort_key_val."""
     keys = np.array([3, 1, 2])
     values = np.array([10, 20, 30])
-    (res_keys, res_values) = as_callable(_np_sort_key_val)(np, keys, values)
-    as_callable(np.testing.assert_allclose)(res_keys, [1, 2, 3])
-    as_callable(np.testing.assert_allclose)(res_values, [20, 30, 10])
+    (res_keys, res_values) = ensure_callable(_np_sort_key_val)(np, keys, values)
+    ensure_callable(np.testing.assert_allclose)(res_keys, [1, 2, 3])
+    ensure_callable(np.testing.assert_allclose)(res_values, [20, 30, 10])
 
 
 def test_partition() -> None:
     """Test function test_partition."""
     a = np.array([3, 4, 2, 1])
-    res = _np_partition(np, a, 2)
-    assert as_tensor(_get_attr(res, "__getitem__")(2)) == 3
+    res = _np_partition(ensure_eager_tensor(np), a, 2)
+    assert ensure_eager_tensor(res)[2] == 3
 
 
 def test_percentile() -> None:
     """Test function test_percentile."""
     a = np.array([1, 2, 3, 4, 5])
-    res = _np_percentile(np, a, 50)
+    res = _np_percentile(ensure_eager_tensor(np), a, 50)
     assert res == 3.0
 
 
 def test_quantile() -> None:
     """Test function test_quantile."""
     a = np.array([1, 2, 3, 4, 5])
-    res = _np_quantile(np, a, 0.5)
+    res = _np_quantile(ensure_eager_tensor(np), a, 0.5)
     assert res == 3.0
 
 
 def test_unique() -> None:
     """Test function test_unique."""
     a = np.array([1, 1, 2, 2, 3])
-    res = _np_unique(np, a)
-    as_callable(np.testing.assert_allclose)(res, [1, 2, 3])
+    res = _np_unique(ensure_eager_tensor(np), a)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 2, 3])
 
 
 def test_argsort() -> None:
     """Test function test_argsort."""
     a = np.array([3, 1, 2])
-    res = _np_argsort(np, a)
-    as_callable(np.testing.assert_allclose)(res, [1, 2, 0])
+    res = _np_argsort(ensure_eager_tensor(np), a)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 2, 0])
 
 
 def test_sort() -> None:
     """Test function test_sort."""
     a = np.array([3, 1, 2])
-    res = _np_sort(np, a, is_stable=True, axis=0)
-    as_callable(np.testing.assert_allclose)(res, [1, 2, 3])
-    res2 = _np_sort(np, a, is_stable=False)
-    as_callable(np.testing.assert_allclose)(res2, [1, 2, 3])
+    res = _np_sort(ensure_eager_tensor(np), a, is_stable=True, axis=0)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 2, 3])
+    res2 = _np_sort(ensure_eager_tensor(np), a, is_stable=False)
+    ensure_callable(np.testing.assert_allclose)(res2, [1, 2, 3])
 
 
 def test_top_k() -> None:
     """Test function test_top_k."""
     a = np.array([1, 3, 2, 4])
-    _np_top_k(np, a, 2)
+    _np_top_k(ensure_eager_tensor(np), a, 2)
     assert callable(test_top_k)
 
 
@@ -78,28 +77,28 @@ def test_search_sorted() -> None:
     """Test function test_search_sorted."""
     x = np.array([1, 2, 3])
     v = np.array([2])
-    res = _np_search_sorted(np, x, v)
-    as_callable(np.testing.assert_allclose)(res, [1])
+    res = _np_search_sorted(ensure_eager_tensor(np), x, v)
+    ensure_callable(np.testing.assert_allclose)(res, [1])
 
 
 def test_setdiff1d() -> None:
     """Test function test_setdiff1d."""
     a = np.array([1, 2, 3])
     b = np.array([2])
-    res = _np_setdiff1d(np, a, b)
-    as_callable(np.testing.assert_allclose)(res, [1, 3])
+    res = _np_setdiff1d(ensure_eager_tensor(np), a, b)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 3])
 
 
 def test_setxor1d() -> None:
     """Test function test_setxor1d."""
     a = np.array([1, 2, 3])
     b = np.array([2, 4])
-    res = _np_setxor1d(np, a, b)
-    as_callable(np.testing.assert_allclose)(res, [1, 3, 4])
+    res = _np_setxor1d(ensure_eager_tensor(np), a, b)
+    ensure_callable(np.testing.assert_allclose)(res, [1, 3, 4])
 
 
 def test_sort_complex() -> None:
     """Test function test_sort_complex."""
     a = np.array([1 + 2j, 1 + 1j, 2 + 1j])
-    res = _np_sort_complex(np, a)
-    as_callable(np.testing.assert_allclose)(res, [1 + 1j, 1 + 2j, 2 + 1j])
+    res = _np_sort_complex(ensure_eager_tensor(np), a)
+    ensure_callable(np.testing.assert_allclose)(res, [1 + 1j, 1 + 2j, 2 + 1j])

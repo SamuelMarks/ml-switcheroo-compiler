@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensorCOO
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -59,4 +59,4 @@ def test_tensor_array_eager() -> None:
         stacked = ta.stack()
         assert res.shape == (2, 2)
         assert stacked.shape == (2, 2, 2)
-        assert as_callable(np.array_equal)(res.data, as_callable(np.ones)((2, 2)))
+        assert ensure_callable(np.array_equal)(res.data, ensure_callable(np.ones)((2, 2)))

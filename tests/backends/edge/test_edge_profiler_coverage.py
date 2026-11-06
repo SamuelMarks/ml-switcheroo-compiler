@@ -11,9 +11,9 @@ import pytest
 import ml_switcheroo_compiler.backends.edge.profiler as edge_prof_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -227,18 +227,18 @@ def test_edge_profiler_coverage() -> None:
     # 3. profile_graph
     profiler = edge_prof_mod.EdgeProfiler()
     inputs = {"x": np.ones((1, 10), dtype=np.float32)}
-    res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    res = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
     assert "latency_ms" in res
-    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
 
     # Evaluation exception fallback branch
     failing_graph = IRGraph(name="failing")
     failing_graph.nodes["bad"] = IRNode(id="bad", op_type="NonexistentOp", inputs=["x"])
     failing_graph.inputs = ["x"]
-    res_fallback = as_callable(profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
+    res_fallback = ensure_callable(profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
     assert "latency_ms" in res_fallback
 
     # Mismatched inputs fallback
     mismatched_inputs = {"other_key": np.ones((1, 10), dtype=np.float32)}
-    prepared = as_callable(profiler._prepare_inputs)(graph, mismatched_inputs)
+    prepared = ensure_callable(profiler._prepare_inputs)(graph, mismatched_inputs)
     assert len(prepared) == 1

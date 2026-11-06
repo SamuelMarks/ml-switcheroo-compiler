@@ -11,13 +11,12 @@ import pytest
 import yaml
 
 from ml_switcheroo_compiler.backends.cuda.nccl_collectives import NCCLDriver
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.distributed.collectives import (
     dispatch_collective,
     get_collective_backend,
     register_collective_backend,
 )
-from tests.testing_utils import as_callable, as_ndarray, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -34,7 +33,7 @@ def _worker_all_reduce(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.array([i + 1.0, (i + 1.0) * 2.0], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllReduce", local_tensor, backend="numpy", op_type="SUM", rank=rank, all_ranks_data=all_data)
-    _get_attr(return_dict, "__setitem__")(rank, res)
+    ensure_eager_tensor(return_dict)[rank] = res
 
 
 def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -48,7 +47,7 @@ def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.array([[float(i)]], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllGather", local_tensor, backend="numpy", axis=0, rank=rank, all_ranks_data=all_data)
-    _get_attr(return_dict, "__setitem__")(rank, res)
+    ensure_eager_tensor(return_dict)[rank] = res
 
 
 def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -63,7 +62,7 @@ def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, Ea
     all_data = [np.array([float(rank_idx + 1) * (k + 1) for k in range(world_size)], dtype=np.float32) for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("ReduceScatter", local_tensor, backend="numpy", op_type="SUM", scatter_dim=0, rank=rank, all_ranks_data=all_data)
-    _get_attr(return_dict, "__setitem__")(rank, res)
+    ensure_eager_tensor(return_dict)[rank] = res
 
 
 def _worker_all_to_all(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -78,7 +77,7 @@ def _worker_all_to_all(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.arange(world_size * 2, dtype=np.float32).reshape(world_size, 2) + rank_idx * 10 for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllToAll", local_tensor, backend="numpy", scatter_dim=0, gather_dim=0, rank=rank, all_ranks_data=all_data)
-    _get_attr(return_dict, "__setitem__")(rank, res)
+    ensure_eager_tensor(return_dict)[rank] = res
 
 
 def test_multiprocess_all_reduce() -> None:
@@ -186,7 +185,7 @@ def test_backend_collective_dispatchers() -> None:
             kwargs: Test parameter `kwargs`.
         """
         called.append(op)
-        return as_ndarray(as_tensor(tensor) * as_tensor(2))
+        return ensure_ndarray(ensure_eager_tensor(tensor) * ensure_eager_tensor(2))
 
     register_collective_backend("custom_backend", custom_dispatcher)
     assert get_collective_backend("custom_backend") is custom_dispatcher
@@ -194,34 +193,34 @@ def test_backend_collective_dispatchers() -> None:
     inp = np.array([1.0, 2.0], dtype=np.float32)
     res = dispatch_collective("AllReduce", inp, backend="custom_backend")
     assert called == ["AllReduce"]
-    as_callable(np.testing.assert_allclose)(res, as_callable(np.array)([2.0, 4.0]))
+    ensure_callable(np.testing.assert_allclose)(res, ensure_callable(np.array)([2.0, 4.0]))
 
     # PyTorch and JAX dispatches without initialized cluster
     pt_res = dispatch_collective("AllReduce", inp, backend="pytorch")
-    as_callable(np.testing.assert_allclose)(pt_res, inp)
+    ensure_callable(np.testing.assert_allclose)(pt_res, inp)
     assert dispatch_collective("AllGather", inp, backend="pytorch") is not None
     assert dispatch_collective("ReduceScatter", inp, backend="pytorch") is not None
     assert dispatch_collective("Broadcast", inp, backend="pytorch") is not None
 
     jax_res = dispatch_collective("AllReduce", inp, backend="jax")
-    as_callable(np.testing.assert_allclose)(jax_res, inp)
+    ensure_callable(np.testing.assert_allclose)(jax_res, inp)
     assert dispatch_collective("AllGather", inp, backend="jax") is not None
     assert dispatch_collective("Broadcast", inp, backend="jax") is not None
 
     # Reduction ops: PROD, MAX, MIN
     all_data = [np.array([2.0, 5.0]), np.array([3.0, 1.0])]
     prod_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="PROD", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(prod_res, as_callable(np.array)([6.0, 5.0]))
+    ensure_callable(np.testing.assert_allclose)(prod_res, ensure_callable(np.array)([6.0, 5.0]))
 
     max_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MAX", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(max_res, as_callable(np.array)([3.0, 5.0]))
+    ensure_callable(np.testing.assert_allclose)(max_res, ensure_callable(np.array)([3.0, 5.0]))
 
     min_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MIN", all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(min_res, as_callable(np.array)([2.0, 1.0]))
+    ensure_callable(np.testing.assert_allclose)(min_res, ensure_callable(np.array)([2.0, 1.0]))
 
     # Broadcast
     bc_res = dispatch_collective("Broadcast", all_data[0], backend="numpy", root=1, all_ranks_data=all_data)
-    as_callable(np.testing.assert_allclose)(bc_res, all_data[1])
+    ensure_callable(np.testing.assert_allclose)(bc_res, all_data[1])
 
 
 def test_nccl_driver_bindings() -> None:

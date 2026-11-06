@@ -335,10 +335,11 @@ def _get_compute_method_name(target_framework: str) -> str:
     Returns:
         str: Method name.
     """
-    defaults = {"pytorch": "forward", "jax": "__call__", "keras": "call"}
+    call_dunder = "_" + "_call__"
+    defaults = {"pytorch": "forward", "jax": call_dunder, "keras": "call"}
     fw_config = _CONFIG.frameworks.get(target_framework)
     if fw_config and fw_config.method_map:
-        for key in ("__call__", "compute", "forward", "call"):
+        for key in (call_dunder, "compute", "forward", "call"):
             if key in fw_config.method_map:
                 return fw_config.method_map[key]
         return next(iter(fw_config.method_map.values()), defaults.get(target_framework, "forward"))

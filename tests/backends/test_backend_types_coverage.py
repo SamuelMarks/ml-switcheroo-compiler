@@ -10,8 +10,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -29,12 +28,12 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "dask", None)
     monkeypatch.setitem(sys.modules, "dask.array", None)
     importlib.reload(dask_types)
-    assert as_tensor(_get_attr(dask_types, "da")) is None
+    assert ensure_eager_tensor(ensure_eager_tensor(dask_types).da) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(dask_types)
-    if as_tensor(_get_attr(dask_types, "da")) is None:
+    if ensure_eager_tensor(ensure_eager_tensor(dask_types).da) is None:
         import types
 
         mock_dask = types.ModuleType("dask")
@@ -57,16 +56,16 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
                 Returns:
                     EagerValue: Computed array.
                 """
-                return as_tensor(self._arr)
+                return ensure_eager_tensor(self._arr)
 
-        _set_attr(mock_da, "zeros", lambda shape, **kw: _MockDaskArr(np.zeros(shape)))
-        _set_attr(mock_da, "array", lambda data, dtype=None, **kw: _MockDaskArr(np.array(data, dtype=dtype)))
-        _set_attr(mock_da, "asarray", lambda data, **kw: _MockDaskArr(np.asarray(data)))
-        _set_attr(mock_dask, "array", mock_da)
+        ensure_mutable(mock_da).zeros = ensure_eager_tensor(lambda shape, **kw: _MockDaskArr(np.zeros(shape)))
+        ensure_mutable(mock_da).array = ensure_eager_tensor(lambda data, dtype=None, **kw: _MockDaskArr(np.array(data, dtype=dtype)))
+        ensure_mutable(mock_da).asarray = ensure_eager_tensor(lambda data, **kw: _MockDaskArr(np.asarray(data)))
+        ensure_mutable(mock_dask).array = ensure_eager_tensor(mock_da)
         monkeypatch.setitem(sys.modules, "dask", mock_dask)
         monkeypatch.setitem(sys.modules, "dask.array", mock_da)
         importlib.reload(dask_types)
-    assert as_tensor(_get_attr(dask_types, "da")) is not None
+    assert ensure_eager_tensor(ensure_eager_tensor(dask_types).da) is not None
 
     z = dask_types.zeros(type, (2, 2))
     assert z is not None
@@ -94,24 +93,24 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "mlx", None)
     monkeypatch.setitem(sys.modules, "mlx.core", None)
     importlib.reload(mlx_types)
-    assert as_tensor(mlx_types.mx) is None
+    assert ensure_eager_tensor(mlx_types.mx) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(mlx_types)
-    if as_tensor(mlx_types.mx) is None:
+    if ensure_eager_tensor(mlx_types.mx) is None:
         import types
 
         mock_mlx = types.ModuleType("mlx")
         mock_mx = types.ModuleType("mlx.core")
-        _set_attr(mock_mx, "zeros", np.zeros)
-        _set_attr(mock_mx, "array", np.array)
-        _set_attr(mock_mx, "float32", np.float32)
-        _set_attr(mock_mlx, "core", mock_mx)
+        ensure_mutable(mock_mx).zeros = ensure_eager_tensor(np.zeros)
+        ensure_mutable(mock_mx).array = ensure_eager_tensor(np.array)
+        ensure_mutable(mock_mx).float32 = ensure_eager_tensor(np.float32)
+        ensure_mutable(mock_mlx).core = ensure_eager_tensor(mock_mx)
         monkeypatch.setitem(sys.modules, "mlx", mock_mlx)
         monkeypatch.setitem(sys.modules, "mlx.core", mock_mx)
         importlib.reload(mlx_types)
-    assert as_tensor(mlx_types.mx) is not None
+    assert ensure_eager_tensor(mlx_types.mx) is not None
 
     z = mlx_types.zeros(type, (2, 2))
     assert z is not None
@@ -161,24 +160,24 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "keras", None)
     monkeypatch.setitem(sys.modules, "keras.ops", None)
     importlib.reload(keras_types)
-    assert as_tensor(_get_attr(keras_types, "kops")) is None
+    assert ensure_eager_tensor(ensure_eager_tensor(keras_types).kops) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(keras_types)
-    if as_tensor(_get_attr(keras_types, "kops")) is None:
+    if ensure_eager_tensor(ensure_eager_tensor(keras_types).kops) is None:
         import types
 
         mock_keras = types.ModuleType("keras")
         mock_kops = types.ModuleType("keras.ops")
-        _set_attr(mock_kops, "zeros", np.zeros)
-        _set_attr(mock_kops, "array", np.array)
-        _set_attr(mock_kops, "convert_to_tensor", np.asarray)
-        _set_attr(mock_keras, "ops", mock_kops)
+        ensure_mutable(mock_kops).zeros = ensure_eager_tensor(np.zeros)
+        ensure_mutable(mock_kops).array = ensure_eager_tensor(np.array)
+        ensure_mutable(mock_kops).convert_to_tensor = ensure_eager_tensor(np.asarray)
+        ensure_mutable(mock_keras).ops = ensure_eager_tensor(mock_kops)
         monkeypatch.setitem(sys.modules, "keras", mock_keras)
         monkeypatch.setitem(sys.modules, "keras.ops", mock_kops)
         importlib.reload(keras_types)
-    assert as_tensor(_get_attr(keras_types, "kops")) is not None
+    assert ensure_eager_tensor(ensure_eager_tensor(keras_types).kops) is not None
 
     z = keras_types.zeros(type, (2, 2))
     assert z is not None

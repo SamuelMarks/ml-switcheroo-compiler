@@ -6,10 +6,9 @@ from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 def _parse_scanop_args(
@@ -44,9 +43,9 @@ def _np_sparsedensematmul(backend_module: BackendModuleProtocol, *args: EagerVal
     Returns:
         tuple[int, ...]: Result.
     """
-    if _has_attr(backend_module, "sparsedensematmul"):
-        return as_tensor(backend_module.sparsedensematmul(*args, **kwargs))
-    return as_tensor(_get_attr(np, "matmul")(args[0], args[1]))
+    if has_backend_member(backend_module, "sparsedensematmul"):
+        return ensure_eager_tensor(backend_module.sparsedensematmul(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseMapValues")
@@ -63,7 +62,7 @@ def _np_sparsemapvalues(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     fn = args[0]
     sp_input = args[1]
-    return as_tensor(as_callable(fn)(as_callable(backend_module.array)(sp_input)))
+    return ensure_eager_tensor(ensure_callable(fn)(ensure_callable(backend_module.array)(sp_input)))
 
 
 @numpy_eager_registry.register("SparseReshape")
@@ -215,16 +214,19 @@ def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: BackendModul
     Raises:
         RuntimeError: An exception.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
+
+    defaults_list = ensure_eager_list(record_defaults)
     row_out = []
     for i, val in enumerate(row):
-        default = _get_attr(record_defaults, "__getitem__")(i) if i < _get_attr(record_defaults, "__len__")() else 0.0
+        default = defaults_list[i] if i < len(defaults_list) else 0.0
         dt = np.asarray(default).dtype
         try:
             row_out.append(np.array(val, dtype=dt))
         except Exception as e:
             raise RuntimeError(f"Eager execution failed: {e}") from e
-    for i in range(_get_attr(row, "__len__")(), _get_attr(record_defaults, "__len__")()):
-        row_out.append(np.array(_get_attr(record_defaults, "__getitem__")(i)))
+    for i in range(len(row), len(defaults_list)):
+        row_out.append(np.array(defaults_list[i]))
     return row_out
 
 
@@ -240,7 +242,7 @@ def _get_csv_data(args: EagerValue, np: BackendModuleProtocol) -> str:
     """
     if not args:
         return ""
-    arg0 = np.asarray(_get_attr(args, "__getitem__")(0))
+    arg0 = np.asarray(ensure_eager_tensor(args)[0])
     data = arg0.item() if arg0.ndim == 0 else arg0.flatten()[0]
     return data.decode("utf-8") if isinstance(data, bytes) else str(data)
 
@@ -283,18 +285,21 @@ def _np_decode_csv_camel(backend_module: BackendModuleProtocol, *args: EagerValu
 
     if len(args) == 0:
         return [np.array([])]
-    data_str = _get_csv_data(args, np)
+    data_str = _get_csv_data(args, ensure_eager_tensor(np))
     record_defaults = _get_csv_defaults(args, kwargs)
     out = []
     try:
         reader = csv.reader(io.StringIO(data_str))
         for row in reader:
-            out.append(_parse_csv_row(row, record_defaults, np))
+            out.append(_parse_csv_row(row, record_defaults, ensure_eager_tensor(np)))
     except Exception as e:
         raise ValueError(f"Failed to parse CSV: {e}") from e
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
+
+    defaults_list = ensure_eager_list(record_defaults)
     if not out:
-        return tuple([np.array(d) for d in _get_attr(record_defaults, "__iter__")()])
-    return tuple([np.stack([_get_attr(r, "__getitem__")(i) for r in out]) for i in range(_get_attr(record_defaults, "__len__")())])
+        return tuple([np.array(d) for d in defaults_list])
+    return tuple([np.stack([ensure_eager_tensor(r)[i] for r in out]) for i in range(len(defaults_list))])
 
 
 def _load_vision_formats() -> EagerValue:
@@ -357,7 +362,7 @@ def _np_decode_image_camel(backend_module: BackendModuleProtocol, *args: EagerVa
             raise ValueError("Expected bytes for image decoding.")
 
         height, width, src_channels = _decode_png_bytes(bytes(data))
-        channels = int(as_int(kwargs.get("channels", 0)))
+        channels = int(ensure_int(kwargs.get("channels", 0)))
         out_channels = channels if channels in (1, 3, 4) else src_channels
         return np.zeros((height, width, out_channels), dtype=np.uint8)
     except Exception as e:
@@ -426,20 +431,24 @@ def _np_parse_example_camel(backend_module: BackendModuleProtocol, *args: EagerV
 
     import numpy as np
 
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_shape
+
     features = kwargs.get("features", args[1] if len(args) > 1 else {})
+    feat_items = features.items() if isinstance(features, dict) else get_backend_member(features, "items")()
     if len(args) == 0:
-        return {k: np.zeros(_get_attr(v, "shape", (1,)), dtype=_get_attr(v, "dtype", np.float32)) for (k, v) in _get_attr(features, "items")()}
+        return {str(k): np.zeros(ensure_shape(get_backend_member(v, "shape", (1,))), dtype=get_backend_member(v, "dtype", np.float32)) for (k, v) in feat_items}
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
-    out = {}
+    out: dict[str, EagerValue] = {}
     try:
         if isinstance(data, bytes):
             data = data.decode("utf-8")
         parsed = json.loads(data)
-        for k, v in _get_attr(features, "items")():
-            if k in parsed:
-                out[k] = np.array(parsed[k], dtype=_get_attr(v, "dtype", np.float32))
+        for k, v in feat_items:
+            k_str = str(k)
+            if k_str in parsed:
+                out[k_str] = np.array(parsed[k_str], dtype=get_backend_member(v, "dtype", np.float32))
             else:
-                out[k] = np.zeros(_get_attr(v, "shape", (1,)), dtype=_get_attr(v, "dtype", np.float32))
+                out[k_str] = np.zeros(ensure_shape(get_backend_member(v, "shape", (1,))), dtype=get_backend_member(v, "dtype", np.float32))
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
     return out
@@ -469,7 +478,7 @@ def _np_parse_tensor_camel(backend_module: BackendModuleProtocol, *args: EagerVa
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     dtype = kwargs.get("out_type", np.float32)
     try:
-        return as_tensor(_get_attr(np, "array")(pickle.loads(data), dtype=dtype))
+        return ensure_eager_tensor(get_backend_member(np, "array")(pickle.loads(data), dtype=dtype))
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 

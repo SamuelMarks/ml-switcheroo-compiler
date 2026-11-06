@@ -5,9 +5,8 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_sequence import arange, linspace
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -40,12 +39,12 @@ def test_frontend_sequence() -> None:
 
     import ml_switcheroo_compiler.ops.creation.frontend_sequence
 
-    orig_backend = as_tensor(_get_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend"))
-    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", lambda: DummyBackend())
+    orig_backend = ensure_eager_tensor(ensure_eager_tensor(ml_switcheroo_compiler.ops.creation.frontend_sequence).get_active_backend)
+    ensure_mutable(ml_switcheroo_compiler.ops.creation.frontend_sequence).get_active_backend = ensure_eager_tensor(lambda: DummyBackend())
 
-    assert as_tensor(_get_attr(arange(10), "shape")) == (10,)
-    assert as_tensor(_get_attr(arange(0, 10), "shape")) == (10,)
-    assert as_tensor(_get_attr(linspace(1, 10, 50), "shape")) == (50,)
+    assert ensure_eager_tensor(arange(10)).shape == (10,)
+    assert ensure_eager_tensor(arange(0, 10)).shape == (10,)
+    assert ensure_eager_tensor(linspace(1, 10, 50)).shape == (50,)
 
     config.eager_mode = False
 
@@ -55,4 +54,4 @@ def test_frontend_sequence() -> None:
         assert linspace(1, 10, 50) == "emitted"
 
     config.eager_mode = True
-    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", orig_backend)
+    ensure_mutable(ml_switcheroo_compiler.ops.creation.frontend_sequence).get_active_backend = ensure_eager_tensor(orig_backend)

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 
 def test_fallback_load_branches() -> None:
     """Test function test_fallback_load_branches."""
-    assert as_callable(io._fallback_load)(123) is None
+    assert ensure_callable(io._fallback_load)(123) is None
     assert io._fallback_load("unsupported.txt") is None
 
 
@@ -41,7 +41,7 @@ def test_tracing_mode_emits() -> None:
         io.decode_csv(t, [1.0])
         io.parse_example(t, {"f": 1})
         io.serialize_tensor(t)
-        as_callable(io.parse_tensor)(t, "float32")
+        ensure_callable(io.parse_tensor)(t, "float32")
         io.encode_base64(t)
         io.decode_base64(t)
         io.parse_sequence_example(t)

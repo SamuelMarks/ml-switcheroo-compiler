@@ -10,8 +10,7 @@ import pytest
 import ml_switcheroo_compiler.backends.eager as eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-from tests.testing_utils import as_callable, as_ndarray, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_ndarray
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -19,24 +18,22 @@ if typing.TYPE_CHECKING:
 
 def test_np_affine_generator() -> None:
     """Test function test_np_affine_generator."""
-    res = _np_affine_generator(
-        np, 2, _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None)
-    )
-    assert as_tensor(_get_attr(res, "shape")) == (2, 8)
+    res = ensure_callable(_np_affine_generator)(np, 2, None, None, None)
+    assert ensure_eager_tensor(res).shape == (2, 8)
 
 
 def test_np_elastic_transform() -> None:
     """Test function test_np_elastic_transform."""
     images = np.ones((2, 2))
-    res = _np_elastic_transform(np, images, as_ndarray(None))
-    as_callable(np.testing.assert_allclose)(res, images)
+    res = _np_elastic_transform(ensure_eager_tensor(np), images, ensure_ndarray(None))
+    ensure_callable(np.testing.assert_allclose)(res, images)
 
 
 def test_np_extract_bounding_boxes() -> None:
     """Test function test_np_extract_bounding_boxes."""
     images = np.ones((2, 2))
-    res = _np_extract_bounding_boxes(np, images, as_ndarray(None), as_ndarray(None))
-    as_callable(np.testing.assert_allclose)(res, images)
+    res = _np_extract_bounding_boxes(ensure_eager_tensor(np), images, ensure_ndarray(None), ensure_ndarray(None))
+    ensure_callable(np.testing.assert_allclose)(res, images)
 
 
 def test_np_iou() -> None:
@@ -55,7 +52,7 @@ def test_np_iou() -> None:
         return np.ones((1,))
 
     with pytest.raises(IndexError):
-        _np_iou(np, as_ndarray(None), as_ndarray(None))
+        _np_iou(ensure_eager_tensor(np), ensure_ndarray(None), ensure_ndarray(None))
 
 
 def test_np_nms() -> None:
@@ -75,29 +72,29 @@ def test_np_nms() -> None:
         return np.ones((1,))
 
     with pytest.raises(TypeError):
-        _np_nms(np, as_ndarray(None), as_ndarray(None), 1)
+        _np_nms(ensure_eager_tensor(np), ensure_ndarray(None), ensure_ndarray(None), 1)
 
 
 def test_np_perspective_transform() -> None:
     """Test function test_np_perspective_transform."""
     images = np.ones((2, 2))
-    res = _np_perspective_transform(np, images, as_ndarray(None), as_ndarray(None), None)
-    as_callable(np.testing.assert_allclose)(res, images)
+    res = _np_perspective_transform(ensure_eager_tensor(np), images, ensure_ndarray(None), ensure_ndarray(None), None)
+    ensure_callable(np.testing.assert_allclose)(res, images)
 
 
 def test_np_affine_grid() -> None:
     """Test function test_np_affine_grid."""
-    res1 = _np_affine_grid(np, np.ones((2, 2)), (2, 2))
-    assert as_tensor(_get_attr(res1, "shape")) == (2, 2, 2)
-    res2 = _np_affine_grid(np, _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float", "dummy"), (2, 2))
+    res1 = _np_affine_grid(ensure_eager_tensor(np), np.ones((2, 2)), (2, 2))
+    assert ensure_eager_tensor(res1).shape == (2, 2, 2)
+    res2 = ensure_callable(_np_affine_grid)(np, "dummy", (2, 2))
     assert res2 == "dummy"
 
 
 def test_np_affine_transform() -> None:
     """Test function test_np_affine_transform."""
     images = np.ones((2, 2))
-    res = _np_affine_transform(np, images, as_ndarray(None))
-    as_callable(np.testing.assert_allclose)(res, images)
+    res = _np_affine_transform(ensure_eager_tensor(np), images, ensure_ndarray(None))
+    ensure_callable(np.testing.assert_allclose)(res, images)
 
 
 def test_numpy_vision_geometry_eager_extra() -> None:
@@ -107,8 +104,8 @@ def test_numpy_vision_geometry_eager_extra() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     with pytest.raises(TypeError):
-        _np_elastic_transform(np, np.ones((2, 2, 3)), np.ones((2, 2, 2)))
-        _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
+        _np_elastic_transform(ensure_eager_tensor(np), np.ones((2, 2, 3)), np.ones((2, 2, 2)))
+        _np_extract_bounding_boxes(ensure_eager_tensor(np), np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
         original_iou = eager_mod.iou_eager
 
         def mock_iou(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -125,7 +122,7 @@ def test_numpy_vision_geometry_eager_extra() -> None:
 
         eager_mod.iou_eager = mock_iou
         try:
-            _np_iou(np, np.array([0, 0, 10, 10]), np.array([5, 5, 15, 15]))
+            _np_iou(ensure_eager_tensor(np), np.array([0, 0, 10, 10]), np.array([5, 5, 15, 15]))
         finally:
             eager_mod.iou_eager = original_iou
         original_nms = eager_mod.nms_eager
@@ -144,10 +141,10 @@ def test_numpy_vision_geometry_eager_extra() -> None:
 
         eager_mod.nms_eager = mock_nms
         try:
-            _np_nms(np, np.array([[0, 0, 10, 10]]), np.array([0.9]), max_output_size=1, threshold=0.5)
+            _np_nms(ensure_eager_tensor(np), np.array([[0, 0, 10, 10]]), np.array([0.9]), max_output_size=1, threshold=0.5)
         finally:
             eager_mod.nms_eager = original_nms
-        _np_perspective_transform(np, np.ones((2, 2, 3)), np.eye(3), np.eye(3), config=None)
-        _np_affine_grid(np, np.eye(2, 3), size=(4, 4))
-        _np_affine_transform(np, np.ones((2, 2, 3)), np.eye(2, 3))
-        _np_affine_generator(np, 2, np.ones(1), np.ones(1), np.ones(1))
+        _np_perspective_transform(ensure_eager_tensor(np), np.ones((2, 2, 3)), np.eye(3), np.eye(3), config=None)
+        _np_affine_grid(ensure_eager_tensor(np), np.eye(2, 3), size=(4, 4))
+        _np_affine_transform(ensure_eager_tensor(np), np.ones((2, 2, 3)), np.eye(2, 3))
+        _np_affine_generator(ensure_eager_tensor(np), 2, np.ones(1), np.ones(1), np.ones(1))

@@ -3,12 +3,26 @@
 from __future__ import annotations
 
 import os
+import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
-from ml_switcheroo_compiler.core.shape import _cast_val
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _is_poly_attr_dict(
+    val: dict[str, AttributeValue],
+) -> typing.TypeGuard[dict[str, LogicalGraph | AttributeValue]]:
+    """Type guard narrowing an attributes dict to accept `LogicalGraph` entries.
+
+    Args:
+        val (dict[str, AttributeValue]): Attributes dict.
+
+    Returns:
+        bool: True if val is a dict.
+    """
+    return isinstance(val, dict)
 
 
 def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
@@ -144,23 +158,31 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
     body_graph.outputs = ["array", "next_idx", "false_violations"]
 
-    node.attributes = as_attrs({"cond": cond_graph, "body": body_graph})
+    node.subgraphs["cond"] = cond_graph
+    node.subgraphs["body"] = body_graph
+    attrs: dict[str, AttributeValue] = {}
+    node.attributes = attrs
+    assert _is_poly_attr_dict(attrs)
+    attrs["cond"] = cond_graph
+    attrs["body"] = body_graph
 
     return node
 
 
-def _load_poly_rules() -> dict[str, dict[str, str]]:
+def _load_poly_rules() -> dict[str, dict[str, AttributeValue]]:
     """Load poly rules.
 
     Returns:
-        dict[str, dict[str, str]]: loaded rules.
+        dict[str, dict[str, AttributeValue]]: loaded rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "poly_lower_rules.yaml")
     if not os.path.exists(yaml_path):
         return {}
     with open(yaml_path) as f:
-        _typed_ret_1: dict[str, dict[str, str]] = _cast_val(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
-        return _typed_ret_1
+        loaded = yaml.safe_load(f)
+        raw_rules = loaded.get("rules", {}) if isinstance(loaded, dict) else {}
+        assert isinstance(raw_rules, dict)
+        return {str(op_k): {str(rk): rv for rk, rv in op_v.items()} for op_k, op_v in raw_rules.items() if isinstance(op_v, dict)}
 
 
 def polyfill_lowering_pass(graph: IRGraph) -> bool:
@@ -185,12 +207,12 @@ def polyfill_lowering_pass(graph: IRGraph) -> bool:
     for _node_id, node in graph.nodes.items():
         if node.op_type in rules:
             rule = rules[node.op_type]
-            if rule["type"] == "python":
-                func = python_handlers.get(rule["func"])
+            if rule.get("type") == "python":
+                func = python_handlers.get(str(rule.get("func", "")))
                 if func:
                     func(node, graph, new_nodes)
                     modified = True
-            elif rule["type"] == "rewrite":
+            elif rule.get("type") == "rewrite":
                 node.op_type = str(rule.get("op_type", node.op_type))
                 rule_attrs: AttributeValue = rule.get("attributes")
                 if isinstance(rule_attrs, dict):

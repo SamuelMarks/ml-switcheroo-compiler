@@ -7,13 +7,12 @@ import builtins  # noqa: F401
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
-    as_callable,
-    as_tensor,
+    ensure_callable,
+    ensure_eager_tensor,
     global_eager_registry,
     numpy_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -29,13 +28,13 @@ def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModul
     Returns:
         EagerValue: Evaluated special function result.
     """
-    special_mod = _get_attr(backend_module, "special", backend_module)
-    func = _get_attr(special_mod, attr_name, _get_attr(backend_module, attr_name, None))
+    special_mod = get_backend_member(backend_module, "special", backend_module)
+    func = get_backend_member(special_mod, attr_name, get_backend_member(backend_module, attr_name, None))
     if callable(func):
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
-    np_handler = as_callable(numpy_eager_registry.get(op_name))
+    np_handler = ensure_callable(numpy_eager_registry.get(op_name))
     return np_handler(_resolve_eager_mod(backend_module), *args, **kwargs)
 
 
@@ -52,8 +51,8 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
             EagerValue: Result.
     """
     mod = backend_module
-    x = as_tensor(args[0])
-    if _has_attr(mod, "erf"):
+    x = ensure_eager_tensor(args[0])
+    if has_backend_member(mod, "erf"):
         _typed_ret_1: EagerValue = mod.erf(x)
         return _typed_ret_1
     p = 0.3275911
@@ -83,11 +82,11 @@ def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     mod = backend_module
-    x = as_tensor(args[0])
-    if _has_attr(mod, "erfc"):
+    x = ensure_eager_tensor(args[0])
+    if has_backend_member(mod, "erfc"):
         _typed_ret_2: EagerValue = mod.erfc(x)
         return _typed_ret_2
-    return 1.0 - as_tensor(_erf(backend_module, x))
+    return 1.0 - ensure_eager_tensor(_erf(backend_module, x))
 
 
 @global_eager_registry.register("Erfinv")
@@ -103,8 +102,8 @@ def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
             EagerValue: Result.
     """
     mod = backend_module
-    x = as_tensor(args[0])
-    if _has_attr(mod, "erfinv"):
+    x = ensure_eager_tensor(args[0])
+    if has_backend_member(mod, "erfinv"):
         _typed_ret_3: EagerValue = mod.erfinv(x)
         return _typed_ret_3
     a = 0.147

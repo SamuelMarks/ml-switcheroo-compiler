@@ -8,13 +8,10 @@ from collections.abc import Callable, Sequence
 
 import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.backends.eager_registry import (
-    as_callable,
-    as_int,
-    as_tensor_pair,
-)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
+from ml_switcheroo_compiler.ops.linalg.decompositions.qr import qr as _qr_op
+from ml_switcheroo_compiler.ops.shape.frontend import reshape as _reshape_op
 
 InitializerFn = Callable[[typing.Union[Tensor, int, "None"], tuple[int, ...], typing.Union[dtypes.DType, str, "None"]], Tensor]
 
@@ -280,7 +277,9 @@ def variance_scaling(config: InitializerConfig) -> InitializerFn:
         """
         default_dt: dtypes.DType | str = config.dtype if isinstance(config.dtype, (dtypes.DType, str)) else dtypes.DType.Float32
         dt = _resolve_dtype(init_dtype, default_dt)
-        fan_in, fan_out = _compute_fans(shape, as_int(config.in_axis), as_int(config.out_axis))
+        in_ax = int(config.in_axis) if isinstance(config.in_axis, int) else -2
+        out_ax = int(config.out_axis) if isinstance(config.out_axis, int) else -1
+        fan_in, fan_out = _compute_fans(shape, in_ax, out_ax)
         if config.mode == "fan_in":
             denom = float(fan_in)
         elif config.mode == "fan_out":
@@ -537,8 +536,13 @@ def orthogonal(
             if idx != col_ax:
                 rows *= dim
         flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
-        q_raw, _ = as_tensor_pair(as_callable(ops.qr)(flat_matrix))
-        reshaped = as_callable(ops.reshape)(q_raw, shape)
+        assert isinstance(flat_matrix, Tensor)
+        qr_res = _qr_op(flat_matrix)
+        assert isinstance(qr_res, tuple) and len(qr_res) >= 1
+        q_raw = qr_res[0]
+        assert isinstance(q_raw, Tensor)
+        reshaped = _reshape_op(q_raw, shape)
+        assert isinstance(reshaped, Tensor)
         return ops.scalar_mul(reshaped, float(scale))
 
     return init

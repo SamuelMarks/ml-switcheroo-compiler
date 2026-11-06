@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
-from tests.testing_utils import as_callable, as_shape, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_shape
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -64,7 +64,7 @@ def test_misc_ops_shapes() -> None:
                 Args:
                     shape: Test parameter `shape`.
                 """
-                self.shape: tuple[int, ...] = as_shape(shape)
+                self.shape: tuple[int, ...] = ensure_shape(shape)
                 self.data = None
 
         # Operations returning ()
@@ -75,38 +75,38 @@ def test_misc_ops_shapes() -> None:
         # Scalar / single array ops returning same shape
         for OpClass in [I0, Mish, Tril, Triu, Unwrap, AxisIndex]:
             op = OpClass()
-            assert op.infer_shape(Dummy(as_tensor((2, 2)))) == (2, 2)
-            assert op.infer_shape(Dummy(as_tensor((3, 4, 5)))) == (3, 4, 5)
+            assert op.infer_shape(Dummy(ensure_eager_tensor((2, 2)))) == (2, 2)
+            assert op.infer_shape(Dummy(ensure_eager_tensor((3, 4, 5)))) == (3, 4, 5)
 
         # Histogram ops
         op = Histogram()
         # (hist, bins) default bins=10
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((100,))) == (100,)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((100,))) == (100,)
 
         op = Histogram2d()
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((100,)), as_callable(Dummy)((100,))) == (100,)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((100,)), ensure_callable(Dummy)((100,))) == (100,)
 
         op = HistogramBinEdges()
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((100,))) == (100,)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((100,))) == (100,)
 
         # Kron
         op = Kron()
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((2, 2)), as_callable(Dummy)((3, 3))) == (2, 2)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((2, 2)), ensure_callable(Dummy)((3, 3))) == (2, 2)
 
         # Intersect1d
         op = Intersect1d()
         # Intersect1d fallback logic -> we don't know the size, but broadcast_shapes or dummy eval might give (0,) or some size
-        shape = as_callable(op.infer_shape)(as_callable(Dummy)((5,)), as_callable(Dummy)((5,)))
-        assert isinstance(as_tensor(shape), tuple)
+        shape = ensure_callable(op.infer_shape)(ensure_callable(Dummy)((5,)), ensure_callable(Dummy)((5,)))
+        assert isinstance(ensure_eager_tensor(shape), tuple)
 
         # TrimZeros
         op = TrimZeros()
-        shape = as_callable(op.infer_shape)(as_callable(Dummy)((5,)))
-        assert isinstance(as_tensor(shape), tuple)
+        shape = ensure_callable(op.infer_shape)(ensure_callable(Dummy)((5,)))
+        assert isinstance(ensure_eager_tensor(shape), tuple)
 
         op = Modf()
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((2, 2))) == (2, 2)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((2, 2))) == (2, 2)
 
         op = Rot90()
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((2, 2))) == (2, 2)
-        assert as_callable(op.infer_shape)(as_callable(Dummy)((3, 4, 5))) == (3, 4, 5)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((2, 2))) == (2, 2)
+        assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)((3, 4, 5))) == (3, 4, 5)

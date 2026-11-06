@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list, ensure_int
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -28,7 +29,7 @@ class Rademacher(OpDef):
             return ()
         if isinstance(s, int):
             return (s,)
-        return tuple(_get_attr(s, "__iter__")())
+        return tuple(int(ensure_int(d)) for d in ensure_eager_list(s))
 
 
 def rademacher(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

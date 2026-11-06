@@ -7,12 +7,53 @@ import os
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_int, ensure_str
 from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplatesConfig
+from ml_switcheroo_compiler.backends.protocols import get_backend_member
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _node_inputs_list(node: EagerValue) -> list[str]:
+    """Return string list of input IDs on `node`.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        list[str]: Node input IDs.
+    """
+    raw = get_backend_member(node, "inputs", [])
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    return []
+
+
+def _node_shape_meta(node: EagerValue) -> tuple[EagerValue, ...] | list[EagerValue] | None:
+    """Return `shape_metadata` sequence on `node` if present.
+
+    Args:
+        node (EagerValue): Target node.
+
+    Returns:
+        tuple[EagerValue, ...] | list[EagerValue] | None: Shape metadata sequence or None.
+    """
+    raw = get_backend_member(node, "shape_metadata", None)
+    return raw if isinstance(raw, (list, tuple)) else None
+
+
+def _graph_nodes_map(graph: EagerValue) -> dict[str, EagerTensorProtocol | IRNode]:
+    """Return `nodes` mapping on `graph`.
+
+    Args:
+        graph (EagerValue): Target graph.
+
+    Returns:
+        dict[str, EagerTensorProtocol | IRNode]: Nodes mapping.
+    """
+    raw = get_backend_member(graph, "nodes", {})
+    return {str(k): v for k, v in raw.items()} if isinstance(raw, dict) else {}
 
 
 @register_backend("edge_webgl")
@@ -37,21 +78,21 @@ class WebGLCodeGenerator(BaseGenerator):
         else:
             self.config = WebglTemplatesConfig(templates={}, js_orchestration={})
 
-    def _resolve_texture_dims(self, node: IRNode) -> tuple[int, int]:
+    def _resolve_texture_dims(self, node: EagerTensorProtocol | IRNode) -> tuple[int, int]:
         """Resolve output 2D texture width and height for a WebGL node.
 
         Args:
-            node (IRNode): The IR node being emitted.
+            node (EagerTensorProtocol | IRNode): The IR node being emitted.
 
         Returns:
             tuple[int, int]: Computed (width, height) dimensions for the framebuffer texture.
         """
-        shape = _get_attr(node, "shape_metadata", None)
-        node_inputs = _get_attr(node, "inputs", []) or []
+        shape = _node_shape_meta(node)
+        node_inputs = _node_inputs_list(node)
         in_shape = None
         if node_inputs:
-            in_node = _get_attr(self.graph, "nodes", {}).get(node_inputs[0])
-            in_shape = _get_attr(in_node, "shape_metadata", None) if in_node else None
+            in_node = _graph_nodes_map(self.graph).get(node_inputs[0])
+            in_shape = _node_shape_meta(in_node) if in_node else None
 
         eff_shape = shape if (shape and len(shape) > 0) else (in_shape if (in_shape and len(in_shape) > 0) else None)
         if not eff_shape:
@@ -97,11 +138,11 @@ class WebGLCodeGenerator(BaseGenerator):
         return escaped_shader, custom_setup
 
     @staticmethod
-    def _build_texture_binding_lines(node: IRNode, clean_id: str, input_map: dict[str, int]) -> list[str]:
+    def _build_texture_binding_lines(node: EagerTensorProtocol | IRNode, clean_id: str, input_map: dict[str, int]) -> list[str]:
         """Build JavaScript statements binding input textures and sampler uniforms.
 
         Args:
-            node (IRNode): The IR node being emitted.
+            node (EagerTensorProtocol | IRNode): The IR node being emitted.
             clean_id (str): Sanitized node identifier.
             input_map (dict[str, int]): Mapping of graph input IDs to input array indices.
 
@@ -110,7 +151,7 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         binding_lines: list[str] = []
         uniform_names = ["A", "B", "C", "D"]
-        for i, in_id in enumerate(_get_attr(node, "inputs", [])):
+        for i, in_id in enumerate(_node_inputs_list(node)):
             binding_lines.append(f"    gl.activeTexture(gl.TEXTURE{i});")
             if in_id in input_map:
                 binding_lines.append(f"    gl.bindTexture(gl.TEXTURE_2D, inputs[{input_map[in_id]}]);")
@@ -120,28 +161,28 @@ class WebGLCodeGenerator(BaseGenerator):
                 binding_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, '{uniform_names[i]}'), {i});")
         return binding_lines
 
-    def _extract_input_spatial_dims(self, node: IRNode) -> tuple[int, int, int, int, int]:
+    def _extract_input_spatial_dims(self, node: EagerTensorProtocol | IRNode) -> tuple[int, int, int, int, int]:
         """Extract spatial and kernel dimensions from a node's input metadata.
 
         Args:
-            node (IRNode): The IR node being emitted.
+            node (EagerTensorProtocol | IRNode): The IR node being emitted.
 
         Returns:
             tuple[int, int, int, int, int]: Tuple of (k_dim, in_h, in_w, k_h, k_w).
         """
         k_dim, in_h, in_w, k_h, k_w = 32, 32, 32, 3, 3
-        node_inputs = _get_attr(node, "inputs", [])
-        graph_nodes = _get_attr(self.graph, "nodes", {})
+        node_inputs = _node_inputs_list(node)
+        graph_nodes = _graph_nodes_map(self.graph)
         if node_inputs and len(node_inputs) > 0:
             in_node = graph_nodes.get(node_inputs[0])
-            in_shape = _get_attr(in_node, "shape_metadata", None)
+            in_shape = _node_shape_meta(in_node)
             if in_shape and len(in_shape) > 0 and isinstance(in_shape[-1], int):
                 k_dim = in_w = in_shape[-1]
             if in_shape and len(in_shape) >= 2 and isinstance(in_shape[-2], int):
                 in_h = in_shape[-2]
         if node_inputs and len(node_inputs) > 1:
             k_node = graph_nodes.get(node_inputs[1])
-            k_shape = _get_attr(k_node, "shape_metadata", None)
+            k_shape = _node_shape_meta(k_node)
             if k_shape and len(k_shape) >= 2:
                 if isinstance(k_shape[-1], int):
                     k_w = k_shape[-1]
@@ -171,11 +212,11 @@ class WebGLCodeGenerator(BaseGenerator):
             return 0, starts
         return 0, 0
 
-    def _build_node_setup_lines(self, node: IRNode, clean_id: str, width: int, height: int, custom_setup: str) -> list[str]:
+    def _build_node_setup_lines(self, node: EagerTensorProtocol | IRNode, clean_id: str, width: int, height: int, custom_setup: str) -> list[str]:
         """Build custom uniform setup and N-D stride uniform statements for a node.
 
         Args:
-            node (IRNode): The IR node being emitted.
+            node (EagerTensorProtocol | IRNode): The IR node being emitted.
             clean_id (str): Sanitized node identifier.
             width (int): Output texture width.
             height (int): Output texture height.
@@ -187,7 +228,8 @@ class WebGLCodeGenerator(BaseGenerator):
         setup_lines: list[str] = []
         if custom_setup:
             k_dim, in_h, in_w, k_h, k_w = self._extract_input_spatial_dims(node)
-            attrs: dict[str, EagerValue] = _get_attr(node, "attributes", {}) or {}
+            raw_attrs = get_backend_member(node, "attributes", {})
+            attrs: dict[str, EagerValue] = {str(k): v for k, v in raw_attrs.items()} if isinstance(raw_attrs, dict) else {}
             start_x, start_y = self._parse_slice_starts(attrs.get("starts", attrs.get("start", [0, 0])))
             raw_axis = attrs.get("axis", 0)
             concat_axis: int = int(raw_axis) if isinstance(raw_axis, int) else 0
@@ -212,7 +254,7 @@ class WebGLCodeGenerator(BaseGenerator):
             )
             setup_lines.extend(f"    {line}" for line in formatted_setup.strip().split("\n") if line.strip())
 
-        shape = _get_attr(node, "shape_metadata", None)
+        shape = _node_shape_meta(node)
         if shape and len(shape) > 0:
             shape_ints: list[int] = [int(s) if isinstance(s, int) else 1 for s in shape]
             curr_stride: int = 1
@@ -231,7 +273,7 @@ class WebGLCodeGenerator(BaseGenerator):
 
     @staticmethod
     def _append_fallback_pass_js(
-        node: IRNode,
+        node: EagerTensorProtocol | IRNode,
         clean_id: str,
         escaped_shader: str,
         width: int,
@@ -243,7 +285,7 @@ class WebGLCodeGenerator(BaseGenerator):
         """Append fallback JavaScript draw pass orchestration when node_pass template is absent.
 
         Args:
-            node (IRNode): The IR node being emitted.
+            node (EagerTensorProtocol | IRNode): The IR node being emitted.
             clean_id (str): Sanitized node identifier.
             escaped_shader (str): Escaped GLSL fragment shader source.
             width (int): Output texture width.
@@ -254,7 +296,8 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         js.append(f'    const shader_{clean_id} = "{escaped_shader}";')
         js.append(f"    const prog_{clean_id} = createProgram(gl, vsSource, shader_{clean_id});")
-        num_outputs: int = int(_get_attr(node, "attributes", {}).get("num_outputs", 1))
+        raw_attrs = get_backend_member(node, "attributes", {})
+        num_outputs: int = int(ensure_int(raw_attrs.get("num_outputs", 1))) if isinstance(raw_attrs, dict) else 1
         js.append("    gl.bindFramebuffer(gl.FRAMEBUFFER, currentFbo);")
         if num_outputs > 1:
             draw_buffers: list[str] = []
@@ -277,11 +320,11 @@ class WebGLCodeGenerator(BaseGenerator):
         js.append("    gl.drawArrays(gl.TRIANGLES, 0, 6);")
         js.append("    currentFbo = (currentFbo === main_fbo) ? fboPong : main_fbo;")
 
-    def _emit_node(self, node: IRNode, input_map: dict[str, int], js: list[str]) -> tuple[int, int]:
+    def _emit_node(self, node: EagerTensorProtocol | IRNode, input_map: dict[str, int], js: list[str]) -> tuple[int, int]:
         """Emit WebGL operations for a single node.
 
         Args:
-            node (IRNode): The node to process.
+            node (EagerTensorProtocol | IRNode): The node to process.
             input_map (dict[str, int]): The mapping of input node IDs to indices.
             js (list[str]): The JS code list to append to.
 
@@ -291,8 +334,8 @@ class WebGLCodeGenerator(BaseGenerator):
         Raises:
             ValueError: If shader template is missing for the operation.
         """
-        op_type: str = _get_attr(node, "op_type", "")
-        clean_id: str = _get_attr(node, "id", "").replace("-", "_")
+        op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
+        clean_id: str = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
 
         width, height = self._resolve_texture_dims(node)
         escaped_shader, custom_setup = self._lookup_shader_template(op_type)
@@ -337,16 +380,16 @@ class WebGLCodeGenerator(BaseGenerator):
 
         input_map: dict[str, int] = {}
         input_idx: int = 0
-        for node in _get_attr(self.graph, "nodes", {}).values():
-            if _get_attr(node, "op_type", "") == "Input":
-                input_map[node.id] = input_idx
+        for node in _graph_nodes_map(self.graph).values():
+            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
+                input_map[ensure_str(get_backend_member(node, "id", ""))] = input_idx
                 input_idx += 1
 
         last_width: int = 32
         last_height: int = 32
 
-        for node in _get_attr(self.graph, "nodes", {}).values():
-            if _get_attr(node, "op_type", "") == "Input":
+        for node in _graph_nodes_map(self.graph).values():
+            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
                 continue
 
             last_width, last_height = self._emit_node(node, input_map, js)
@@ -385,7 +428,7 @@ class WebGLCodeGenerator(BaseGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = get_backend_member(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
                 return res_dict
@@ -393,7 +436,7 @@ class WebGLCodeGenerator(BaseGenerator):
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
-        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in _get_attr(graph, "nodes", {}).items() if _get_attr(node, "op_type", "").lower() not in ("input", "output")}
+        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in _graph_nodes_map(graph).items() if ensure_str(get_backend_member(node, "op_type", "")).lower() not in ("input", "output")}
 
         return CompiledArtifact(
             callable_fn=runner,

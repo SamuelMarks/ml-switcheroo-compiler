@@ -9,9 +9,8 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -34,7 +33,7 @@ def global_wasm_mock() -> Iterator[None]:
             OPS_REGISTRY[op] = {"variants": {}}
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
-        _get_attr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
+        ensure_eager_tensor(OPS_REGISTRY[op]["variants"])["edge_wasm_simd"] = {"template": "mock_template_" + op}
 
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
         mock_bodies = {
@@ -54,7 +53,7 @@ def global_wasm_mock() -> Iterator[None]:
             Args:
                 template_name: Test parameter `template_name`.
             """
-            return {"body": as_callable(mock_bodies.get)(template_name, as_tensor("// ") + as_tensor(template_name))}
+            return {"body": ensure_callable(mock_bodies.get)(template_name, ensure_eager_tensor("// ") + ensure_eager_tensor(template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 

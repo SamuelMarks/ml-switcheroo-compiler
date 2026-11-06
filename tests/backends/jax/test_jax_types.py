@@ -7,8 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.jax.types import array, asarray, item, zeros
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,14 +20,14 @@ def test_jax_types() -> None:
     except ImportError:
         pytest.skip("JAX not available")
 
-    res_zeros = as_callable(zeros)(None, (2, 2))
-    assert as_tensor(_get_attr(res_zeros, "shape")) == (2, 2)
+    res_zeros = ensure_callable(zeros)(None, (2, 2))
+    assert ensure_eager_tensor(res_zeros).shape == (2, 2)
 
-    res_array = as_callable(array)(None, [1, 2], "float32")
-    assert as_tensor(_get_attr(res_array, "shape")) == (2,)
+    res_array = ensure_callable(array)(None, [1, 2], "float32")
+    assert ensure_eager_tensor(res_array).shape == (2,)
 
-    res_asarray = as_callable(asarray)(None, [3, 4])
-    assert as_tensor(_get_attr(res_asarray, "shape")) == (2,)
+    res_asarray = ensure_callable(asarray)(None, [3, 4])
+    assert ensure_eager_tensor(res_asarray).shape == (2,)
 
-    res_item = as_callable(item)(None, as_callable(jnp.array)(5))
+    res_item = ensure_callable(item)(None, ensure_callable(jnp.array)(5))
     assert res_item == 5

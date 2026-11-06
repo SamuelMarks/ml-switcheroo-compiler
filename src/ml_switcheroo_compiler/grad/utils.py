@@ -4,20 +4,147 @@ from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    ShapeProtocol,
+)
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, _cast_val, _get_attr, _has_attr, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TypedVariadicCallable,
+    extract_data,
+    invoke_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 from .options import GradOptions
+
+
+def _is_grad_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_grad_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_grad_eager_tensor(val)
+    return val
+
+
+def _coerce_grad_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
+
+
+@typing.runtime_checkable
+class _IdDataProtocol(typing.Protocol):
+    """Protocol for proxy tensor data exposing an `id` attribute."""
+
+    id: str
+
+
+@typing.runtime_checkable
+class _ConcreteValueProtocol(typing.Protocol):
+    """Protocol for proxy tensor data exposing a `concrete_value` attribute."""
+
+    concrete_value: GradValue
+
+
+@typing.runtime_checkable
+class _PrivateDataProtocol(typing.Protocol):
+    """Protocol for tensors exposing a `_data` attribute."""
+
+    _data: GradValue
+
+
+@typing.runtime_checkable
+class _DataFieldProtocol(typing.Protocol):
+    """Protocol for tensors exposing a `data` attribute."""
+
+    data: GradValue
+
+
+@typing.runtime_checkable
+class _RequiresGradProtocol(typing.Protocol):
+    """Protocol for tensors exposing a `requires_grad` boolean flag."""
+
+    requires_grad: bool
+
+
+@typing.runtime_checkable
+class _TrainableProtocol(typing.Protocol):
+    """Protocol for variables exposing a `trainable` boolean flag."""
+
+    trainable: bool
+
+
+@typing.runtime_checkable
+class _GraphNodesProtocol(typing.Protocol):
+    """Protocol for graphs exposing a `nodes` mapping."""
+
+    nodes: Mapping[str, LogicalNode]
+
+
+@typing.runtime_checkable
+class _GraphInputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `inputs` sequence."""
+
+    inputs: Sequence[str]
+
+
+def _unwrap_data(val: GradValue) -> GradValue:
+    """Return `val.data` if `val` exposes `.data`, otherwise `val`.
+
+    Args:
+        val (GradValue): Candidate tensor or array.
+
+    Returns:
+        GradValue: Unwrapped data payload.
+    """
+    raw: TensorOrScalar = val
+    return raw.data if isinstance(raw, _DataFieldProtocol) else val
+
+
+def _extract_shape(val: GradValue) -> tuple[int, ...]:
+    """Return `tuple(val.shape)` if `val` exposes `.shape`, otherwise `()`.
+
+    Args:
+        val (GradValue): Candidate tensor or array.
+
+    Returns:
+        tuple[int, ...]: Shape tuple.
+    """
+    raw: TensorOrScalar = val
+    return _coerce_grad_shape(raw.shape) if isinstance(raw, ShapeProtocol) else ()
 
 
 @typing.runtime_checkable
@@ -95,7 +222,7 @@ def value_and_grad_wrt_vars(
         Returns:
             tuple[GradValue, dict[str, GradValue]]: Primal output value and variable gradient dictionary.
         """
-        val = as_callable(fun)(*args, **kwargs)
+        val = invoke_callable(fun, *args, **kwargs)
         grads: dict[str, GradValue] = {}
         return (val, grads)
 
@@ -113,7 +240,7 @@ def _check_scalar(tensor: GradValue) -> None:
     """
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
-    shape = _get_attr(tensor, "shape", ())
+    shape = _extract_shape(tensor)
     prod = 1
     for s in shape:
         try:
@@ -135,13 +262,19 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
         tuple[list[GradValue], list[str]]: Tuple of `(wrt_tensors, wrt_node_ids)`.
     """
     all_tensors = _collect_live_tensors()
+    raw_graph: TensorOrScalar = graph
+    graph_nodes = raw_graph.nodes if isinstance(raw_graph, _GraphNodesProtocol) else {}
     wrt_tensors: list[GradValue] = []
     wrt_ids: list[str] = []
     for t in all_tensors:
-        if _has_attr(t, "data") and _has_attr(t.data, "id"):
-            node_id = _get_attr(t.data, "id")
-            if node_id in _get_attr(graph, "nodes", {}):
-                if _get_attr(t, "requires_grad", False) or _get_attr(t, "trainable", False) or isinstance(t, Variable):
+        raw_t: TensorOrScalar = t
+        raw_data: TensorOrScalar = t.data
+        if isinstance(raw_data, _IdDataProtocol):
+            node_id = str(raw_data.id)
+            if node_id in graph_nodes:
+                req_grad = isinstance(raw_t, _RequiresGradProtocol) and bool(raw_t.requires_grad)
+                trainable = isinstance(raw_t, _TrainableProtocol) and bool(raw_t.trainable)
+                if req_grad or trainable or isinstance(t, Variable):
                     wrt_tensors.append(t)
                     wrt_ids.append(node_id)
     return wrt_tensors, wrt_ids
@@ -156,13 +289,14 @@ def _get_concrete_val(t: GradValue) -> GradValue:
     Returns:
         GradValue: Concrete backing array value, or None if unavailable.
     """
-    val = _get_attr(_get_attr(t, "data", t), "concrete_value", None)
+    raw_data: TensorOrScalar = _unwrap_data(t)
+    val: GradValue = raw_data.concrete_value if isinstance(raw_data, _ConcreteValueProtocol) else None
     if val is None:
-        val = _get_attr(t, "_data", None)
-        if isinstance(val, ProxyTensor):
-            val = _get_attr(val, "concrete_value", None)
-    _typed_ret_1: GradValue = val
-    return _typed_ret_1
+        raw_t: TensorOrScalar = t
+        priv_data = raw_t._data if isinstance(raw_t, _PrivateDataProtocol) else None
+        raw_priv: TensorOrScalar = priv_data
+        val = raw_priv.concrete_value if isinstance(raw_priv, _ConcreteValueProtocol) else priv_data
+    return val
 
 
 def _collect_live_tensors() -> list[Tensor]:
@@ -189,16 +323,19 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
         ValueError: If any graph input node is missing a concrete value.
     """
     all_tensors = _collect_live_tensors()
-    graph_nodes = _get_attr(graph, "nodes", {})
+    raw_graph: TensorOrScalar = graph
+    graph_nodes = raw_graph.nodes if isinstance(raw_graph, _GraphNodesProtocol) else {}
+    graph_inputs = raw_graph.inputs if isinstance(raw_graph, _GraphInputsProtocol) else ()
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
-        node_id = _get_attr(_get_attr(t, "data", None), "id", "")
+        raw_data: TensorOrScalar = _unwrap_data(t)
+        node_id = str(raw_data.id) if isinstance(raw_data, _IdDataProtocol) else ""
         if node_id and node_id in graph_nodes:
             val = _get_concrete_val(t)
             if val is not None:
                 inputs_dict[node_id] = get_active_backend().asarray(val)
 
-    for inp_id in _get_attr(graph, "inputs", ()):
+    for inp_id in graph_inputs:
         if inp_id not in inputs_dict:
             raise ValueError(f"Missing input value for node '{inp_id}'.")
 
@@ -220,7 +357,7 @@ def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
         if isinstance(p, Tensor):
             tensor_primals.append(p)
         else:
-            arr = _cast_val(BackendArray, get_active_backend().asarray(p))
+            arr = _ensure_grad_tensor(get_active_backend().asarray(p))
             dt = DType.Float32
             if str(arr.dtype) == "float64":
                 dt = DType.Float64
@@ -288,7 +425,7 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
         return val
 
     if isinstance(orig, Tensor):
-        arr = _cast_val(BackendArray, get_active_backend().asarray(val))
+        arr = _ensure_grad_tensor(get_active_backend().asarray(val))
         dt = DType.Float32
         if str(arr.dtype) == "float64":
             dt = DType.Float64
@@ -304,31 +441,32 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
 def _compute_grad_and_value(
     fun: GradValue,
     options: GradOptions,
-    args: tuple[GradValue, ...],
+    raw_args: tuple[GradValue, ...],
 ) -> tuple[GradValue, GradValue]:
-    """Compute both the primal output and selected argument gradients of `fun` at `args`.
+    """Compute both the primal output and selected argument gradients of `fun` at `raw_args`.
 
     Args:
         fun (GradValue): Function to differentiate.
         options (GradOptions): Differentiation configuration (`argnums`, `has_aux`).
-        args (tuple[GradValue, ...]): Tuple of primal arguments.
+        raw_args (tuple[GradValue, ...]): Tuple of primal arguments.
 
     Returns:
         tuple[GradValue, GradValue]: Tuple of `(primal_value, gradients)`.
     """
     from .jvp_vjp import _unpack_pair, vjp
 
-    val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=_get_attr(options, "has_aux", False)))
+    args: tuple[GradValue, ...] = tuple(a if isinstance(a, Tensor) else extract_data(a) for a in raw_args)
+    val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=options.has_aux))
     vjp_fn = vjp_fn_raw
 
-    if _get_attr(options, "has_aux", False):
-        primal_val, _ = _cast_val(tuple[GradValue, GradValue], val)
+    if options.has_aux:
+        primal_val, _ = _unpack_pair(val)
     else:
         primal_val = val
 
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         c_id = f"cot_{uuid.uuid4().hex[:6]}"
-        p_shape = _get_attr(primal_val, "shape", ())
+        p_shape = _extract_shape(primal_val)
         c_node = LogicalNode(
             id=c_id,
             op_type="Constant",
@@ -340,17 +478,17 @@ def _compute_grad_and_value(
         proxy = ProxyTensor(id=c_id, shape=p_shape, dtype="float32")
         cotangent: GradValue = Tensor(proxy, TensorConfig(p_shape, DType.Float32, Device("cpu")))
     else:
-        primal_arr = get_active_backend().asarray(_get_attr(primal_val, "data", primal_val))
+        primal_arr = get_active_backend().asarray(_unwrap_data(primal_val))
         cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
     grads = invoke_callable(vjp_fn, cotangent)
     grads_seq = tuple(grads) if isinstance(grads, (list, tuple)) else (grads,)
 
-    argnums = _get_attr(options, "argnums", 0)
+    argnums: GradValue = options.argnums
     if isinstance(argnums, int):
-        res_grad = _to_original_type(grads_seq[argnums], args[argnums])
+        res_grad: GradValue = _to_original_type(grads_seq[argnums], args[argnums])
     elif isinstance(argnums, (tuple, list)):
-        res_grad = tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in argnums)
+        res_grad = tuple(_to_original_type(grads_seq[int(idx)], args[int(idx)]) for idx in argnums if isinstance(idx, int))
     else:
         res_grad = _to_original_type(grads_seq[0], args[0])
 

@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.ops.type_inference as type_inf_mod
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -50,7 +50,7 @@ def test_type_inference_coverage() -> None:
 
         dtype: str = "dtype('int32')"
 
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataWithDtypeRegex)(), None) == DType.Int32
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataWithDtypeRegex)(), None) == DType.Int32
 
     # 2. res_data has .dtype starting with "dtype" but not matching regex
     class MockDataWithDtypePrefix:
@@ -58,7 +58,7 @@ def test_type_inference_coverage() -> None:
 
         dtype: str = "dtype_custom"
 
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataWithDtypePrefix)(), None) == DType.Float32
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataWithDtypePrefix)(), None) == DType.Float32
 
     # 3. res_data has .dtype containing dot, e.g. "numpy.float64"
     class MockDataWithDotDtype:
@@ -66,7 +66,7 @@ def test_type_inference_coverage() -> None:
 
         dtype: str = "numpy.float64"
 
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataWithDotDtype)(), None) == DType.Float64
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataWithDotDtype)(), None) == DType.Float64
 
     # 4. res_data has .dtype that raises ValueError on DType instantiation
     class MockDataWithInvalidDtype:
@@ -74,16 +74,16 @@ def test_type_inference_coverage() -> None:
 
         dtype: str = "totally_unknown_dtype_xyz"
 
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataWithInvalidDtype)(), None) == DType.Float32
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataWithInvalidDtype)(), None) == DType.Float32
 
     # 5. res_data has NO .dtype attribute, first_tensor is provided
     class MockDataNoDtype:
         """Mock result data without dtype attribute."""
 
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataNoDtype)(), dummy_t_int) == DType.Int32
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataNoDtype)(), dummy_t_int) == DType.Int32
 
     # 6. res_data has NO .dtype attribute, first_tensor is None
-    assert as_callable(type_inf_mod.resolve_dtype)(as_callable(MockDataNoDtype)(), None) == DType.Float32
+    assert ensure_callable(type_inf_mod.resolve_dtype)(ensure_callable(MockDataNoDtype)(), None) == DType.Float32
 
     # 7. resolve_output_dtype_and_device with "dtype" in kwargs
     out_dt, dev = type_inf_mod.resolve_output_dtype_and_device(dummy_t, {"dtype": DType.Int64})

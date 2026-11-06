@@ -2,10 +2,25 @@
 
 from __future__ import annotations
 
+import typing
+from collections.abc import Iterable
+
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+
+
+@typing.runtime_checkable
+class LineEmitterProtocol(typing.Protocol):
+    """Protocol for code emitters that support appending lines."""
+
+    def add_line(self, line: str) -> None:
+        """Append a line of code to the generated output.
+
+        Args:
+            line (str): Line of code to append.
+        """
+        ...
 
 
 class PyTorchScatterVisitor:
@@ -135,7 +150,7 @@ class PyTorchDistributedVisitor:
         str: Result.
         """
         tensor = input_vars[0]
-        src = _get_attr(node, "attributes", {}).get("root", 0)
+        src = (node.attributes or {}).get("root", 0)
         return f"torch.distributed.broadcast({tensor}, src={src})"
 
 
@@ -146,16 +161,21 @@ class PyTorchLinalgMixin:
 class PyTorchNNMixin:
     """NN Mixin."""
 
-    def __init__(self, *args: EagerValue, generator: EagerValue = None, **kwargs: EagerValue) -> None:
+    def __init__(
+        self,
+        *args: EagerValue,
+        generator: LineEmitterProtocol | EagerValue = None,
+        **kwargs: EagerValue,
+    ) -> None:
         """Initialize PyTorchNNMixin.
 
         Args:
             *args (EagerValue): Variable length arguments.
-            generator (EagerValue): The parent code generator instance.
+            generator (LineEmitterProtocol | EagerValue): The parent code generator instance.
             **kwargs (EagerValue): Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.generator = generator
+        self.generator: LineEmitterProtocol | EagerValue = generator
 
     def _add_line(self, line: str) -> None:
         """Add a line to code output.
@@ -163,9 +183,9 @@ class PyTorchNNMixin:
         Args:
             line (str): Line of code to append.
         """
-        if _has_attr(self, "add_line"):
+        if isinstance(self, LineEmitterProtocol):
             self.add_line(line)
-        elif self.generator and _has_attr(self.generator, "add_line"):
+        elif self.generator and isinstance(self.generator, LineEmitterProtocol):
             self.generator.add_line(line)
 
     def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -199,24 +219,25 @@ class PyTorchNNMixin:
         tag = node.attributes.get("tag", 0)
         shape = node.attributes.get("shape", ())
         dtype = "torch." + str(node.attributes.get("dtype", "float32")).lower()
-        nid = _get_attr(node, "id", "")
+        nid = node.id
         res_var = f"v_{nid.replace('-', '_')}"
-        self._add_line(f"        {res_var} = torch.empty({list(_get_attr(shape, '__iter__')())}, dtype={dtype}, device=self.device)")
+        shape_list = list(shape) if isinstance(shape, Iterable) and not isinstance(shape, (str, bytes)) else []
+        self._add_line(f"        {res_var} = torch.empty({shape_list}, dtype={dtype}, device=self.device)")
         self._add_line(f"        torch.distributed.irecv({res_var}, src={src}, tag={tag})")
         return res_var
 
-    def visit_Conv1D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv1D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 1D convolution.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv1d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -224,18 +245,18 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv1d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_Conv2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 2D convolution.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv2d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -243,18 +264,18 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv2d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_Conv3D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv3D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 3D convolution.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv3d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -262,27 +283,27 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv3d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_MultiHeadAttention(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_MultiHeadAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for MultiHeadAttention / ScaledDotProductAttention.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch attention expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         is_causal = bool(attrs.get("is_causal", False))
         q, k, v = input_vars[0], input_vars[1], input_vars[2]
         return f"torch.nn.functional.scaled_dot_product_attention({q}, {k}, {v}, is_causal={is_causal})"
 
-    def visit_ScaledDotProductAttention(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_ScaledDotProductAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for scaled dot product attention.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
@@ -291,126 +312,126 @@ class PyTorchNNMixin:
         """
         return self.visit_MultiHeadAttention(node, input_vars, **kwargs)
 
-    def visit_LayerNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_LayerNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for LayerNorm.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch layer_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         shape = attrs.get("normalized_shape", [1])
         eps = attrs.get("eps", 1e-5)
         weight = input_vars[1] if len(input_vars) > 1 else "None"
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.layer_norm({input_vars[0]}, {shape}, weight={weight}, bias={bias}, eps={eps})"
 
-    def visit_RMSNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_RMSNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for RMSNorm.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch rms_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         shape = attrs.get("normalized_shape", [1])
         eps = attrs.get("eps", 1e-5)
         weight = input_vars[1] if len(input_vars) > 1 else "None"
         return f"(torch.nn.functional.rms_norm({input_vars[0]}, {shape}, weight={weight}, eps={eps}) if hasattr(torch.nn.functional, 'rms_norm') else ({input_vars[0]} * torch.rsqrt(torch.mean({input_vars[0]} ** 2, dim=-1, keepdim=True) + {eps})))"
 
-    def visit_BatchNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_BatchNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for BatchNorm.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch batch_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         eps = attrs.get("eps", 1e-5)
         mean = input_vars[1] if len(input_vars) > 1 else "None"
         var = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.batch_norm({input_vars[0]}, running_mean={mean}, running_var={var}, eps={eps})"
 
-    def visit_GroupNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_GroupNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for GroupNorm.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch group_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         num_groups = attrs.get("num_groups", 1)
         eps = attrs.get("eps", 1e-5)
         return f"torch.nn.functional.group_norm({input_vars[0]}, num_groups={num_groups}, eps={eps})"
 
-    def visit_MaxPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_MaxPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for MaxPool2D.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch max_pool2d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         kernel_size = attrs.get("kernel_size", 2)
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.max_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AvgPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for AvgPool2D.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch avg_pool2d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         kernel_size = attrs.get("kernel_size", 2)
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.avg_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AdaptiveAvgPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AdaptiveAvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for AdaptiveAvgPool2D.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch adaptive_avg_pool2d expression.
         """
-        attrs = _get_attr(node, "attributes", {}) or {}
+        attrs = node.attributes or {}
         output_size = attrs.get("output_size", [1, 1])
         return f"torch.nn.functional.adaptive_avg_pool2d({input_vars[0]}, output_size={output_size})"
 
-    def visit_Linear(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Linear(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for Linear projection.
 
         Args:
-            node (EagerValue): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
             **kwargs (EagerValue): Additional operation attributes.
 

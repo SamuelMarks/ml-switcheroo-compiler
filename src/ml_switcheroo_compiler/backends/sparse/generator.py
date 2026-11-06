@@ -3,20 +3,113 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.backends.sparse.types import COOTensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr
+from ml_switcheroo_compiler.backends.sparse.eager import execute_op as _sparse_execute_op
+from ml_switcheroo_compiler.backends.sparse.types import (
+    COOTensor,
+)
+from ml_switcheroo_compiler.backends.sparse.types import (
+    array as _sparse_array,
+)
+from ml_switcheroo_compiler.backends.sparse.types import (
+    asarray as _sparse_asarray,
+)
+from ml_switcheroo_compiler.backends.sparse.types import (
+    item as _sparse_item,
+)
+from ml_switcheroo_compiler.backends.sparse.types import (
+    zeros as _sparse_zeros,
+)
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_data
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+def _is_sparse_compiled_fn(
+    fn: EagerValue,
+) -> typing.TypeGuard[TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]]:
+    """Type guard narrowing `fn` to a compiled sparse callable.
+
+    Args:
+        fn (EagerValue): Candidate callable.
+
+    Returns:
+        bool: True if callable.
+    """
+    return callable(fn)
 
 
 @register_backend("sparse_coo")
 @register_backend("sparse")
 class SparseGenerator(PythonStringGenerator):
     """Generate executable Python code using dedicated Sparse COO tensor kernels."""
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> COOTensor:
+        """Create a Sparse COO tensor of zeros with the given shape.
+
+        Args:
+            shape (tuple[int, ...]): Target tensor shape.
+
+        Returns:
+            COOTensor: Zero-initialized COO tensor.
+        """
+        return _sparse_zeros(cls, shape)
+
+    @classmethod
+    def array(cls, data: EagerValue, dtype: EagerValue | None = None) -> COOTensor:
+        """Create a Sparse COO tensor from input data.
+
+        Args:
+            data (EagerValue): Input array or sequence.
+            dtype (EagerValue | None): Optional target dtype.
+
+        Returns:
+            COOTensor: Constructed COO tensor.
+        """
+        return _sparse_array(cls, data, dtype=str(dtype) if dtype is not None else None)
+
+    @classmethod
+    def asarray(cls, data: EagerValue) -> COOTensor:
+        """Convert input data to a Sparse COO tensor.
+
+        Args:
+            data (EagerValue): Input array or sequence.
+
+        Returns:
+            COOTensor: Converted COO tensor.
+        """
+        return _sparse_asarray(cls, data)
+
+    @classmethod
+    def item(cls, data: EagerValue) -> float:
+        """Extract scalar float value from a Sparse COO tensor.
+
+        Args:
+            data (EagerValue): Input 0D/1-element tensor.
+
+        Returns:
+            float: Extracted scalar value.
+        """
+        return _sparse_item(cls, data)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Execute an operation eagerly on the Sparse COO backend.
+
+        Args:
+            op_type (str): Canonical operation name.
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Evaluated operation result.
+        """
+        return _sparse_execute_op(cls, op_type, *args, **kwargs)
 
     def __init__(self, graph: IRGraph, memory_efficient: bool = True) -> None:
         """Initialize the Sparse COO code generator.
@@ -119,14 +212,10 @@ class SparseGenerator(PythonStringGenerator):
         namespace: dict[str, EagerValue] = {}
         exec(source, namespace)
         func: EagerValue | None = namespace.get(self._func_name)
-        if not callable(func):
+        if not _is_sparse_compiled_fn(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        _typed_ret_1: TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]] = _cast_val(
-            "TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]",
-            func,
-        )
-        return _typed_ret_1
+        return func
 
     def visit_Spmm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit sparse-dense matrix multiplication.
@@ -393,7 +482,7 @@ class SparseGenerator(PythonStringGenerator):
             del runner_kwargs
             if compiled_fn is not None:
                 try:
-                    args_list = [_get_attr(a, "data", a) for a in args]
+                    args_list = [extract_data(a) for a in args]
                     return compiled_fn(args_list)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -404,10 +493,10 @@ class SparseGenerator(PythonStringGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = extract_data(arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=BackendRegistry.get("numpy"))
             if not graph.outputs:
-                return as_tensor(res_dict)
+                return ensure_eager_tensor(res_dict)
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

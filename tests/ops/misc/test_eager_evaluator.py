@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EagerEvaluator, EvaluationContext
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -46,14 +45,14 @@ def test_eager_evaluator() -> None:
             """
             return op
 
-    ctx1 = as_callable(EvaluationContext)(DummyOpEager, "Op1", [], {}, as_callable(DummyBackend)())
-    assert as_callable(CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
+    ctx1 = ensure_callable(EvaluationContext)(DummyOpEager, "Op1", [], {}, ensure_callable(DummyBackend)())
+    assert ensure_callable(CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
 
-    ctx2 = as_callable(EvaluationContext)(DummyOpBackend, "Op2", [], {}, as_callable(DummyBackend)())
-    assert as_callable(BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
+    ctx2 = ensure_callable(EvaluationContext)(DummyOpBackend, "Op2", [], {}, ensure_callable(DummyBackend)())
+    assert ensure_callable(BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
 
-    assert isinstance(as_callable(EagerEvaluator._get_strategy)(as_callable(DummyOpEager)()), CustomEagerEvalStrategy)
-    assert isinstance(as_callable(EagerEvaluator._get_strategy)(as_callable(DummyOpBackend)()), BackendExecuteOpStrategy)
+    assert isinstance(ensure_callable(EagerEvaluator._get_strategy)(ensure_callable(DummyOpEager)()), CustomEagerEvalStrategy)
+    assert isinstance(ensure_callable(EagerEvaluator._get_strategy)(ensure_callable(DummyOpBackend)()), BackendExecuteOpStrategy)
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
@@ -90,7 +89,7 @@ def test_eager_evaluator() -> None:
 
     try:
         OpRegistry["Op1"] = Op1
-        _get_attr(OpRegistry, "__setitem__")("Op2", DummyOpBackend)
+        ensure_eager_tensor(OpRegistry)["Op2"] = DummyOpBackend
 
         from unittest.mock import patch
 

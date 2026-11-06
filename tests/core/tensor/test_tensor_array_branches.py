@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -25,4 +25,4 @@ def test_tensor_array_read_existing_value_branch() -> None:
 
     res = ta.read(idx_tensor)
     assert res.shape == (2, 2)
-    as_callable(np.testing.assert_array_equal)(res.data, as_callable(np.ones)((2, 2), dtype=np.float32))
+    ensure_callable(np.testing.assert_array_equal)(res.data, ensure_callable(np.ones)((2, 2), dtype=np.float32))

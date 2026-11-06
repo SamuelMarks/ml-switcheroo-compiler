@@ -7,12 +7,19 @@ import uuid
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
-from ml_switcheroo_compiler.ir.core import as_attrs
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TracedDataProtocol,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import (
     add,
@@ -540,7 +547,7 @@ def binary_crossentropy(
     if label_smoothing > 0.0:
         y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
 
-    y_pred_prepared = as_tensor_obj(_clip_and_convert_logits(y_pred, from_logits))
+    y_pred_prepared = ensure_tensor(_clip_and_convert_logits(y_pred, from_logits))
     bce = _compute_bce_loss(y_true, y_pred_prepared, from_logits)
     return op_mean(bce, axis=axis)
 
@@ -599,13 +606,14 @@ def sparse_categorical_crossentropy(
     """
     num_classes = y_pred.shape[axis]
     y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
-    loss = categorical_crossentropy(as_tensor_obj(y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
+    loss = categorical_crossentropy(ensure_tensor(y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
 
     if ignore_class is not None:
         valid_mask = not_equal(y_true, ignore_class)
-        loss_dtype = _get_attr(loss, "dtype", None) or DType("float32")
-        zero_loss = zeros(_get_attr(loss, "shape", ()), dtype=loss_dtype)
-        loss = where(valid_mask, as_tensor_obj(loss), zero_loss)
+        raw_dt = extract_dtype(loss, DType("float32"))
+        loss_dtype = raw_dt if isinstance(raw_dt, DType) else DType(str(raw_dt))
+        zero_loss = zeros(extract_shape(loss), dtype=loss_dtype)
+        loss = where(valid_mask, ensure_tensor(loss), zero_loss)
 
     return loss
 
@@ -681,13 +689,18 @@ def _emit_adaptive_log_softmax_with_loss_node(
 
     out_id = str(uuid.uuid4())
     loss_id = f"{out_id}:loss"
+    in_data: TensorOrScalar = input_tensor.data
+    tgt_data: TensorOrScalar = target.data
 
     node = LogicalNode(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
-        inputs=[_get_attr(input_tensor.data, "id"), _get_attr(target.data, "id")],
+        inputs=[
+            str(in_data.id) if isinstance(in_data, TracedDataProtocol) else str(in_data),
+            str(tgt_data.id) if isinstance(tgt_data, TracedDataProtocol) else str(tgt_data),
+        ],
         shape_metadata=target.shape,
-        attributes=as_attrs({"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
+        attributes=ensure_attrs({"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
     )
     global_tracing_state.add_node(node)
 
@@ -721,7 +734,7 @@ def adaptive_log_softmax_with_loss(
         from ml_switcheroo_compiler.backends.registry import get_active_backend as _get_active_backend
 
         backend = _get_active_backend()
-        out, loss = as_tensor_pair(
+        out, loss = ensure_tensor_pair(
             backend.execute_op(
                 "AdaptiveLogSoftmaxWithLoss",
                 input.data,
@@ -754,7 +767,7 @@ class LogPoissonLoss(OpDef):
             tuple[int, ...]: Inferred output shape.
         """
         _ = kwargs
-        return _get_attr(args[0], "shape", ()) if args else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def log_poisson_loss(
@@ -806,7 +819,7 @@ class InTopK(OpDef):
             tuple[int, ...]: Inferred shape tuple.
         """
         _ = kwargs
-        return _get_attr(args[0], "shape", ()) if args else ()
+        return extract_shape(args[0]) if args else ()
 
 
 def in_top_k(
@@ -826,13 +839,13 @@ def in_top_k(
     Returns:
         TensorOrScalar: Boolean tensor of shape (batch_size,) indicating top-k membership.
     """
-    target_shape = _get_attr(targets, "shape", ())
+    target_shape = extract_shape(targets)
     if config.eager_mode:
         backend = get_active_backend()
-        t_data = _get_attr(targets, "data", targets)
-        p_data = _get_attr(predictions, "data", predictions)
+        t_data = extract_data(targets)
+        p_data = extract_data(predictions)
         data = backend.execute_op("InTopK", t_data, p_data, k=k, name=name)
-        return Tensor(data, TensorConfig(target_shape, "bool", _get_attr(targets, "device", "cpu")))
+        return Tensor(data, TensorConfig(target_shape, "bool", extract_device(targets, "cpu")))
     return _emit_shape_node("InTopK", [targets, predictions], {"k": k, "name": name}, target_shape, "bool")
 
 

@@ -4,13 +4,62 @@ from __future__ import annotations
 
 import logging
 import os
+import typing
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
+from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import OptimizationHeuristicsConfig
+
+
+@typing.runtime_checkable
+class _GraphOutputsProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `outputs` list."""
+
+    outputs: list[str]
+
+
+@typing.runtime_checkable
+class _GraphAttributesProtocol(typing.Protocol):
+    """Protocol for graphs exposing an `attributes` attribute."""
+
+    attributes: AttributeValue
+
+
+def _is_graph_attributes_holder(val: IRGraph) -> typing.TypeGuard[_GraphAttributesProtocol]:
+    """Type guard narrowing `val` to `_GraphAttributesProtocol` for attribute assignment.
+
+    Args:
+        val (IRGraph): Graph instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
+def _ensure_graph_attributes(graph: IRGraph) -> dict[str, AttributeValue]:
+    """Ensure `graph.attributes` exists as a mutable dictionary and return it.
+
+    Args:
+        graph (IRGraph): Target IRGraph.
+
+    Returns:
+        dict[str, AttributeValue]: Mutable graph attributes dictionary.
+    """
+    raw_graph: TensorOrScalar = graph
+    if isinstance(raw_graph, _GraphAttributesProtocol):
+        if isinstance(raw_graph.attributes, dict):
+            return raw_graph.attributes
+        del raw_graph.attributes
+    assert _is_graph_attributes_holder(graph)
+    new_attrs: dict[str, AttributeValue] = {}
+    graph.attributes = new_attrs
+    return new_attrs
+
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "pass_config", "optimization_heuristics.yaml")
 with open(_CONFIG_PATH) as f:
@@ -259,7 +308,8 @@ class InterferenceGraphColoringAllocator:
                     last_use[inp] = max(last_use[inp], i)
 
         end_time = len(sorted_nodes)
-        for out_id in _get_attr(graph, "outputs", []):
+        graph_outputs = list(graph.outputs or [])
+        for out_id in graph_outputs:
             if out_id in last_use:
                 last_use[out_id] = end_time
 
@@ -409,7 +459,9 @@ class BufferAllocationPass:
             if isinstance(size_val, str):
                 # Handle symbolic/dynamic batch dimensions using stride multipliers
                 stride_mult = 1
-                shape = _get_attr(node, "shape_metadata", None) or _get_attr(node, "shape", None) or node.attributes.get("shape")
+                raw_node: TensorOrScalar = node
+                node_shape_attr = raw_node.shape if isinstance(raw_node, ShapeProtocol) else None
+                shape = node.shape_metadata or node_shape_attr or node.attributes.get("shape")
                 if shape and isinstance(shape, (list, tuple)) and len(shape) > 1:
                     dims = [int(d) for d in shape[1:] if isinstance(d, (int, float))]
                     mult = 1
@@ -529,9 +581,14 @@ class BufferAllocationPass:
         """
         expire_t = last_use.get(node.id, i)
         if isinstance(size, str):
-            var_name = _get_attr(node, "id", f"node_{i}")
+            var_name = node.id if node.id else f"node_{i}"
             assigned_offset = allocator.allocate_dynamic(size, i, expire_t, var_name)
-            _get_attr(graph, "attributes")["dynamic_memory_schema"]["dynamic_offsets"].append(
+            graph_attrs = _ensure_graph_attributes(graph)
+            schema = graph_attrs.get("dynamic_memory_schema")
+            assert isinstance(schema, dict)
+            dyn_offsets = schema.get("dynamic_offsets")
+            assert isinstance(dyn_offsets, list)
+            dyn_offsets.append(
                 {
                     "var_name": var_name,
                     "symbolic_math": size,
@@ -572,10 +629,7 @@ class BufferAllocationPass:
         if not sorted_nodes:
             return False
 
-        graph_attrs = _get_attr(graph, "attributes", None)
-        if graph_attrs is None:
-            graph_attrs = {}
-            _obj_set_attr(graph, "attributes", graph_attrs)
+        graph_attrs = _ensure_graph_attributes(graph)
 
         node_sizes: dict[str, int | str] = {node.id: _get_node_byte_size(node) for node in sorted_nodes}
 
@@ -586,8 +640,7 @@ class BufferAllocationPass:
         allocator = GreedyOffsetAllocator()
         modified = False
 
-        _obj_set_attr(graph, "attributes", _get_attr(graph, "attributes", {}))
-        _get_attr(graph, "attributes")["dynamic_memory_schema"] = {"dynamic_offsets": []}
+        graph_attrs["dynamic_memory_schema"] = {"dynamic_offsets": []}
 
         for i, node in enumerate(sorted_nodes):
             if self._allocate_node_buffer(node, i, node_sizes[node.id], graph, last_use, allocator):

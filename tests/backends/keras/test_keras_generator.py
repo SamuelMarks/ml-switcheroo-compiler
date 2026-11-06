@@ -9,9 +9,8 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator
 from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor, KerasVisionVisitor
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_callable, as_tensor, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -32,32 +31,32 @@ class DummyNode:
 def test_keras_vision_visitor() -> None:
     """Test function test_keras_vision_visitor."""
     vis = KerasVisionVisitor()
-    assert as_callable(vis.visit_ElasticTransform)(as_callable(DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
-    assert as_callable(vis.visit_ElasticTransform)(as_callable(DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
-    assert as_callable(vis.visit_GaussianBlur)(as_callable(DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
-    assert as_callable(vis.visit_GaussianBlur)(as_callable(DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
-    assert as_callable(vis.visit_MedianFilter)(as_callable(DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
-    assert as_callable(vis.visit_MedianFilter)(as_callable(DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
-    assert as_callable(vis.visit_IoU)(as_callable(DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
-    assert as_callable(vis.visit_IoU)(as_callable(DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
-    assert as_callable(vis.visit_NonMaxSuppression)(as_callable(DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
-    assert as_callable(vis.visit_NonMaxSuppression)(as_callable(DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
-    assert as_callable(vis.visit_ResizeBicubic)(as_callable(DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
-    assert as_callable(vis.visit_ResizeBicubic)(as_callable(DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
-    assert as_callable(vis.visit_ResizeLanczos3)(as_callable(DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
-    assert as_callable(vis.visit_ResizeLanczos3)(as_callable(DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
-    assert as_callable(vis.visit_ExtractBoundingBoxes)(as_callable(DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=10, interpolation='bilinear', extrapolation_value=0.0, data_format=\"df\"))"
-    assert as_callable(vis.visit_ExtractBoundingBoxes)(as_callable(DummyNode)(), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
-    assert as_callable(vis.visit_PerspectiveTransform)(as_callable(DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
-    assert as_callable(vis.visit_PerspectiveTransform)(as_callable(DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
+    assert ensure_callable(vis.visit_ElasticTransform)(ensure_callable(DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
+    assert ensure_callable(vis.visit_ElasticTransform)(ensure_callable(DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
+    assert ensure_callable(vis.visit_GaussianBlur)(ensure_callable(DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
+    assert ensure_callable(vis.visit_GaussianBlur)(ensure_callable(DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
+    assert ensure_callable(vis.visit_MedianFilter)(ensure_callable(DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
+    assert ensure_callable(vis.visit_MedianFilter)(ensure_callable(DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
+    assert ensure_callable(vis.visit_IoU)(ensure_callable(DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
+    assert ensure_callable(vis.visit_IoU)(ensure_callable(DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
+    assert ensure_callable(vis.visit_NonMaxSuppression)(ensure_callable(DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
+    assert ensure_callable(vis.visit_NonMaxSuppression)(ensure_callable(DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
+    assert ensure_callable(vis.visit_ResizeBicubic)(ensure_callable(DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
+    assert ensure_callable(vis.visit_ResizeBicubic)(ensure_callable(DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
+    assert ensure_callable(vis.visit_ResizeLanczos3)(ensure_callable(DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
+    assert ensure_callable(vis.visit_ResizeLanczos3)(ensure_callable(DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
+    assert ensure_callable(vis.visit_ExtractBoundingBoxes)(ensure_callable(DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=10, interpolation='bilinear', extrapolation_value=0.0, data_format=\"df\"))"
+    assert ensure_callable(vis.visit_ExtractBoundingBoxes)(ensure_callable(DummyNode)(), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
+    assert ensure_callable(vis.visit_PerspectiveTransform)(ensure_callable(DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
+    assert ensure_callable(vis.visit_PerspectiveTransform)(ensure_callable(DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
 
 
 def test_keras_audio_visitor() -> None:
     """Test function test_keras_audio_visitor."""
     vis = KerasAudioVisitor()
-    assert as_callable(vis.visit_Istft)(as_callable(DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
-    assert as_callable(vis.visit_MelFilterbank)(as_callable(DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
-    assert as_callable(vis.visit_Mfcc)(as_callable(DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
+    assert ensure_callable(vis.visit_Istft)(ensure_callable(DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
+    assert ensure_callable(vis.visit_MelFilterbank)(ensure_callable(DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert ensure_callable(vis.visit_Mfcc)(ensure_callable(DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 class DummyIRNode:
@@ -78,15 +77,15 @@ class DummyIRNode:
 class DummyGraph:
     """Test class DummyGraph."""
 
-    nodes = as_tensor_list([])
+    nodes = ensure_tensor_list([])
 
 
 def test_keras_signature_builder() -> None:
     """Test function test_keras_signature_builder."""
     node = DummyIRNode("in_0", (None, 3))
-    assert as_callable(KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
+    assert ensure_callable(KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
     node2 = DummyIRNode("in_1")
-    assert as_callable(KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
+    assert ensure_callable(KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
     assert KerasSignatureBuilder.get_return_block(["i1"], ["o1"]) == "return keras.Model(inputs=[i1], outputs=[o1])"
 
 
@@ -102,19 +101,19 @@ def test_keras_tensor_manipulator() -> None:
 
 def test_keras_generator() -> None:
     """Test function test_keras_generator."""
-    gen = as_callable(KerasCodeGenerator)(as_callable(DummyGraph)())
+    gen = ensure_callable(KerasCodeGenerator)(ensure_callable(DummyGraph)())
     assert gen.get_fallback_prefix() == "keras.ops"
     assert gen.get_fallback_prefix() == "keras.ops"
-    assert as_callable(gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
+    assert ensure_callable(gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
     ops = gen.get_ops_map({})
     assert "Zeros" in ops
     assert "Transpose" in ops
-    as_callable(gen._emit_input_assignment)("var1", as_callable(DummyIRNode)("in"), "inputs", 0)
+    ensure_callable(gen._emit_input_assignment)("var1", ensure_callable(DummyIRNode)("in"), "inputs", 0)
     assert "var1 = keras.Input" in gen.code[-1]
     assert "var1" in gen.keras_input_vars
     gen._emit_body_return(["out1"])
     assert "out1" in gen.keras_output_vars
-    as_callable(gen._emit_output_assignment)(None, ["out2"], "out2")
+    ensure_callable(gen._emit_output_assignment)(None, ["out2"], "out2")
     assert "out2" in gen.keras_output_vars
     assert gen._generate_file_header() == [gen.header.strip()]
     m_open = mock_open(read_data='imports: "import tmp"\nfunctions:\n  dummy: "def dummy(): pass"')
@@ -123,15 +122,15 @@ def test_keras_generator() -> None:
         assert "import keras\n" in imports
         assert "import tmp" in imports
         assert "def dummy(): pass" in imports
-    _set_attr(gen, "code", [])
+    ensure_mutable(gen).code = ensure_eager_tensor([])
     gen._generate_function_signature()
     assert "def get_model() -> object:" in gen.code[-1]
     assert gen.keras_input_vars == []
-    _set_attr(gen, "keras_input_vars", ["i"])
-    _set_attr(gen, "keras_output_vars", ["o"])
+    ensure_mutable(gen).keras_input_vars = ensure_eager_tensor(["i"])
+    ensure_mutable(gen).keras_output_vars = ensure_eager_tensor(["o"])
     from ml_switcheroo_compiler.backends.keras.generator import KerasSignatureBuilder
 
-    as_callable(gen.code.append)(as_callable(KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
+    ensure_callable(gen.code.append)(ensure_callable(KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
     assert "return keras.Model(inputs=[i], outputs=[o])" in gen.code[-1]
 
 
@@ -149,8 +148,8 @@ def test_keras_generator_save_load(tmp_path: EagerTensorProtocol) -> None:
     filez = str(tmp_path / "dummy.npz")
     KerasCodeGenerator.savez(filez, arr, arg2=[4, 5])
     resz = KerasCodeGenerator.load(filez)
-    assert as_tensor(_get_attr(resz, "__getitem__")("arr_0")) == arr
-    assert as_tensor(_get_attr(resz, "__getitem__")("arg2")) == [4, 5]
+    assert ensure_eager_tensor(resz)["arr_0"] == arr
+    assert ensure_eager_tensor(resz)["arg2"] == [4, 5]
     filezc = str(tmp_path / "dummy_comp.npz")
     KerasCodeGenerator.savez_compressed(filezc, arr, arg2=[4, 5])
     import gzip
@@ -173,8 +172,8 @@ def test_keras_generator_conv_transpose() -> None:
 
         pass
 
-    assert as_callable(gen.visit_ConvTranspose)(as_callable(DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
-    assert as_callable(gen.visit_RaggedDot)(as_callable(DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
+    assert ensure_callable(gen.visit_ConvTranspose)(ensure_callable(DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
+    assert ensure_callable(gen.visit_RaggedDot)(ensure_callable(DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
 
 
 def test_keras_generator_empty_prefix_yaml() -> None:
@@ -218,7 +217,7 @@ def test_keras_generator_return_only_outputs() -> None:
         gen.keras_input_vars = []
         gen.keras_output_vars = ["out_var"]
 
-    _set_attr(gen, "_generate_body", mock_generate_body)
+    ensure_mutable(gen)._generate_body = ensure_eager_tensor(mock_generate_body)
     code = gen.generate()
     assert "return out_var" in code
 
@@ -240,7 +239,7 @@ def test_keras_generator_return_block_both_inputs_and_outputs() -> None:
         gen.keras_input_vars = ["in_var"]
         gen.keras_output_vars = ["out_var"]
 
-    _set_attr(gen, "_generate_body", mock_generate_body)
+    ensure_mutable(gen)._generate_body = ensure_eager_tensor(mock_generate_body)
     code = gen.generate()
     assert "return keras.Model(inputs=[in_var], outputs=[out_var])" in code
 
@@ -262,7 +261,7 @@ def test_keras_generator_empty_inputs_and_outputs() -> None:
         gen.keras_input_vars = ["in0"]
         gen.keras_output_vars = []
 
-    _set_attr(gen, "_generate_body", mock_generate_body)
+    ensure_mutable(gen)._generate_body = ensure_eager_tensor(mock_generate_body)
     code = gen.generate()
     assert "pass" in code
 
@@ -278,11 +277,11 @@ def test_keras_generator_compile_aot() -> None:
     with patch.object(gen, "generate", return_value="def get_model(): return lambda x, **kw: x + 1"):
         artifact = gen.compile_aot(graph)
         assert artifact(41) == 42
-        assert as_tensor(_get_attr(artifact.metadata, "__getitem__")("backend")) == "keras"
+        assert ensure_eager_tensor(artifact.metadata)["backend"] == "keras"
     gen_no_get_model = KerasCodeGenerator(graph)
     with patch.object(gen_no_get_model, "generate", return_value="x_const = 10"):
         artifact_no_gm = gen_no_get_model.compile_aot(graph)
-        assert as_tensor(_get_attr(artifact_no_gm.metadata, "__getitem__")("model")) is None
+        assert ensure_eager_tensor(artifact_no_gm.metadata)["model"] is None
     g_single = IRGraph()
     node_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[2])
     node_id = IRNode(id="out0", op_type="Identity", inputs=["in0"], shape_metadata=[2])
@@ -304,8 +303,8 @@ def test_keras_generator_compile_aot() -> None:
     gen_single = KerasCodeGenerator(g_single)
     with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):
         art_single = gen_single.compile_aot(g_single)
-        res_single = as_callable(art_single)(as_callable(MockTensorWithData)(as_callable(np.array)([1, 2])), "extra_arg")
-        assert as_callable(np.array_equal)(res_single, as_callable(np.array)([1, 2]))
+        res_single = ensure_callable(art_single)(ensure_callable(MockTensorWithData)(ensure_callable(np.array)([1, 2])), "extra_arg")
+        assert ensure_callable(np.array_equal)(res_single, ensure_callable(np.array)([1, 2]))
     g_no_out = IRGraph()
     g_no_out.nodes = NodeDict({"in0": node_in})
     g_no_out.inputs = ["in0"]
@@ -325,6 +324,6 @@ def test_keras_generator_compile_aot() -> None:
     with patch.object(gen_multi, "generate", return_value="invalid syntax"):
         art_multi = gen_multi.compile_aot(g_multi)
         res_multi = art_multi(np.array([5, 6]))
-        assert as_callable(len)(res_multi) == 2
-        assert as_callable(np.array_equal)(as_tensor(_get_attr(res_multi, "__getitem__")(0)), as_callable(np.array)([5, 6]))
-        assert as_callable(np.array_equal)(as_tensor(_get_attr(res_multi, "__getitem__")(1)), as_callable(np.array)([5, 6]))
+        assert ensure_callable(len)(res_multi) == 2
+        assert ensure_callable(np.array_equal)(ensure_eager_tensor(res_multi)[0], ensure_callable(np.array)([5, 6]))
+        assert ensure_callable(np.array_equal)(ensure_eager_tensor(res_multi)[1], ensure_callable(np.array)([5, 6]))

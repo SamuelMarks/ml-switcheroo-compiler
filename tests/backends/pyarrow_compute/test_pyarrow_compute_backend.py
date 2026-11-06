@@ -15,10 +15,9 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 from ml_switcheroo_compiler.backends.pyarrow_compute.generator import PyArrowComputeGenerator
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor, as_type_obj
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_type_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -78,21 +77,21 @@ def test_pyarrow_compute_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = as_callable(runner)(t_in1, in2=as_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
+    res = ensure_callable(runner)(t_in1, in2=ensure_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = as_callable(runner_multi)(t_in1, t_in2)
-    assert isinstance(as_tensor(res_multi), tuple)
+    res_multi = ensure_callable(runner_multi)(t_in1, t_in2)
+    assert isinstance(ensure_eager_tensor(res_multi), tuple)
     assert len(res_multi) == 2
 
     # AOT no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = as_callable(runner_no_out)(t_in1, t_in2)
-    assert isinstance(as_tensor(res_no_out), dict)
+    res_no_out = ensure_callable(runner_no_out)(t_in1, t_in2)
+    assert isinstance(ensure_eager_tensor(res_no_out), dict)
 
 
 def test_pyarrow_compute_types() -> None:
@@ -139,7 +138,7 @@ def test_pyarrow_compute_types() -> None:
             """
             return np.array(99.0)
 
-    assert as_callable(np.isclose)(as_callable(pa_pkg.item)(as_callable(NoItemPaObj)()), 99.0)
+    assert ensure_callable(np.isclose)(ensure_callable(pa_pkg.item)(ensure_callable(NoItemPaObj)()), 99.0)
 
     # item extraction when to_pylist returns empty list
     class EmptyPylistPaObj:
@@ -161,7 +160,7 @@ def test_pyarrow_compute_types() -> None:
             """
             return 55.0
 
-    assert as_callable(np.isclose)(as_callable(pa_pkg.item)(as_callable(EmptyPylistPaObj)()), 55.0)
+    assert ensure_callable(np.isclose)(ensure_callable(pa_pkg.item)(ensure_callable(EmptyPylistPaObj)()), 55.0)
 
     # Test array and asarray exception fallback branch to numpy
     class BadObjPa:
@@ -176,8 +175,8 @@ def test_pyarrow_compute_types() -> None:
             raise TypeError("cannot iterate")
 
     bad_inst = BadObjPa()
-    assert isinstance(as_callable(pa_pkg.array)(bad_inst), np.ndarray)
-    assert isinstance(as_callable(pa_pkg.asarray)(bad_inst), np.ndarray)
+    assert isinstance(ensure_callable(pa_pkg.array)(bad_inst), np.ndarray)
+    assert isinstance(ensure_callable(pa_pkg.asarray)(bad_inst), np.ndarray)
 
     # When pa_mod lacks 'array' attribute
     mock_pa_no_array = mock.MagicMock(spec=[])
@@ -206,9 +205,9 @@ def test_pyarrow_compute_ones_empty_parity() -> None:
     """Verify ones, empty, table, tensor, and check_parity helpers in PyArrow Compute backend."""
     mock_pa_no_array = mock.MagicMock(spec=[])
     o = pa_pkg.ones((3,))
-    assert len(as_tensor(o)) == 3
+    assert len(ensure_eager_tensor(o)) == 3
     e = pa_pkg.empty((2,))
-    assert len(as_tensor(e)) == 2
+    assert len(ensure_eager_tensor(e)) == 2
     with mock.patch("ml_switcheroo_compiler.backends.pyarrow_compute.types._get_pa_module", return_value=mock_pa_no_array):
         assert pa_pkg.ones((2,)) == [1.0, 1.0]
         assert pa_pkg.empty((2,)) == [None, None]
@@ -217,7 +216,7 @@ def test_pyarrow_compute_ones_empty_parity() -> None:
     t_alias = pa_pkg.tensor([1.0, 2.0])
     assert t_alias is not None
     assert pa_pkg.check_parity([1.0, 2.0], [1.0, 2.0]) is True
-    assert _get_attr(pa_pkg.PyArrowComputeGenerator, "check_parity")([1.0, 2.0], [1.0, 3.0]) is False
+    assert bool(ensure_eager_tensor(pa_pkg.PyArrowComputeGenerator).check_parity([1.0, 2.0], [1.0, 3.0])) is False
     assert pa_pkg.check_parity([1.0, 2.0], [1.0]) is False
 
 
@@ -290,7 +289,7 @@ def _test_pyarrow_compute_chunked_and_tables_part_1(_state: dict[str, EagerTenso
     # ChunkedArray creation and computation
     ca = pa_pkg.chunked_array([[1.0, 2.0], [3.0, 4.0]])
     assert ca is not None
-    ca_cls = as_tensor(_get_attr(pa_pkg.PyArrowComputeGenerator, "chunked_array"))([[1.0, 2.0], [3.0, 4.0]])
+    ca_cls = ensure_eager_tensor(ensure_eager_tensor(pa_pkg.PyArrowComputeGenerator).chunked_array)([[1.0, 2.0], [3.0, 4.0]])
     assert ca_cls is not None
 
     res_add = pa_pkg.execute_op("Add", ca, ca)
@@ -304,23 +303,22 @@ def _test_pyarrow_compute_chunked_and_tables_part_1(_state: dict[str, EagerTenso
     c2 = pa.array([100, 200, 300, 400])
     batch = pa_pkg.record_batch([c1, c2], names=["c1", "c2"])
     assert batch is not None
-    batch_cls = as_tensor(_get_attr(pa_pkg.PyArrowComputeGenerator, "record_batch"))([c1, c2], names=["c1", "c2"])
+    batch_cls = ensure_eager_tensor(ensure_eager_tensor(pa_pkg.PyArrowComputeGenerator).record_batch)([c1, c2], names=["c1", "c2"])
     assert batch_cls is not None
 
     sliced = pa_pkg.slice_record_batch(batch, offset=1, length=2)
-    assert as_tensor(_get_attr(sliced, "num_rows")) == 2
-    assert as_tensor(_get_attr(sliced, "column"))(0).to_pylist() == [20, 30]
+    assert ensure_eager_tensor(ensure_eager_tensor(sliced).num_rows) == 2
+    assert ensure_eager_tensor(ensure_eager_tensor(sliced).column)(0).to_pylist() == [20, 30]
 
-    sliced_cls = as_tensor(_get_attr(pa_pkg.PyArrowComputeGenerator, "slice_record_batch"))(batch, offset=2, length=1)
+    sliced_cls = ensure_eager_tensor(ensure_eager_tensor(pa_pkg.PyArrowComputeGenerator).slice_record_batch)(batch, offset=2, length=1)
     assert sliced_cls.num_rows == 1
     assert sliced_cls.column(1).to_pylist() == [300]
 
     # Table conversions
     tbl_from_batch = pa_pkg.to_table(batch)
-    _get_attr(_state, "update")({"batch": batch, "batch_cls": batch_cls, "c1": c1, "c2": c2})
-    _get_attr(_state, "update")({"ca": ca, "ca_cls": ca_cls, "pa": pa, "res_add": res_add})
-    _get_attr(_state, "update")({"res_sum": res_sum, "sliced": sliced, "sliced_cls": sliced_cls, "tbl_from_batch": tbl_from_batch})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"batch": batch, "batch_cls": batch_cls, "c1": c1, "c2": c2}))
+    _state.update(ensure_tensor_dict({"ca": ca, "ca_cls": ca_cls, "pa": pa, "res_add": res_add}))
+    _state.update(ensure_tensor_dict({"res_sum": res_sum, "sliced": sliced, "sliced_cls": sliced_cls, "tbl_from_batch": tbl_from_batch}))
 
 
 def _test_pyarrow_compute_chunked_and_tables_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -331,21 +329,21 @@ def _test_pyarrow_compute_chunked_and_tables_part_2(_state: dict[str, EagerTenso
     """
     batch, c1, c2, pa = _state["batch"], _state["c1"], _state["c2"], _state["pa"]
     tbl_from_batch = _state["tbl_from_batch"]
-    assert isinstance(tbl_from_batch, as_type_obj(pa.Table))
+    assert isinstance(tbl_from_batch, ensure_type_obj(pa.Table))
     assert tbl_from_batch.num_rows == 4
 
     tbl_from_batches = pa_pkg.to_table([batch, batch])
-    assert isinstance(tbl_from_batches, as_type_obj(pa.Table))
-    assert as_tensor(_get_attr(tbl_from_batches, "num_rows")) == 8
+    assert isinstance(tbl_from_batches, ensure_type_obj(pa.Table))
+    assert ensure_eager_tensor(ensure_eager_tensor(tbl_from_batches).num_rows) == 8
 
     tbl_from_dict = pa_pkg.to_table({"x": [1, 2], "y": [3, 4]})
-    assert isinstance(tbl_from_dict, as_type_obj(pa.Table))
+    assert isinstance(tbl_from_dict, ensure_type_obj(pa.Table))
 
     tbl_from_arrays = pa_pkg.to_table([c1, c2], names=["col1", "col2"])
-    assert isinstance(tbl_from_arrays, as_type_obj(pa.Table))
+    assert isinstance(tbl_from_arrays, ensure_type_obj(pa.Table))
 
     # Item extraction from Table and RecordBatch
-    assert np.isclose(pa_pkg.item(as_tensor(tbl_from_dict)), 1.0)
+    assert np.isclose(pa_pkg.item(ensure_eager_tensor(tbl_from_dict)), 1.0)
     assert np.isclose(pa_pkg.item(batch), 10.0)
 
     # Empty table item
@@ -368,9 +366,10 @@ def _test_pyarrow_compute_chunked_and_tables_part_2(_state: dict[str, EagerTenso
     # Exception branches in types
     mock_pa_err = mock.MagicMock()
     mock_pa_err.chunked_array.side_effect = RuntimeError("err")
-    _get_attr(_state, "update")({"cfg": cfg, "empty_tbl": empty_tbl, "mock_pa_err": mock_pa_err, "res_tensor_add": res_tensor_add})
-    _get_attr(_state, "update")({"t_inp": t_inp, "tbl_from_arrays": tbl_from_arrays, "tbl_from_batches": tbl_from_batches, "tbl_from_dict": tbl_from_dict})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"cfg": cfg, "empty_tbl": empty_tbl, "mock_pa_err": mock_pa_err, "res_tensor_add": res_tensor_add}))
+    _state.update(ensure_tensor_dict({"t_inp": t_inp, "tbl_from_arrays": tbl_from_arrays, "tbl_from_batches": tbl_from_batches, "tbl_from_dict": tbl_from_dict}))
+    _state.update(ensure_tensor_dict({"batch": batch, "c1": c1, "c2": c2}))
+    _state.update(ensure_tensor_dict({"pa": pa, "tbl_from_batch": tbl_from_batch}))
 
 
 def _test_pyarrow_compute_chunked_and_tables_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -380,7 +379,7 @@ def _test_pyarrow_compute_chunked_and_tables_part_3(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     mock_pa_err = _state["mock_pa_err"]
-    _set_attr(mock_pa_err.RecordBatch.from_arrays, "side_effect", RuntimeError("err"))
+    ensure_mutable(mock_pa_err.RecordBatch.from_arrays).side_effect = ensure_eager_tensor(RuntimeError("err"))
     with mock.patch("ml_switcheroo_compiler.backends.pyarrow_compute.types._get_pa_module", return_value=mock_pa_err):
         assert isinstance(pa_pkg.chunked_array([[1, 2]]), list)
         assert isinstance(pa_pkg.record_batch([[1, 2]]), list)
@@ -393,7 +392,7 @@ def _test_pyarrow_compute_chunked_and_tables_part_3(_state: dict[str, EagerTenso
         rb_fallback = pa_pkg.record_batch([[1, 2], [3, 4]], names=["a", "b"])
         assert isinstance(rb_fallback, dict)
         slice_fallback = pa_pkg.slice_record_batch({"a": [1, 2, 3]}, offset=1, length=1)
-        assert as_tensor(_get_attr(slice_fallback, "__getitem__")("a")) == [2]
+        assert ensure_eager_tensor(slice_fallback)["a"] == [2]
         list_slice = pa_pkg.slice_record_batch([10, 20, 30], offset=1, length=1)
         assert list_slice == [20]
         tbl_fallback = pa_pkg.to_table({"a": [1, 2]})
@@ -407,8 +406,8 @@ def _test_pyarrow_compute_chunked_and_tables_part_3(_state: dict[str, EagerTenso
     assert pa_t is not None
     ir_t = PyArrowComputeGenerator.from_arrow(pa_t)
     assert PyArrowComputeGenerator.to_arrow(ir_t) is not None
-    _get_attr(_state, "update")({"ca_fallback": ca_fallback, "list_slice": list_slice, "mock_pa_empty": mock_pa_empty, "rb_fallback": rb_fallback})
-    _get_attr(_state, "update")({"slice_fallback": slice_fallback, "tbl_fallback": tbl_fallback})
+    _state.update(ensure_tensor_dict({"ca_fallback": ca_fallback, "list_slice": list_slice, "mock_pa_empty": mock_pa_empty, "rb_fallback": rb_fallback}))
+    _state.update(ensure_tensor_dict({"slice_fallback": slice_fallback, "tbl_fallback": tbl_fallback}))
 
 
 def test_pyarrow_compute_chunked_and_tables() -> None:

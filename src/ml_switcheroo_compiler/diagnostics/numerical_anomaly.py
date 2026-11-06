@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
+
+
+@typing.runtime_checkable
+class _TensorDataProtocol(typing.Protocol):
+    """Protocol for tensor objects exposing a `.data` attribute."""
+
+    data: TensorOrScalar
 
 
 def format_traceback(exc: Exception) -> str:
@@ -31,7 +38,7 @@ def check_numerical_anomaly(tensor: Tensor | None) -> None:
     Raises:
         ValueError: If NaN or Inf is found.
     """
-    if _get_attr(tensor, "data", None) is None:
+    if tensor is None or not isinstance(tensor, _TensorDataProtocol) or tensor.data is None:
         return
 
     try:

@@ -6,9 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.foreign import ingest_jaxpr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -79,7 +78,7 @@ def test_ingest_jaxpr_empty() -> None:
     with pytest.raises(ValueError):
         ingest_jaxpr(None)
 
-    g = as_callable(ingest_jaxpr)(as_callable(MockJaxpr)([]))
+    g = ensure_callable(ingest_jaxpr)(ensure_callable(MockJaxpr)([]))
     assert len(g.nodes) == 0
 
 
@@ -87,8 +86,8 @@ def test_extract_jaxpr_constants() -> None:
     """Test constants."""
     consts = [10, 20]
     constvars = [MockInvar(1), MockInvar(2)]
-    jaxpr = as_callable(MockJaxpr)([], consts=consts, constvars=constvars)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    jaxpr = ensure_callable(MockJaxpr)([], consts=consts, constvars=constvars)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     assert len(g.nodes) == 2
     for node in g.nodes.values():
@@ -101,11 +100,11 @@ def test_translate_jax_equation() -> None:
     outvars = [MockOutvar(3)]
 
     eqns = [
-        as_callable(MockEqn)("add", invars, outvars, {"dim": 1, "tup": (1, 2)}),
-        as_callable(MockEqn)("unknown_prim", invars, [as_callable(MockOutvar)(4)]),
+        ensure_callable(MockEqn)("add", invars, outvars, {"dim": 1, "tup": (1, 2)}),
+        ensure_callable(MockEqn)("unknown_prim", invars, [ensure_callable(MockOutvar)(4)]),
     ]
-    jaxpr = as_callable(MockJaxpr)(eqns)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    jaxpr = ensure_callable(MockJaxpr)(eqns)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert g.nodes[out_id].op_type == "Add"
@@ -113,16 +112,16 @@ def test_translate_jax_equation() -> None:
     assert g.nodes[out_id].attributes["tup"] == [1, 2]
     assert g.nodes[out_id].shape_metadata == (2, 3)
 
-    out_id_2 = str(id(as_tensor(_get_attr(as_tensor(_get_attr(eqns, "__getitem__")(1)).outvars, "__getitem__")(0))))
+    out_id_2 = str(id(ensure_eager_tensor(ensure_eager_tensor(eqns)[1].outvars)[0]))
     assert g.nodes[out_id_2].op_type == "Unknown"
 
 
 def test_translate_jax_equation_no_outvars() -> None:
     """Test translate eqn no outvars."""
     invars = [MockInvar(1)]
-    eqns = [as_callable(MockEqn)("add", invars, [])]
-    jaxpr = as_callable(MockJaxpr)(eqns)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    eqns = [ensure_callable(MockEqn)("add", invars, [])]
+    jaxpr = ensure_callable(MockJaxpr)(eqns)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     assert "out" in g.nodes
     assert g.nodes["out"].op_type == "Add"
@@ -132,9 +131,9 @@ def test_translate_jax_equation_no_aval() -> None:
     """Test translate eqn no aval."""
     invars = [MockInvar(1)]
     outvars = [type("MockOutvar", (), {"id_val": 3})()]
-    eqns = [as_callable(MockEqn)("add", invars, outvars)]
-    jaxpr = as_callable(MockJaxpr)(eqns)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    eqns = [ensure_callable(MockEqn)("add", invars, outvars)]
+    jaxpr = ensure_callable(MockJaxpr)(eqns)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert g.nodes[out_id].shape_metadata == ()
@@ -151,9 +150,9 @@ def test_translate_jax_equation_attr_branches() -> None:
 
         pass
 
-    eqns = [as_callable(MockEqn)("add", invars, outvars, {"tup": (1, 2), "obj": as_callable(CustomObj)()})]
-    jaxpr = as_callable(MockJaxpr)(eqns)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    eqns = [ensure_callable(MockEqn)("add", invars, outvars, {"tup": (1, 2), "obj": ensure_callable(CustomObj)()})]
+    jaxpr = ensure_callable(MockJaxpr)(eqns)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert "tup" in g.nodes[out_id].attributes
@@ -166,11 +165,11 @@ def test_translate_jax_equation_attr_branches_no_params() -> None:
     outvars = [MockOutvar(2)]
 
     # Passing an object without params
-    eqn = as_callable(MockEqn)("add", invars, outvars)
+    eqn = ensure_callable(MockEqn)("add", invars, outvars)
     del eqn.params
     eqns = [eqn]
-    jaxpr = as_callable(MockJaxpr)(eqns)
-    g = as_callable(ingest_jaxpr)(jaxpr)
+    jaxpr = ensure_callable(MockJaxpr)(eqns)
+    g = ensure_callable(ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert "tup" not in g.nodes[out_id].attributes

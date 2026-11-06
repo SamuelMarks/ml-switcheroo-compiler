@@ -7,8 +7,7 @@ import functools
 import typing
 from collections.abc import Callable, Iterable, Iterator
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 
 T = typing.TypeVar("T")
 PyTree = typing.Union[TensorOrScalar, "TreeDef"]
@@ -50,7 +49,7 @@ class TreeDef:
         """
         return hash(str(self.node_type) + str(self.children_defs))
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | TreeDef) -> bool:
         """Check equality with another TreeDef.
 
         Args:
@@ -64,18 +63,6 @@ class TreeDef:
         return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
     _eq = __eq__
-
-
-def _is_tree_leaf(val: PyTree) -> typing.TypeGuard[TensorOrScalar]:
-    """Type guard narrowing `PyTree` leaf to `TensorOrScalar`.
-
-    Args:
-        val (PyTree): Candidate leaf value.
-
-    Returns:
-        bool: Always True for tree leaves.
-    """
-    return val is not None or val is None
 
 
 def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
@@ -104,7 +91,7 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
             leaves.extend(child_leaves)
             children_defs.append(child_def)
         return leaves, TreeDef(type(tree), children_defs)
-    assert _is_tree_leaf(tree)
+    assert not isinstance(tree, TreeDef)
     return [tree], TreeDef(type(None))
 
 
@@ -234,8 +221,7 @@ def tree_map(f: TensorOrScalar, tree: PyTree, *rest: PyTree) -> TensorOrScalar:
             raise ValueError(msg)
         rest_leaves.append(r_leaves)
 
-    fn = as_callable(f)
-    mapped_leaves = [fn(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
+    mapped_leaves = [invoke_callable(f, leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
     return tree_unflatten(treedef, mapped_leaves)
 
 
@@ -299,7 +285,10 @@ def tree_reduce(
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    return as_tensor(_get_attr(functools, "reduce")(f, leaves, initializer))
+    acc: TensorOrScalar = initializer
+    for leaf in leaves:
+        acc = f(acc, leaf)
+    return acc
 
 
 def _count_leaves(t_def: TreeDef) -> int:

@@ -13,14 +13,13 @@ from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import TracingError
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import AssertOp, assert_value, cond, map_fn, pmap, scan, stop_gradient, vmap, while_loop
 from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, map_fn_tracing, pmap_tracing
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.ops.unary.arithmetic import Negative
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -82,8 +81,8 @@ def test_pmap_eager_extra() -> None:
             """
             return x
 
-        res = as_callable(pmap)(f)(t)
-        assert isinstance(as_tensor(res), Tensor)
+        res = ensure_callable(pmap)(f)(t)
+        assert isinstance(ensure_eager_tensor(res), Tensor)
     finally:
         config.eager_mode = False
 
@@ -144,7 +143,7 @@ def test_scan_tuple_return() -> None:
             """
             return (c, (x, x))
 
-        as_callable(scan)(f, xs, xs)
+        ensure_callable(scan)(f, xs, xs)
     finally:
         config.eager_mode = False
     assert callable(test_scan_tuple_return)
@@ -190,7 +189,7 @@ def test_tracing_exceptions() -> None:
     with pytest.raises((RuntimeError, TracingError, Exception)):
         map_fn_tracing(lambda x: x, t)
     with pytest.raises((RuntimeError, TracingError, Exception)):
-        as_callable(pmap_tracing)(lambda x: x)(t)
+        ensure_callable(pmap_tracing)(lambda x: x)(t)
     assert_value_tracing(t, "msg")
     pt = ProxyTensor(id="id", shape=(), dtype="float32")
     t2 = Tensor(pt, t.config)
@@ -206,7 +205,7 @@ def test_assert_op_infer_shape() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    assert as_callable(AssertOp)().infer_shape(None) == ()
+    assert ensure_callable(AssertOp)().infer_shape(None) == ()
 
 
 def test_pmap_tracing_non_tensor() -> None:
@@ -222,7 +221,7 @@ def test_pmap_tracing_non_tensor() -> None:
     try:
         pt = ProxyTensor(id="id", shape=(1,), dtype="float32")
         t2 = Tensor(pt, t.config)
-        as_callable(pmap_tracing)(lambda x, y: x)(t2, 42)
+        ensure_callable(pmap_tracing)(lambda x, y: x)(t2, 42)
     finally:
         global_tracing_state.stop_tracing()
     assert t.shape == (1,)
@@ -249,10 +248,10 @@ def test_vmap_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return Tensor(_get_attr(t, "data") * 2, TensorConfig(_get_attr(t, "shape"), _get_attr(t, "dtype"), _get_attr(t, "device")))
+            return Tensor(ensure_eager_tensor(t).data * 2, TensorConfig(ensure_eager_tensor(t).shape, ensure_eager_tensor(t).dtype, ensure_eager_tensor(t).device))
 
-        res = as_callable(vmap)(func)(x)
-        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([2, 4, 6]))
+        res = ensure_callable(vmap)(func)(x)
+        assert ensure_callable(np.array_equal)(ensure_eager_tensor(ensure_eager_tensor(res).data), ensure_callable(np.array)([2, 4, 6]))
 
 
 def test_pmap_eager() -> None:
@@ -273,10 +272,10 @@ def test_pmap_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return Tensor(_get_attr(t, "data") * 2, TensorConfig(_get_attr(t, "shape"), _get_attr(t, "dtype"), _get_attr(t, "device")))
+            return Tensor(ensure_eager_tensor(t).data * 2, TensorConfig(ensure_eager_tensor(t).shape, ensure_eager_tensor(t).dtype, ensure_eager_tensor(t).device))
 
-        res = as_callable(pmap)(func)(x)
-        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([2, 4, 6]))
+        res = ensure_callable(pmap)(func)(x)
+        assert ensure_callable(np.array_equal)(ensure_eager_tensor(ensure_eager_tensor(res).data), ensure_callable(np.array)([2, 4, 6]))
 
 
 def test_vmap_trace() -> None:
@@ -300,8 +299,8 @@ def test_vmap_trace() -> None:
             return t
 
         global_tracing_state.start_tracing()
-        res = as_callable(vmap)(func)(x)
-        assert as_tensor(_get_attr(res, "dtype")) == DType.Int32
+        res = ensure_callable(vmap)(func)(x)
+        assert ensure_eager_tensor(ensure_eager_tensor(res).dtype) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -326,8 +325,8 @@ def test_pmap_trace() -> None:
             return t
 
         global_tracing_state.start_tracing()
-        res = as_callable(pmap)(func)(x)
-        assert as_tensor(_get_attr(res, "dtype")) == DType.Int32
+        res = ensure_callable(pmap)(func)(x)
+        assert ensure_eager_tensor(ensure_eager_tensor(res).dtype) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -351,7 +350,7 @@ def test_trace_function_type_error() -> None:
 
     try:
         with pytest.raises(TypeError, match="Control flow functions must return a Tensor or a tuple of Tensors."):
-            as_callable(_trace_function)(bad_func, (), "test")
+            ensure_callable(_trace_function)(bad_func, (), "test")
     finally:
         global_tracing_state.is_tracing = False
         global_tracing_state.active_graph = None
@@ -372,9 +371,9 @@ def test_control_flow_outside_tracing() -> None:
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Scan node outside of a tracing context."):
             scan(lambda c, x: (c, x), pred, pred)
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Vmap outside of a tracing context."):
-            as_callable(vmap)(lambda x: x)(pred)
+            ensure_callable(vmap)(lambda x: x)(pred)
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Pmap outside of a tracing context."):
-            as_callable(pmap)(lambda x: x)(pred)
+            ensure_callable(pmap)(lambda x: x)(pred)
 
 
 def test_stop_gradient() -> None:
@@ -405,7 +404,7 @@ def test_stop_gradient() -> None:
         assert node2.op_type == "StopGradient"
         assert node2.inputs == ["input_proxy"]
         val = 42.0
-        assert id(as_callable(stop_gradient)(val)) == id(val)
+        assert id(ensure_callable(stop_gradient)(val)) == id(val)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -432,8 +431,8 @@ def test_vmap_tuple_axes() -> None:
 
         vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
         x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
-        y = as_callable(vmap_f)(x)
-        assert as_callable(np.array_equal)(as_tensor(_get_attr(y, "data")), as_callable(np.array)([-1, -2]))
+        y = ensure_callable(vmap_f)(x)
+        assert ensure_callable(np.array_equal)(ensure_eager_tensor(ensure_eager_tensor(y).data), ensure_callable(np.array)([-1, -2]))
 
 
 def test_new_control_flow_fori() -> None:
@@ -512,7 +511,7 @@ def test_new_control_flow_custom_gradient() -> None:
         """
         return (ops.multiply(x, 2.0), lambda g: ops.multiply(g, 2.0))
 
-    res_custom = as_callable(my_fn)(arg)
+    res_custom = ensure_callable(my_fn)(arg)
     assert res_custom is not None
 
 
@@ -523,7 +522,7 @@ def test_switch_empty() -> None:
     from ml_switcheroo_compiler.ops.control_flow import switch
 
     with pytest.raises(ValueError, match="branches cannot be empty"):
-        as_callable(switch)(0, [])
+        ensure_callable(switch)(0, [])
 
 
 def test_map_fn_lazy() -> None:
@@ -575,18 +574,18 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
         graph = global_tracing_state.start_tracing()
         try:
             pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
-            out = as_callable(my_op)(pt)
+            out = ensure_callable(my_op)(pt)
             assert out is not None
-            node = as_tensor(_get_attr(graph.nodes, "__getitem__")(as_tensor(_get_attr(out, "_data")).id))
-            op_obj = _get_attr(node, "op", _get_attr(node, "op_type", None))
+            node = ensure_eager_tensor(graph.nodes)[ensure_eager_tensor(ensure_eager_tensor(out)._data).id]
+            op_obj = ensure_eager_tensor(node).op
             from ml_switcheroo_compiler.ops.registry import get_op
 
-            OpCls = as_callable(get_op)(op_obj)
+            OpCls = ensure_callable(get_op)(op_obj)
             inst = OpCls()
             assert inst.infer_shape() == (1,)
             from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
-            vjp_fn = as_callable(get_vjp)(op_obj)
+            vjp_fn = ensure_callable(get_vjp)(op_obj)
             assert vjp_fn(graph, None, "cot") == tuple()
         finally:
             global_tracing_state.stop_tracing()
@@ -606,7 +605,7 @@ def test_case_and_switch_case() -> None:
         config.eager_mode = True
         with pytest.raises(ValueError, match="case requires at least one"):
             case([])
-        assert as_callable(case)([], default=lambda: 42) == 42
+        assert ensure_callable(case)([], default=lambda: 42) == 42
         with pytest.raises(ValueError, match="switch_case requires at least one branch"):
             from ml_switcheroo_compiler.core.device import Device, DeviceType
             from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -621,7 +620,7 @@ def test_case_and_switch_case() -> None:
         import numpy as np
 
         t_index = Tensor(np.array(1), TensorConfig((), "int32", Device(DeviceType.CPU)))
-        as_callable(switch_case)(t_index, {0: lambda: 10, 1: lambda: 20})
+        ensure_callable(switch_case)(t_index, {0: lambda: 10, 1: lambda: 20})
     finally:
         config.eager_mode = orig
 
@@ -634,7 +633,7 @@ def test_infer_shapes() -> None:
     assert DebugInfs().infer_shape(1) == 1
     assert DebugNans().infer_shape() == ()
     assert DebugNans().infer_shape(2) == 2
-    assert as_callable(SwitchOp)().infer_shape(None, None) == ()
+    assert ensure_callable(SwitchOp)().infer_shape(None, None) == ()
     assert ScanOp().infer_shape() == ()
     assert AssociativeScan().infer_shape() == ()
     assert AssociativeScan().infer_shape(3) == 3
@@ -674,7 +673,7 @@ def test_associative_scan_lazy() -> None:
         try:
             pt = ProxyTensor(id="pt", shape=(2, 2), dtype="float32")
             out = associative_scan(pt)
-            assert _get_attr(out, "shape", as_tensor(_get_attr(out, "_data")).shape) == (2, 2)
+            assert ensure_eager_tensor(out).shape == (2, 2)
         finally:
             global_tracing_state.stop_tracing()
     finally:
@@ -685,5 +684,5 @@ def test_scan_bind() -> None:
     """Test scan_bind."""
     from ml_switcheroo_compiler.ops.control_flow import scan_bind
 
-    (f, xs) = as_callable(scan_bind)(lambda x: x, [1, 2], 3, kw=4)
+    (f, xs) = ensure_callable(scan_bind)(lambda x: x, [1, 2], 3, kw=4)
     assert xs == [1, 2]

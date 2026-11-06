@@ -6,7 +6,7 @@ import typing
 
 import numpy as np
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -33,7 +33,7 @@ def test_householder_product_coverage() -> None:
             """
             return np.array([[1, 0], [0, 1]])
 
-    assert as_callable(np.array_equal)(as_callable(_householder_product)(MockBackend, v, tau), v)
+    assert ensure_callable(np.array_equal)(ensure_callable(_householder_product)(MockBackend, v, tau), v)
 
     class MockBackendLinalg:
         """Test class MockBackendLinalg."""
@@ -51,4 +51,4 @@ def test_householder_product_coverage() -> None:
                 """
                 return np.array([[1, 0], [0, 1]])
 
-    assert as_callable(np.array_equal)(as_callable(_householder_product)(MockBackendLinalg, v, tau), v)
+    assert ensure_callable(np.array_equal)(ensure_callable(_householder_product)(MockBackendLinalg, v, tau), v)

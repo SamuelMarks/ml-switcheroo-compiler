@@ -7,20 +7,19 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    _get_attr,
-    as_bool,
-    as_callable,
-    as_float,
-    as_int,
-    as_int_list,
-    as_shape,
-    as_str,
+    ensure_bool,
+    ensure_float,
+    ensure_int,
+    ensure_int_list,
+    ensure_shape,
+    ensure_str,
 )
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,
     _extract_filter_attributes,
     _extract_vision_transform_attributes,
 )
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member
 
 
 class MLXVisionAudioMixin:
@@ -274,11 +273,11 @@ class MLXNNOpsVisitor:
         Returns:
             A string containing the MLX code for the Rope operation.
         """
-        dim: int = as_int(node.attributes.get("dim"))
-        traditional: bool = as_bool(node.attributes.get("traditional", False))
-        base: float = as_float(node.attributes.get("base", 10000.0))
-        scale: float = as_float(node.attributes.get("scale", 1.0))
-        offset: int = as_int(node.attributes.get("offset", 0))
+        dim: int = ensure_int(node.attributes.get("dim"))
+        traditional: bool = ensure_bool(node.attributes.get("traditional", False))
+        base: float = ensure_float(node.attributes.get("base", 10000.0))
+        scale: float = ensure_float(node.attributes.get("scale", 1.0))
+        offset: int = ensure_int(node.attributes.get("offset", 0))
         return f"mx.fast.rope({input_vars[0]}, {dim}, traditional={traditional}, base={base}, scale={scale}, offset={offset})"
 
     def visit_PowerIteration(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -292,7 +291,7 @@ class MLXNNOpsVisitor:
         Returns:
             A string containing the MLX code for the PowerIteration operation.
         """
-        num_iters: int = as_int(node.attributes.get("num_iters", 1))
+        num_iters: int = ensure_int(node.attributes.get("num_iters", 1))
         u_var: str = input_vars[1] if len(input_vars) > 1 else "None"
         return f"mlx_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
@@ -307,7 +306,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv1d expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
         padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv1d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
@@ -323,7 +322,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv2d expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
         padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv2d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
@@ -339,7 +338,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv3d expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
         padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv3d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
@@ -382,7 +381,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX layer_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"(lambda x: (x - mx.mean(x, axis=-1, keepdims=True)) / mx.sqrt(mx.var(x, axis=-1, keepdims=True) + {eps}))({input_vars[0]})"
 
@@ -397,7 +396,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX rms_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"({input_vars[0]} * mx.rsqrt(mx.mean({input_vars[0]} ** 2, axis=-1, keepdims=True) + {eps}))"
 
@@ -412,7 +411,7 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX batch_norm expression.
         """
-        attrs = _get_attr(node, "attributes", {})
+        attrs = get_backend_member(node, "attributes", {})
         eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"(lambda x: (x - mx.mean(x, axis=0, keepdims=True)) / mx.sqrt(mx.var(x, axis=0, keepdims=True) + {eps}))({input_vars[0]})"
 
@@ -558,7 +557,7 @@ class MLXVisionVisitor:
         Returns:
             A string containing the MLX code for the IoU operation.
         """
-        bounding_box_format: str = as_str(node.attributes.get("bounding_box_format", "xyxy"))
+        bounding_box_format: str = ensure_str(node.attributes.get("bounding_box_format", "xyxy"))
         return f"mlx_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
 
     def visit_NonMaxSuppression(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -572,9 +571,9 @@ class MLXVisionVisitor:
         Returns:
             A string containing the MLX code for the NonMaxSuppression operation.
         """
-        max_output_size: int = as_int(node.attributes.get("max_output_size"))
-        iou_threshold: float = as_float(node.attributes.get("iou_threshold", 0.5))
-        score_threshold: float = as_float(node.attributes.get("score_threshold", float("-inf")))
+        max_output_size: int = ensure_int(node.attributes.get("max_output_size"))
+        iou_threshold: float = ensure_float(node.attributes.get("iou_threshold", 0.5))
+        score_threshold: float = ensure_float(node.attributes.get("score_threshold", float("-inf")))
         return f"mlx_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
 
     def visit_ResizeBicubic(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -588,8 +587,8 @@ class MLXVisionVisitor:
         Returns:
             A string containing the MLX code for the ResizeBicubic operation.
         """
-        size: int = as_int(node.attributes.get("size"))
-        align_corners: bool = as_bool(node.attributes.get("align_corners", False))
+        size: int = ensure_int(node.attributes.get("size"))
+        align_corners: bool = ensure_bool(node.attributes.get("align_corners", False))
         return f"mlx_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
 
     def visit_ResizeLanczos3(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -603,8 +602,8 @@ class MLXVisionVisitor:
         Returns:
             A string containing the MLX code for the ResizeLanczos3 operation.
         """
-        size: int = as_int(node.attributes.get("size"))
-        align_corners: bool = as_bool(node.attributes.get("align_corners", False))
+        size: int = ensure_int(node.attributes.get("size"))
+        align_corners: bool = ensure_bool(node.attributes.get("align_corners", False))
         return f"mlx_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
 
     def visit_PerspectiveTransform(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -653,11 +652,11 @@ class MLXAudioVisitor:
         Returns:
             A string containing the MLX code for the MelFilterbank operation.
         """
-        num_mel_bins: int = as_int(node.attributes.get("num_mel_bins"))
-        num_spectrogram_bins: int = as_int(node.attributes.get("num_spectrogram_bins"))
-        sample_rate: int = as_int(node.attributes.get("sample_rate"))
-        lower_edge_hertz: float = as_float(node.attributes.get("lower_edge_hertz"))
-        upper_edge_hertz: float = as_float(node.attributes.get("upper_edge_hertz"))
+        num_mel_bins: int = ensure_int(node.attributes.get("num_mel_bins"))
+        num_spectrogram_bins: int = ensure_int(node.attributes.get("num_spectrogram_bins"))
+        sample_rate: int = ensure_int(node.attributes.get("sample_rate"))
+        lower_edge_hertz: float = ensure_float(node.attributes.get("lower_edge_hertz"))
+        upper_edge_hertz: float = ensure_float(node.attributes.get("upper_edge_hertz"))
         return f"mlx_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
 
     def visit_Mfcc(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -671,11 +670,11 @@ class MLXAudioVisitor:
         Returns:
             A string containing the MLX code for the Mfcc operation.
         """
-        sample_rate: int = as_int(node.attributes.get("sample_rate"))
-        num_mel_bins: int = as_int(node.attributes.get("num_mel_bins", 40))
-        lower_edge_hertz: float = as_float(node.attributes.get("lower_edge_hertz", 20.0))
-        upper_edge_hertz: float = as_float(node.attributes.get("upper_edge_hertz", 4000.0))
-        num_mfccs: int = as_int(node.attributes.get("num_mfccs", 13))
+        sample_rate: int = ensure_int(node.attributes.get("sample_rate"))
+        num_mel_bins: int = ensure_int(node.attributes.get("num_mel_bins", 40))
+        lower_edge_hertz: float = ensure_float(node.attributes.get("lower_edge_hertz", 20.0))
+        upper_edge_hertz: float = ensure_float(node.attributes.get("upper_edge_hertz", 4000.0))
+        num_mfccs: int = ensure_int(node.attributes.get("num_mfccs", 13))
         return f"mlx_mfcc({input_vars[0]}, MFCCConfig({sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs}))"
 
 
@@ -692,9 +691,10 @@ class MLXShapeOpsVisitor:
         Returns:
             A string representing the formatted MLX code for zeros_ones.
         """
-        raw_sh: EagerValue = as_callable(_get_attr(kwargs, "get"))("shape", ())
-        shape: tuple[int | str, ...] = tuple(as_int_list(raw_sh)) if isinstance(raw_sh, list) else as_shape(raw_sh)
-        dtype: str = as_str(as_callable(_get_attr(kwargs, "get"))("dtype", "float32"))
+        kw = ensure_mod(kwargs)
+        raw_sh: EagerValue = kw.get("shape", ())
+        shape: tuple[int | str, ...] = tuple(ensure_int_list(raw_sh)) if isinstance(raw_sh, list) else ensure_shape(raw_sh)
+        dtype: str = ensure_str(kw.get("dtype", "float32"))
         dt: str = f"mx.{dtype}" if dtype else "None"
         return f"mx.{op}({shape}, dtype={dt})"
 
@@ -707,10 +707,11 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        raw_sh: EagerValue = as_callable(_get_attr(kwargs, "get"))("shape", ())
-        shape: tuple[int | str, ...] = tuple(as_int_list(raw_sh)) if isinstance(raw_sh, list) else as_shape(raw_sh)
-        fill_value: float = as_float(as_callable(_get_attr(kwargs, "get"))("fill_value", 0.0))
-        dtype: str = as_str(as_callable(_get_attr(kwargs, "get"))("dtype", "float32"))
+        kw = ensure_mod(kwargs)
+        raw_sh: EagerValue = kw.get("shape", ())
+        shape: tuple[int | str, ...] = tuple(ensure_int_list(raw_sh)) if isinstance(raw_sh, list) else ensure_shape(raw_sh)
+        fill_value: float = ensure_float(kw.get("fill_value", 0.0))
+        dtype: str = ensure_str(kw.get("dtype", "float32"))
         dt: str = f"mx.{dtype}" if dtype else "None"
         return f"mx.full({shape}, {fill_value}, dtype={dt})"
 
@@ -723,7 +724,7 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        axes: EagerValue = as_callable(_get_attr(kwargs, "get"))("axes", None)
+        axes: EagerValue = ensure_mod(kwargs).get("axes", None)
         return f"axes={axes}" if axes is not None else ""
 
     def _format_random_categorical(self, input_vars: list[str], kwargs: EagerValue) -> str:
@@ -736,7 +737,7 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        num_samples: int = as_int(as_callable(_get_attr(kwargs, "get"))("num_samples", 1))
+        num_samples: int = ensure_int(ensure_mod(kwargs).get("num_samples", 1))
         return f"mx.random.categorical({input_vars[0]}, num_samples={num_samples})"
 
     def visit_Concatenate(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -750,7 +751,7 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Concatenate operation.
         """
-        axis: int = as_int(node.attributes.get("axis", 0))
+        axis: int = ensure_int(node.attributes.get("axis", 0))
         return f"mx.concatenate({input_vars[0]}, axis={axis})"
 
     def visit_Stack(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -764,7 +765,7 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Stack operation.
         """
-        axis: int = as_int(node.attributes.get("axis", 0))
+        axis: int = ensure_int(node.attributes.get("axis", 0))
         return f"mx.stack({input_vars[0]}, axis={axis})"
 
     def visit_Partition(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -778,8 +779,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Partition operation.
         """
-        axis: int = as_int(node.attributes.get("axis", -1))
-        kth: int = as_int(node.attributes.get("kth", 0))
+        axis: int = ensure_int(node.attributes.get("axis", -1))
+        kth: int = ensure_int(node.attributes.get("kth", 0))
         return f"mx.partition({input_vars[0]}, {kth}, axis={axis})"
 
     def visit_Argpartition(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -793,8 +794,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Argpartition operation.
         """
-        axis: int = as_int(node.attributes.get("axis", -1))
-        kth: int = as_int(node.attributes.get("kth", 0))
+        axis: int = ensure_int(node.attributes.get("axis", -1))
+        kth: int = ensure_int(node.attributes.get("kth", 0))
         return f"mx.argpartition({input_vars[0]}, {kth}, axis={axis})"
 
     def visit_Repeat(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -808,8 +809,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Repeat operation.
         """
-        repeats: int = as_int(node.attributes.get("repeats", 1))
-        axis: int = as_int(node.attributes.get("axis", None))
+        repeats: int = ensure_int(node.attributes.get("repeats", 1))
+        axis: int = ensure_int(node.attributes.get("axis", None))
         return f"mx.repeat({input_vars[0]}, {repeats}, axis={axis})"
 
     def visit_Roll(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -823,8 +824,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Roll operation.
         """
-        shift: int = as_int(node.attributes.get("shift", 1))
-        axis: int = as_int(node.attributes.get("axis", None))
+        shift: int = ensure_int(node.attributes.get("shift", 1))
+        axis: int = ensure_int(node.attributes.get("axis", None))
         return f"mx.roll({input_vars[0]}, {shift}, axis={axis})"
 
     def visit_Tile(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -838,7 +839,7 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Tile operation.
         """
-        reps: int = as_int(node.attributes.get("reps", 1))
+        reps: int = ensure_int(node.attributes.get("reps", 1))
         return f"mx.tile({input_vars[0]}, {reps})"
 
     def visit_TopK(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -852,8 +853,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the TopK operation.
         """
-        k: int = as_int(node.attributes.get("k", 1))
-        axis: int = as_int(node.attributes.get("axis", -1))
+        k: int = ensure_int(node.attributes.get("k", 1))
+        axis: int = ensure_int(node.attributes.get("axis", -1))
         return f"mx.topk({input_vars[0]}, {k}, axis={axis})"
 
     def visit_Moveaxis(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -867,8 +868,8 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the Moveaxis operation.
         """
-        source: int = as_int(node.attributes.get("source", 0))
-        destination: int = as_int(node.attributes.get("destination", 1))
+        source: int = ensure_int(node.attributes.get("source", 0))
+        destination: int = ensure_int(node.attributes.get("destination", 1))
         return f"mx.moveaxis({input_vars[0]}, {source}, {destination})"
 
     def visit_RaggedDot(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -895,9 +896,9 @@ class MLXShapeOpsVisitor:
         Returns:
             A string containing the MLX code for the NanToNum operation.
         """
-        nan: float = as_float(node.attributes.get("nan", 0.0))
-        posinf: float = as_float(node.attributes.get("posinf", None))
-        neginf: float = as_float(node.attributes.get("neginf", None))
+        nan: float = ensure_float(node.attributes.get("nan", 0.0))
+        posinf: float = ensure_float(node.attributes.get("posinf", None))
+        neginf: float = ensure_float(node.attributes.get("neginf", None))
         return f"mx.nan_to_num({input_vars[0]}, nan={nan}, posinf={posinf}, neginf={neginf})"
 
     def visit_Zeros(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:

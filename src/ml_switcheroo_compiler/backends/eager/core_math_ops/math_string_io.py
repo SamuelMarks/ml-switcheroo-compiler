@@ -5,9 +5,8 @@ from __future__ import annotations
 import builtins  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_bytes, ensure_callable, ensure_eager_tensor, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
 
 
 @global_eager_registry.register("AsString")
@@ -37,7 +36,7 @@ def _fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(_get_attr(backend_module, "fromfile")(*args, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "fromfile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Fromstring")
@@ -52,11 +51,11 @@ def _fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "fromstring", None)
+    func = get_backend_member(backend_module, "fromstring", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     x = args[0]
-    return as_tensor(_get_attr(backend_module, "fromstring")(x, **kwargs))
+    return ensure_eager_tensor(get_backend_member(backend_module, "fromstring")(x, **kwargs))
 
 
 @global_eager_registry.register("DecodeImage")
@@ -71,11 +70,11 @@ def _np_decodeimage(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "decodeimage", _get_attr(backend_module, "decodeimage", None))
+    func = get_backend_member(backend_module, "decodeimage", get_backend_member(backend_module, "decodeimage", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
-    return mod.zeros(kwargs.get("shape", (224, 224, 3)) if _has_attr(kwargs, "get") else (224, 224, 3), dtype=mod.uint8)
+    return mod.zeros(kwargs.get("shape", (224, 224, 3)) if has_backend_member(kwargs, "get") else (224, 224, 3), dtype=mod.uint8)
 
 
 @global_eager_registry.register("Fromfile")
@@ -90,9 +89,9 @@ def _np_fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "fromfile", _get_attr(backend_module, "fromfile", None))
+    func = get_backend_member(backend_module, "fromfile", get_backend_member(backend_module, "fromfile", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromfile(*args, **kwargs)
 
 
@@ -108,9 +107,9 @@ def _np_fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "fromstring", _get_attr(backend_module, "fromstring", None))
+    func = get_backend_member(backend_module, "fromstring", get_backend_member(backend_module, "fromstring", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromstring(*args, **kwargs)
 
 
@@ -126,9 +125,9 @@ def _np_parsetensor(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "parsetensor", _get_attr(backend_module, "parsetensor", None))
+    func = get_backend_member(backend_module, "parsetensor", get_backend_member(backend_module, "parsetensor", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).array(args[0])
 
 
@@ -144,9 +143,9 @@ def _np_stringlower(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "stringlower", _get_attr(backend_module, "stringlower", None))
+    func = get_backend_member(backend_module, "stringlower", get_backend_member(backend_module, "stringlower", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.lower(mod.asarray(args[0], dtype=str))
 
@@ -163,9 +162,9 @@ def _np_stringsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "stringsplit", _get_attr(backend_module, "stringsplit", None))
+    func = get_backend_member(backend_module, "stringsplit", get_backend_member(backend_module, "stringsplit", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.split(mod.asarray(args[0], dtype=str))
 
@@ -182,11 +181,11 @@ def _np_stringtohash(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "stringtohash", _get_attr(backend_module, "stringtohash", None))
+    func = get_backend_member(backend_module, "stringtohash", get_backend_member(backend_module, "stringtohash", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
-    return mod.array([hash(str(x)) for x in mod.asarray(args[0]).flatten()]).reshape(tuple(int(d) for d in mod.shape(args[0])))
+    return mod.array([hash(str(x)) for x in mod.asarray(args[0]).flatten()]).reshape(tuple(int(d) for d in ensure_callable(mod.shape)(args[0])))
 
 
 @global_eager_registry.register("StringToNumber")
@@ -201,9 +200,9 @@ def _np_stringtonumber(backend_module: BackendModuleProtocol, *args: EagerValue,
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "stringtonumber", _get_attr(backend_module, "stringtonumber", None))
+    func = get_backend_member(backend_module, "stringtonumber", get_backend_member(backend_module, "stringtonumber", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).asarray(args[0], dtype=float)
 
 
@@ -219,9 +218,9 @@ def _np_stringupper(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "stringupper", _get_attr(backend_module, "stringupper", None))
+    func = get_backend_member(backend_module, "stringupper", get_backend_member(backend_module, "stringupper", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.upper(mod.asarray(args[0], dtype=str))
 
@@ -238,9 +237,9 @@ def _np_textvectorization(backend_module: BackendModuleProtocol, *args: EagerVal
     Returns:
             EagerValue: Result.
     """
-    func = _get_attr(backend_module, "textvectorization", _get_attr(backend_module, "textvectorization", None))
+    func = get_backend_member(backend_module, "textvectorization", get_backend_member(backend_module, "textvectorization", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -256,9 +255,9 @@ def _np_writefile(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
         int: 1 on successful write, or 0 if inputs are missing.
     """
-    func = _get_attr(backend_module, "writefile", _get_attr(backend_module, "writefile", None))
+    func = get_backend_member(backend_module, "writefile", get_backend_member(backend_module, "writefile", None))
     if func is not None:
-        return as_tensor(func(*args, **kwargs))
+        return ensure_eager_tensor(func(*args, **kwargs))
 
     import os
 
@@ -284,9 +283,9 @@ def _np_writefile(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
                 f.write(contents)
                 f.flush()
                 os.fsync(f.fileno())
-        elif _has_attr(contents, "tobytes"):
+        elif has_backend_member(contents, "tobytes"):
             with open(tmp_path, "wb") as f:
-                f.write(_get_attr(contents, "tobytes")())
+                f.write(ensure_bytes(get_backend_member(contents, "tobytes")()))
                 f.flush()
                 os.fsync(f.fileno())
         else:

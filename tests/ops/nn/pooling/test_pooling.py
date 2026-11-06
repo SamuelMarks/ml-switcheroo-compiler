@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 from ml_switcheroo_compiler.ops.nn.pooling import (
@@ -36,7 +35,7 @@ from ml_switcheroo_compiler.ops.nn.pooling import (
     pool2d,
     pool3d,
 )
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -73,8 +72,8 @@ def test_pooling_coverage() -> None:
     fractional_max_pool(t2, pc_frac)
     assert pool(t1, pc_avg) is not None
     assert pool(t1, pc_max) is not None
-    assert as_callable(FractionalAvgPool)().infer_shape(t1, (1.5,)) == t1.shape
-    assert as_callable(FractionalMaxPool)().infer_shape(t1, (1.5,)) == t1.shape
+    assert ensure_callable(FractionalAvgPool)().infer_shape(t1, (1.5,)) == t1.shape
+    assert ensure_callable(FractionalMaxPool)().infer_shape(t1, (1.5,)) == t1.shape
 
 
 def _test_pooling_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -91,19 +90,18 @@ def _test_pooling_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     t1_3d = Tensor(np.random.rand(8, 8, 8).astype(np.float32), TensorConfig((8, 8, 8), "float32", "cpu"))
     c1 = _prepare_pool_config(4, 2, (2, 2), (2, 2), "VALID")
     c2 = _prepare_pool_config(4, 2, (2, 2), (2, 2), "SAME")
-    c3 = as_callable(_prepare_pool_config)(4, 2, (2, 2), (2, 2), ((1, 1), (1, 1)))
+    c3 = ensure_callable(_prepare_pool_config)(4, 2, (2, 2), (2, 2), ((1, 1), (1, 1)))
     c4 = _prepare_pool_config(4, 2, (2, 2), (2, 2), (1, 1))
     _compute_pool_out_shape((2, 4, 8, 8), c1)
     _compute_pool_out_shape((2, 4, 8, 8), c2)
-    as_callable(_compute_pool_out_shape)((2, 4, 8, 8), c3)
+    ensure_callable(_compute_pool_out_shape)((2, 4, 8, 8), c3)
     _compute_pool_out_shape((2, 4, 8, 8), c4)
     max_pool(t1, (2, 2))
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         max_pool(t1, (2, 2), return_indices=True)
     avg_pool(t1, (2, 2))
-    _get_attr(_state, "update")({"c1": c1, "c2": c2, "c3": c3, "c4": c4})
-    _get_attr(_state, "update")({"t1": t1, "t1_1d": t1_1d, "t1_2d": t1_2d, "t1_3d": t1_3d})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"c1": c1, "c2": c2, "c3": c3, "c4": c4}))
+    _state.update(ensure_tensor_dict({"t1": t1, "t1_1d": t1_1d, "t1_2d": t1_2d, "t1_3d": t1_3d}))
 
 
 def _test_pooling_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -113,13 +111,13 @@ def _test_pooling_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     (t1_1d, t1_2d) = (_state["t1_1d"], _state["t1_2d"])
-    as_callable(pool1d)(t1_1d, 2, pool_mode="max")
-    as_callable(pool1d)(t1_1d, 2, pool_mode="avg")
+    ensure_callable(pool1d)(t1_1d, 2, pool_mode="max")
+    ensure_callable(pool1d)(t1_1d, 2, pool_mode="avg")
     with pytest.raises(Exception, match=".*"):
-        as_callable(pool1d)(t1_1d, 2, pool_mode="sum")
-    as_callable(pool2d)(t1_2d, (2, 2), pool_mode="max")
-    as_callable(pool2d)(t1_2d, (2, 2), pool_mode="avg")
-    _state.update(_caller_locals())
+        ensure_callable(pool1d)(t1_1d, 2, pool_mode="sum")
+    ensure_callable(pool2d)(t1_2d, (2, 2), pool_mode="max")
+    ensure_callable(pool2d)(t1_2d, (2, 2), pool_mode="avg")
+    _state.update(ensure_tensor_dict({"t1_1d": t1_1d, "t1_2d": t1_2d}))
 
 
 def _test_pooling_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -130,16 +128,16 @@ def _test_pooling_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (t1, t1_2d, t1_3d) = (_state["t1"], _state["t1_2d"], _state["t1_3d"])
     with pytest.raises(Exception, match=".*"):
-        as_callable(pool2d)(t1_2d, (2, 2), pool_mode="sum")
-    as_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="max")
-    as_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="avg")
+        ensure_callable(pool2d)(t1_2d, (2, 2), pool_mode="sum")
+    ensure_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="max")
+    ensure_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="avg")
     with pytest.raises(Exception, match=".*"):
-        as_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="sum")
-    as_callable(average_pool)(t1, (2, 2))
+        ensure_callable(pool3d)(t1_3d, (2, 2, 2), pool_mode="sum")
+    ensure_callable(average_pool)(t1, (2, 2))
     p_conf = PoolingConfig(window=SpatialConfig(ksize=(2, 2), strides=(2, 2), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="AVG", pooling_ratio=(0.5, 0.5)))
     p_conf_max = PoolingConfig(window=SpatialConfig(ksize=(2, 2), strides=(2, 2), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="MAX", pooling_ratio=(0.5, 0.5)))
-    _get_attr(_state, "update")({"p_conf": p_conf, "p_conf_max": p_conf_max})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"p_conf": p_conf, "p_conf_max": p_conf_max}))
+    _state.update(ensure_tensor_dict({"t1": t1, "t1_2d": t1_2d, "t1_3d": t1_3d}))
 
 
 def _test_pooling_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -151,11 +149,12 @@ def _test_pooling_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     (p_conf, p_conf_max, t1_1d, t1_2d) = (_state["p_conf"], _state["p_conf_max"], _state["t1_1d"], _state["t1_2d"])
     t1_3d = _state["t1_3d"]
     avg_pool1d(t1_1d, PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(2,), padding="VALID"), behavior=PoolingBehaviorConfig()))
-    as_callable(avg_pool2d)(t1_2d, p_conf)
+    ensure_callable(avg_pool2d)(t1_2d, p_conf)
     avg_pool3d(t1_3d, PoolingConfig(window=SpatialConfig(ksize=(2, 2, 2), strides=(2, 2, 2), padding="VALID"), behavior=PoolingBehaviorConfig()))
     max_pool1d(t1_1d, PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(2,), padding="VALID"), behavior=PoolingBehaviorConfig()))
-    as_callable(max_pool2d)(t1_2d, p_conf_max)
-    _state.update(_caller_locals())
+    ensure_callable(max_pool2d)(t1_2d, p_conf_max)
+    _state.update(ensure_tensor_dict({"p_conf": p_conf, "p_conf_max": p_conf_max, "t1_1d": t1_1d}))
+    _state.update(ensure_tensor_dict({"t1_2d": t1_2d, "t1_3d": t1_3d}))
 
 
 def _test_pooling_brute_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -167,15 +166,16 @@ def _test_pooling_brute_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
     (p_conf, p_conf_max, t1, t1_3d) = (_state["p_conf"], _state["p_conf_max"], _state["t1"], _state["t1_3d"])
     max_pool3d(t1_3d, PoolingConfig(window=SpatialConfig(ksize=(2, 2, 2), strides=(2, 2, 2), padding="VALID"), behavior=PoolingBehaviorConfig()))
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        as_callable(max_pool_with_argmax)(t1, p_conf_max)
-    as_callable(fractional_avg_pool)(t1, p_conf)
-    as_callable(fractional_max_pool)(t1, p_conf_max)
+        ensure_callable(max_pool_with_argmax)(t1, p_conf_max)
+    ensure_callable(fractional_avg_pool)(t1, p_conf)
+    ensure_callable(fractional_max_pool)(t1, p_conf_max)
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
+    _state.update(ensure_tensor_dict({"p_conf": p_conf, "p_conf_max": p_conf_max, "t1": t1}))
+    _state.update(ensure_tensor_dict({"t1_3d": t1_3d}))
 
 
 def _test_pooling_brute_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -186,21 +186,22 @@ def _test_pooling_brute_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (global_tracing_state, p_conf, p_conf_max, t1) = (_state["global_tracing_state"], _state["p_conf"], _state["p_conf_max"], _state["t1"])
     try:
-        as_callable(max_pool)(t1, (2, 2), return_indices=True)
-        as_callable(fractional_avg_pool)(t1, p_conf)
-        as_callable(fractional_max_pool)(t1, p_conf_max)
+        ensure_callable(max_pool)(t1, (2, 2), return_indices=True)
+        ensure_callable(fractional_avg_pool)(t1, p_conf)
+        ensure_callable(fractional_max_pool)(t1, p_conf_max)
         FractionalAvgPool().infer_shape(t1, p_conf.behavior.pooling_ratio)
         FractionalMaxPool().infer_shape(t1, p_conf_max.behavior.pooling_ratio)
     finally:
-        _set_attr(global_tracing_state, "is_tracing", False)
+        ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(False)
     with pytest.raises(RuntimeError):
-        as_callable(pool)(t1, p_conf)
-    as_callable(pool)(t1, p_conf_max)
+        ensure_callable(pool)(t1, p_conf)
+    ensure_callable(pool)(t1, p_conf_max)
     from unittest.mock import patch
 
     config.eager_mode = True
-    _get_attr(_state, "update")({"patch": patch})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"patch": patch}))
+    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state, "p_conf": p_conf, "p_conf_max": p_conf_max}))
+    _state.update(ensure_tensor_dict({"t1": t1}))
 
 
 def _test_pooling_brute_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -232,11 +233,11 @@ def _test_pooling_brute_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
                 """
                 return x
 
-        _set_attr(mock_backend, "return_value", DummyBackend())
-        as_callable(max_pool)(t1, (2, 2), return_indices=True)
+        ensure_mutable(mock_backend).return_value = ensure_eager_tensor(DummyBackend())
+        ensure_callable(max_pool)(t1, (2, 2), return_indices=True)
     config.eager_mode = False
-    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "mock_backend": mock_backend})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "mock_backend": mock_backend}))
+    _state.update(ensure_tensor_dict({"patch": patch, "t1": t1}))
 
 
 def _test_pooling_brute_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -247,9 +248,9 @@ def _test_pooling_brute_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (p_conf, p_conf_max, patch, t1) = (_state["p_conf"], _state["p_conf_max"], _state["patch"], _state["t1"])
     with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node"), patch("ml_switcheroo_compiler.ops.linalg.utils._emit_linalg_node"):
-        as_callable(max_pool)(t1, (2, 2), return_indices=True)
-        as_callable(fractional_avg_pool)(t1, p_conf)
-        as_callable(fractional_max_pool)(t1, p_conf_max)
+        ensure_callable(max_pool)(t1, (2, 2), return_indices=True)
+        ensure_callable(fractional_avg_pool)(t1, p_conf)
+        ensure_callable(fractional_max_pool)(t1, p_conf_max)
 
 
 def test_pooling_brute() -> None:

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import as_shape
+from ml_switcheroo_compiler.backends.registry import ensure_shape
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
+from ml_switcheroo_compiler.core.shape import extract_shape
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
@@ -21,9 +21,9 @@ def _infer_broadcast_shape(shapes: tuple[OpArgValue, ...]) -> tuple[int, ...]:
         tuple[int, ...]: Broadcasted output shape tuple.
     """
     if all(isinstance(s, tuple) for s in shapes):
-        return _bs(*_cast_val("tuple[tuple[int, ...], ...]", shapes))
+        return _bs(*[ensure_shape(s) for s in shapes])
 
-    return as_shape(_get_attr(shapes[0], "shape", shapes[0]))
+    return extract_shape(shapes[0], ensure_shape(shapes[0]))
 
 
 @register_op("Atan2")
@@ -59,11 +59,11 @@ class Divmod(OpDef):
             Tensor: Tuple of (quotient, remainder) tensors.
         """
         if config.eager_mode:
-            return as_tensor_obj(EagerEvaluator.evaluate("Divmod", *args, **kwargs))
+            return ensure_tensor(EagerEvaluator.evaluate("Divmod", *args, **kwargs))
 
         from ml_switcheroo_compiler.ops.binary import floor_divide, remainder
 
-        return as_tensor_obj((floor_divide(*args, **kwargs), remainder(*args, **kwargs)))
+        return ensure_tensor((floor_divide(*args, **kwargs), remainder(*args, **kwargs)))
 
     def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape of the Divmod operation.

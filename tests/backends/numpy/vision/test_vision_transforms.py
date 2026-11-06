@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms as vt
-from ml_switcheroo_compiler.core.shape import _set_attr
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -25,14 +25,14 @@ def test_vision_transforms_coverage(mock_elastic: EagerTensorProtocol, mock_pers
         mock_perspective: Test parameter `mock_perspective`.
         mock_shear: Test parameter `mock_shear`.
     """
-    _set_attr(mock_shear, "return_value", 1)
-    res = vt._np_random_shear(np, np.zeros((2, 2, 3)), 1.0)
+    ensure_mutable(mock_shear).return_value = ensure_eager_tensor(1)
+    res = vt._np_random_shear(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0)
     assert res == 1
 
-    _set_attr(mock_perspective, "return_value", 2)
-    res = vt._np_random_perspective(np, np.zeros((2, 2, 3)), 1.0)
+    ensure_mutable(mock_perspective).return_value = ensure_eager_tensor(2)
+    res = vt._np_random_perspective(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0)
     assert res == 2
 
-    _set_attr(mock_elastic, "return_value", 3)
-    res = vt._np_random_elastic_transform(np, np.zeros((2, 2, 3)), 1.0, 1.0)
+    ensure_mutable(mock_elastic).return_value = ensure_eager_tensor(3)
+    res = vt._np_random_elastic_transform(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0, 1.0)
     assert res == 3

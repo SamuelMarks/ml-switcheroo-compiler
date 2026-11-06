@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.backends.registry import ensure_shape
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -32,8 +33,8 @@ class RaggedDot(OpDef):
 
         if a is None:
             return ()
-        shape_a = tuple(_get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(_get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ()))) if b is not None else ()
+        shape_a = ensure_shape(tuple(a)) if isinstance(a, (list, tuple)) else extract_shape(a)
+        shape_b = (ensure_shape(tuple(b)) if isinstance(b, (list, tuple)) else extract_shape(b)) if b is not None else ()
 
         batch = shape_a[0] if len(shape_a) > 0 else 1
         ragged_dim = shape_a[1] if len(shape_a) > 1 else SymVar("ragged_dim")

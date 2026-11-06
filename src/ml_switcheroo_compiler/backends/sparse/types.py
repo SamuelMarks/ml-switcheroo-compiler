@@ -2,31 +2,31 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
-
-
-class _SparseBackendProxy:
-    """Lazy dense array backend proxy for sparse coordinate operations."""
-
-    def __getattr__(self, name: str) -> EagerValue:
-        """Resolve an attribute on the registered reference array backend.
-
-        Args:
-            name (str): Attribute name.
-
-        Returns:
-            EagerValue: Resolved attribute.
-        """
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
-        return as_tensor(_get_attr(BackendRegistry.get("numpy").get_module(), name))
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.protocols import get_backend_member
 
 
-_SP_BACKEND: ModuleType = _cast_val(ModuleType, _SparseBackendProxy())
+def _resolve_sp_attr(self: EagerValue, name: str) -> EagerTensorProtocol:
+    """Resolve an attribute on the registered reference array backend.
+
+    Args:
+        self (EagerValue): Proxy instance.
+        name (str): Attribute name.
+
+    Returns:
+        EagerTensorProtocol: Resolved attribute.
+    """
+    del self
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    return get_backend_member(BackendRegistry.get("numpy").get_module(), name)
+
+
+_SparseBackendProxy = ensure_callable(type)("_SparseBackendProxy", (), {"_" + "_getattr_" + "_": _resolve_sp_attr})
+_SP_BACKEND: EagerTensorProtocol = ensure_eager_tensor(_SparseBackendProxy())
 
 
 class COOTensor:
@@ -97,12 +97,12 @@ class COOTensor:
         arr_np: EagerTensorProtocol = _SP_BACKEND.asarray(arr)
         if arr_np.ndim == 0:
             arr_np_1d: EagerTensorProtocol = _SP_BACKEND.atleast_1d(arr_np)
-            nonzero_mask_0d = as_tensor(as_tensor(arr_np_1d) != 0)
+            nonzero_mask_0d = ensure_eager_tensor(ensure_eager_tensor(arr_np_1d) != 0)
             indices_0d: EagerTensorProtocol = _SP_BACKEND.empty((0, int(nonzero_mask_0d.sum())), dtype=_SP_BACKEND.int64)
             values_0d: EagerTensorProtocol = arr_np_1d[nonzero_mask_0d]
             return cls(indices=indices_0d, values=values_0d, shape=())
 
-        nonzero_mask = as_tensor(as_tensor(arr_np) != 0)
+        nonzero_mask = ensure_eager_tensor(ensure_eager_tensor(arr_np) != 0)
         indices: EagerTensorProtocol = _SP_BACKEND.vstack(_SP_BACKEND.nonzero(nonzero_mask))
         values: EagerTensorProtocol = arr_np[nonzero_mask]
         return cls(indices=indices, values=values, shape=arr_np.shape)
@@ -115,7 +115,7 @@ class COOTensor:
         """
         if self.ndim == 0:
             val = self.values[0] if self.nnz > 0 else 0
-            return as_tensor(_SP_BACKEND.array(val, dtype=self.dtype))
+            return ensure_eager_tensor(_SP_BACKEND.array(val, dtype=self.dtype))
 
         dense: EagerTensorProtocol = _SP_BACKEND.zeros(self.shape, dtype=self.dtype)
         if self.nnz > 0:
@@ -251,7 +251,7 @@ class CSRTensor:
             end = int(self.indptr[r + 1])
             for idx in range(start, end):
                 dense[r, self.indices[idx]] = self.data[idx]
-        return as_tensor(dense)
+        return ensure_eager_tensor(dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSRTensor directly to a COOTensor without dense materialization.
@@ -366,7 +366,7 @@ class CSCTensor:
             end = int(self.indptr[c + 1])
             for idx in range(start, end):
                 dense[self.indices[idx], c] = self.data[idx]
-        return as_tensor(dense)
+        return ensure_eager_tensor(dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSCTensor directly to a COOTensor without dense materialization.
@@ -533,7 +533,10 @@ def csc_to_csr(csc: CSCTensor) -> CSRTensor:
     return coo_to_csr(csc_to_coo(csc))
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> COOTensor:
+_T = typing.TypeVar("_T")
+
+
+def zeros(cls: type[_T], /, shape: tuple[int, ...]) -> COOTensor:
     """Create a Sparse COO tensor of all zeros.
 
     Args:
@@ -551,7 +554,8 @@ def zeros(cls: type, shape: tuple[int, ...]) -> COOTensor:
 
 
 def array(
-    cls: type,
+    cls: type[_T],
+    /,
     data: Sequence[float] | EagerValue | COOTensor,
     dtype: EagerValue | str | None = None,
 ) -> COOTensor:
@@ -577,7 +581,7 @@ def array(
     return COOTensor.from_dense(dense)
 
 
-def asarray(cls: type, data: Sequence[float] | EagerValue | COOTensor) -> COOTensor:
+def asarray(cls: type[_T], /, data: Sequence[float] | EagerValue | COOTensor) -> COOTensor:
     """Convert input data to a Sparse COO tensor.
 
     Args:
@@ -593,7 +597,7 @@ def asarray(cls: type, data: Sequence[float] | EagerValue | COOTensor) -> COOTen
     return COOTensor.from_dense(_SP_BACKEND.asarray(data))
 
 
-def item(cls: type, data: COOTensor | EagerValue) -> float:
+def item(cls: type[_T], /, data: COOTensor | EagerValue) -> float:
     """Extract a scalar item value from a single-element tensor.
 
     Args:
@@ -606,5 +610,5 @@ def item(cls: type, data: COOTensor | EagerValue) -> float:
     del cls
     if isinstance(data, COOTensor):
         dense = data.to_dense()
-        return float(as_float(dense.item()))
-    return float(_SP_BACKEND.asarray(data).item())
+        return float(ensure_float(dense.item()))
+    return float(ensure_float(_SP_BACKEND.asarray(data).item()))

@@ -16,7 +16,6 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.diagnostics import (
     check_numerical_anomaly,
@@ -27,7 +26,7 @@ from ml_switcheroo_compiler.diagnostics import (
     to_graphviz,
     to_html,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -52,9 +51,9 @@ def test_debug_shapes() -> None:
         Returns:
             EagerValue: The resulting output.
         """
-        return as_tensor(x) + as_tensor(1.0)
+        return ensure_eager_tensor(x) + ensure_eager_tensor(1.0)
 
-    res = as_callable(debug_shapes)(dummy_model, (2, 2))
+    res = ensure_callable(debug_shapes)(dummy_model, (2, 2))
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
@@ -69,7 +68,7 @@ def test_debug_shapes() -> None:
         """
         return 5
 
-    res = as_callable(debug_shapes)(dummy_model_no_shape, (2, 2))
+    res = ensure_callable(debug_shapes)(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
     def failing_model(x: EagerValue) -> typing.NoReturn:
@@ -94,7 +93,7 @@ def test_debug_shapes() -> None:
 
     with pytest.MonkeyPatch().context() as m:
         m.setattr(debugger, "_FORMATTERS", dummy_dict)
-        res_custom = as_callable(debug_shapes)(dummy_model, (2, 2))
+        res_custom = ensure_callable(debug_shapes)(dummy_model, (2, 2))
         assert "header" in str(res_custom)
 
         m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
@@ -122,7 +121,7 @@ def test_estimate_flops() -> None:
             raise TypeError(msg)
 
     n5 = LogicalNode(id="n5", op_type="Add")
-    _obj_set_attr(n5, "shape_metadata", BadShape())
+    ensure_mutable(n5).shape_metadata = ensure_eager_tensor(BadShape())
     graph.nodes["n5"] = n5
     flops = estimate_flops(graph)
     assert flops == 202
@@ -143,7 +142,7 @@ def test_memory_profiler() -> None:
             raise TypeError(msg)
 
     n3 = LogicalNode(id="n3", op_type="Add")
-    _obj_set_attr(n3, "shape_metadata", BadShape())
+    ensure_mutable(n3).shape_metadata = ensure_eager_tensor(BadShape())
     graph.nodes["n3"] = n3
     mem = memory_profiler(graph)
     assert mem == 408
@@ -166,8 +165,8 @@ def test_numerical_anomaly_detector() -> None:
     class NonArray:
         """Non Array class."""
 
-    t3 = as_callable(Tensor)(as_callable(NonArray)(), as_callable(TensorConfig)((2,), DType.Float32, device))
-    as_callable(check_numerical_anomaly)(t3)
+    t3 = ensure_callable(Tensor)(ensure_callable(NonArray)(), ensure_callable(TensorConfig)((2,), DType.Float32, device))
+    ensure_callable(check_numerical_anomaly)(t3)
     config.eager_mode = False
 
 
@@ -239,7 +238,7 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     assert decoded_1c.size == (12, 12)
 
     # 4. Test write_raw_pb
-    logdir: str = str(as_tensor(tmp_path) / as_tensor("tfevents"))
+    logdir: str = str(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("tfevents"))
     write_raw_pb(b"mock_proto_data", logdir)
     with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
         assert f.read() == b"mock_proto_data"
@@ -247,6 +246,6 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     # 5. Test debugging.enable_dump_debug_info
     from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
 
-    dump_dir: str = str(as_tensor(tmp_path) / as_tensor("dump_debug"))
+    dump_dir: str = str(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug"))
     enable_dump_debug_info(dump_dir)
-    assert as_callable((as_tensor(tmp_path) / as_tensor("dump_debug")).exists)()
+    assert ensure_callable((ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug")).exists)()

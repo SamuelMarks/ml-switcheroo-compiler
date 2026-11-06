@@ -2,15 +2,35 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
+import typing
+
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_eager_tensor,
+    ensure_int,
+    ensure_shape,
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .decompositions.solvers import TriangularSolve
-from .utils import _emit_linalg_node
+from .utils import _emit_linalg_node, _extract_linalg_shape
+
+
+@typing.runtime_checkable
+class _LstsqResultProtocol(typing.Protocol):
+    """Protocol for lstsq result objects exposing `.solution` and `.residuals`."""
+
+    solution: TensorOrScalar
+    residuals: TensorOrScalar
 
 
 def cholesky_solve(chol: Tensor, rhs: Tensor) -> TensorOrScalar:
@@ -25,9 +45,9 @@ def cholesky_solve(chol: Tensor, rhs: Tensor) -> TensorOrScalar:
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("CholeskySolve", chol.data, rhs.data)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), rhs.dtype, rhs.device))
+        return Tensor(data, TensorConfig(extract_shape(data), rhs.dtype, rhs.device))
 
-    out_shape = _get_attr(CholeskySolve(), "infer_shape")(chol, rhs)
+    out_shape = CholeskySolve().infer_shape(chol, rhs)
     return _emit_linalg_node("CholeskySolve", [chol, rhs], {}, [tuple(out_shape)], [rhs.dtype])
 
 
@@ -45,9 +65,9 @@ def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjo
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("BandedTriangularSolve", bands.data, rhs.data, lower=lower, adjoint=adjoint)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), rhs.dtype, rhs.device))
+        return Tensor(data, TensorConfig(extract_shape(data), rhs.dtype, rhs.device))
 
-    out_shape = _get_attr(BandedTriangularSolve(), "infer_shape")(bands, rhs)
+    out_shape = BandedTriangularSolve().infer_shape(bands, rhs)
     return _emit_linalg_node(
         "BandedTriangularSolve",
         [bands, rhs],
@@ -96,8 +116,8 @@ class Lstsq(OpDef):
         """
         a = args[0]
         b = args[1]
-        shape_a: tuple[int, ...] = _get_attr(a, "shape", ())
-        shape_b: tuple[int, ...] = _get_attr(b, "shape", ())
+        shape_a: tuple[int, ...] = extract_shape(a)
+        shape_b: tuple[int, ...] = extract_shape(b)
         m, n = shape_a[-2:]
         if len(shape_b) == len(shape_a) - 1:
             return shape_b[:-1] + (n,)
@@ -121,12 +141,12 @@ def lstsq(
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
-        if isinstance(data, tuple) or (_has_attr(data, "solution") and _has_attr(data, "residuals")):
+        if isinstance(data, tuple) or isinstance(data, _LstsqResultProtocol):
             # torch returns namedtuple, numpy returns tuple
-            data = _get_attr(data, "solution") if _has_attr(data, "solution") else _cast_val("tuple[Tensor, ...]", data)[0]
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), b.dtype, b.device))
+            data = data.solution if isinstance(data, _LstsqResultProtocol) else data[0]
+        return Tensor(data, TensorConfig(extract_shape(data), b.dtype, b.device))
 
-    out_shape = _get_attr(Lstsq(), "infer_shape")(a, b)
+    out_shape = ensure_shape(Lstsq().infer_shape(ensure_eager_tensor(a), ensure_eager_tensor(b)))
     return _emit_linalg_node("Lstsq", [a, b], {"rcond": rcond}, [tuple(out_shape)], [b.dtype])
 
 
@@ -158,9 +178,9 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: TensorOr
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("LuMatrixInverse", lower_upper.data, perm.data, validate_args=validate_args)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), lower_upper.dtype, lower_upper.device))
+        return Tensor(data, TensorConfig(extract_shape(data), lower_upper.dtype, lower_upper.device))
 
-    out_shape = _get_attr(LuMatrixInverse(), "infer_shape")(lower_upper, perm)
+    out_shape = ensure_shape(LuMatrixInverse().infer_shape(ensure_eager_tensor(lower_upper), ensure_eager_tensor(perm)))
     return _emit_linalg_node(
         "LuMatrixInverse",
         [lower_upper, perm],
@@ -184,9 +204,9 @@ def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: TensorOrSca
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("LuReconstruct", lower_upper.data, perm.data, validate_args=validate_args)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), lower_upper.dtype, lower_upper.device))
+        return Tensor(data, TensorConfig(extract_shape(data), lower_upper.dtype, lower_upper.device))
 
-    out_shape = _get_attr(LuReconstruct(), "infer_shape")(lower_upper, perm)
+    out_shape = ensure_shape(LuReconstruct().infer_shape(ensure_eager_tensor(lower_upper), ensure_eager_tensor(perm)))
     return _emit_linalg_node("LuReconstruct", [lower_upper, perm], {"validate_args": validate_args}, [tuple(out_shape)], [lower_upper.dtype])
 
 
@@ -226,9 +246,9 @@ def triangular_solve(matrix: Tensor, rhs: Tensor, lower: TensorOrScalar = True, 
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("TriangularSolve", matrix.data, rhs.data, lower=lower, adjoint=adjoint, unit_diagonal=False)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), rhs.dtype, rhs.device))
+        return Tensor(data, TensorConfig(extract_shape(data), rhs.dtype, rhs.device))
 
-    out_shape = _get_attr(TriangularSolve(), "infer_shape")(matrix, rhs)
+    out_shape = TriangularSolve().infer_shape(ensure_eager_tensor(matrix), ensure_eager_tensor(rhs))
     return _emit_linalg_node(
         "TriangularSolve",
         [matrix, rhs],
@@ -273,7 +293,7 @@ def tensorinv(a: Tensor, ind: TensorOrScalar = 2, name: TensorOrScalar = None) -
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tensorinv", a.data, ind=ind)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
     return _emit_linalg_node("Tensorinv", [a], {"ind": ind}, [()], [a.dtype])
 
 
@@ -292,7 +312,7 @@ def tensorsolve(a: Tensor, b: Tensor, axes: TensorOrScalar = None, name: TensorO
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tensorsolve", a.data, b.data, axes=axes)
-        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
     return _emit_linalg_node("Tensorsolve", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
@@ -312,8 +332,9 @@ class Pinv(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        if _has_attr(a, "shape"):
-            s = list(a.shape)
+        raw_a: TensorOrScalar = a
+        if isinstance(raw_a, ShapeProtocol):
+            s = list(raw_a.shape)
             if len(s) >= MATRIX_RANK:
                 s[-2], s[-1] = s[-1], s[-2]
             return tuple(s)
@@ -361,8 +382,8 @@ class CholeskySolve(OpDef):
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
         """
-        shape_a = tuple(int(d) for d in _get_attr(chol, "shape", _get_attr(chol, "shape_metadata", chol if isinstance(chol, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(rhs, "shape", _get_attr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(chol)
+        shape_b = _extract_linalg_shape(rhs)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -402,8 +423,8 @@ class BandedTriangularSolve(OpDef):
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
         """
-        shape_a = tuple(int(d) for d in _get_attr(bands, "shape", _get_attr(bands, "shape_metadata", bands if isinstance(bands, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in _get_attr(rhs, "shape", _get_attr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+        shape_a = _extract_linalg_shape(bands)
+        shape_b = _extract_linalg_shape(rhs)
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -468,7 +489,7 @@ class MatrixNorm(OpDef):
             return ()
 
         a = args[0]
-        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
+        shape = extract_shape(a)
         axis = kwargs.get("axis", (-2, -1))
         keepdims = bool(kwargs.get("keepdims", False))
 
@@ -505,7 +526,7 @@ class VectorNorm(OpDef):
             return ()
 
         a = args[0]
-        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
+        shape = extract_shape(a)
         axis = kwargs.get("axis", -1)
         keepdims = bool(kwargs.get("keepdims", False))
 
@@ -562,7 +583,7 @@ class Tensorinv(OpDef):
         """
         in_shape = a.shape
         ind = kwargs.get("ind", 2)
-        return in_shape[int(as_int(ind)) :] + in_shape[: int(as_int(ind))]
+        return in_shape[int(ensure_int(ind)) :] + in_shape[: int(ensure_int(ind))]
 
 
 @register_op("Tensorsolve")

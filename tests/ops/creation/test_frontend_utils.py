@@ -7,7 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.creation.frontend_utils import FromDlpack, Frompyfunc, Geometric, Geomspace, frompyfunc
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -39,17 +39,17 @@ def test_frontend_utils_missing_2() -> None:
 
         shape = (10,)
 
-    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=5) == (5,)
-    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=None) == (10,)
-    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=(5, 5)) == (5, 5)
+    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=5) == (5,)
+    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=None) == (10,)
+    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=(5, 5)) == (5, 5)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)
     assert FromDlpack().infer_shape() == ()
-    assert as_callable(FromDlpack)().infer_shape(as_callable(MockTensor)()) == (10,)
+    assert ensure_callable(FromDlpack)().infer_shape(ensure_callable(MockTensor)()) == (10,)
     assert Frompyfunc().infer_shape() == ()
-    assert as_callable(Geomspace)().infer_shape(1, 10) == (50,)
-    assert as_callable(Geomspace)().infer_shape(as_callable(MockTensor)(), as_callable(MockTensor)(), num=10) == (10, 10)
-    assert as_callable(Geomspace)().infer_shape(as_callable(MockTensor)(), as_callable(MockTensor)(), num=10, axis=-1) == (10, 10)
+    assert ensure_callable(Geomspace)().infer_shape(1, 10) == (50,)
+    assert ensure_callable(Geomspace)().infer_shape(ensure_callable(MockTensor)(), ensure_callable(MockTensor)(), num=10) == (10, 10)
+    assert ensure_callable(Geomspace)().infer_shape(ensure_callable(MockTensor)(), ensure_callable(MockTensor)(), num=10, axis=-1) == (10, 10)
 
 
 def test_from_dlpack_func() -> None:
@@ -99,11 +99,11 @@ def test_frontend_utils_infer_shapes() -> None:
 
         shape = (2, 2)
 
-    assert as_callable(FromDlpack)().infer_shape(as_callable(Dummy)()) == (2, 2)
+    assert ensure_callable(FromDlpack)().infer_shape(ensure_callable(Dummy)()) == (2, 2)
     assert Frompyfunc().infer_shape() == ()
     assert Geomspace().infer_shape() == (50,)
-    assert as_callable(Geomspace)().infer_shape(as_callable(Dummy)(), as_callable(Dummy)(), 10, axis=0) == (10, 2, 2)
-    assert as_callable(Geomspace)().infer_shape(as_callable(Dummy)(), as_callable(Dummy)(), 10, axis=-1) == (2, 2, 10)
-    assert as_callable(Geometric)().infer_shape(as_callable(Dummy)()) == (2, 2)
-    assert as_callable(Geometric)().infer_shape(as_callable(Dummy)(), 10) == (10,)
-    assert as_callable(Geometric)().infer_shape(as_callable(Dummy)(), size=(3, 3)) == (3, 3)
+    assert ensure_callable(Geomspace)().infer_shape(ensure_callable(Dummy)(), ensure_callable(Dummy)(), 10, axis=0) == (10, 2, 2)
+    assert ensure_callable(Geomspace)().infer_shape(ensure_callable(Dummy)(), ensure_callable(Dummy)(), 10, axis=-1) == (2, 2, 10)
+    assert ensure_callable(Geometric)().infer_shape(ensure_callable(Dummy)()) == (2, 2)
+    assert ensure_callable(Geometric)().infer_shape(ensure_callable(Dummy)(), 10) == (10,)
+    assert ensure_callable(Geometric)().infer_shape(ensure_callable(Dummy)(), size=(3, 3)) == (3, 3)

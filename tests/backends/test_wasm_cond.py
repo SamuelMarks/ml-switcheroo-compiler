@@ -6,7 +6,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_attrs
+from tests.testing_utils import ensure_attrs
 
 
 def test_wasm_cond_generation() -> None:
@@ -36,7 +36,7 @@ def test_wasm_cond_generation() -> None:
         id="node_cond",
         op_type="Cond",
         inputs=["node_in", "node_in", "node_in"],
-        attributes=as_attrs({"dtype": "float32", "branch_graphs": [true_graph, false_graph]}),
+        attributes=ensure_attrs({"dtype": "float32", "branch_graphs": [true_graph, false_graph]}),
         shape_metadata=(3,),
     )
 

@@ -3,17 +3,67 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable  # noqa: F401
+from collections.abc import Callable, Iterable
 
-from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+    invoke_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
 _StateT = typing.TypeVar("_StateT")
+
+
+def _is_cf_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None or None.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _ensure_cf_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_cf_eager_tensor(val)
+    return val
+
+
+def _ensure_cf_list(val: TensorOrScalar) -> list[TensorOrScalar]:
+    """Convert an iterable or sequence `val` into `list[TensorOrScalar]`.
+
+    Args:
+        val (TensorOrScalar): Iterable or sequence value.
+
+    Returns:
+        list[TensorOrScalar]: Converted list.
+    """
+    if isinstance(val, list):
+        return val
+    if isinstance(val, tuple):
+        return list(val)
+    if isinstance(val, Iterable):
+        return list(val)
+    return [val]
 
 
 def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) -> TensorOrScalar:
@@ -28,8 +78,8 @@ def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) 
             tuple[int, ...]: Result.
     """
     if bool(pred.data):
-        return as_callable(true_fn)()
-    return as_callable(false_fn)()
+        return invoke_callable(true_fn)
+    return invoke_callable(false_fn)
 
 
 def while_loop_eager(
@@ -49,7 +99,7 @@ def while_loop_eager(
     """
     val = init_val
     res = cond_fn(val)
-    while bool(res.data if _has_attr(res, "data") else res):
+    while bool(extract_data(res)):
         val = body_fn(val)
         res = cond_fn(val)
 
@@ -76,20 +126,25 @@ def _stack_scan_outputs(
         return Tensor(
             stacked_ys,
             TensorConfig(
-                _get_attr(stacked_ys, "shape"),
-                _get_attr(last_y, "dtype") if _has_attr(last_y, "dtype") else _get_attr(init, "dtype"),
-                _get_attr(last_y, "device") if _has_attr(last_y, "device") else _get_attr(init, "device"),
+                extract_shape(stacked_ys),
+                extract_dtype(last_y, extract_dtype(init)),
+                extract_device(last_y, extract_device(init)),
             ),
         )
     else:
         stacked_ys = get_active_backend().array(ys)
         return Tensor(
             stacked_ys,
-            TensorConfig(_get_attr(stacked_ys, "shape"), DType(str(_get_attr(stacked_ys, "dtype"))), config.default_device),
+            TensorConfig(extract_shape(stacked_ys), DType(str(extract_dtype(stacked_ys))), config.default_device),
         )
 
 
-def scan_eager(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, length: int | None = None) -> TensorOrScalar:
+def scan_eager(
+    f: TensorOrScalar,
+    init: TensorOrScalar,
+    xs: TensorOrScalar,
+    length: int | None = None,
+) -> TensorOrScalar:
     """Execute the eager scan eager operation on the active backend array.
 
     Args:
@@ -102,16 +157,18 @@ def scan_eager(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, leng
         tuple: Result.
     """
     fn_callable = f
-    carry = init
-    ys = []
-    scan_length = length if length is not None else (_get_attr(xs, "shape")[0] if xs is not None else 0)
+    carry: TensorOrScalar = init
+    ys: list[TensorOrScalar] = []
+    xs_shape = extract_shape(xs)
+    scan_length = length if length is not None else (xs_shape[0] if xs is not None and xs_shape else 0)
+    y: TensorOrScalar = init
     for i in range(scan_length):
-        x = Tensor(_get_attr(xs, "data")[i], TensorConfig(_get_attr(xs, "shape")[1:], _get_attr(xs, "dtype"), _get_attr(xs, "device"))) if xs is not None else None
-        carry, y = _get_attr(invoke_callable(fn_callable, carry, x), "__iter__")()
-        ys.append(_get_attr(y, "data") if _has_attr(y, "data") else y)
+        x = Tensor(_ensure_cf_tensor(extract_data(xs))[i], TensorConfig(xs_shape[1:], extract_dtype(xs), extract_device(xs))) if xs is not None else None
+        carry, y = _ensure_cf_list(invoke_callable(fn_callable, carry, x))
+        ys.append(extract_data(y))
 
     out_tensor = _stack_scan_outputs(ys, init, y if scan_length > 0 else init)
-    return carry, out_tensor
+    return _ensure_cf_tensor(carry), out_tensor
 
 
 def _map_fn_eager_get_length(elems: Tensor | None) -> int:
@@ -126,7 +183,7 @@ def _map_fn_eager_get_length(elems: Tensor | None) -> int:
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
-def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> TensorOrScalar:
+def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> list[TensorOrScalar]:
     """Execute the eager map fn eager execute operation on the active backend array.
 
     Args:
@@ -138,11 +195,11 @@ def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> Ten
         list: Result.
     """
     fn_callable = fn
-    ys = []
+    ys: list[TensorOrScalar] = []
     for i in range(length):
-        x = Tensor(as_tensor(elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
+        x = Tensor(_ensure_cf_tensor(elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
         y = invoke_callable(fn_callable, x)
-        ys.append(_get_attr(y, "data") if _has_attr(y, "data") else y)
+        ys.append(extract_data(y))
     return ys
 
 
@@ -157,13 +214,14 @@ def _map_fn_eager_stack(ys: TensorOrScalar, elems: Tensor, dtype: DType | None) 
     Returns:
         Tensor: Result.
     """
-    if _get_attr(ys, "__len__")() > 0 and isinstance(_get_attr(ys, "__getitem__")(0), tuple):
-        stacked_ys = get_active_backend().execute_op("Stack", ys)
-        return Tensor(stacked_ys, TensorConfig(_get_attr(stacked_ys, "shape"), elems.dtype, elems.device))
+    ys_list = ys if isinstance(ys, (list, tuple)) else _ensure_cf_list(ys)
+    if len(ys_list) > 0 and isinstance(ys_list[0], tuple):
+        stacked_ys = get_active_backend().execute_op("Stack", ys_list)
+        return Tensor(stacked_ys, TensorConfig(extract_shape(stacked_ys), elems.dtype, elems.device))
 
-    stacked_ys = get_active_backend().array(ys)
-    out_dtype = dtype if dtype is not None else DType(str(_get_attr(stacked_ys, "dtype")))
-    return Tensor(stacked_ys, TensorConfig(_get_attr(stacked_ys, "shape"), out_dtype, elems.device))
+    stacked_ys = get_active_backend().array(ys_list)
+    out_dtype = dtype if dtype is not None else DType(str(extract_dtype(stacked_ys)))
+    return Tensor(stacked_ys, TensorConfig(extract_shape(stacked_ys), out_dtype, elems.device))
 
 
 def map_fn_eager(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
@@ -192,17 +250,18 @@ def pmap_eager(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrSc
     Returns:
         Callable: Result.
     """
+    del axis_name
 
     def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
         """Execute the eager wrapped operation on the active backend array.
 
         Args:
-        *args (TensorOrScalar): Positional args.
+            *args (TensorOrScalar): Positional args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        return as_callable(vmap(func))(*args)
+        return invoke_callable(vmap(func), *args)
 
     return wrapped
 

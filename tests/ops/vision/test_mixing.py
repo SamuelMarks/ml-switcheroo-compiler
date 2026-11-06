@@ -6,10 +6,9 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.mixing import cutmix, mixup
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -44,7 +43,7 @@ def test_vision_mixing_funcs(mocker: EagerTensorProtocol) -> None:
     assert cutmix(t1, t2) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.mixing.get_active_backend").return_value
-    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(_get_attr(mixup(t1, t2), "config")).shape == (2, 3)
-    assert as_tensor(_get_attr(cutmix(t1, t2), "config")).shape == (2, 3)
+    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
+    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    assert ensure_eager_tensor(ensure_eager_tensor(mixup(t1, t2)).config).shape == (2, 3)
+    assert ensure_eager_tensor(ensure_eager_tensor(cutmix(t1, t2)).config).shape == (2, 3)

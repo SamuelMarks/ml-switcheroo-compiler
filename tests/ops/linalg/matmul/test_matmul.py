@@ -10,8 +10,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _set_attr
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -28,7 +27,7 @@ class DummyTensor:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = as_callable(np.zeros)(shape)
+        self.data = ensure_callable(np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
@@ -56,10 +55,10 @@ def test_matmul_tracing() -> None:
     mock_shape = MagicMock()
     mock_add = MagicMock()
     mock_multiply = MagicMock()
-    _set_attr(mod, "_emit_linalg_node", mock_linalg)
-    _set_attr(mod, "_emit_shape_node", mock_shape)
-    _set_attr(mod, "add", mock_add)
-    _set_attr(mod, "multiply", mock_multiply)
+    ensure_mutable(mod)._emit_linalg_node = ensure_eager_tensor(mock_linalg)
+    ensure_mutable(mod)._emit_shape_node = ensure_eager_tensor(mock_shape)
+    ensure_mutable(mod).add = ensure_eager_tensor(mock_add)
+    ensure_mutable(mod).multiply = ensure_eager_tensor(mock_multiply)
     config.eager_mode = False
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -82,10 +81,10 @@ def test_matmul_tracing() -> None:
     mod.gather_mm(a, b, lhs_indices=None, rhs_indices=c)
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
-    _set_attr(mod, "_emit_linalg_node", original_linalg)
-    _set_attr(mod, "_emit_shape_node", original_shape)
-    _set_attr(mod, "add", original_add)
-    _set_attr(mod, "multiply", original_multiply)
+    ensure_mutable(mod)._emit_linalg_node = ensure_eager_tensor(original_linalg)
+    ensure_mutable(mod)._emit_shape_node = ensure_eager_tensor(original_shape)
+    ensure_mutable(mod).add = ensure_eager_tensor(original_add)
+    ensure_mutable(mod).multiply = ensure_eager_tensor(original_multiply)
     assert c.shape == (2,)
 
 
@@ -98,7 +97,7 @@ def test_matmul_eager() -> None:
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
     mock_get_backend.return_value = mock_backend
-    _set_attr(mod, "get_active_backend", mock_get_backend)
+    ensure_mutable(mod).get_active_backend = ensure_eager_tensor(mock_get_backend)
     config.eager_mode = True
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -118,7 +117,7 @@ def test_matmul_eager() -> None:
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
     config.eager_mode = False
-    _set_attr(mod, "get_active_backend", original_backend)
+    ensure_mutable(mod).get_active_backend = ensure_eager_tensor(original_backend)
     assert c.shape == (2,)
 
 
@@ -196,11 +195,11 @@ def test_dot_general_missing_shape_real() -> None:
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
             with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
                 original_emit = matmul_mod._emit_linalg_node
-                _set_attr(matmul_mod, "_emit_linalg_node", lambda *args, **kwargs: "dummy_node")
+                ensure_mutable(matmul_mod)._emit_linalg_node = ensure_eager_tensor(lambda *args, **kwargs: "dummy_node")
                 try:
                     assert matmul_mod.dot_general(t1, t2, (((), ()), ((), ()))) == "dummy_node"
                 finally:
-                    _set_attr(matmul_mod, "_emit_linalg_node", original_emit)
+                    ensure_mutable(matmul_mod)._emit_linalg_node = ensure_eager_tensor(original_emit)
     finally:
         config.eager_mode = old_eager
 
@@ -217,9 +216,9 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
     op1 = BlockMaskedMm()
-    assert as_callable(op1.infer_shape)((2, 3), (4, 5)) is None
+    assert ensure_callable(op1.infer_shape)((2, 3), (4, 5)) is None
     op2 = GatherMm()
-    assert as_callable(op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
+    assert ensure_callable(op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -233,14 +232,14 @@ def test_solvers_missing() -> None:
     from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
 
     op = Pinv()
-    assert as_callable(op.infer_shape)(None) == ()
+    assert ensure_callable(op.infer_shape)(None) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (3,)
 
-    assert as_callable(op.infer_shape)(as_callable(DummyShape)()) == (3,)
+    assert ensure_callable(op.infer_shape)(ensure_callable(DummyShape)()) == (3,)
 
 
 def test_einsum_missing() -> None:
@@ -258,7 +257,7 @@ def test_einsum_missing_branch() -> None:
 
     p = ParsedEquationPart(chars="ij", shape=(3, 1))
     p.shape = (3, 1)
-    _set_attr(p, "chars", ["i", "i"])
+    ensure_mutable(p).chars = ensure_eager_tensor(["i", "i"])
     axis_map = {"i": 3}
     p.process_axis_map(axis_map)
     assert axis_map["i"] == 3

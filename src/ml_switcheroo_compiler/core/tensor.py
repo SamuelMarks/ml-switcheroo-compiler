@@ -7,10 +7,12 @@ from collections.abc import Iterable, Sequence
 
 import pydantic
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
-from ml_switcheroo_compiler.backends.registry import as_int, as_tensor
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device as Device
 from ml_switcheroo_compiler.core.device import DeviceType as DeviceType
@@ -23,18 +25,40 @@ from ml_switcheroo_compiler.core.mixins import (
 from ml_switcheroo_compiler.core.shape import (
     AttrValue,
     ShapeLike,
-    StructuralOperandProtocol,
-    TensorOrScalar,
+    is_backend_buffer,
     is_traced_data,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 from .tensor_mixins import (
-    TensorConversionMixin,
     TensorIndexingMixin,
-    TensorPropertiesMixin,
     _DataWrapperProtocol,
 )
+
+
+def _is_core_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        bool: True if non-None or None.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _ensure_core_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
+    """Narrow `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (TensorOrScalar): Candidate array value.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor.
+    """
+    assert _is_core_eager_tensor(val)
+    return val
 
 
 @typing.runtime_checkable
@@ -110,7 +134,7 @@ def _is_dtype_inst(val: TensorOrScalar) -> typing.TypeGuard[DType]:
     Returns:
         bool: True for runtime dtype objects.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _as_dtype_obj(val: TensorOrScalar) -> DType:
@@ -135,7 +159,7 @@ def _is_device_inst(val: TensorOrScalar) -> typing.TypeGuard[Device]:
     Returns:
         bool: True for runtime device objects.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _as_device_obj(val: TensorOrScalar) -> Device:
@@ -160,10 +184,10 @@ def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
     Returns:
         bool: Always True for runtime tensor values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
-def as_tensor_obj(val: TensorOrScalar) -> Tensor:
+def ensure_tensor(val: TensorOrScalar) -> Tensor:
     """Narrow a `TensorOrScalar` operand to `Tensor` without `typing.cast`.
 
     Args:
@@ -185,7 +209,7 @@ def _is_opt_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
     Returns:
         bool: Always True for optional tensor values.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def as_opt_tensor_obj(val: TensorOrScalar) -> Tensor | None:
@@ -224,14 +248,14 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        raw_tensor: StructuralOperandProtocol | TensorOrScalar = self.tensor
-        data: StructuralOperandProtocol | TensorOrScalar = raw_tensor.data if isinstance(raw_tensor, _DataWrapperProtocol) else None
+        raw_tensor: TensorOrScalar = self.tensor
+        data: TensorOrScalar = raw_tensor.data if isinstance(raw_tensor, _DataWrapperProtocol) else None
         idx = self.indices.data if isinstance(self.indices, _DataWrapperProtocol) else self.indices
         val = value.data if isinstance(value, _DataWrapperProtocol) else value
         if isinstance(data, _CopyableArrayProtocol) and isinstance(data.ndim, int) and data.ndim > 0:
-            copied = as_tensor(data.copy())
+            copied = _ensure_core_tensor(data.copy())
             cur = copied[idx]
-            val_t = as_tensor(val)
+            val_t = _ensure_core_tensor(val)
             if op_name == "add":
                 new_val = cur + val_t
             elif op_name == "mul":
@@ -338,7 +362,7 @@ def _extract_dtype_str(dt: DType | str | TensorOrScalar | None) -> str:
         return "float32"
     if isinstance(dt, str):
         return dt
-    raw_dt: StructuralOperandProtocol = dt
+    raw_dt: TensorOrScalar = dt
     if isinstance(raw_dt, _DTypeValueProtocol):
         return str(raw_dt.value)
     return str(raw_dt.name) if isinstance(raw_dt, _DTypeNameProtocol) else str(dt)
@@ -417,16 +441,8 @@ class TensorConfig(pydantic.BaseModel):
         )
 
 
-if typing.TYPE_CHECKING:
-    _TensorMixinBase = TensorIndexingMixin
-else:
-
-    class _TensorMixinBase(TensorPropertiesMixin, TensorConversionMixin, TensorIndexingMixin):
-        """Runtime combined base class for Tensor mixins."""
-
-
 class Tensor(
-    _TensorMixinBase,
+    TensorIndexingMixin,
     TensorArithmeticMixin,
     TensorBitwiseMixin,
     TensorLogicalMixin,
@@ -534,7 +550,9 @@ class Tensor(
         except KeyError:
             reshape_fn = get_op("Reshape")()
 
-        return as_tensor_obj(invoke_callable(reshape_fn, self, tuple(flat_shape)))
+        res_view = invoke_callable(reshape_fn, self, tuple(flat_shape))
+        assert _is_tensor_inst(res_view)
+        return res_view
 
     def contiguous(self) -> Tensor:
         """Return a contiguous in memory tensor.
@@ -653,4 +671,9 @@ class Parameter(Variable):
         Returns:
             int: The integer value.
         """
-        return as_int(self.numpy())
+        np_val = self.numpy()
+        if isinstance(np_val, (int, float)):
+            return int(np_val)
+        if is_backend_buffer(np_val):
+            return int(np_val.item())
+        return int(self.item())

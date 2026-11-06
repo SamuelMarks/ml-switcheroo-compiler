@@ -5,10 +5,10 @@ from __future__ import annotations
 import math
 import random
 import typing
-from collections.abc import Iterator, Sized
+from collections.abc import Iterator, Sequence, Sized
 from enum import Enum
 
-from ml_switcheroo_compiler.backends.registry import ShapeProtocol, as_shape
+from ml_switcheroo_compiler.backends.registry import ShapeProtocol
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
@@ -22,9 +22,34 @@ def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]
         val (TensorOrScalar): Candidate value.
 
     Returns:
-        bool: Always True for tensor tuples.
+        bool: True if val is a tuple.
     """
-    return val is not None or val is None
+    return isinstance(val, tuple)
+
+
+def _ensure_dataset_tensor(val: TensorOrScalar) -> Tensor:
+    """Narrow `val` to `Tensor`.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor value.
+
+    Returns:
+        Tensor: Narrowed Tensor instance.
+    """
+    assert isinstance(val, Tensor)
+    return val
+
+
+def _extract_dataset_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Concrete integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 class AutoShardPolicy(Enum):
@@ -438,10 +463,9 @@ class Dataset:
             batch_tensors: list[Tensor] = []
             with ConfigContext(eager_mode=True):
                 for t in self.tensors:
-                    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
                     from ml_switcheroo_compiler.ops.shape.indexing import take
 
-                    batch_tensors.append(as_tensor_obj(take(t, batch_idx_tensor, axis=0)))
+                    batch_tensors.append(_ensure_dataset_tensor(take(t, batch_idx_tensor, axis=0)))
                 batch_tuple: tuple[Tensor, ...] = tuple(batch_tensors)
 
             if self._map_func is not None:
@@ -619,7 +643,6 @@ class ImageDataset(Dataset):
         Yields:
             tuple[Tensor, ...]: Tuple of resized and/or normalized image batch tensors.
         """
-        from ml_switcheroo_compiler.core.tensor import as_tensor_obj
         from ml_switcheroo_compiler.ops.binary import true_divide
         from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample_bilinear
 
@@ -628,7 +651,7 @@ class ImageDataset(Dataset):
             with ConfigContext(eager_mode=True):
                 for t in batch:
                     if self.target_size is not None and len(t.shape) == 4:
-                        t = as_tensor_obj(upsample_bilinear(t, size=self.target_size))
+                        t = _ensure_dataset_tensor(upsample_bilinear(t, size=self.target_size))
                     if self.normalize:
                         t = true_divide(t, 255.0)
                     processed_batch.append(t)
@@ -684,7 +707,7 @@ class NumpyDataset(Dataset):
 
         tensors = []
         for arr in arrays:
-            shape = as_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
+            shape = _extract_dataset_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
             dtype = resolve_dtype(arr, None)
             tensors.append(Tensor(arr, TensorConfig(shape, dtype, Device(DeviceType.CPU))))
         super().__init__(*tensors)

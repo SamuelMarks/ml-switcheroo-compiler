@@ -9,9 +9,8 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.linear_ops as linear_ops_mod
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -48,11 +47,11 @@ def test_linear_ops_full_coverage() -> None:
 
         res_no_bias = linear_ops_mod.linear(inp, weight, bias=None)
         assert res_no_bias is not None
-        assert as_tensor(_get_attr(res_no_bias, "shape")) == (2, 3)
+        assert ensure_eager_tensor(res_no_bias).shape == (2, 3)
 
         res_with_bias = linear_ops_mod.linear(inp, weight, bias=bias)
         assert res_with_bias is not None
-        assert as_tensor(_get_attr(res_with_bias, "shape")) == (2, 3)
+        assert ensure_eager_tensor(res_with_bias).shape == (2, 3)
 
         inp1 = Tensor(np.ones((2, 3), dtype=np.float32), TensorConfig((2, 3), "float32", "cpu"))
         inp2 = Tensor(np.ones((2, 4), dtype=np.float32), TensorConfig((2, 4), "float32", "cpu"))
@@ -63,10 +62,10 @@ def test_linear_ops_full_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.nn.linear_ops.einsum", return_value=mock_einsum_out):
             bi_no_bias = linear_ops_mod.bilinear(inp1, inp2, bi_weight, bias=None)
             assert bi_no_bias is not None
-            assert as_tensor(_get_attr(bi_no_bias, "shape")) == (2, 5)
+            assert ensure_eager_tensor(bi_no_bias).shape == (2, 5)
 
             bi_with_bias = linear_ops_mod.bilinear(inp1, inp2, bi_weight, bias=bi_bias)
             assert bi_with_bias is not None
-            assert as_tensor(_get_attr(bi_with_bias, "shape")) == (2, 5)
+            assert ensure_eager_tensor(bi_with_bias).shape == (2, 5)
     finally:
         config.eager_mode = original_eager

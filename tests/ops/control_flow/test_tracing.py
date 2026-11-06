@@ -12,12 +12,11 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import TracingError
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, cond_tracing, map_fn_tracing, pmap_tracing, scan_tracing, stop_gradient_tracing, while_loop_tracing
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -48,18 +47,18 @@ def enable_tracing_mode() -> Iterator[None]:
 
 def test_cond_tracing() -> None:
     """Test function test_cond_tracing."""
-    pred = as_callable(Tensor)(as_callable(MockData)("pred"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
+    pred = ensure_callable(Tensor)(ensure_callable(MockData)("pred"), ensure_callable(TensorConfig)((), DType.Bool, ensure_callable(Device)("cpu")))
 
     def true_fn() -> EagerValue:
         """Test function true_fn."""
-        return as_callable(Tensor)(as_callable(MockData)("t"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+        return ensure_callable(Tensor)(ensure_callable(MockData)("t"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
     def false_fn() -> EagerValue:
         """Test function false_fn."""
-        return as_callable(Tensor)(as_callable(MockData)("f"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+        return ensure_callable(Tensor)(ensure_callable(MockData)("f"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
-    res = as_callable(cond_tracing)(pred, true_fn, false_fn)
-    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
+    res = ensure_callable(cond_tracing)(pred, true_fn, false_fn)
+    assert ensure_eager_tensor(ensure_eager_tensor(res).config).dtype == DType.Float32
 
 
 def test_while_loop_tracing() -> None:
@@ -71,7 +70,7 @@ def test_while_loop_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_callable(Tensor)(as_callable(MockData)("c"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
+        return ensure_callable(Tensor)(ensure_callable(MockData)("c"), ensure_callable(TensorConfig)((), DType.Bool, ensure_callable(Device)("cpu")))
 
     def body_fn(x: EagerValue) -> EagerValue:
         """Test function body_fn.
@@ -79,10 +78,10 @@ def test_while_loop_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return [as_callable(Tensor)(as_callable(MockData)("b"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))]
+        return [ensure_callable(Tensor)(ensure_callable(MockData)("b"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))]
 
-    init_val = as_callable(Tensor)(as_callable(MockData)("init"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
-    res = as_callable(while_loop_tracing)(cond_fn, body_fn, [init_val])
+    init_val = ensure_callable(Tensor)(ensure_callable(MockData)("init"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
+    res = ensure_callable(while_loop_tracing)(cond_fn, body_fn, [init_val])
     assert res[0].config.dtype == DType.Float32
 
 
@@ -96,15 +95,15 @@ def test_scan_tracing() -> None:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
         """
-        new_carry = as_callable(Tensor)(as_callable(MockData)("nc"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+        new_carry = ensure_callable(Tensor)(ensure_callable(MockData)("nc"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
         return [new_carry], [new_carry]
 
-    init = [as_callable(Tensor)(as_callable(MockData)("init"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))]
-    xs = as_callable(Tensor)(as_callable(MockData)("xs"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
+    init = [ensure_callable(Tensor)(ensure_callable(MockData)("init"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))]
+    xs = ensure_callable(Tensor)(ensure_callable(MockData)("xs"), ensure_callable(TensorConfig)((3,), DType.Float32, ensure_callable(Device)("cpu")))
 
-    res_carry, res_ys = as_callable(scan_tracing)(scan_fn, init, xs)
-    assert as_tensor(_get_attr(as_tensor(_get_attr(res_carry, "__getitem__")(0)), "config")).dtype == DType.Float32
-    assert as_tensor(_get_attr(as_tensor(_get_attr(res_ys, "__getitem__")(0)), "config")).dtype == DType.Float32
+    res_carry, res_ys = ensure_callable(scan_tracing)(scan_fn, init, xs)
+    assert ensure_eager_tensor(ensure_eager_tensor(res_carry)[0].config).dtype == DType.Float32
+    assert ensure_eager_tensor(ensure_eager_tensor(res_ys)[0].config).dtype == DType.Float32
 
 
 def test_map_fn_tracing() -> None:
@@ -116,12 +115,12 @@ def test_map_fn_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_callable(Tensor)(as_callable(MockData)("m"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+        return ensure_callable(Tensor)(ensure_callable(MockData)("m"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
-    elems = as_callable(Tensor)(as_callable(MockData)("elems"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
+    elems = ensure_callable(Tensor)(ensure_callable(MockData)("elems"), ensure_callable(TensorConfig)((3,), DType.Float32, ensure_callable(Device)("cpu")))
 
-    res = as_callable(map_fn_tracing)(fn, elems)
-    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
+    res = ensure_callable(map_fn_tracing)(fn, elems)
+    assert ensure_eager_tensor(ensure_eager_tensor(res).config).dtype == DType.Float32
 
 
 def test_pmap_tracing() -> None:
@@ -135,18 +134,18 @@ def test_pmap_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return as_callable(Tensor)(as_callable(MockData)("p"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+        return ensure_callable(Tensor)(ensure_callable(MockData)("p"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
-    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
-    res = as_callable(fn)(x)
-    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
+    x = ensure_callable(Tensor)(ensure_callable(MockData)("x"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
+    res = ensure_callable(fn)(x)
+    assert ensure_eager_tensor(ensure_eager_tensor(res).config).dtype == DType.Float32
 
 
 def test_stop_gradient_tracing() -> None:
     """Test function test_stop_gradient_tracing."""
     from ml_switcheroo_compiler.ops.control_flow.tracing import stop_gradient_tracing
 
-    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+    x = ensure_callable(Tensor)(ensure_callable(MockData)("x"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
     res = stop_gradient_tracing(x)
     assert res.config.dtype == DType.Float32
     assert bool(res.config.requires_grad) is False
@@ -156,7 +155,7 @@ def test_assert_value_tracing() -> None:
     """Test function test_assert_value_tracing."""
     from ml_switcheroo_compiler.ops.control_flow.tracing import assert_value_tracing
 
-    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
+    x = ensure_callable(Tensor)(ensure_callable(MockData)("x"), ensure_callable(TensorConfig)((), DType.Bool, ensure_callable(Device)("cpu")))
     assert_value_tracing(x, "test msg")
 
 
@@ -172,7 +171,7 @@ def test_tracing_error_outside_context() -> None:
     with pytest.raises(TracingError):
         map_fn_tracing(MagicMock(), MagicMock())
     with pytest.raises(TracingError):
-        as_callable(pmap_tracing)(as_callable(MagicMock)())(1)
+        ensure_callable(pmap_tracing)(ensure_callable(MagicMock)())(1)
 
     assert stop_gradient_tracing(1) == 1
 
@@ -203,9 +202,9 @@ def test_while_loop_tensor_init() -> None:
     t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
 
     global_tracing_state.start_tracing()
-    res = as_callable(while_loop_tracing)(c, b, t)
+    res = ensure_callable(while_loop_tracing)(c, b, t)
     global_tracing_state.stop_tracing()
-    assert isinstance(as_tensor(res), Tensor)
+    assert isinstance(ensure_eager_tensor(res), Tensor)
 
 
 def test_flatten_inputs_other() -> None:
@@ -227,7 +226,7 @@ def test_pmap_tracing_other_args() -> None:
 
     t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
     global_tracing_state.start_tracing()
-    res = as_callable(pmap_tracing)(f)(t, 1)
+    res = ensure_callable(pmap_tracing)(f)(t, 1)
     global_tracing_state.stop_tracing()
     assert res is not None
 

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.eager.random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import as_callable, as_tensor, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -59,7 +59,7 @@ class DummyBackend:
             self.rand = lambda *s: "rand_direct"
             self.randn = lambda *s: "randn_direct"
 
-        self.arrays = as_tensor_list([])
+        self.arrays = ensure_tensor_list([])
 
     def array(self, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
         """Test function array.
@@ -68,36 +68,40 @@ class DummyBackend:
             data: Test parameter `data`.
             dtype: Test parameter `dtype`.
         """
-        as_callable(self.arrays.append)((data, dtype))
+        ensure_callable(self.arrays.append)((data, dtype))
         return "array_res"
 
 
 def test_random_ops() -> None:
     """Test function test_random_ops."""
+
+    class _BareDummy:
+        """Empty dummy class without attributes."""
+
     bk_arr = DummyBackend()
-    bk_no_arr = object()
+    bk_no_arr = _BareDummy()
 
-    assert prng_key(as_tensor(bk_arr), 42) == "array_res"
+    assert prng_key(ensure_eager_tensor(bk_arr), 42) == "array_res"
     assert bk_arr.arrays[-1] == ([0, 42], "uint32")
-    assert prng_key(as_tensor(bk_no_arr), 42) == [0, 42]
+    assert prng_key(ensure_eager_tensor(bk_no_arr), 42) == [0, 42]
 
-    res1 = random_split(as_tensor(bk_arr), None, 2)
+    res1 = random_split(ensure_eager_tensor(bk_arr), None, 2)
     assert res1 == "array_res"
     assert len(bk_arr.arrays[-1][0]) == 2
 
-    res2 = random_split(as_tensor(bk_no_arr), None, 2)
-    assert as_callable(len)(res2) == 2
+    res2 = random_split(ensure_eager_tensor(bk_no_arr), None, 2)
+    assert ensure_callable(len)(res2) == 2
 
-    assert random_fold_in(as_tensor(bk_arr), [1, 2], 3) == "array_res"
+    assert random_fold_in(ensure_eager_tensor(bk_arr), [1, 2], 3) == "array_res"
     assert bk_arr.arrays[-1] == ([4, 2], "uint32")
-    assert random_fold_in(as_tensor(bk_no_arr), [1, 2], 3) == [4, 2]
-    assert random_fold_in(as_tensor(bk_no_arr), as_tensor(object()), 3) == [3, 0]  # non subscriptable
+    assert random_fold_in(ensure_eager_tensor(bk_no_arr), [1, 2], 3) == [4, 2]
+    assert random_fold_in(ensure_eager_tensor(bk_no_arr), ensure_eager_tensor(_BareDummy()), 3) == [3, 0]  # non subscriptable
 
     # Rand
     bk_rand1 = DummyBackend(use_random=True)
-    assert rand(as_tensor(bk_rand1), (2, 2)) == "rand"
+    assert rand(ensure_eager_tensor(bk_rand1), (2, 2)) == "rand"
     bk_rand2 = DummyBackend(use_method=True)
-    assert rand(as_tensor(bk_rand2), shape=(2, 2)) == "rand_direct"
+    assert rand(ensure_eager_tensor(bk_rand2), shape=(2, 2)) == "rand_direct"
 
     import pytest
 
@@ -107,18 +111,18 @@ def test_random_ops() -> None:
         pass
 
     with pytest.raises(AttributeError):
-        rand(as_tensor(DummyFallback()), (2, 2))
+        rand(ensure_eager_tensor(DummyFallback()), (2, 2))
 
     # Randn
-    assert randn(as_tensor(bk_rand1), (2, 2)) == "randn"
-    assert randn(as_tensor(bk_rand2), shape=(2, 2)) == "randn_direct"
+    assert randn(ensure_eager_tensor(bk_rand1), (2, 2)) == "randn"
+    assert randn(ensure_eager_tensor(bk_rand2), shape=(2, 2)) == "randn_direct"
     with pytest.raises(AttributeError):
-        randn(as_tensor(DummyFallback()), (2, 2))
+        randn(ensure_eager_tensor(DummyFallback()), (2, 2))
 
     # Randint
-    assert randint(as_tensor(bk_rand1), 0, 10, (2, 2)) == "randint"
+    assert randint(ensure_eager_tensor(bk_rand1), 0, 10, (2, 2)) == "randint"
     with pytest.raises(AttributeError):
-        randint(as_tensor(DummyFallback()), 0, 10, (2, 2))
+        randint(ensure_eager_tensor(DummyFallback()), 0, 10, (2, 2))
 
 
 def test_rand_coverage_auto() -> None:
@@ -135,7 +139,7 @@ def test_rand_coverage_auto() -> None:
             """
             return "uniform_" + str(size)
 
-    assert rand(as_tensor(ModUniform()), shape=(2,)) == "uniform_(2,)"
+    assert rand(ensure_eager_tensor(ModUniform()), shape=(2,)) == "uniform_(2,)"
 
     class ModRand:
         """Test class ModRand."""
@@ -155,7 +159,7 @@ def test_rand_coverage_auto() -> None:
             """
             return "rand_" + str(args)
 
-    assert rand(as_tensor(ModRand()), shape=(2, 3)) == "rand_(2, 3)"
+    assert rand(ensure_eager_tensor(ModRand()), shape=(2, 3)) == "rand_(2, 3)"
 
 
 def test_randn_coverage_auto() -> None:
@@ -172,7 +176,7 @@ def test_randn_coverage_auto() -> None:
             """
             return "normal_" + str(size)
 
-    assert randn(as_tensor(ModNormal()), shape=(2,)) == "normal_(2,)"
+    assert randn(ensure_eager_tensor(ModNormal()), shape=(2,)) == "normal_(2,)"
 
     class ModRandn:
         """Test class ModRandn."""
@@ -192,7 +196,7 @@ def test_randn_coverage_auto() -> None:
             """
             return "randn_" + str(args)
 
-    assert randn(as_tensor(ModRandn()), shape=(2, 3)) == "randn_(2, 3)"
+    assert randn(ensure_eager_tensor(ModRandn()), shape=(2, 3)) == "randn_(2, 3)"
 
 
 def test_rand_uniform() -> None:

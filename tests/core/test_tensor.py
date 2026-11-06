@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import operator
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor, as_tensor_list
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -76,8 +76,8 @@ def test_variable_assign() -> None:
 
         id = "dummy"
 
-    _set_attr(v, "_data", FakeData())
-    _set_attr(t, "_data", FakeData())
+    ensure_mutable(v)._data = ensure_eager_tensor(FakeData())
+    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
 
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value=None):
         with patch("ml_switcheroo_compiler.ops.registry.get_util", return_value=lambda *a, **k: None):
@@ -105,8 +105,8 @@ def test_parameter() -> None:
             """Test function __int__."""
             return 42
 
-    _set_attr(p, "numpy", lambda: 42)
-    assert _get_attr(p, "__index__")() == 42
+    ensure_mutable(p).numpy = ensure_eager_tensor(lambda: 42)
+    assert operator.index(p) == 42
 
 
 def test_tensor_config_list_shape_and_parse_dim() -> None:
@@ -121,7 +121,7 @@ def test_tensor_config_list_shape_and_parse_dim() -> None:
 
     # 172, 173 - will happen when passing "dynamic" to Tensor config shape
     t = Tensor(np.array([1, 2]), c)
-    assert as_tensor(t.shape) == as_tensor((2, "dynamic"))
+    assert ensure_eager_tensor(t.shape) == ensure_eager_tensor((2, "dynamic"))
 
 
 def test_tensor_eval_already_in_graph() -> None:
@@ -145,7 +145,7 @@ def test_tensor_eval_already_in_graph() -> None:
 
         id = "n1"
 
-    _set_attr(t, "_data", FakeData())
+    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
     assert t.eval() is t
     config.eager_mode = True
     global_tracing_state.stop_tracing()
@@ -167,7 +167,7 @@ def test_tensor_eval_not_tracing() -> None:
 
         id = "n1"
 
-    _set_attr(t, "_data", FakeData())
+    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
 
     # 190, 194 where global_tracing_state.is_tracing is False
     global_tracing_state.is_tracing = False
@@ -189,14 +189,14 @@ def test_tensor_view_list_shape() -> None:
 
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_get_frontend:
         mock_get_frontend.return_value = lambda x, shape: Tensor(np.zeros(shape), TensorConfig(shape=shape, dtype="float32", device="cpu"))
-        res = as_callable(t.view)([4])
-        assert as_tensor(_get_attr(res, "shape")) == (4,)
+        res = ensure_callable(t.view)([4])
+        assert ensure_eager_tensor(res).shape == (4,)
 
         res2 = t.view(2, 2)
-        assert as_tensor(_get_attr(res2, "shape")) == (2, 2)
+        assert ensure_eager_tensor(res2).shape == (2, 2)
 
-        res3 = as_callable(t.view)((4,))
-        assert as_tensor(_get_attr(res3, "shape")) == (4,)
+        res3 = ensure_callable(t.view)((4,))
+        assert ensure_eager_tensor(res3).shape == (4,)
 
 
 def test_tensor_eval_branches() -> None:
@@ -220,11 +220,11 @@ def test_tensor_eval_branches() -> None:
 
         def __init__(self) -> None:
             """Initialize DummyGraph."""
-            self.outputs = as_tensor_list([])
+            self.outputs = ensure_tensor_list([])
 
     graph_inst = DummyGraph()
     global_tracing_state.is_tracing = True
-    _set_attr(global_tracing_state, "active_graph", graph_inst)
+    ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(graph_inst)
 
     # Create an object with an id
     class DummyData:
@@ -232,7 +232,7 @@ def test_tensor_eval_branches() -> None:
 
         id = "test_id"
 
-    t2 = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((), "float32", "cpu"))
+    t2 = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((), "float32", "cpu"))
 
     # Not in graph outputs -> append
     assert t2.eval() is t2
@@ -264,7 +264,7 @@ def test_tensor_contiguous() -> None:
             return "cpu"
 
     assert TensorConfig(shape=None, dtype=None, device=None).shape == ()
-    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=as_tensor(CustomDev())).shape == ()
+    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=ensure_eager_tensor(CustomDev())).shape == ()
     t = Tensor(np.array(1), TensorConfig((), "float32", "cpu"))
     assert t.contiguous() is t
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend", return_value=lambda x, shape: x):

@@ -8,9 +8,20 @@ from ml_switcheroo_compiler.backends.eager.utils import (
     _from_numpy_array,
     _to_numpy_array,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_shape, as_tensor, as_tensor_pair, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_int_list,
+    ensure_opt_str,
+    ensure_shape,
+    ensure_tensor_pair,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
 
 from .vision_utils import (
@@ -20,6 +31,7 @@ from .vision_utils import (
     _compute_perspective_matrix,
     _np_map_coordinates,
     _resolve_backend_mod,
+    _resolve_backend_name,
 )
 
 
@@ -39,7 +51,7 @@ def _standardize_image_input(
         tuple[EagerTensorProtocol, bool]: 4D array and flag indicating if original input was 3D.
     """
     mod = _resolve_backend_mod(np_mod)
-    arr_t = as_tensor(arr)
+    arr_t = ensure_eager_tensor(arr)
     if arr_t.ndim == 2:
         return arr_t[None, :, :, None], False
     if arr_t.ndim == 3:
@@ -61,10 +73,10 @@ def _invert_homography(np_mod: BackendModuleProtocol, h_fwd: EagerValue) -> Eage
     Returns:
         EagerValue: Inverse homography matrix mapping destination to source.
     """
-    h_fwd_t = as_tensor(h_fwd)
+    h_fwd_t = ensure_eager_tensor(h_fwd)
     if h_fwd_t.ndim == 2:
-        return as_tensor(_get_attr(np_mod, "linalg").inv(h_fwd_t))
-    return as_tensor(_get_attr(np_mod, "stack")([_get_attr(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
+        return ensure_eager_tensor(get_backend_member(np_mod, "linalg").inv(h_fwd_t))
+    return ensure_eager_tensor(get_backend_member(np_mod, "stack")([get_backend_member(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
 
 
 def perspective_transform_eager(
@@ -90,11 +102,11 @@ def perspective_transform_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = _get_attr(config, "data_format", None)
+    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     out: EagerTensorProtocol
@@ -103,7 +115,7 @@ def perspective_transform_eager(
     else:
         h_fwd = _compute_perspective_matrix(np_mod, start_points, end_points)
         h_inv = _invert_homography(np_mod, h_fwd)
-        out = as_tensor(_apply_perspective_batch(np_mod, arr, h_inv, config))
+        out = ensure_eager_tensor(_apply_perspective_batch(np_mod, arr, h_inv, config))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -128,26 +140,26 @@ def _apply_elastic_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, config
         return 0
 
     np_mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = as_shape(_get_attr(imgs, "shape"))
-    out = _get_attr(np_mod, "zeros_like")(imgs)
+    b_count, _, _, c_count = ensure_shape(get_backend_member(imgs, "shape"))
+    out = get_backend_member(np_mod, "zeros_like")(imgs)
 
-    y_coords = as_tensor(config.new_y)
-    x_coords = as_tensor(config.new_x)
+    y_coords = ensure_eager_tensor(config.new_y)
+    x_coords = ensure_eager_tensor(config.new_x)
 
     for b in range(b_count):
-        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if _get_attr(y_coords, "ndim", 2) == 3 else 0
-        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if _get_attr(x_coords, "ndim", 2) == 3 else 0
-        y_b = y_coords[y_idx] if _get_attr(y_coords, "ndim", 2) == 3 else y_coords
-        x_b = x_coords[x_idx] if _get_attr(x_coords, "ndim", 2) == 3 else x_coords
+        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if get_backend_member(y_coords, "ndim", 2) == 3 else 0
+        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if get_backend_member(x_coords, "ndim", 2) == 3 else 0
+        y_b = y_coords[y_idx] if get_backend_member(y_coords, "ndim", 2) == 3 else y_coords
+        x_b = x_coords[x_idx] if get_backend_member(x_coords, "ndim", 2) == 3 else x_coords
         for c in range(c_count):
             out[b, :, :, c] = _np_map_coordinates(
                 np_mod,
-                as_tensor(imgs)[b, :, :, c],
+                ensure_eager_tensor(imgs)[b, :, :, c],
                 (y_b, x_b),
                 order=config.order,
                 fill_value=config.fill_value,
             )
-    return as_tensor(out)
+    return ensure_eager_tensor(out)
 
 
 class ElasticGridContext(pydantic.BaseModel):
@@ -186,16 +198,16 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
     h = ctx.H
     w = ctx.W
 
-    y_grid, x_grid = _get_attr(np_mod, "meshgrid")(
-        _get_attr(np_mod, "arange")(h, dtype=_get_attr(np_mod, "float32")),
-        _get_attr(np_mod, "arange")(w, dtype=_get_attr(np_mod, "float32")),
+    y_grid, x_grid = get_backend_member(np_mod, "meshgrid")(
+        get_backend_member(np_mod, "arange")(h, dtype=get_backend_member(np_mod, "float32")),
+        get_backend_member(np_mod, "arange")(w, dtype=get_backend_member(np_mod, "float32")),
         indexing="ij",
     )
 
     if ctx.disp is None or (isinstance(ctx.disp, (int, float)) and ctx.disp == 0):
         return (y_grid, x_grid)
 
-    disp = _get_attr(np_mod, "asarray")(ctx.disp, dtype=_get_attr(np_mod, "float32"))
+    disp = get_backend_member(np_mod, "asarray")(ctx.disp, dtype=get_backend_member(np_mod, "float32"))
     if disp.ndim == 3:
         if disp.shape[0] == 2:
             dy, dx = disp[0], disp[1]
@@ -207,7 +219,7 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
         else:
             dy, dx = disp[..., 0], disp[..., 1]
     else:
-        dy, dx = _get_attr(np_mod, "zeros")((h, w), dtype=_get_attr(np_mod, "float32")), _get_attr(np_mod, "zeros")((h, w), dtype=_get_attr(np_mod, "float32"))
+        dy, dx = get_backend_member(np_mod, "zeros")((h, w), dtype=get_backend_member(np_mod, "float32")), get_backend_member(np_mod, "zeros")((h, w), dtype=get_backend_member(np_mod, "float32"))
 
     return (y_grid + dy, x_grid + dx)
 
@@ -233,11 +245,11 @@ def elastic_transform_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = _get_attr(config, "data_format", None)
+    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, _ = arr.shape
@@ -245,15 +257,15 @@ def elastic_transform_eager(
     if displacement is None:
         out = arr.copy()
     else:
-        interp_name = _get_attr(config, "interpolation", "bilinear")
+        interp_name = get_backend_member(config, "interpolation", "bilinear")
         order = _get_resize_interpolation_order(interp_name)
-        fill_val = float(_get_attr(config, "fill_value", 0.0))
+        fill_val = float(get_backend_member(config, "fill_value", 0.0))
 
         ctx = ElasticGridContext(np_mod=np_mod, H=h, W=w, B=b, disp=displacement)
-        elastic_grid = as_tensor_pair(_compute_elastic_grid(ctx))
+        elastic_grid = ensure_tensor_pair(_compute_elastic_grid(ctx))
         new_y, new_x = elastic_grid[0], elastic_grid[1]
         cfg = TransformInterpolationConfig(order=order, fill_value=fill_val, new_y=new_y, new_x=new_x)
-        out = as_tensor(_apply_elastic_batch(np_mod, arr, cfg))
+        out = ensure_eager_tensor(_apply_elastic_batch(np_mod, arr, cfg))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -296,24 +308,24 @@ def _compute_resize_grid(np_mod: BackendModuleProtocol, ctx: ResizeContext | Non
     h, w = ctx.H, ctx.W
     new_h, new_w = ctx.new_H, ctx.new_W
     align_corners = ctx.align_corners
-    half_pixel = _get_attr(ctx, "half_pixel_centers", False)
+    half_pixel = get_backend_member(ctx, "half_pixel_centers", False)
 
     if align_corners:
         scale_y = (h - 1.0) / max(new_h - 1.0, 1.0) if new_h > 1 else 0.0
-        y_coords = _get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) * scale_y
+        y_coords = get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) * scale_y
         scale_x = (w - 1.0) / max(new_w - 1.0, 1.0) if new_w > 1 else 0.0
-        x_coords = _get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) * scale_x
+        x_coords = get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) * scale_x
     else:
         scale_y = float(h) / float(new_h)
         scale_x = float(w) / float(new_w)
         if half_pixel:
-            y_coords = (_get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) + 0.5) * scale_y - 0.5
-            x_coords = (_get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) + 0.5) * scale_x - 0.5
+            y_coords = (get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) + 0.5) * scale_y - 0.5
+            x_coords = (get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) + 0.5) * scale_x - 0.5
         else:
-            y_coords = _get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) * scale_y
-            x_coords = _get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) * scale_x
+            y_coords = get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) * scale_y
+            x_coords = get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) * scale_x
 
-    return as_tensor(_get_attr(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
+    return ensure_eager_tensor(get_backend_member(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
 
 
 def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: EagerValue, coords: EagerValue, order: int) -> EagerValue:
@@ -333,16 +345,16 @@ def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: Ea
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = as_shape(_get_attr(imgs, "shape"))
-    y_coords, x_coords = as_tensor_pair(coords)
+    b_count, _, _, c_count = ensure_shape(get_backend_member(imgs, "shape"))
+    y_coords, x_coords = ensure_tensor_pair(coords)
 
-    target_out: EagerTensorProtocol = as_tensor(out) if out is not None and _has_attr(out, "__setitem__") else _get_attr(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=_get_attr(imgs, "dtype"))
+    target_out: EagerTensorProtocol = ensure_eager_tensor(out) if out is not None and (has_backend_member(out, "shape") or isinstance(out, list)) else get_backend_member(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=get_backend_member(imgs, "dtype"))
 
     for b in range(b_count):
         for c in range(c_count):
             target_out[b, :, :, c] = _np_map_coordinates(
                 mod,
-                as_tensor(imgs)[b, :, :, c],
+                ensure_eager_tensor(imgs)[b, :, :, c],
                 (y_coords, x_coords),
                 order=order,
                 fill_value=0.0,
@@ -369,12 +381,12 @@ def _extract_upsample_size(
     if size is not None:
         if isinstance(size, int):
             return (size,) * dim_count
-        return tuple(_get_attr(size, "__iter__")())
+        return tuple(int(x) for x in ensure_int_list(size))
 
     if scale_factor is not None:
         if isinstance(scale_factor, (int, float)):
             return tuple(int(dim * scale_factor) for dim in spatial_shape)
-        return tuple(int(dim * factor) for dim, factor in zip(spatial_shape, _get_attr(scale_factor, "__iter__")()))
+        return tuple(int(dim * float(ensure_float(factor))) for dim, factor in zip(spatial_shape, ensure_eager_list(scale_factor)))
 
     return spatial_shape
 
@@ -397,9 +409,9 @@ def _upsample_1d_linear(
         EagerValue: Upsampled 1D array of shape (B, C, target_len).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, orig_len = as_shape(_get_attr(x, "shape"))
+    b, c, orig_len = ensure_shape(get_backend_member(x, "shape"))
     if orig_len == target_len:
-        return as_tensor(_get_attr(x, "copy")())
+        return ensure_eager_tensor(get_backend_member(x, "copy")())
 
     if align_corners:
         scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
@@ -412,10 +424,10 @@ def _upsample_1d_linear(
     i1 = mod.clip(i0 + 1, 0, orig_len - 1)
     w = mod.clip(src - i0, 0.0, 1.0)
 
-    out = mod.zeros((b, c, target_len), dtype=_get_attr(x, "dtype"))
+    out = mod.zeros((b, c, target_len), dtype=get_backend_member(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            out[b_idx, c_idx] = (1.0 - w) * as_tensor(x)[b_idx, c_idx, i0] + w * as_tensor(x)[b_idx, c_idx, i1]
+            out[b_idx, c_idx] = (1.0 - w) * ensure_eager_tensor(x)[b_idx, c_idx, i0] + w * ensure_eager_tensor(x)[b_idx, c_idx, i1]
     return out
 
 
@@ -437,7 +449,7 @@ def _upsample_3d_trilinear(
         EagerValue: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, d, h, w = as_shape(_get_attr(x, "shape"))
+    b, c, d, h, w = ensure_shape(get_backend_member(x, "shape"))
     td, th, tw = target_shape
 
     def _get_coords(orig_len: int, target_len: int) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
@@ -465,10 +477,10 @@ def _upsample_3d_trilinear(
     h0, h1, wh = _get_coords(h, th)
     w0, w1, ww = _get_coords(w, tw)
 
-    out = mod.zeros((b, c, td, th, tw), dtype=_get_attr(x, "dtype"))
+    out = mod.zeros((b, c, td, th, tw), dtype=get_backend_member(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            vol = as_tensor(x)[b_idx, c_idx]
+            vol = ensure_eager_tensor(x)[b_idx, c_idx]
             for z in range(td):
                 for y in range(th):
                     c000 = vol[d0[z], h0[y], w0]
@@ -509,7 +521,7 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -579,7 +591,7 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -640,7 +652,7 @@ def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerV
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -690,20 +702,20 @@ def resize_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = _get_attr(backend_module, "__name__", "numpy")
+    name: str = _resolve_backend_name(backend_module)
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = _get_attr(config, "data_format", None)
+    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, c = arr.shape
     new_h, new_w = size
 
-    interp_name = _get_attr(config, "interpolation", "bilinear")
+    interp_name = get_backend_member(config, "interpolation", "bilinear")
     order = _get_resize_interpolation_order(interp_name)
-    align_corners = bool(_get_attr(config, "align_corners", False))
-    half_pixel = bool(_get_attr(config, "half_pixel_centers", False))
+    align_corners = bool(get_backend_member(config, "align_corners", False))
+    half_pixel = bool(get_backend_member(config, "half_pixel_centers", False))
 
     ctx = ResizeContext(
         H=h,
@@ -715,7 +727,7 @@ def resize_eager(
     )
     coords = _compute_resize_grid(np_mod, ctx)
     out: EagerTensorProtocol = np_mod.zeros((b, new_h, new_w, c), dtype=arr.dtype)
-    out = as_tensor(_apply_resize_batch(np_mod, arr, out, coords, order=order))
+    out = ensure_eager_tensor(_apply_resize_batch(np_mod, arr, out, coords, order=order))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))

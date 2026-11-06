@@ -8,8 +8,7 @@ from unittest.mock import MagicMock, patch
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
-from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,15 +22,15 @@ def test_numpy_type_translator() -> None:
 def test_numpy_ast_visitor() -> None:
     """Test function test_numpy_ast_visitor."""
     kwargs = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
-    assert as_callable(NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
+    assert ensure_callable(NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
 
     node = MagicMock(op_type="Parameter")
     node.id = "p1"
     assert NumpyASTVisitor.visit_Parameter(node, ["p1"]) == "p1 = None # Parameter"
 
-    assert as_callable(NumpyASTVisitor.visit_Return)(None, []) == "return None"
-    assert as_callable(NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
-    assert as_callable(NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
+    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, []) == "return None"
+    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
+    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
 
     node = MagicMock(op_type="Sum")
     assert NumpyASTVisitor.generic_visit(node, ["a"], dimension=1) == "np.sum(a, axis=1)"
@@ -113,13 +112,13 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     # Test passing raw numpy array
     res1 = fn_aot(np.array([1.0, 2.0]))
     assert isinstance(res1, Tensor)
-    as_callable(np.testing.assert_array_equal)(res1.data, as_callable(np.array)([1.0, 2.0]))
+    ensure_callable(np.testing.assert_array_equal)(res1.data, ensure_callable(np.array)([1.0, 2.0]))
 
     # Test passing Tensor input
     t_in = Tensor(np.array([3.0]), TensorConfig((1,), DType.Float32, Device("cpu")))
     res2 = fn_aot(t_in)
     assert isinstance(res2, Tensor)
-    as_callable(np.testing.assert_array_equal)(res2.data, as_callable(np.array)([3.0]))
+    ensure_callable(np.testing.assert_array_equal)(res2.data, ensure_callable(np.array)([3.0]))
 
     # Test returning Tensor directly
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y": t_in}):
@@ -142,9 +141,9 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y1": t_in, "y2": np.array([4.0])}):
         fn_multi = gen.compile_aot(g_multi)
         outs = fn_multi(t_in)
-        assert as_callable(len)(outs) == 2
-        assert id(as_tensor(_get_attr(outs, "__getitem__")(0))) == id(t_in)
-        assert isinstance(as_tensor(_get_attr(outs, "__getitem__")(1)), Tensor)
+        assert ensure_callable(len)(outs) == 2
+        assert id(ensure_eager_tensor(outs)[0]) == id(t_in)
+        assert isinstance(ensure_eager_tensor(outs)[1], Tensor)
 
     # 4. compile_aot with no outputs
     g_empty = LogicalGraph("g_empty")
@@ -153,4 +152,4 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     assert fn_empty() is None
 
     assert NumpyGenerator.get_module() is np
-    assert _has_attr(NumpyGenerator.get_scipy_module("special"), "erf")
+    assert ensure_eager_tensor(NumpyGenerator.get_scipy_module("special")).erf is not None

@@ -3,20 +3,64 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 import struct
 import sys
+import typing
 import zlib
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_eager_list, as_int, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    ensure_callable,
+    ensure_eager_list,
+    ensure_eager_tensor,
+    ensure_int,
+)
+from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr, _set_attr
 
 DEFAULT_CHUNK_SIZE: int = 16384
 HIGH_WATERMARK_BYTES: int = 65536
 LOW_WATERMARK_BYTES: int = 16384
+
+
+class _WebRTCChannelProtocol(typing.Protocol):
+    """Protocol for WebRTC data channel objects with mutable event handler properties."""
+
+    onmessage: EagerValue
+    on_message: EagerValue
+    bufferedAmountLowThreshold: int
+    buffered_amount_low_threshold: int
+    onbufferedamountlow: EagerValue
+    on_buffered_amount_low: EagerValue
+
+
+def _is_webrtc_channel(val: EagerValue) -> typing.TypeGuard[_WebRTCChannelProtocol]:
+    """Type guard narrowing `val` to `_WebRTCChannelProtocol`.
+
+    Args:
+        val (EagerValue): Candidate data channel object.
+
+    Returns:
+        bool: True for runtime channel instances.
+    """
+    return not isinstance(val, bytes) or len(val) >= 0
+
+
+def _as_tensor_seq(val: EagerValue) -> Sequence[EagerTensorProtocol]:
+    """Narrow `val` to a sequence of `EagerTensorProtocol` chunks.
+
+    Args:
+        val (EagerValue): Split tensor chunks sequence.
+
+    Returns:
+        Sequence[EagerTensorProtocol]: Typed sequence of tensor chunks.
+    """
+    return [ensure_eager_tensor(item) for item in ensure_eager_list(val)]
 
 
 class WebRTCDataChannelStream:
@@ -55,20 +99,22 @@ class WebRTCDataChannelStream:
 
     def _setup_event_handlers(self) -> None:
         """Attach onmessage and onbufferedamountlow handlers if supported by channel."""
-        if _has_attr(self.channel, "onmessage"):
-            _set_attr(self.channel, "onmessage", self._on_message)
-        elif _has_attr(self.channel, "on_message"):
-            _set_attr(self.channel, "on_message", self._on_message)
+        ch = self.channel
+        assert _is_webrtc_channel(ch)
+        if has_backend_member(ch, "onmessage"):
+            ch.onmessage = self._on_message
+        elif has_backend_member(ch, "on_message"):
+            ch.on_message = self._on_message
 
-        if _has_attr(self.channel, "bufferedAmountLowThreshold"):
-            _set_attr(self.channel, "bufferedAmountLowThreshold", self.low_watermark)
-        elif _has_attr(self.channel, "buffered_amount_low_threshold"):
-            _set_attr(self.channel, "buffered_amount_low_threshold", self.low_watermark)
+        if has_backend_member(ch, "bufferedAmountLowThreshold"):
+            ch.bufferedAmountLowThreshold = self.low_watermark
+        elif has_backend_member(ch, "buffered_amount_low_threshold"):
+            ch.buffered_amount_low_threshold = self.low_watermark
 
-        if _has_attr(self.channel, "onbufferedamountlow"):
-            _set_attr(self.channel, "onbufferedamountlow", self._on_buffered_amount_low)
-        elif _has_attr(self.channel, "on_buffered_amount_low"):
-            _set_attr(self.channel, "on_buffered_amount_low", self._on_buffered_amount_low)
+        if has_backend_member(ch, "onbufferedamountlow"):
+            ch.onbufferedamountlow = self._on_buffered_amount_low
+        elif has_backend_member(ch, "on_buffered_amount_low"):
+            ch.on_buffered_amount_low = self._on_buffered_amount_low
 
     def _on_message(self, event_or_data: EagerValue) -> None:
         """Event listener for incoming RTCDataChannel binary and text messages.
@@ -76,17 +122,17 @@ class WebRTCDataChannelStream:
         Args:
             event_or_data (EagerValue): RTCDataChannel message event or raw byte payload.
         """
-        payload = _get_attr(event_or_data, "data", event_or_data)
+        payload = get_backend_member(event_or_data, "data", event_or_data)
         if isinstance(payload, bytes):
             self._recv_queue.put_nowait(payload)
         elif isinstance(payload, str):
             self._recv_queue.put_nowait(payload.encode("utf-8"))
-        elif _has_attr(payload, "tobytes"):
-            self._recv_queue.put_nowait(bytes(_get_attr(payload, "tobytes")()))
+        elif has_backend_member(payload, "tobytes"):
+            self._recv_queue.put_nowait(bytes(ensure_eager_tensor(payload).tobytes()))
         else:
-            from ml_switcheroo_compiler.backends.eager_registry import as_bytes
+            from ml_switcheroo_compiler.backends.eager_registry import ensure_bytes
 
-            self._recv_queue.put_nowait(as_bytes(payload))
+            self._recv_queue.put_nowait(ensure_bytes(payload))
 
     def _on_buffered_amount_low(self, event: EagerValue | None = None) -> None:
         """Event listener for RTCDataChannel bufferedamountlow event.
@@ -102,16 +148,16 @@ class WebRTCDataChannelStream:
         Returns:
             int: Number of queued bytes.
         """
-        amt = _get_attr(self.channel, "bufferedAmount", _get_attr(self.channel, "buffered_amount", 0))
+        amt = get_backend_member(self.channel, "bufferedAmount", get_backend_member(self.channel, "buffered_amount", 0))
         if callable(amt):
-            return int(amt())
-        return int(amt)
+            return int(ensure_int(amt()))
+        return int(ensure_int(amt))
 
     async def wait_backpressure(self) -> None:
         """Pause execution when bufferedAmount exceeds high watermark until drained."""
         if self.get_buffered_amount() > self.high_watermark:
             self._drain_event.clear()
-            drain_fn = _get_attr(self.channel, "wait_drain", None)
+            drain_fn = get_backend_member(self.channel, "wait_drain", None)
             if callable(drain_fn):
                 if asyncio.iscoroutinefunction(drain_fn):
                     await drain_fn()
@@ -133,22 +179,22 @@ class WebRTCDataChannelStream:
         Args:
             data (bytes): Byte payload to transmit.
         """
-        if _has_attr(self.channel, "send"):
-            send_fn = _get_attr(self.channel, "send")
+        if has_backend_member(self.channel, "send"):
+            send_fn = ensure_callable(get_backend_member(self.channel, "send"))
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
                 res = send_fn(data)
-                if asyncio.iscoroutine(res):
-                    await res
-        elif _has_attr(self.channel, "sendMessage"):
-            send_fn = _get_attr(self.channel, "sendMessage")
+                if inspect.isawaitable(res):
+                    await ensure_eager_tensor(res)
+        elif has_backend_member(self.channel, "sendMessage"):
+            send_fn = ensure_callable(get_backend_member(self.channel, "sendMessage"))
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
                 res = send_fn(data)
-                if asyncio.iscoroutine(res):
-                    await res
+                if inspect.isawaitable(res):
+                    await ensure_eager_tensor(res)
 
     async def recv_bytes(self) -> bytes:
         """Receive the next chunk from the incoming queue or channel.
@@ -158,7 +204,7 @@ class WebRTCDataChannelStream:
         """
         if not self._recv_queue.empty():
             return await self._recv_queue.get()
-        recv_fn = _get_attr(self.channel, "recv", None)
+        recv_fn = get_backend_member(self.channel, "recv", None)
         if callable(recv_fn):
             if asyncio.iscoroutinefunction(recv_fn):
                 res = await recv_fn()
@@ -166,7 +212,9 @@ class WebRTCDataChannelStream:
                 res = recv_fn()
                 if asyncio.iscoroutine(res):
                     res = await res
-            return bytes(res) if not isinstance(res, bytes) else res
+            from ml_switcheroo_compiler.backends.eager_registry import ensure_bytes
+
+            return ensure_bytes(res) if not isinstance(res, bytes) else res
         return await self._recv_queue.get()
 
 
@@ -179,9 +227,9 @@ async def _send_data(conn: EagerValue | WebRTCDataChannelStream, data: EagerValu
         chunk_size (int): Size of individual binary chunks in bytes.
     """
     stream = conn if isinstance(conn, WebRTCDataChannelStream) else WebRTCDataChannelStream(conn, chunk_size=chunk_size)
-    arr = as_tensor(data)
+    arr = ensure_eager_tensor(data)
     dtype_obj = arr.dtype
-    arr_byteorder = str(_get_attr(dtype_obj, "byteorder", "="))
+    arr_byteorder = str(get_backend_member(dtype_obj, "byteorder", "="))
 
     native_order = "<" if sys.byteorder == "little" else ">"
     byteorder = native_order if arr_byteorder in ("=", "|") else arr_byteorder
@@ -193,7 +241,7 @@ async def _send_data(conn: EagerValue | WebRTCDataChannelStream, data: EagerValu
     meta = {
         "protocol": "webrtc_stream_v1",
         "shape": list(arr.shape),
-        "dtype": str(_get_attr(dtype_obj, "str", dtype_obj)),
+        "dtype": str(get_backend_member(dtype_obj, "str", dtype_obj)),
         "byteorder": byteorder,
         "total_bytes": total_bytes,
         "num_chunks": num_chunks,
@@ -258,13 +306,13 @@ async def _recv_data(conn: EagerValue | WebRTCDataChannelStream) -> EagerValue:
     if len(payload) != total_bytes:
         raise ValueError(f"Payload length mismatch: expected {total_bytes}, got {len(payload)}")
 
-    arr = as_tensor(get_active_backend().execute_op("frombuffer", payload, dtype=dtype_str)).reshape(shape)
+    arr = ensure_eager_tensor(get_active_backend().execute_op("frombuffer", payload, dtype=dtype_str)).reshape(shape)
 
     native_order = "<" if sys.byteorder == "little" else ">"
     if expected_byteorder in ("<", ">") and expected_byteorder != native_order:
-        arr = arr.astype(_get_attr(arr.dtype, "newbyteorder")("="))
+        arr = arr.astype(ensure_mod(arr.dtype).newbyteorder("="))
 
-    return as_tensor(arr.copy())
+    return ensure_eager_tensor(arr.copy())
 
 
 async def broadcast(
@@ -293,7 +341,7 @@ async def broadcast(
             if i != rank and conn is not None:
                 tasks.append(_send_data(conn, tensor))
         await asyncio.gather(*tasks)
-        return as_tensor(tensor).copy()
+        return ensure_eager_tensor(tensor).copy()
     else:
         conn = conns[root_rank]
         if conn is None:
@@ -323,7 +371,7 @@ async def ring_all_reduce(
     """
     world_size = len(conns)
     if world_size <= 1:
-        return as_tensor(tensor).copy()
+        return ensure_eager_tensor(tensor).copy()
 
     op_upper = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -337,7 +385,7 @@ async def ring_all_reduce(
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
     backend = get_active_backend()
-    split_chunks = _cast_val("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=0))
+    split_chunks = _as_tensor_seq(backend.execute_op("array_split", tensor, world_size, axis=0))
     chunks: list[EagerValue] = [c.copy() for c in split_chunks]
 
     def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -350,8 +398,8 @@ async def ring_all_reduce(
         Returns:
             EagerValue: Result of the reduction.
         """
-        a_t = as_tensor(a)
-        b_t = as_tensor(b)
+        a_t = ensure_eager_tensor(a)
+        b_t = ensure_eager_tensor(b)
         if op_upper == "SUM":
             return a_t + b_t
         elif op_upper == "PROD":
@@ -403,10 +451,10 @@ async def recursive_halving_doubling_all_gather(
     """
     world_size = len(conns)
     if world_size <= 1:
-        return as_tensor(tensor).copy()
+        return ensure_eager_tensor(tensor).copy()
 
     backend = get_active_backend()
-    gathered: dict[int, EagerValue] = {rank: as_tensor(tensor).copy()}
+    gathered: dict[int, EagerValue] = {rank: ensure_eager_tensor(tensor).copy()}
     num_steps = (world_size - 1).bit_length()
 
     for step in range(num_steps):
@@ -423,7 +471,7 @@ async def recursive_halving_doubling_all_gather(
                 _, partner_payload = await asyncio.gather(send_task, recv_task)
 
                 partner_ranks = [r ^ distance for r in current_ranks if (r ^ distance) < world_size]
-                received_slices = as_eager_list(backend.execute_op("array_split", partner_payload, len(partner_ranks), axis=axis))
+                received_slices = ensure_eager_list(backend.execute_op("array_split", partner_payload, len(partner_ranks), axis=axis))
                 for pr, slc in zip(partner_ranks, received_slices):
                     gathered[pr] = slc
 
@@ -445,8 +493,8 @@ def _apply_reduction_op(a: EagerValue, b: EagerValue, op_type: str) -> EagerValu
     Raises:
         ValueError: If op_type is not supported.
     """
-    a_t = as_tensor(a)
-    b_t = as_tensor(b)
+    a_t = ensure_eager_tensor(a)
+    b_t = ensure_eager_tensor(b)
     if op_type == "SUM":
         return a_t + b_t
     if op_type == "PROD":
@@ -483,7 +531,7 @@ async def all_reduce(
     if algorithm == "ring":
         return await ring_all_reduce(tensor, op_type, conns, rank)
 
-    res: EagerValue = as_tensor(tensor).copy()
+    res: EagerValue = ensure_eager_tensor(tensor).copy()
     peer_conns = [conn for i, conn in enumerate(conns) if i != rank and conn is not None]
     await asyncio.gather(*[_send_data(conn, tensor) for conn in peer_conns])
     received_tensors = await asyncio.gather(*[_recv_data(conn) for conn in peer_conns])
@@ -518,7 +566,7 @@ async def all_gather(
 
     world_size = len(conns)
     tensors: list[EagerValue | None] = [None] * world_size
-    tensors[rank] = as_tensor(tensor).copy()
+    tensors[rank] = ensure_eager_tensor(tensor).copy()
 
     send_tasks = []
     for i, conn in enumerate(conns):
@@ -567,7 +615,7 @@ async def ring_reduce_scatter(
     """
     world_size: int = len(conns)
     if world_size <= 1:
-        return as_tensor(tensor).copy()
+        return ensure_eager_tensor(tensor).copy()
 
     op_upper: str = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -581,7 +629,7 @@ async def ring_reduce_scatter(
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
     backend = get_active_backend()
-    split_chunks = _cast_val("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
+    split_chunks = _as_tensor_seq(backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
     chunks: list[EagerValue] = [c.copy() for c in split_chunks]
 
     def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -594,8 +642,8 @@ async def ring_reduce_scatter(
         Returns:
             EagerValue: Computed result.
         """
-        a_t = as_tensor(a)
-        b_t = as_tensor(b)
+        a_t = ensure_eager_tensor(a)
+        b_t = ensure_eager_tensor(b)
         if op_upper == "SUM":
             return a_t + b_t
         elif op_upper == "PROD":
@@ -643,7 +691,7 @@ async def reduce_scatter(
 
     reduced = await all_reduce(tensor, op_type, conns, rank)
     world_size = len(conns)
-    chunks = as_eager_list(get_active_backend().execute_op("array_split", reduced, world_size, axis=scatter_dim))
+    chunks = ensure_eager_list(get_active_backend().execute_op("array_split", reduced, world_size, axis=scatter_dim))
     return chunks[rank]
 
 
@@ -672,7 +720,7 @@ async def all_to_all(
     """
     world_size = len(conns)
     backend = get_active_backend()
-    chunks = as_eager_list(backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
+    chunks = ensure_eager_list(backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
 
     send_tasks = []
     for j, conn in enumerate(conns):
@@ -784,16 +832,23 @@ def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, 
     try:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        pt_backend = BackendRegistry.get("pytorch")
+        pt_backend = ensure_mod(BackendRegistry.get("pytorch"))
         group = kwargs.get("group")
         if op == "AllReduce":
-            return as_tensor(_get_attr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
+            return ensure_eager_tensor(pt_backend.all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
         if op == "AllGather":
-            return as_tensor(_get_attr(pt_backend, "all_gather")(tensor, axis=int(as_int(kwargs.get("axis", 0))), group=group))
+            return ensure_eager_tensor(pt_backend.all_gather(tensor, axis=int(ensure_int(kwargs.get("axis", 0))), group=group))
         if op == "ReduceScatter":
-            return as_tensor(_get_attr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(as_int(kwargs.get("scatter_dim", 0))), group=group))
+            return ensure_eager_tensor(
+                pt_backend.reduce_scatter(
+                    tensor,
+                    op=str(kwargs.get("op_type", "SUM")),
+                    scatter_dim=int(ensure_int(kwargs.get("scatter_dim", 0))),
+                    group=group,
+                )
+            )
         if op == "Broadcast":
-            return as_tensor(_get_attr(pt_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0))), group=group))
+            return ensure_eager_tensor(pt_backend.broadcast(tensor, src=int(ensure_int(kwargs.get("root", 0))), group=group))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -813,14 +868,14 @@ def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, Eage
     try:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        jax_backend = BackendRegistry.get("jax")
+        jax_backend = ensure_mod(BackendRegistry.get("jax"))
         axis_name = str(kwargs.get("axis_name", "data"))
         if op == "AllReduce":
-            return as_tensor(_get_attr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
+            return ensure_eager_tensor(jax_backend.all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
         if op == "AllGather":
-            return as_tensor(_get_attr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(as_int(kwargs.get("axis", 0)))))
+            return ensure_eager_tensor(jax_backend.all_gather(tensor, axis_name=axis_name, axis=int(ensure_int(kwargs.get("axis", 0)))))
         if op == "Broadcast":
-            return as_tensor(_get_attr(jax_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0)))))
+            return ensure_eager_tensor(jax_backend.broadcast(tensor, src=int(ensure_int(kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -837,17 +892,17 @@ def _reduce_rank_sequence(all_ranks_data: Sequence[EagerValue], red_op: str) -> 
         EagerValue: Reduced result tensor.
     """
     backend = get_active_backend()
-    accum = as_tensor(all_ranks_data[0]).copy()
+    accum = ensure_eager_tensor(all_ranks_data[0]).copy()
     for other in all_ranks_data[1:]:
-        other_t = as_tensor(other)
+        other_t = ensure_eager_tensor(other)
         if red_op in ("SUM", "ADD"):
             accum = accum + other_t
         elif red_op in ("PROD", "PRODUCT"):
             accum = accum * other_t
         elif red_op == "MAX":
-            accum = as_tensor(backend.execute_op("maximum", accum, other_t))
+            accum = ensure_eager_tensor(backend.execute_op("maximum", accum, other_t))
         elif red_op == "MIN":
-            accum = as_tensor(backend.execute_op("minimum", accum, other_t))
+            accum = ensure_eager_tensor(backend.execute_op("minimum", accum, other_t))
     return accum
 
 
@@ -868,24 +923,24 @@ def _simulate_multi_rank_collective(
     """
     backend = get_active_backend()
     world_size = len(all_ranks_data)
-    rank = int(as_int(kwargs.get("rank", 0)))
+    rank = int(ensure_int(kwargs.get("rank", 0)))
     red_op = str(kwargs.get("op_type", "SUM")).upper()
 
     if op == "AllReduce":
         return _reduce_rank_sequence(all_ranks_data, red_op)
     if op == "AllGather":
-        return backend.execute_op("concatenate", all_ranks_data, axis=int(as_int(kwargs.get("axis", 0))))
+        return backend.execute_op("concatenate", all_ranks_data, axis=int(ensure_int(kwargs.get("axis", 0))))
     if op == "ReduceScatter":
         accum = _reduce_rank_sequence(all_ranks_data, red_op)
-        chunks = as_eager_list(backend.execute_op("array_split", accum, world_size, axis=int(as_int(kwargs.get("scatter_dim", 0)))))
+        chunks = ensure_eager_list(backend.execute_op("array_split", accum, world_size, axis=int(ensure_int(kwargs.get("scatter_dim", 0)))))
         return chunks[rank]
     if op == "AllToAll":
-        scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
-        gather_dim = int(as_int(kwargs.get("gather_dim", 0)))
-        gathered = [as_eager_list(backend.execute_op("array_split", all_ranks_data[src], world_size, axis=scatter_dim))[rank] for src in range(world_size)]
+        scatter_dim = int(ensure_int(kwargs.get("scatter_dim", 0)))
+        gather_dim = int(ensure_int(kwargs.get("gather_dim", 0)))
+        gathered = [ensure_eager_list(backend.execute_op("array_split", all_ranks_data[src], world_size, axis=scatter_dim))[rank] for src in range(world_size)]
         return backend.execute_op("concatenate", gathered, axis=gather_dim)
     if op == "Broadcast":
-        return as_tensor(all_ranks_data[int(as_int(kwargs.get("root", 0)))]).copy()
+        return ensure_eager_tensor(all_ranks_data[int(ensure_int(kwargs.get("root", 0)))]).copy()
     return None
 
 
@@ -926,4 +981,4 @@ def dispatch_collective(
         if sim_res is not None:
             return sim_res
 
-    return as_tensor(tensor).copy()
+    return ensure_eager_tensor(tensor).copy()

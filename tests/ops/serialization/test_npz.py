@@ -7,9 +7,8 @@ import typing
 # ruff: noqa: E501
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -23,13 +22,13 @@ def test_npz_load(mocker: EagerTensorProtocol) -> None:
     """
     fmt = NpzWeightFormat()
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    _set_attr(mock_backend.load_npz, "return_value", {"a": 1})
-    assert as_tensor(fmt.load("test.npz")) == as_tensor({"a": 1})
-    _set_attr(mock_backend.load_npz, "side_effect", NotImplementedError)
+    ensure_mutable(mock_backend.load_npz).return_value = ensure_eager_tensor({"a": 1})
+    assert ensure_eager_tensor(fmt.load("test.npz")) == ensure_eager_tensor({"a": 1})
+    ensure_mutable(mock_backend.load_npz).side_effect = ensure_eager_tensor(NotImplementedError)
     mocker.patch("ml_switcheroo_compiler.serialization.formats.npz.parse_npz", return_value={"b": 2})
 
     with pytest.warns(UserWarning, match="Backend load_npz failed"):
-        assert as_tensor(fmt.load("test.npz")) == as_tensor({"b": 2})
+        assert ensure_eager_tensor(fmt.load("test.npz")) == ensure_eager_tensor({"b": 2})
 
     del mock_backend.load_npz
-    assert as_tensor(fmt.load("test.npz")) == as_tensor({"b": 2})
+    assert ensure_eager_tensor(fmt.load("test.npz")) == ensure_eager_tensor({"b": 2})

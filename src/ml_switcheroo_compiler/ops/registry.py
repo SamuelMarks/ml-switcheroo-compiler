@@ -5,13 +5,44 @@ from __future__ import annotations
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.registry import as_callable
-from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable, _get_attr, _set_attr
+from ml_switcheroo_compiler.backends.registry import ensure_callable
+from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ops.base import OpDef
 
 _REGISTRY: dict[str, type[OpDef]] = {}
 _YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
 _UTIL_REGISTRY: dict[str, TypedVariadicCallable[TensorOrScalar]] = {}
+
+
+@typing.runtime_checkable
+class _OpClassProtocol(typing.Protocol):
+    """Protocol for operation classes exposing a mutable `op_type` attribute."""
+
+    op_type: str
+
+
+def _is_op_class(val: type) -> typing.TypeGuard[type[OpDef]]:
+    """Type guard narrowing `val` to `type[OpDef]`.
+
+    Args:
+        val (type): Candidate class.
+
+    Returns:
+        bool: True if `val` is a class.
+    """
+    return isinstance(val, type)
+
+
+def _is_yaml_entry_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, dict[str, dict[str, str]]]]:
+    """Type guard narrowing a raw YAML operation entry to `dict[str, dict[str, dict[str, str]]]`.
+
+    Args:
+        val (TensorOrScalar): Candidate YAML entry.
+
+    Returns:
+        bool: True if `val` is a dict.
+    """
+    return isinstance(val, dict)
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -28,7 +59,10 @@ def _load_yaml_registry(force: bool = False) -> None:
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         _YAML_REGISTRY.clear()
-        _get_attr(_YAML_REGISTRY, "update")(OPS_REGISTRY)
+        for k, v in OPS_REGISTRY.items():
+            raw_v: TensorOrScalar = v
+            if _is_yaml_entry_dict(raw_v):
+                _YAML_REGISTRY[k] = raw_v
 
 
 def register_op(name: str) -> Callable[[type], type]:
@@ -52,8 +86,10 @@ def register_op(name: str) -> Callable[[type], type]:
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        _set_attr(cls, "op_type", name)
-        _REGISTRY[name] = cls
+        raw_cls: type = cls
+        assert _is_op_class(raw_cls)
+        raw_cls.op_type = name
+        _REGISTRY[name] = raw_cls
         return cls
 
     return decorator
@@ -81,7 +117,7 @@ def register_util(name: str) -> Callable[[F], F]:
         Returns:
             F: The registered function.
         """
-        _UTIL_REGISTRY[name] = as_callable(func)
+        _UTIL_REGISTRY[name] = ensure_callable(func)
         return func
 
     return decorator

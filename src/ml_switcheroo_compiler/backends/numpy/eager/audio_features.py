@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_opt_str, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_int, ensure_opt_str, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
 def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -74,13 +74,13 @@ def _np_dct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
-    type: int = as_int(kwargs.get("type", 2))
-    axis: int = as_int(kwargs.get("axis", -1))
-    norm: str | None = as_opt_str(kwargs.get("norm", None))
+    type: int = ensure_int(kwargs.get("type", 2))
+    axis: int = ensure_int(kwargs.get("axis", -1))
+    norm: str | None = ensure_opt_str(kwargs.get("norm", None))
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _dct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(axis, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "tensordot")(x, m, axes=(axis, 1)))
     res = np.moveaxis(res, -1, axis)
     return res
 
@@ -135,13 +135,13 @@ def _np_idct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
-    type: int = as_int(kwargs.get("type", 2))
-    axis: int = as_int(kwargs.get("axis", -1))
-    norm: str | None = as_opt_str(kwargs.get("norm", None))
+    type: int = ensure_int(kwargs.get("type", 2))
+    axis: int = ensure_int(kwargs.get("axis", -1))
+    norm: str | None = ensure_opt_str(kwargs.get("norm", None))
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _idct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(axis, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "tensordot")(x, m, axes=(axis, 1)))
     res = np.moveaxis(res, -1, axis)
     return res
 
@@ -164,14 +164,14 @@ def _np_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
 
-    n_int = int(as_int(N))
+    n_int = int(ensure_int(N))
     if int(x.shape[-1]) != 2 * n_int:
         raise ValueError("MDCT input last dimension must be 2N")
 
     n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * n_int, dtype=float)
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(n_int, dtype=float)[:, None]
-    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "cos")(np.pi / n_int * (n + 0.5 + n_int / 2) * (k + 0.5))
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(-1, 1))
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "cos")(np.pi / n_int * (n + 0.5 + n_int / 2) * (k + 0.5)))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "tensordot")(x, m, axes=(-1, 1)))
     return res
 
 
@@ -193,7 +193,7 @@ def _np_inverse_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, *
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
     n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * N, dtype=float)[:, None]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.cos(np.pi / N * (n + 0.5 + N / 2) * (k + 0.5))
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(-1, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "tensordot")(x, m, axes=(-1, 1)))
     return res * (1.0 / N)
 
 
@@ -210,8 +210,8 @@ def _np_frame(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
-    frame_length: int = as_int(kwargs.get("frame_length", 1))
-    frame_step: int = as_int(kwargs.get("frame_step", 1))
+    frame_length: int = ensure_int(kwargs.get("frame_length", 1))
+    frame_step: int = ensure_int(kwargs.get("frame_step", 1))
     num_frames: int = (x.shape[-1] - frame_length) // frame_step + 1
     if num_frames <= 0:
         return np.empty(list(x.shape)[:-1] + [0, frame_length], dtype=x.dtype)
@@ -233,7 +233,7 @@ def _np_overlap_and_add(backend_module: BackendModuleProtocol, *args: EagerValue
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
-    frame_step: int = as_int(kwargs.get("frame_step", 1))
+    frame_step: int = ensure_int(kwargs.get("frame_step", 1))
     num_frames: int = x.shape[-2]
     frame_length: int = x.shape[-1]
     res_length: int = (num_frames - 1) * frame_step + frame_length

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import typing
 import uuid
+from collections.abc import Sequence
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_shape
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 from ml_switcheroo_compiler.core.shape import (
     TensorOrScalar,
     is_traced_data,
@@ -16,6 +17,18 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+def _extract_proxy_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a shape sequence into a concrete integer shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Input shape sequence.
+
+    Returns:
+        tuple[int, ...]: Extracted integer shape tuple.
+    """
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 @typing.runtime_checkable
@@ -61,7 +74,7 @@ class ProxyMathOverloadsMixin:
             )
 
         other_id = other.id if is_traced_data(other) else None
-        other_shape = as_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
+        other_shape = _extract_proxy_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
 
         # Broadcast shapes
         from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
@@ -195,7 +208,7 @@ class ProxyMathOverloadsMixin:
             msg = "MatMul right hand side must be a ProxyTensor."
             raise ValueError(msg)
 
-        other_shape = as_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
+        other_shape = _extract_proxy_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
 
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
@@ -249,7 +262,7 @@ class ProxyMathOverloadsMixin:
 
         # Constant wrapping if not a proxy tensor
         value_id = value.id if isinstance(value, ProxyTensor) else (value.id if is_traced_data(value) else None)
-        value_shape = value.shape if isinstance(value, ProxyTensor) else (as_shape(value.shape) if isinstance(value, ShapeProtocol) else ())
+        value_shape = value.shape if isinstance(value, ProxyTensor) else (_extract_proxy_shape(value.shape) if isinstance(value, ShapeProtocol) else ())
         value_dtype = str(value.dtype) if isinstance(value, (ProxyTensor, _HasStrDTypeProtocol)) else self.dtype
 
         if value_id is None:

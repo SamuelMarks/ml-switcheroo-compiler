@@ -15,7 +15,76 @@ from collections.abc import Callable, Sequence
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.core.shape import (
+    ShapeMetadataProtocol,
+    ShapeProtocol,
+    TensorOrScalar,
+)
+
+
+@typing.runtime_checkable
+class _YamlDataOpClassProtocol(typing.Protocol):
+    """Protocol for dynamically generated OpDef classes exposing `_yaml_data`."""
+
+    _yaml_data: TensorOrScalar
+
+
+@typing.runtime_checkable
+class _InferShapeMethodProtocol(typing.Protocol):
+    """Protocol for op classes/instances exposing `infer_shape`."""
+
+    def infer_shape(
+        self,
+        *args: ShapeType | Sequence[int] | None,
+        **kwargs: int | float | str | bool | ShapeType | Sequence[int] | None,
+    ) -> TensorOrScalar:
+        """Infer output shape.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            TensorOrScalar: Inferred shape.
+        """
+        ...
+
+
+def _is_padding_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int] | str]:
+    """Type guard narrowing `val` to `int | Sequence[int] | str`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Candidate padding value.
+
+    Returns:
+        bool: True for padding specifications.
+    """
+    return not isinstance(val, bytes)
+
+
+def _to_padding(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | str:
+    """Convert a padding argument to `int | Sequence[int] | str`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Input padding value.
+
+    Returns:
+        int | Sequence[int] | str: Narrowed padding specification.
+    """
+    assert _is_padding_val(val)
+    return val
+
+
+def _is_shape_type(val: tuple[int | str | S | None, ...]) -> typing.TypeGuard[ShapeType]:
+    """Type guard narrowing a shape tuple to `ShapeType`.
+
+    Args:
+        val (tuple[int | str | S | None, ...]): Shape tuple.
+
+    Returns:
+        bool: Always True for shape tuples.
+    """
+    return isinstance(val, tuple)
 
 
 def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[Sequence[int] | None]:
@@ -25,9 +94,9 @@ def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> ty
         val (int | float | str | Sequence[int | S] | None): Candidate value.
 
     Returns:
-        bool: Always True for optional integer sequences.
+        bool: True for optional integer sequences.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes)
 
 
 def _to_opt_int_seq(val: int | float | str | Sequence[int | S] | None) -> Sequence[int] | None:
@@ -50,9 +119,9 @@ def _is_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typ
         val (int | float | str | Sequence[int | S] | None): Candidate value.
 
     Returns:
-        bool: Always True for int or integer sequences.
+        bool: True for int or integer sequences.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes)
 
 
 def _to_int_or_seq(val: int | float | str | Sequence[int | S] | None, default: int = 1) -> int | Sequence[int]:
@@ -77,9 +146,9 @@ def _is_opt_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) ->
         val (int | float | str | Sequence[int | S] | None): Candidate value.
 
     Returns:
-        bool: Always True for optional int or integer sequences.
+        bool: True for optional int or integer sequences.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes)
 
 
 def _to_opt_int_or_seq(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | None:
@@ -172,11 +241,11 @@ class S:
         """
         return self.name
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: TensorOrScalar | S) -> bool:
         """Compare two symbolic dimensions for equality.
 
         Args:
-            other (TensorOrScalar): Object to compare against.
+            other (TensorOrScalar | S): Object to compare against.
 
         Returns:
             bool: True if both are S with matching names.
@@ -948,7 +1017,7 @@ def _dispatch_spatial_and_pooling(
                 valid_shapes[0],
                 valid_shapes[1],
                 stride=_to_int_or_seq(kwargs.get("stride", kwargs.get("strides", 1))),
-                padding=_cast_val("int | Sequence[int] | str", kwargs.get("padding", 0)),
+                padding=_to_padding(kwargs.get("padding", 0)),
                 dilation=_to_int_or_seq(kwargs.get("dilation", kwargs.get("dilations", 1))),
                 spatial_dims=s_dims,
             )
@@ -1032,25 +1101,36 @@ def _normalize_inputs_to_shapes(
     Returns:
         list[ShapeType]: Extracted shape tuples.
     """
-    inputs = kwargs.get("inputs")
-    if inputs is None:
+    raw_kw_inputs = kwargs.get("inputs")
+    input_seq: Sequence[TensorOrScalar | ShapeType | Sequence[int] | ShapeProtocol | ShapeMetadataProtocol | S]
+    if raw_kw_inputs is None:
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            if any(_has_attr(x, "shape") or _has_attr(x, "shape_metadata") or isinstance(x, (list, tuple)) for x in args[0]) or not all(isinstance(x, (int, S)) for x in args[0]):
-                inputs = list(_get_attr(args[0], "__iter__")())
+            first_seq = args[0]
+            if any(isinstance(x, (ShapeProtocol, ShapeMetadataProtocol, list, tuple)) for x in first_seq) or not all(isinstance(x, (int, S)) for x in first_seq):
+                input_seq = list(first_seq)
             else:
-                inputs = list(_get_attr(args, "__iter__")())
+                input_seq = list(args)
         else:
-            inputs = list(_get_attr(args, "__iter__")())
+            input_seq = list(args)
+    elif isinstance(raw_kw_inputs, (list, tuple)):
+        input_seq = list(raw_kw_inputs)
+    else:
+        input_seq = ()
 
     shapes: list[ShapeType] = []
-    if isinstance(inputs, (list, tuple)):
-        for item in inputs:
-            if _has_attr(item, "shape_metadata") and item.shape_metadata is not None:
-                shapes.append(tuple(item.shape_metadata))
-            elif _has_attr(item, "shape") and item.shape is not None:
-                shapes.append(tuple(item.shape))
-            elif isinstance(item, (list, tuple)):
-                shapes.append(tuple(item))
+    for item in input_seq:
+        if isinstance(item, ShapeMetadataProtocol) and item.shape_metadata is not None:
+            cand_sm = tuple(item.shape_metadata)
+            assert _is_shape_type(cand_sm)
+            shapes.append(cand_sm)
+        elif isinstance(item, ShapeProtocol) and item.shape is not None:
+            cand_sh = tuple(item.shape)
+            assert _is_shape_type(cand_sh)
+            shapes.append(cand_sh)
+        elif isinstance(item, (list, tuple)):
+            cand_tup = tuple(item)
+            assert _is_shape_type(cand_tup)
+            shapes.append(cand_tup)
     return shapes
 
 
@@ -1081,17 +1161,22 @@ def infer_shape(
         from ml_switcheroo_compiler.ops.registry import get_op
 
         op_cls = get_op(op_type)
-        if op_cls is not None:
-            if not _has_attr(op_cls, "infer_shape"):
+        raw_op_cls: type | _InferShapeMethodProtocol | _YamlDataOpClassProtocol | None = op_cls
+        if raw_op_cls is not None:
+            if not isinstance(raw_op_cls, _InferShapeMethodProtocol):
                 return ()
-            if not _has_attr(op_cls, "_yaml_data"):
-                instance = op_cls()
-                infer_fn = _get_attr(instance, "infer_shape")
+            if not isinstance(raw_op_cls, _YamlDataOpClassProtocol):
+                instance: TensorOrScalar | _InferShapeMethodProtocol = op_cls()
+                assert isinstance(instance, _InferShapeMethodProtocol)
                 try:
-                    raw_res = infer_fn(*shapes, **kwargs)
+                    raw_res = instance.infer_shape(*shapes, **kwargs)
                 except Exception:
-                    raw_res = infer_fn(*args, **kwargs)
-                return tuple(raw_res) if isinstance(raw_res, (list, tuple)) else ()
+                    raw_res = instance.infer_shape(*args, **kwargs)
+                if isinstance(raw_res, (list, tuple)):
+                    res_tup = tuple(raw_res)
+                    assert _is_shape_type(res_tup)
+                    return res_tup
+                return ()
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

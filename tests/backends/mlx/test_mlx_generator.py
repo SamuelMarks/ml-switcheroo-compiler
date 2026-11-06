@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -59,12 +58,12 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
 
     # Create a mock module for mlx.core
     mock_mlx_core = types.ModuleType("mlx.core")
-    _set_attr(mock_mlx_core, "load", as_tensor(_get_attr(MockMX, "load")))
-    _set_attr(mock_mlx_core, "save", as_tensor(_get_attr(MockMX, "save")))
-    _set_attr(mock_mlx_core, "save_safetensors", as_tensor(_get_attr(MockMX, "save_safetensors")))
+    ensure_mutable(mock_mlx_core).load = ensure_eager_tensor(ensure_eager_tensor(MockMX).load)
+    ensure_mutable(mock_mlx_core).save = ensure_eager_tensor(ensure_eager_tensor(MockMX).save)
+    ensure_mutable(mock_mlx_core).save_safetensors = ensure_eager_tensor(ensure_eager_tensor(MockMX).save_safetensors)
 
     mock_mlx = types.ModuleType("mlx")
-    _set_attr(mock_mlx, "core", mock_mlx_core)
+    ensure_mutable(mock_mlx).core = ensure_eager_tensor(mock_mlx_core)
 
     # Use monkeypatch.setitem on sys.modules
     monkeypatch.setitem(sys.modules, "mlx.core", mock_mlx_core)

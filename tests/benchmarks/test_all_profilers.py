@@ -38,9 +38,8 @@ from ml_switcheroo_compiler.backends.tensorflow.profiler import (
 from ml_switcheroo_compiler.benchmarks.config_models import BenchmarkPlan, BenchmarkTarget
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator, _isolated_worker
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_callable, as_node_dict, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict, ensure_tensor_dict, has_backend_member
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -93,25 +92,25 @@ def _ensure_optional_profiler_backends() -> Iterator[None]:
     import ml_switcheroo_compiler.backends.keras.profiler as k_prof
     import ml_switcheroo_compiler.backends.tensorflow.profiler as tf_prof
 
-    orig_tf = _get_attr(tf_prof, "tf", None)
-    orig_da = _get_attr(dask_prof, "da", None)
-    orig_keras = _get_attr(k_prof, "keras", None)
+    orig_tf: EagerValue = ensure_eager_tensor(tf_prof).tf
+    orig_da: EagerValue = ensure_eager_tensor(dask_prof).da
+    orig_keras: EagerValue = ensure_eager_tensor(k_prof).keras
 
     if orig_tf is None:
-        _set_attr(tf_prof, "tf", _make_mock_tf())
+        ensure_mutable(tf_prof).tf = ensure_eager_tensor(_make_mock_tf())
     if orig_da is None:
-        _set_attr(dask_prof, "da", _make_mock_da())
+        ensure_mutable(dask_prof).da = ensure_eager_tensor(_make_mock_da())
     if orig_keras is None:
-        _set_attr(k_prof, "keras", _make_mock_keras())
+        ensure_mutable(k_prof).keras = ensure_eager_tensor(_make_mock_keras())
 
     yield
 
-    if orig_tf is None and _get_attr(tf_prof, "tf", None) is None:
-        _set_attr(tf_prof, "tf", _make_mock_tf())
-    if orig_da is None and _get_attr(dask_prof, "da", None) is None:
-        _set_attr(dask_prof, "da", _make_mock_da())
-    if orig_keras is None and _get_attr(k_prof, "keras", None) is None:
-        _set_attr(k_prof, "keras", _make_mock_keras())
+    if orig_tf is None and ensure_eager_tensor(tf_prof).tf is None:
+        ensure_mutable(tf_prof).tf = ensure_eager_tensor(_make_mock_tf())
+    if orig_da is None and ensure_eager_tensor(dask_prof).da is None:
+        ensure_mutable(dask_prof).da = ensure_eager_tensor(_make_mock_da())
+    if orig_keras is None and ensure_eager_tensor(k_prof).keras is None:
+        ensure_mutable(k_prof).keras = ensure_eager_tensor(_make_mock_keras())
 
 
 # ==============================================================================
@@ -125,7 +124,7 @@ def test_tf_profiler_none() -> None:
         profiler = TensorFlowProfiler()
         res = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
         assert res["latency_ms"] == 0.0
-        assert as_callable(len)(res["latencies"]) == 2
+        assert ensure_callable(len)(res["latencies"]) == 2
         assert profiler._prepare_inputs(IRGraph(), {"x": [1.0]}) == []
         assert _get_tf_peak_memory_mb() > 0.0
         _sync_tf_result([1.0])
@@ -164,19 +163,19 @@ def test_tf_profiler_memory() -> None:
 
     with patch.dict("sys.modules", {"tensorflow": None}):
         importlib.reload(tf_prof)
-        assert as_tensor(_get_attr(tf_prof, "tf")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(tf_prof).tf) is None
     importlib.reload(tf_prof)
-    if _get_attr(tf_prof, "tf", None) is None:
-        _set_attr(tf_prof, "tf", _make_mock_tf())
+    if ensure_eager_tensor(tf_prof).tf is None:
+        ensure_mutable(tf_prof).tf = ensure_eager_tensor(_make_mock_tf())
 
-    with as_callable(patch.object)(as_tensor(_get_attr(tf_prof, "sys")), "platform", "linux"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(tf_prof).sys), "platform", "linux"):
         assert tf_prof._get_process_memory_mb() > 0.0
 
 
 def test_tf_sync_result() -> None:
     """Test TensorFlow result synchronization across containers."""
     mock_val = MagicMock()
-    _sync_tf_result(as_tensor({"a": mock_val, "b": [mock_val, (mock_val,)]}))
+    _sync_tf_result(ensure_eager_tensor({"a": mock_val, "b": [mock_val, (mock_val,)]}))
     assert mock_val.numpy.call_count == 3
 
     mock_err_val = MagicMock()
@@ -194,18 +193,18 @@ def test_tf_profiler_execution() -> None:
     graph.inputs = ["in_0"]
 
     inputs = {"in_0": [1.0, 2.0]}
-    res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
-    assert as_callable(len)(res["latencies"]) == 3
-    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
+    res = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
+    assert ensure_callable(len)(res["latencies"]) == 3
+    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
 
     # Test empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_empty["latencies"]) == 2
+    assert ensure_callable(len)(res_empty["latencies"]) == 2
 
     # Test compile failure fallback
     with patch.object(profiler, "_compile_graph", side_effect=Exception("comp fail")):
-        res_fallback = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_fallback["latencies"]) == 2
+        res_fallback = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+        assert ensure_callable(len)(res_fallback["latencies"]) == 2
 
     # Test compile graph invalid apply_model
     with patch("ml_switcheroo_compiler.backends.tensorflow.generator.TensorFlowCodeGenerator.generate", return_value="x = 1"):
@@ -224,7 +223,7 @@ def test_keras_profiler_none() -> None:
         profiler = KerasProfiler()
         res = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
         assert res["latency_ms"] == 0.0
-        assert as_callable(len)(res["latencies"]) == 2
+        assert ensure_callable(len)(res["latencies"]) == 2
         assert profiler._prepare_inputs(IRGraph(), {"x": [1.0]}) == []
         assert _get_keras_peak_memory_mb() > 0.0
         _sync_keras_result([1.0])
@@ -281,8 +280,8 @@ def test_keras_profiler_execution() -> None:
     graph.inputs = ["in_0"]
 
     inputs = {"in_0": [1.0, 2.0]}
-    res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res["latencies"]) == 2
+    res = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    assert ensure_callable(len)(res["latencies"]) == 2
 
     # Graph with compiled model mock
     mock_model = MagicMock()
@@ -290,8 +289,8 @@ def test_keras_profiler_execution() -> None:
     with patch.object(profiler, "_compile_model", return_value=mock_model):
         n_add = LogicalNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])
         graph.nodes["add_0"] = n_add
-        res_compiled = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_compiled["latencies"]) == 2
+        res_compiled = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+        assert ensure_callable(len)(res_compiled["latencies"]) == 2
 
     # Test compile model type error
     with patch("ml_switcheroo_compiler.backends.keras.generator.KerasCodeGenerator.generate", return_value="a = 1"):
@@ -323,7 +322,7 @@ def test_dask_profiler_none() -> None:
         profiler = DaskProfiler()
         res = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
         assert res["latency_ms"] == 0.0
-        assert as_callable(len)(res["latencies"]) == 2
+        assert ensure_callable(len)(res["latencies"]) == 2
         assert profiler._prepare_inputs(IRGraph(), {"x": [1.0]}) == []
         assert _sync_dask_result(123) == 123
 
@@ -337,9 +336,9 @@ def test_dask_profiler_execution() -> None:
     graph.inputs = ["in_0"]
 
     inputs = {"in_0": np.array([1.0, 2.0], dtype=np.float32)}
-    res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
-    assert as_callable(len)(res["latencies"]) == 3
-    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
+    res = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
+    assert ensure_callable(len)(res["latencies"]) == 3
+    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
 
     # Test with compiled evaluate function
     mock_fn = MagicMock()
@@ -347,8 +346,8 @@ def test_dask_profiler_execution() -> None:
     with patch.object(profiler, "_compile_graph", return_value=mock_fn):
         n_op = LogicalNode(id="op_1", op_type="Add", inputs=["in_0", "in_0"])
         graph.nodes["op_1"] = n_op
-        res_comp = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_comp["latencies"]) == 2
+        res_comp = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+        assert ensure_callable(len)(res_comp["latencies"]) == 2
 
     # Test _sync_dask_result compute success and failure
     mock_compute_ok = MagicMock()
@@ -395,7 +394,7 @@ def test_cpp_profiler_execution() -> None:
     graph.inputs = ["in_0"]
 
     res_empty = profiler.profile_graph(graph, {}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_empty["latencies"]) == 2
+    assert ensure_callable(len)(res_empty["latencies"]) == 2
 
     mock_exec = MagicMock()
     with patch.object(profiler, "_compile_graph", return_value=mock_exec):
@@ -403,8 +402,8 @@ def test_cpp_profiler_execution() -> None:
         graph.nodes["add_0"] = n_add
         graph.outputs = ["add_0"]
         inputs = {"in_0": [1.0, 2.0]}
-        res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
-        assert as_callable(len)(res["latencies"]) == 3
+        res = ensure_callable(profiler.profile_graph)(graph, inputs, num_iters=3, warmup_iters=1)
+        assert ensure_callable(len)(res["latencies"]) == 3
         assert mock_exec.call_count >= 4
 
     with patch("ml_switcheroo_compiler.backends.llvm_cpp.generator.CppGenerator._compile_aot_impl", side_effect=RuntimeError("gcc missing")):
@@ -444,16 +443,16 @@ def test_numba_sparse_edge_profilers() -> None:
     inputs = {"in_0": [1.0, 2.0]}
 
     numba_p = NumbaProfiler()
-    res_numba = as_callable(numba_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_numba["latencies"]) == 2
+    res_numba = ensure_callable(numba_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    assert ensure_callable(len)(res_numba["latencies"]) == 2
 
     sparse_p = SparseProfiler()
-    res_sparse = as_callable(sparse_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_sparse["latencies"]) == 2
+    res_sparse = ensure_callable(sparse_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    assert ensure_callable(len)(res_sparse["latencies"]) == 2
 
     edge_p = EdgeProfiler()
-    res_edge = as_callable(edge_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_edge["latencies"]) == 2
+    res_edge = ensure_callable(edge_p.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    assert ensure_callable(len)(res_edge["latencies"]) == 2
 
 
 # ==============================================================================
@@ -490,7 +489,7 @@ def test_orchestrator_dynamic_resolution_all_13_backends() -> None:
     for backend in registered_backends:
         profiler = orchestrator._get_profiler(backend)
         assert profiler is not None
-        assert _has_attr(profiler, "profile_graph")
+        assert has_backend_member(profiler, "profile_graph")
 
     with pytest.raises(BackendNotSupportedError, match="does not have a supported profiler"):
         orchestrator._get_profiler("unknown_backend_123")
@@ -498,17 +497,17 @@ def test_orchestrator_dynamic_resolution_all_13_backends() -> None:
 
 def test_orchestrator_isolated_worker() -> None:
     """Test isolated worker process function."""
-    queue = as_tensor(multiprocessing.Queue())
+    queue = ensure_eager_tensor(multiprocessing.Queue())
     graph = IRGraph()
     spec = ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler")
-    as_callable(_isolated_worker)(spec, graph, {}, "cpu", 2, 1, queue)
+    ensure_callable(_isolated_worker)(spec, graph, {}, "cpu", 2, 1, queue)
     status, result = queue.get(timeout=5)
     assert status == "ok"
     assert "latencies" in result
 
     # Test error reporting in isolated worker
     bad_spec = ("non_existent_module_xyz", "BadCls")
-    as_callable(_isolated_worker)(bad_spec, graph, {}, "cpu", 2, 1, queue)
+    ensure_callable(_isolated_worker)(bad_spec, graph, {}, "cpu", 2, 1, queue)
     status, err = queue.get(timeout=5)
     assert status == "error"
     assert "No module named" in err
@@ -530,8 +529,8 @@ def test_orchestrator_isolated_execution() -> None:
     graph.inputs = ["in_0"]
 
     res = orchestrator._run_single(graph, "numpy", 1, 2, 1, isolate=True)
-    assert as_callable(len)(res["latencies"]) == 2
-    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert ensure_callable(len)(res["latencies"]) == 2
+    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
 
 
 def test_profiler_linux_memory_branches() -> None:
@@ -577,12 +576,12 @@ def test_numba_and_sparse_profiler_import_fallback(monkeypatch: pytest.MonkeyPat
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "numba", None)
         importlib.reload(numba_prof)
-        assert as_tensor(_get_attr(numba_prof, "numba")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(numba_prof).numba) is None
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "sparse", None)
         importlib.reload(sparse_prof)
-        assert as_tensor(_get_attr(sparse_prof, "sparse")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(sparse_prof).sparse) is None
 
     importlib.reload(numba_prof)
     importlib.reload(sparse_prof)
@@ -684,7 +683,7 @@ def test_tf_profiler_memory_and_sync_branches() -> None:
     graph.inputs = ["inp"]
     prepared = profiler._prepare_inputs(graph, {"inp": tensor_input})
     assert len(prepared) == 1
-    step_fn = profiler._build_step_fn(has_ops=True, compiled_fn=as_callable(lambda x: x), tf_inputs=[tensor_input], device="CPU")
+    step_fn = profiler._build_step_fn(has_ops=True, compiled_fn=ensure_callable(lambda x: x), tf_inputs=[tensor_input], device="CPU")
     with mock.patch("ml_switcheroo_compiler.backends.tensorflow.profiler._sync_tf_result"):
         step_fn()
 
@@ -705,7 +704,7 @@ def test_keras_profiler_branches() -> None:
             """Return numpy array."""
             return np.array([1.0])
 
-    as_callable(_sync_keras_result)(as_callable(MockTensor)())
+    ensure_callable(_sync_keras_result)(ensure_callable(MockTensor)())
     mock_tf_no_cfg = mock.MagicMock()
     del mock_tf_no_cfg.config
     with mock.patch.dict(sys.modules, {"tensorflow": mock_tf_no_cfg}):
@@ -723,14 +722,14 @@ def test_keras_profiler_branches() -> None:
     with mock.patch("ml_switcheroo_compiler.backends.keras.profiler.keras", mock_keras_with_ops):
         step_fn2 = profiler._build_step_fn(has_ops=False, compiled_model=None, keras_inputs=[])
         res2 = step_fn2()
-        assert as_callable(len)(res2) == 1
+        assert ensure_callable(len)(res2) == 1
     mock_keras_no_add = mock.MagicMock()
     del mock_keras_no_add.ops.add
     with mock.patch("ml_switcheroo_compiler.backends.keras.profiler.keras", mock_keras_no_add):
         step_fn3 = profiler._build_step_fn(has_ops=False, compiled_model=None, keras_inputs=[np.array([1.0])])
         res3 = step_fn3()
         assert res3 is not None
-    step_fn4 = profiler._build_step_fn(has_ops=True, compiled_model=as_callable(lambda x: x), keras_inputs=[np.array([1.0])])
+    step_fn4 = profiler._build_step_fn(has_ops=True, compiled_model=ensure_callable(lambda x: x), keras_inputs=[np.array([1.0])])
     with mock.patch("ml_switcheroo_compiler.backends.keras.profiler._sync_keras_result"):
         step_fn4()
 
@@ -748,7 +747,7 @@ def test_edge_profiler_prepare_inputs_fallback_and_empty_step() -> None:
     res_inputs = profiler._prepare_inputs(graph, {"in_other": [1.0, 2.0]})
     assert res_inputs == [[1.0, 2.0]]
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-    assert _get_attr(res_empty, "__getitem__")("latency_ms") >= 0.0
+    assert ensure_eager_tensor(res_empty)["latency_ms"] >= 0.0
 
 
 def test_edge_profiler_memory_and_evaluation_branches() -> None:
@@ -767,7 +766,7 @@ def test_edge_profiler_memory_and_evaluation_branches() -> None:
     assert _calculate_edge_memory_bytes(graph_empty) == 65536
 
     n4_bad = LogicalNode(id="n4", op_type="Div")
-    _obj_set_attr(n4_bad, "shape_metadata", "not_a_tuple")
+    ensure_mutable(n4_bad).shape_metadata = ensure_eager_tensor("not_a_tuple")
     graph_ops = IRGraph(name="edge_ops")
     graph_ops.nodes = NodeDict(
         {
@@ -785,13 +784,13 @@ def test_edge_profiler_memory_and_evaluation_branches() -> None:
     # Test execution when evaluate_graph succeeds
     with mock.patch("ml_switcheroo_compiler.backends.edge.profiler.evaluate_graph", return_value={"out": [1.0]}):
         res_succ = profiler.profile_graph(graph_ops, {"x": [1.0]}, num_iters=1, warmup_iters=1)
-        assert _get_attr(res_succ, "__getitem__")("latency_ms") >= 0.0
-        assert _get_attr(res_succ, "__getitem__")("peak_memory_mb") > 0.0
+        assert ensure_eager_tensor(res_succ)["latency_ms"] >= 0.0
+        assert ensure_eager_tensor(res_succ)["peak_memory_mb"] > 0.0
 
     # Test execution when evaluate_graph raises Exception
     with mock.patch("ml_switcheroo_compiler.backends.edge.profiler.evaluate_graph", side_effect=RuntimeError("eval error")):
         res_fail = profiler.profile_graph(graph_ops, {"x": [1.0]}, num_iters=1, warmup_iters=1)
-        assert _get_attr(res_fail, "__getitem__")("latency_ms") >= 0.0
+        assert ensure_eager_tensor(res_fail)["latency_ms"] >= 0.0
 
 
 def test_numba_profiler_branches() -> None:
@@ -808,26 +807,26 @@ def test_numba_profiler_branches() -> None:
     graph.inputs = ["in_0"]
     arr = np.array([1.0, 2.0], dtype=np.float32)
     inputs1 = {"in_0": arr}
-    assert as_callable(len)(as_callable(profiler._prepare_inputs)(graph, inputs1)) == 1
+    assert ensure_callable(len)(ensure_callable(profiler._prepare_inputs)(graph, inputs1)) == 1
     inputs2 = {"other_key": arr}
-    assert as_callable(len)(as_callable(profiler._prepare_inputs)(graph, inputs2)) == 1
+    assert ensure_callable(len)(ensure_callable(profiler._prepare_inputs)(graph, inputs2)) == 1
     inputs_list = {"in_0": [1.0, 2.0]}
-    assert as_callable(len)(as_callable(profiler._prepare_inputs)(graph, inputs_list)) == 1
+    assert ensure_callable(len)(ensure_callable(profiler._prepare_inputs)(graph, inputs_list)) == 1
     mock_code = "def evaluate(inputs):\n    return inputs[0]\n"
     with patch.dict("sys.modules", {"numba": MagicMock()}):
         with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value=mock_code):
             fn = profiler._compile_graph(graph)
             assert callable(fn)
-            res_compiled = as_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
-            assert as_callable(len)(res_compiled["latencies"]) == 2
+            res_compiled = ensure_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert ensure_callable(len)(res_compiled["latencies"]) == 2
         with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="x = 1\n"):
             fn_invalid = profiler._compile_graph(graph)
             assert fn_invalid is None
         with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile error")):
-            res_fail = as_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
-            assert as_callable(len)(res_fail["latencies"]) == 2
+            res_fail = ensure_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert ensure_callable(len)(res_fail["latencies"]) == 2
         res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_empty["latencies"]) == 2
+        assert ensure_callable(len)(res_empty["latencies"]) == 2
 
 
 def test_sparse_profiler_branches() -> None:
@@ -886,38 +885,38 @@ def test_sparse_profiler_branches() -> None:
     mock_sparse_module.GCXS = MockCOO
     with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", mock_sparse_module):
         inputs1 = {"in_0": AddCOO(arr1), "in_1": AddCOO(arr2)}
-        prep1 = as_callable(profiler._prepare_inputs)(graph, inputs1)
+        prep1 = ensure_callable(profiler._prepare_inputs)(graph, inputs1)
         assert len(prep1) == 2
         inputs2 = {"other_0": arr1, "other_1": arr2}
-        prep2 = as_callable(profiler._prepare_inputs)(graph, inputs2)
+        prep2 = ensure_callable(profiler._prepare_inputs)(graph, inputs2)
         assert len(prep2) == 2
         inputs_list = {"in_0": [1.0, 2.0]}
-        prep3 = as_callable(profiler._prepare_inputs)(graph, inputs_list)
+        prep3 = ensure_callable(profiler._prepare_inputs)(graph, inputs_list)
         assert len(prep3) == 1
         with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", None):
-            prep_no_sp = as_callable(profiler._prepare_inputs)(graph, inputs_list)
+            prep_no_sp = ensure_callable(profiler._prepare_inputs)(graph, inputs_list)
             assert len(prep_no_sp) == 1
         mock_code = "def evaluate(inputs):\n    return inputs[0]\n"
         with patch.dict("sys.modules", {"sparse": mock_sparse_module}):
             with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value=mock_code):
                 fn = profiler._compile_graph(graph)
                 assert callable(fn)
-                res_compiled = as_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
-                assert as_callable(len)(res_compiled["latencies"]) == 2
+                res_compiled = ensure_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
+                assert ensure_callable(len)(res_compiled["latencies"]) == 2
         with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="x = 1\n"):
             fn_invalid = profiler._compile_graph(graph)
             assert fn_invalid is None
         res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_empty["latencies"]) == 2
+        assert ensure_callable(len)(res_empty["latencies"]) == 2
         with patch.object(profiler, "_compile_graph", return_value=None):
-            res_multi = as_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
-            assert as_callable(len)(res_multi["latencies"]) == 2
+            res_multi = ensure_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert ensure_callable(len)(res_multi["latencies"]) == 2
             inputs_no_add = {"in_0": MockCOO(arr1), "in_1": MockCOO(arr2)}
-            res_no_add = as_callable(profiler.profile_graph)(graph, inputs_no_add, num_iters=1, warmup_iters=1)
-            assert as_callable(len)(res_no_add["latencies"]) == 1
+            res_no_add = ensure_callable(profiler.profile_graph)(graph, inputs_no_add, num_iters=1, warmup_iters=1)
+            assert ensure_callable(len)(res_no_add["latencies"]) == 1
         with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile error")):
-            res_err = as_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
-            assert as_callable(len)(res_err["latencies"]) == 2
+            res_err = ensure_callable(profiler.profile_graph)(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert ensure_callable(len)(res_err["latencies"]) == 2
 
 
 def _test_dask_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -941,13 +940,12 @@ def _test_dask_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]) 
     mock_compute_val = MagicMock()
     mock_compute_val.compute.return_value = arr
     inputs_mismatch = {"other_key": mock_compute_val}
-    prep_mismatch = as_callable(profiler._prepare_inputs)(graph, inputs_mismatch)
+    prep_mismatch = ensure_callable(profiler._prepare_inputs)(graph, inputs_mismatch)
     assert len(prep_mismatch) == 1
     mock_code = "def evaluate(inputs):\n    return inputs[0]\n"
-    _get_attr(_state, "update")({"arr": arr, "dask_prof": dask_prof, "graph": graph, "importlib": importlib})
-    _get_attr(_state, "update")({"inputs_mismatch": inputs_mismatch, "mock_code": mock_code, "mock_compute_val": mock_compute_val, "node_add": node_add})
-    _get_attr(_state, "update")({"node_in1": node_in1, "node_in2": node_in2, "prep_mismatch": prep_mismatch, "profiler": profiler})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arr": arr, "dask_prof": dask_prof, "graph": graph, "importlib": importlib}))
+    _state.update(ensure_tensor_dict({"inputs_mismatch": inputs_mismatch, "mock_code": mock_code, "mock_compute_val": mock_compute_val, "node_add": node_add}))
+    _state.update(ensure_tensor_dict({"node_in1": node_in1, "node_in2": node_in2, "prep_mismatch": prep_mismatch, "profiler": profiler}))
 
 
 def _test_dask_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -978,9 +976,10 @@ def _test_dask_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) 
     _sync_dask_result(mock_err_da)
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
     assert len(res_empty["latencies"]) == 2
-    _get_attr(_state, "update")({"fn": fn, "mock_da": mock_da, "mock_err_da": mock_err_da, "res_comp": res_comp})
-    _get_attr(_state, "update")({"res_empty": res_empty})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"fn": fn, "mock_da": mock_da, "mock_err_da": mock_err_da, "res_comp": res_comp}))
+    _state.update(ensure_tensor_dict({"res_empty": res_empty}))
+    _state.update(ensure_tensor_dict({"arr": arr, "dask_prof": dask_prof, "graph": graph}))
+    _state.update(ensure_tensor_dict({"mock_code": mock_code, "profiler": profiler}))
 
 
 def _test_dask_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1000,7 +999,7 @@ def _test_dask_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
 
     with patch.dict("sys.modules", {"dask.array": None}):
         importlib.reload(dask_prof)
-        assert as_tensor(dask_prof.da) is None
+        assert ensure_eager_tensor(dask_prof.da) is None
     importlib.reload(dask_prof)
 
     with patch.object(dask_prof.sys, "platform", "linux"):
@@ -1016,7 +1015,7 @@ def _test_dask_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
         compute = "not_callable"
 
     assert dask_prof._sync_dask_result(NonCallableCompute()) is not None
-    _get_attr(_state, "update")({"NonCallableCompute": NonCallableCompute, "mock_err_da": mock_err_da, "res_comp_err": res_comp_err, "res_fb": res_fb})
+    _state.update(ensure_tensor_dict({"NonCallableCompute": NonCallableCompute, "mock_err_da": mock_err_da, "res_comp_err": res_comp_err, "res_fb": res_fb}))
 
 
 def test_dask_profiler_branches() -> None:
@@ -1051,19 +1050,18 @@ def _test_keras_profiler_additional_branches_part_1(_state: dict[str, EagerTenso
         fn = profiler._compile_model(graph)
         assert callable(fn)
         res_comp = profiler.profile_graph(graph, {"in_0": arr}, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_comp["latencies"]) == 2
+        assert ensure_callable(len)(res_comp["latencies"]) == 2
     with patch("ml_switcheroo_compiler.backends.keras.generator.KerasCodeGenerator.generate", return_value="x = 1\n"):
         with pytest.raises(TypeError, match="Failed to generate valid get_model function"):
             profiler._compile_model(graph)
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_empty["latencies"]) == 2
+    assert ensure_callable(len)(res_empty["latencies"]) == 2
     with patch("ml_switcheroo_compiler.backends.keras.profiler.keras", None):
         assert _get_keras_peak_memory_mb() > 0.0
     mock_val = MagicMock()
-    _get_attr(_state, "update")({"arr": arr, "fn": fn, "graph": graph, "mock_code": mock_code})
-    _get_attr(_state, "update")({"mock_val": mock_val, "node": node, "prep": prep, "profiler": profiler})
-    _get_attr(_state, "update")({"res_comp": res_comp, "res_empty": res_empty})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"arr": arr, "fn": fn, "graph": graph, "mock_code": mock_code}))
+    _state.update(ensure_tensor_dict({"mock_val": mock_val, "node": node, "prep": prep, "profiler": profiler}))
+    _state.update(ensure_tensor_dict({"res_comp": res_comp, "res_empty": res_empty}))
 
 
 def _test_keras_profiler_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1073,22 +1071,22 @@ def _test_keras_profiler_additional_branches_part_2(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     mock_val = _state["mock_val"]
-    _set_attr(mock_val.numpy, "side_effect", RuntimeError("numpy fail"))
+    ensure_mutable(mock_val.numpy).side_effect = ensure_eager_tensor(RuntimeError("numpy fail"))
     with patch("ml_switcheroo_compiler.backends.keras.profiler.keras", None):
         _sync_keras_result(mock_val)
     import importlib
 
     import ml_switcheroo_compiler.backends.keras.profiler as k_prof
 
-    orig_keras = _get_attr(k_prof, "keras", None)
+    orig_keras = ensure_eager_tensor(k_prof).keras
     with patch.dict("sys.modules", {"keras": None}):
         importlib.reload(k_prof)
-        assert as_tensor(_get_attr(k_prof, "keras")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(k_prof).keras) is None
     importlib.reload(k_prof)
-    if _get_attr(k_prof, "keras", None) is None and orig_keras is not None:
-        _set_attr(k_prof, "keras", orig_keras)
+    if ensure_eager_tensor(k_prof).keras is None and orig_keras is not None:
+        ensure_mutable(k_prof).keras = ensure_eager_tensor(orig_keras)
 
-    with as_callable(patch.object)(as_tensor(_get_attr(k_prof, "sys")), "platform", "linux"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(k_prof).sys), "platform", "linux"):
         assert k_prof._get_process_memory_mb() > 0.0
 
     mock_torch_cuda = MagicMock()
@@ -1101,8 +1099,8 @@ def _test_keras_profiler_additional_branches_part_2(_state: dict[str, EagerTenso
     mock_torch_err = MagicMock()
     mock_torch_err.cuda.is_available.return_value = True
     mock_torch_err.cuda.max_memory_allocated.side_effect = RuntimeError("cuda fail")
-    _get_attr(_state, "update")({"importlib": importlib, "k_prof": k_prof, "mock_torch_cuda": mock_torch_cuda, "mock_torch_err": mock_torch_err})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"importlib": importlib, "k_prof": k_prof, "mock_torch_cuda": mock_torch_cuda, "mock_torch_err": mock_torch_err}))
+    _state.update(ensure_tensor_dict({"mock_val": mock_val}))
 
 
 def _test_keras_profiler_additional_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1129,12 +1127,12 @@ def _test_keras_profiler_additional_branches_part_3(_state: dict[str, EagerTenso
     with patch.object(profiler, "_compile_model", side_effect=RuntimeError("compile fail")):
         n_add = LogicalNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])
         graph_err = IRGraph()
-        graph_err.nodes = NodeDict(as_node_dict({"in_0": node, "add_0": n_add}))
+        graph_err.nodes = NodeDict(ensure_node_dict({"in_0": node, "add_0": n_add}))
         graph_err.inputs = ["in_0"]
         res_comp_err = profiler.profile_graph(graph_err, {"in_0": arr}, num_iters=2, warmup_iters=1)
         assert len(res_comp_err["latencies"]) == 2
-    _get_attr(_state, "update")({"graph_err": graph_err, "mock_tf_mod": mock_tf_mod, "n_add": n_add, "res_comp_err": res_comp_err})
-    _get_attr(_state, "update")({"step_fn_multi": step_fn_multi})
+    _state.update(ensure_tensor_dict({"graph_err": graph_err, "mock_tf_mod": mock_tf_mod, "n_add": n_add, "res_comp_err": res_comp_err}))
+    _state.update(ensure_tensor_dict({"step_fn_multi": step_fn_multi}))
 
 
 def test_keras_profiler_additional_branches() -> None:
@@ -1169,12 +1167,12 @@ def test_tensorflow_profiler_additional_branches() -> None:
         fn = profiler._compile_graph(graph)
         assert callable(fn)
         res_comp = profiler.profile_graph(graph, {"in_0": arr}, num_iters=2, warmup_iters=1)
-        assert as_callable(len)(res_comp["latencies"]) == 2
+        assert ensure_callable(len)(res_comp["latencies"]) == 2
     with patch("ml_switcheroo_compiler.backends.tensorflow.generator.TensorFlowCodeGenerator.generate", return_value="x = 1\n"):
         with pytest.raises(TypeError, match="Failed to generate valid apply_model function"):
             profiler._compile_graph(graph)
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
-    assert as_callable(len)(res_empty["latencies"]) == 2
+    assert ensure_callable(len)(res_empty["latencies"]) == 2
     with patch("ml_switcheroo_compiler.backends.tensorflow.profiler.tf", None):
         assert _get_tf_peak_memory_mb() > 0.0
     mock_val = MagicMock()
@@ -1197,24 +1195,24 @@ def test_profilers_compilation_failure_fallback() -> None:
     inputs = {"in_0": [1.0, 2.0]}
     p_numba = NumbaProfiler()
     with patch.object(p_numba, "_compile_graph", side_effect=RuntimeError("comp fail")):
-        res_numba = as_callable(p_numba.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res_numba["latencies"]) == 1
+        res_numba = ensure_callable(p_numba.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res_numba["latencies"]) == 1
     p_sparse = SparseProfiler()
     with patch.object(p_sparse, "_compile_graph", side_effect=RuntimeError("comp fail")):
-        res_sparse = as_callable(p_sparse.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res_sparse["latencies"]) == 1
+        res_sparse = ensure_callable(p_sparse.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res_sparse["latencies"]) == 1
     p_dask = DaskProfiler()
     with patch.object(p_dask, "_compile_graph", side_effect=RuntimeError("comp fail")):
-        res_dask = as_callable(p_dask.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res_dask["latencies"]) == 1
+        res_dask = ensure_callable(p_dask.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res_dask["latencies"]) == 1
     p_keras = KerasProfiler()
     with patch.object(p_keras, "_compile_model", side_effect=RuntimeError("comp fail")):
-        res_keras = as_callable(p_keras.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res_keras["latencies"]) == 1
+        res_keras = ensure_callable(p_keras.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res_keras["latencies"]) == 1
     p_tf = TensorFlowProfiler()
     with patch.object(p_tf, "_compile_graph", side_effect=RuntimeError("comp fail")):
-        res_tf = as_callable(p_tf.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res_tf["latencies"]) == 1
+        res_tf = ensure_callable(p_tf.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res_tf["latencies"]) == 1
 
 
 def test_backends_sparse_profiler_multi_input_accumulation() -> None:
@@ -1229,8 +1227,8 @@ def test_backends_sparse_profiler_multi_input_accumulation() -> None:
     graph.inputs = ["in_0", "in_1"]
     inputs = {"in_0": np.array([1.0, 2.0]), "in_1": np.array([3.0, 4.0])}
     with patch.object(p, "_compile_graph", return_value=None):
-        res = as_callable(p.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
-        assert as_callable(len)(res["latencies"]) == 1
+        res = ensure_callable(p.profile_graph)(graph, inputs, num_iters=1, warmup_iters=1)
+        assert ensure_callable(len)(res["latencies"]) == 1
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1255,21 +1253,20 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_1(_state: dict
         assert dp.da is None
     sys.modules["ml_switcheroo_compiler.backends.dask"] = dask_pkg
     importlib.reload(dp)
-    if _get_attr(dp, "da", None) is None:
-        _set_attr(dp, "da", _make_mock_da())
-        _set_attr(dp, "dask", MagicMock())
+    if ensure_eager_tensor(dp).da is None:
+        ensure_mutable(dp).da = ensure_eager_tensor(_make_mock_da())
+        ensure_mutable(dp).dask = ensure_eager_tensor(MagicMock())
     sys.modules["ml_switcheroo_compiler.backends.keras"] = keras_pkg
     with patch.dict(sys.modules, {"keras": None}):
         importlib.reload(kp)
-        assert as_tensor(_get_attr(kp, "keras")) is None
+        assert ensure_eager_tensor(ensure_eager_tensor(kp).keras) is None
     sys.modules["ml_switcheroo_compiler.backends.keras"] = keras_pkg
     importlib.reload(kp)
-    if _get_attr(kp, "keras", None) is None:
-        _set_attr(kp, "keras", _make_mock_keras())
+    if ensure_eager_tensor(kp).keras is None:
+        ensure_mutable(kp).keras = ensure_eager_tensor(_make_mock_keras())
     sys.modules["ml_switcheroo_compiler.backends.tensorflow"] = tf_pkg
-    _get_attr(_state, "update")({"dask_pkg": dask_pkg, "dp": dp, "importlib": importlib, "keras_pkg": keras_pkg})
-    _get_attr(_state, "update")({"kp": kp, "sys": sys, "tf_pkg": tf_pkg, "tp": tp})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"dask_pkg": dask_pkg, "dp": dp, "importlib": importlib, "keras_pkg": keras_pkg}))
+    _state.update(ensure_tensor_dict({"kp": kp, "sys": sys, "tf_pkg": tf_pkg, "tp": tp}))
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1282,11 +1279,11 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_2(_state: dict
     tp = _state["tp"]
     with patch.dict(sys.modules, {"tensorflow": None}):
         importlib.reload(tp)
-        assert as_tensor(tp.tf) is None
+        assert ensure_eager_tensor(tp.tf) is None
     sys.modules["ml_switcheroo_compiler.backends.tensorflow"] = tf_pkg
     importlib.reload(tp)
-    if _get_attr(tp, "tf", None) is None:
-        _set_attr(tp, "tf", _make_mock_tf())
+    if ensure_eager_tensor(tp).tf is None:
+        ensure_mutable(tp).tf = ensure_eager_tensor(_make_mock_tf())
     mock_dask_lazy = MagicMock()
     mock_dask_lazy.compute.side_effect = RuntimeError("compute failed")
     assert dp._sync_dask_result(mock_dask_lazy) is mock_dask_lazy
@@ -1298,16 +1295,17 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_2(_state: dict
     assert dp._sync_dask_result({"res": mock_dask_success}) == {"res": 42}
     old_da = dp.da
     try:
-        _set_attr(dp, "da", None)
+        ensure_mutable(dp).da = ensure_eager_tensor(None)
         assert dp._sync_dask_result(mock_dask_success) is mock_dask_success
     finally:
-        _set_attr(dp, "da", old_da)
+        ensure_mutable(dp).da = ensure_eager_tensor(old_da)
     p_tf = TensorFlowProfiler()
     graph = IRGraph(name="test_tf_dev")
     graph.nodes = NodeDict({"in_0": LogicalNode(id="in_0", op_type="Input"), "add_0": LogicalNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])})
-    _get_attr(_state, "update")({"graph": graph, "mock_dask_lazy": mock_dask_lazy, "mock_dask_success": mock_dask_success, "old_da": old_da})
-    _get_attr(_state, "update")({"p_tf": p_tf})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"graph": graph, "mock_dask_lazy": mock_dask_lazy, "mock_dask_success": mock_dask_success, "old_da": old_da}))
+    _state.update(ensure_tensor_dict({"p_tf": p_tf}))
+    _state.update(ensure_tensor_dict({"dp": dp, "importlib": importlib, "sys": sys}))
+    _state.update(ensure_tensor_dict({"tf_pkg": tf_pkg, "tp": tp}))
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1317,7 +1315,7 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_3(_state: dict
         _state: Shared test state dictionary.
     """
     graph, kp, p_tf = _state["graph"], _state["kp"], _state["p_tf"]
-    _set_attr(graph, "inputs", ["in_0"])
+    ensure_mutable(graph).inputs = ensure_eager_tensor(["in_0"])
     inputs = {"in_0": [1.0, 2.0]}
     with patch.object(p_tf, "_compile_graph", return_value=lambda x: x):
         res_tf = p_tf.profile_graph(graph, inputs, num_iters=1, warmup_iters=1, device="/cpu:0")
@@ -1339,10 +1337,10 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_3(_state: dict
     mock_torch_no_cuda.cuda.is_available.return_value = False
     mock_tf_err = MagicMock()
     mock_tf_err.config.experimental.get_memory_info.side_effect = RuntimeError("tf fail")
-    _get_attr(_state, "update")({"_": _, "inputs": inputs, "mem": mem, "mem_linux": mem_linux})
-    _get_attr(_state, "update")({"mock_tf_err": mock_tf_err, "mock_torch": mock_torch, "mock_torch_err": mock_torch_err, "mock_torch_no_cuda": mock_torch_no_cuda})
-    _get_attr(_state, "update")({"res_tf": res_tf})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_": _, "inputs": inputs, "mem": mem, "mem_linux": mem_linux}))
+    _state.update(ensure_tensor_dict({"mock_tf_err": mock_tf_err, "mock_torch": mock_torch, "mock_torch_err": mock_torch_err, "mock_torch_no_cuda": mock_torch_no_cuda}))
+    _state.update(ensure_tensor_dict({"res_tf": res_tf}))
+    _state.update(ensure_tensor_dict({"graph": graph, "kp": kp, "p_tf": p_tf}))
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1359,7 +1357,7 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_4(_state: dict
     with patch.dict("sys.modules", {"torch": mock_torch_no_cuda, "tensorflow": mock_tf}):
         mem_tf = _get_keras_peak_memory_mb()
         assert mem_tf > 0.0
-    _sync_keras_result(as_tensor({"a": [1.0, (2.0,)]}))
+    _sync_keras_result(ensure_eager_tensor({"a": [1.0, (2.0,)]}))
     mock_result_err = MagicMock()
     mock_result_err.numpy.side_effect = RuntimeError("numpy fail")
     _sync_keras_result(mock_result_err)
@@ -1373,9 +1371,9 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_4(_state: dict
         kp._sync_keras_result(mock_fail)
     mock_k_ops = MagicMock()
     mock_k_ops.ops.convert_to_numpy.side_effect = [1.0, RuntimeError("ops fail")]
-    _get_attr(_state, "update")({"_": _, "mem_tf": mem_tf, "mock_fail": mock_fail, "mock_k_no_ops": mock_k_no_ops})
-    _get_attr(_state, "update")({"mock_k_ops": mock_k_ops, "mock_result_err": mock_result_err, "mock_success": mock_success, "mock_tf": mock_tf})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"_": _, "mem_tf": mem_tf, "mock_fail": mock_fail, "mock_k_no_ops": mock_k_no_ops}))
+    _state.update(ensure_tensor_dict({"mock_k_ops": mock_k_ops, "mock_result_err": mock_result_err, "mock_success": mock_success, "mock_tf": mock_tf}))
+    _state.update(ensure_tensor_dict({"kp": kp, "mock_tf_err": mock_tf_err, "mock_torch_no_cuda": mock_torch_no_cuda}))
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1408,9 +1406,10 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_5(_state: dict
     graph_single = IRGraph(name="test_single")
     graph_single.nodes = NodeDict({"in_0": LogicalNode(id="in_0", op_type="Input"), "add_0": LogicalNode(id="add_0", op_type="Add", inputs=["in_0"])})
     graph_single.inputs = ["in_0"]
-    _get_attr(_state, "update")({"fn1": fn1, "fn2": fn2, "g": g, "graph_single": graph_single})
-    _get_attr(_state, "update")({"mock_k_zeros": mock_k_zeros, "p_k": p_k, "r1": r1, "r2": r2})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"fn1": fn1, "fn2": fn2, "g": g, "graph_single": graph_single}))
+    _state.update(ensure_tensor_dict({"mock_k_zeros": mock_k_zeros, "p_k": p_k, "r1": r1, "r2": r2}))
+    _state.update(ensure_tensor_dict({"kp": kp, "mock_fail": mock_fail, "mock_k_no_ops": mock_k_no_ops}))
+    _state.update(ensure_tensor_dict({"mock_k_ops": mock_k_ops, "mock_success": mock_success}))
 
 
 def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1428,12 +1427,12 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_6(_state: dict
         assert len(res_comp_err["latencies"]) == 1
     old_k = kp.keras
     try:
-        _set_attr(kp, "keras", None)
+        ensure_mutable(kp).keras = ensure_eager_tensor(None)
         assert p_k._prepare_inputs(graph_single, {}) == []
         res_none = p_k.profile_graph(graph_single, {}, num_iters=1, warmup_iters=1)
         assert len(res_none["latencies"]) == 1
     finally:
-        _set_attr(kp, "keras", old_k)
+        ensure_mutable(kp).keras = ensure_eager_tensor(old_k)
     graph_multi = IRGraph(name="test_keras_multi")
     graph_multi.nodes = NodeDict({"in_0": LogicalNode(id="in_0", op_type="Input"), "in_1": LogicalNode(id="in_1", op_type="Input"), "add_0": LogicalNode(id="add_0", op_type="Add", inputs=["in_0", "in_1"])})
     graph_multi.inputs = ["in_0", "in_1"]
@@ -1441,8 +1440,8 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_6(_state: dict
     with patch.object(p_k, "_compile_model", return_value=lambda xs: xs[0]):
         res_multi = p_k.profile_graph(graph_multi, inputs_multi, num_iters=1, warmup_iters=1)
         assert len(res_multi["latencies"]) == 1
-    _get_attr(_state, "update")({"graph_multi": graph_multi, "inputs_multi": inputs_multi, "old_k": old_k, "res_comp_err": res_comp_err})
-    _get_attr(_state, "update")({"res_multi": res_multi, "res_single": res_single})
+    _state.update(ensure_tensor_dict({"graph_multi": graph_multi, "inputs_multi": inputs_multi, "old_k": old_k, "res_comp_err": res_comp_err}))
+    _state.update(ensure_tensor_dict({"res_multi": res_multi, "res_single": res_single}))
 
 
 def test_backends_dask_and_tf_and_keras_profiler_edge_cases() -> None:

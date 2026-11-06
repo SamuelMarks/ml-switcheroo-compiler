@@ -9,9 +9,8 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_obj, np
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -31,13 +30,13 @@ def test_numpy_conversion_fallback() -> None:
     """Test function test_numpy_conversion_fallback."""
     t = make_tensor(1.0)
     original_numpy = sys.modules.get("numpy")
-    _get_attr(sys.modules, "__setitem__")("numpy", None)
+    ensure_eager_tensor(sys.modules)["numpy"] = None
     try:
-        as_tensor(_get_attr(t, "numpy"))()
+        ensure_eager_tensor(ensure_eager_tensor(t).numpy)()
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
-        _get_attr(sys.modules, "__setitem__")("numpy", original_numpy)
+        ensure_eager_tensor(sys.modules)["numpy"] = original_numpy
     assert callable(test_numpy_conversion_fallback)
 
 
@@ -60,8 +59,8 @@ def test_exception_in_asarray() -> None:
             """
             raise RuntimeError("boom")
 
-    t = as_callable(make_tensor)(as_callable(BadData)())
-    res = as_tensor(_get_attr(t, "__array__"))()
+    t = ensure_callable(make_tensor)(ensure_callable(BadData)())
+    res = np.asarray(t)
     assert res.shape == (1,)
 
 
@@ -81,19 +80,19 @@ def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return as_callable(int)(x)
+            return ensure_callable(int)(x)
 
     class FakeTensor(Tensor):
         """Test class FakeTensor."""
 
         def eval(self) -> Tensor:
             """Test function eval."""
-            return as_tensor_obj(5)
+            return ensure_tensor_obj(5)
 
     t = FakeTensor(1.0, TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=()))
     import ml_switcheroo_compiler.backends.registry as reg
 
-    as_callable(monkeypatch.setattr)(reg, "get_active_backend", lambda: as_callable(FakeBackend)())
+    ensure_callable(monkeypatch.setattr)(reg, "get_active_backend", lambda: ensure_callable(FakeBackend)())
     assert t.item() == 5
 
 
@@ -101,7 +100,7 @@ def test_getitem_indexerror() -> None:
     """Test function test_getitem_indexerror."""
     t = make_tensor([1, 2])
     with pytest.raises(IndexError):
-        as_tensor(_get_attr(t, "__getitem__")((1, 2)))
+        ensure_eager_tensor(t)[(1, 2)]
     from ml_switcheroo_compiler.core import config
 
     orig = config.eager_mode
@@ -119,11 +118,11 @@ def test_getitem_indexerror() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
     try:
-        res = as_tensor(_get_attr(t, "__getitem__")(as_callable(FakeProxy)()))
+        res = ensure_eager_tensor(t)[ensure_callable(FakeProxy)()]
         assert res is not None
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)

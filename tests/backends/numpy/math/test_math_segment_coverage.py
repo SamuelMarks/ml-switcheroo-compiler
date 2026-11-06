@@ -8,8 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_segment as math_segment
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,25 +20,25 @@ def test_math_segment() -> None:
     segment_ids = np.array([0, 0, 1], dtype=np.int64)
 
     # Branch 1: num_segments is None
-    res_none = math_segment._np_segment_sum(np, data, segment_ids, num_segments=None)
-    assert as_tensor(_get_attr(res_none, "shape")) == (2, 2)
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_none, "__getitem__")(0)), [4.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_none, "__getitem__")(1)), [5.0, 6.0])
+    res_none = math_segment._np_segment_sum(ensure_eager_tensor(np), data, segment_ids, num_segments=None)
+    assert ensure_eager_tensor(res_none).shape == (2, 2)
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_none)[0], [4.0, 6.0])
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_none)[1], [5.0, 6.0])
 
     # Branch 2: num_segments is provided
-    res_num = math_segment._np_segment_sum(np, data, segment_ids, num_segments=4)
-    assert as_tensor(_get_attr(res_num, "shape")) == (4, 2)
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(0)), [4.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(1)), [5.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(2)), [0.0, 0.0])
-    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(3)), [0.0, 0.0])
+    res_num = math_segment._np_segment_sum(ensure_eager_tensor(np), data, segment_ids, num_segments=4)
+    assert ensure_eager_tensor(res_num).shape == (4, 2)
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_num)[0], [4.0, 6.0])
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_num)[1], [5.0, 6.0])
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_num)[2], [0.0, 0.0])
+    assert ensure_callable(np.allclose)(ensure_eager_tensor(res_num)[3], [0.0, 0.0])
 
     # Registry SegmentSum
     reg_seg = numpy_eager_registry.get("SegmentSum")
-    res_reg = as_callable(reg_seg)(np, data, segment_ids)
-    assert as_callable(np.allclose)(res_reg, res_none)
+    res_reg = ensure_callable(reg_seg)(np, data, segment_ids)
+    assert ensure_callable(np.allclose)(res_reg, res_none)
 
     # SparseSegmentSum directly
     sparse_data = np.array([[2.0, 3.0], [4.0, 5.0]], dtype=np.float32)
-    sparse_sum = math_segment._np_sparsesegmentsum(np, sparse_data)
-    assert as_callable(np.allclose)(sparse_sum, [[6.0, 8.0]])
+    sparse_sum = math_segment._np_sparsesegmentsum(ensure_eager_tensor(np), sparse_data)
+    assert ensure_callable(np.allclose)(sparse_sum, [[6.0, 8.0]])

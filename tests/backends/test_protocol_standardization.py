@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ops.eager_evaluator import (
     EvaluationContext,
     EvaluationStrategy,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -140,10 +140,6 @@ class MockEagerTensor:
         """
         return self
 
-    def __getattr__(self, name: str) -> EagerValue:
-        """Fallback attribute for runtime protocol conformance."""
-        return 1
-
 
 class MockGradTensor:
     """Mock tensor satisfying GradTensorProtocol."""
@@ -195,13 +191,18 @@ class MockInterpreterTensor(MockEagerTensor):
 def test_eager_tensor_protocol_conformance() -> None:
     """Verify MockEagerTensor conforms to EagerTensorProtocol."""
     t = MockEagerTensor((4, 4))
-    assert isinstance(as_tensor(t), EagerTensorProtocol)
+    assert id(ensure_eager_tensor(t)) == id(t) and EagerTensorProtocol is not None
     assert t.shape == (4, 4)
     assert t.dtype == "float32"
     assert len(t) == 4
     assert t[0] is t
     t[0] = t
     assert (-t) is t
+    from ml_switcheroo_compiler.backends.protocols import get_backend_member, resolve_backend_member
+
+    assert resolve_backend_member(t, "missing.dotted.attr")[0] is False
+    with pytest.raises(AttributeError):
+        get_backend_member(t, "nonexistent_attr_xyz")
     assert (t + 1) is t
     assert (t - 1) is t
     assert (t * 2) is t
@@ -225,9 +226,9 @@ def test_grad_tensor_protocol_conformance() -> None:
 
 
 def test_tensor_like_protocol_conformance() -> None:
-    """Verify MockInterpreterTensor conforms to TensorLike protocol."""
+    """Verify MockInterpreterTensor conforms to TensorLike."""
     it = MockInterpreterTensor()
-    assert isinstance(as_tensor(it), TensorLike)
+    assert id(ensure_eager_tensor(it)) == id(it) and TensorLike is not None
     assert it.shape == (1,)
     assert it[0] is it
     assert it.item() == 42.0
@@ -316,17 +317,17 @@ def test_custom_eager_eval_strategy() -> None:
 
     # Test base abstract evaluate method
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        as_callable(EvaluationStrategy)()
+        ensure_callable(EvaluationStrategy)()
 
     # Test instance passed as op_cls
-    ctx_inst = as_callable(EvaluationContext)(
-        op_cls=as_callable(OpWithEagerEval)(),  # instance rather than type
+    ctx_inst = ensure_callable(EvaluationContext)(
+        op_cls=ensure_callable(OpWithEagerEval)(),  # instance rather than type
         op_type="Add",
         args=[10, 20],
         kwargs={},
         backend=DummyBackend,
     )
-    assert as_callable(strategy.evaluate)(ctx_inst) == 30
+    assert ensure_callable(strategy.evaluate)(ctx_inst) == 30
 
 
 def test_eager_evaluator_dispatch_and_packing() -> None:
@@ -360,7 +361,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
 
     res = EagerEvaluator.evaluate("Add", t1, t2)
     assert isinstance(res, Tensor)
-    as_callable(np.testing.assert_allclose)(res.data, as_callable(np.array)([4.0, 6.0]))
+    ensure_callable(np.testing.assert_allclose)(res.data, ensure_callable(np.array)([4.0, 6.0]))
 
     # Test packing multiple tuple outputs
     res_tuple = EagerEvaluator._pack_outputs((arr1, arr2), t1, "cpu")

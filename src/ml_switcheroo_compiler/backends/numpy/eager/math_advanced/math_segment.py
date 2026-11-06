@@ -5,15 +5,15 @@ from __future__ import annotations
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(
     backend_module: BackendModuleProtocol,
-    data: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    segment_ids: np.ndarray[tuple[int, ...], np.dtype[np.int64]],
+    data: EagerValue,
+    segment_ids: EagerValue,
     num_segments: int | None = None,
     **kwargs: int | float | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -29,10 +29,12 @@ def _np_segment_sum(
     Returns:
         np.ndarray: Segment-summed result array.
     """
-    n_segments = num_segments if num_segments is not None else int(np.max(segment_ids)) + 1
-    out = np.zeros((n_segments,) + data.shape[1:], dtype=data.dtype)
-    np.add.at(out, segment_ids, data)
-    return out
+    data_arr = np.asarray(data)
+    seg_arr = np.asarray(segment_ids)
+    n_segments = num_segments if num_segments is not None else int(np.max(seg_arr)) + 1
+    out = np.zeros((n_segments,) + data_arr.shape[1:], dtype=data_arr.dtype)
+    np.add.at(out, seg_arr, data_arr)
+    return ensure_ndarray(out)
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
@@ -52,4 +54,4 @@ def _np_sparsesegmentsum(
         np.ndarray: Summed tensor result.
     """
     data = backend_module.asarray(args[0])
-    return as_ndarray(backend_module.sum(data, axis=0, keepdims=True))
+    return ensure_ndarray(backend_module.sum(data, axis=0, keepdims=True))

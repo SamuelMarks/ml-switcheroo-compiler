@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,7 +19,7 @@ def test_backend_registry() -> None:
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend, register_backend
     from ml_switcheroo_compiler.core.config import config
 
-    @as_callable(register_backend)("dummy_decorator")
+    @ensure_callable(register_backend)("dummy_decorator")
     class DummyBackend(BaseGenerator):
         """Dummy backend for registry testing."""
 
@@ -51,8 +51,8 @@ def test_loaders_and_lazy_loading() -> None:
         loader()
     with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
         with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
-            as_callable(BackendRegistry._try_load_lazy)("test_lazy_fail")
-            as_callable(BackendRegistry._try_load_lazy)("test_lazy_no_loader")
+            ensure_callable(BackendRegistry._try_load_lazy)("test_lazy_fail")
+            ensure_callable(BackendRegistry._try_load_lazy)("test_lazy_no_loader")
     assert callable(test_loaders_and_lazy_loading)
 
 

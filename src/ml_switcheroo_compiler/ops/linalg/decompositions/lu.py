@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import as_tensor, as_tensor_pair
+from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor, ensure_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -36,7 +35,7 @@ class LuFactor(OpDef):
         inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = _extract_linalg_shape(inp)
         if len(shape) < 2:
             return (shape, shape)
         m, n = shape[-2], shape[-1]
@@ -64,7 +63,7 @@ class LuPivotsToPermutation(OpDef):
         """
         if not args or args[0] is None:
             return ()
-        shape = tuple(int(d) for d in _get_attr(args[0], "shape", args[0] if isinstance(args[0], (list, tuple)) else ()))
+        shape = _extract_linalg_shape(args[0])
         return shape[:-1] + (kwargs.get("permutation_size", 0),)
 
 
@@ -81,7 +80,7 @@ def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        lu, piv = as_tensor_pair(backend.execute_op("LuFactor", a.data))
+        lu, piv = ensure_tensor_pair(backend.execute_op("LuFactor", a.data))
         piv_dtype = a.dtype
         return (
             Tensor(lu, TensorConfig(lu.shape, a.dtype, a.device)),
@@ -109,7 +108,7 @@ def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = as_tensor(backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size))
+        data = ensure_eager_tensor(backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size))
         return Tensor(data, TensorConfig(data.shape, pivots.dtype, pivots.device))
     out_shape = pivots.shape[:-1] + (permutation_size,)
     res = _emit_linalg_node(

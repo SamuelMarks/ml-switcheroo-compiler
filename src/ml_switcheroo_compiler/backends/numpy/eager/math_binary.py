@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -293,7 +293,7 @@ def _np_logit(backend_module: BackendModuleProtocol, x: EagerValue, eps: EagerVa
     import numpy as np
 
     with np.errstate(divide="ignore"):
-        return backend_module.log(as_tensor(x) / (1.0 - as_tensor(x)))
+        return backend_module.log(ensure_eager_tensor(x) / (1.0 - ensure_eager_tensor(x)))
 
 
 @numpy_eager_registry.register("Polygamma")

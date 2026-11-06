@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -38,10 +37,9 @@ def _test_strategy_server_part_1(_state: dict[str, EagerTensorProtocol]) -> None
                 server.start()
                 assert server._running
                 assert mock_thread.called
-    _get_attr(_state, "update")({"MagicMock": MagicMock, "Server": Server, "io": io, "json": json})
-    _get_attr(_state, "update")({"mock_backend": mock_backend, "mock_thread": mock_thread, "np": np, "patch": patch})
-    _get_attr(_state, "update")({"server": server})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "Server": Server, "io": io, "json": json}))
+    _state.update(ensure_tensor_dict({"mock_backend": mock_backend, "mock_thread": mock_thread, "np": np, "patch": patch}))
+    _state.update(ensure_tensor_dict({"server": server}))
 
 
 def _test_strategy_server_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -53,14 +51,14 @@ def _test_strategy_server_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     MagicMock, patch, server = _state["MagicMock"], _state["patch"], _state["server"]
     with patch("select.select") as mock_select:
         mock_sock = MagicMock()
-        _set_attr(server, "_server", mock_sock)
-        _set_attr(server, "_running", True)
+        ensure_mutable(server)._server = ensure_eager_tensor(mock_sock)
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         # Test empty header
         mock_conn = MagicMock()
-        _set_attr(mock_conn.recv, "return_value", b"")
-        _set_attr(mock_sock.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([mock_sock], [], []))
+        ensure_mutable(mock_conn.recv).return_value = ensure_eager_tensor(b"")
+        ensure_mutable(mock_sock.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([mock_sock], [], []))
 
         # We need to break the loop
         def set_not_running(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -70,13 +68,13 @@ def _test_strategy_server_part_2(_state: dict[str, EagerTensorProtocol]) -> None
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            _set_attr(server, "_running", False)
+            ensure_mutable(server)._running = ensure_eager_tensor(False)
             return b""
 
-        _set_attr(mock_conn.recv, "side_effect", set_not_running)
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(set_not_running)
         server._run_server()
-    _get_attr(_state, "update")({"mock_conn": mock_conn, "mock_select": mock_select, "mock_sock": mock_sock, "set_not_running": set_not_running})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"mock_conn": mock_conn, "mock_select": mock_select, "mock_sock": mock_sock, "set_not_running": set_not_running}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -89,8 +87,8 @@ def _test_strategy_server_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     server = _state["server"]
     with patch("select.select") as mock_select:
         mock_sock = MagicMock()
-        _set_attr(server, "_server", mock_sock)
-        _set_attr(server, "_running", True)
+        ensure_mutable(server)._server = ensure_eager_tensor(mock_sock)
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         # Test valid header pull
         mock_conn = MagicMock()
@@ -105,20 +103,21 @@ def _test_strategy_server_part_3(_state: dict[str, EagerTensorProtocol]) -> None
                 size: Test parameter `size`.
             """
             if size == 4:
-                _set_attr(server, "_running", False)
+                ensure_mutable(server)._running = ensure_eager_tensor(False)
                 return header_len
             return header
 
-        _set_attr(mock_conn.recv, "side_effect", mock_recv)
-        _set_attr(mock_sock.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([mock_sock], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(mock_recv)
+        ensure_mutable(mock_sock.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([mock_sock], [], []))
 
         server.state_store["test_t"] = np.array([1.0, 2.0])
         server._run_server()
         assert mock_conn.sendall.called
-    _get_attr(_state, "update")({"header": header, "header_len": header_len, "mock_conn": mock_conn, "mock_recv": mock_recv})
-    _get_attr(_state, "update")({"mock_select": mock_select, "mock_sock": mock_sock})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"header": header, "header_len": header_len, "mock_conn": mock_conn, "mock_recv": mock_recv}))
+    _state.update(ensure_tensor_dict({"mock_select": mock_select, "mock_sock": mock_sock}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "json": json, "np": np}))
+    _state.update(ensure_tensor_dict({"patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -130,8 +129,8 @@ def _test_strategy_server_part_4(_state: dict[str, EagerTensorProtocol]) -> None
     MagicMock, json, patch, server = _state["MagicMock"], _state["json"], _state["patch"], _state["server"]
     with patch("select.select") as mock_select:
         mock_sock = MagicMock()
-        _set_attr(server, "_server", mock_sock)
-        _set_attr(server, "_running", True)
+        ensure_mutable(server)._server = ensure_eager_tensor(mock_sock)
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         # Test invalid pull
         mock_conn = MagicMock()
@@ -145,19 +144,20 @@ def _test_strategy_server_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 size: Test parameter `size`.
             """
             if size == 4:
-                _set_attr(server, "_running", False)
+                ensure_mutable(server)._running = ensure_eager_tensor(False)
                 return header_len
             return header
 
-        _set_attr(mock_conn.recv, "side_effect", mock_recv)
-        _set_attr(mock_sock.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([mock_sock], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(mock_recv)
+        ensure_mutable(mock_sock.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([mock_sock], [], []))
 
         server._run_server()
         assert not mock_conn.sendall.called
-    _get_attr(_state, "update")({"header": header, "header_len": header_len, "mock_conn": mock_conn, "mock_recv": mock_recv})
-    _get_attr(_state, "update")({"mock_select": mock_select, "mock_sock": mock_sock})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"header": header, "header_len": header_len, "mock_conn": mock_conn, "mock_recv": mock_recv}))
+    _state.update(ensure_tensor_dict({"mock_select": mock_select, "mock_sock": mock_sock}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "json": json, "patch": patch}))
+    _state.update(ensure_tensor_dict({"server": server}))
 
 
 def _test_strategy_server_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -170,8 +170,8 @@ def _test_strategy_server_part_5(_state: dict[str, EagerTensorProtocol]) -> None
     patch, server = _state["patch"], _state["server"]
     with patch("select.select") as mock_select:
         mock_sock = MagicMock()
-        _set_attr(server, "_server", mock_sock)
-        _set_attr(server, "_running", True)
+        ensure_mutable(server)._server = ensure_eager_tensor(mock_sock)
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         # Test push
         mock_conn = MagicMock()
@@ -205,21 +205,22 @@ def _test_strategy_server_part_5(_state: dict[str, EagerTensorProtocol]) -> None
                 elif self.calls == 3:
                     return data_len
                 elif self.calls == 4:
-                    _set_attr(server, "_running", False)
+                    ensure_mutable(server)._running = ensure_eager_tensor(False)
                     return data
                 return b""
 
-        _set_attr(mock_conn.recv, "side_effect", RecvSeq())
-        _set_attr(mock_sock.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([mock_sock], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(RecvSeq())
+        ensure_mutable(mock_sock.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([mock_sock], [], []))
 
         server.state_store["test_push"] = np.array([1.0, 2.0])
         server._run_server()
         assert np.array_equal(server.state_store["test_push"], np.array([4.0, 6.0]))
-    _get_attr(_state, "update")({"RecvSeq": RecvSeq, "bio": bio, "data": data, "data_arr": data_arr})
-    _get_attr(_state, "update")({"data_len": data_len, "header": header, "header_len": header_len, "mock_conn": mock_conn})
-    _get_attr(_state, "update")({"mock_select": mock_select, "mock_sock": mock_sock})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"RecvSeq": RecvSeq, "bio": bio, "data": data, "data_arr": data_arr}))
+    _state.update(ensure_tensor_dict({"data_len": data_len, "header": header, "header_len": header_len, "mock_conn": mock_conn}))
+    _state.update(ensure_tensor_dict({"mock_select": mock_select, "mock_sock": mock_sock}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "io": io, "json": json}))
+    _state.update(ensure_tensor_dict({"np": np, "patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -232,8 +233,8 @@ def _test_strategy_server_part_6(_state: dict[str, EagerTensorProtocol]) -> None
     patch, server = _state["patch"], _state["server"]
     with patch("select.select") as mock_select:
         mock_sock = MagicMock()
-        _set_attr(server, "_server", mock_sock)
-        _set_attr(server, "_running", True)
+        ensure_mutable(server)._server = ensure_eager_tensor(mock_sock)
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         # Test push without existing state
         mock_conn = MagicMock()
@@ -267,20 +268,21 @@ def _test_strategy_server_part_6(_state: dict[str, EagerTensorProtocol]) -> None
                 elif self.calls == 3:
                     return data_len
                 elif self.calls == 4:
-                    _set_attr(server, "_running", False)
+                    ensure_mutable(server)._running = ensure_eager_tensor(False)
                     return data
                 return b""
 
-        _set_attr(mock_conn.recv, "side_effect", RecvSeq2())
-        _set_attr(mock_sock.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([mock_sock], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(RecvSeq2())
+        ensure_mutable(mock_sock.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([mock_sock], [], []))
 
         server._run_server()
         assert np.array_equal(server.state_store["test_push2"], np.array([3.0, 4.0]))
-    _get_attr(_state, "update")({"RecvSeq2": RecvSeq2, "bio": bio, "data": data, "data_arr": data_arr})
-    _get_attr(_state, "update")({"data_len": data_len, "header": header, "header_len": header_len, "mock_conn": mock_conn})
-    _get_attr(_state, "update")({"mock_select": mock_select, "mock_sock": mock_sock})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"RecvSeq2": RecvSeq2, "bio": bio, "data": data, "data_arr": data_arr}))
+    _state.update(ensure_tensor_dict({"data_len": data_len, "header": header, "header_len": header_len, "mock_conn": mock_conn}))
+    _state.update(ensure_tensor_dict({"mock_select": mock_select, "mock_sock": mock_sock}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "io": io, "json": json}))
+    _state.update(ensure_tensor_dict({"np": np, "patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -290,8 +292,8 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     MagicMock, patch, server = _state["MagicMock"], _state["patch"], _state["server"]
-    with as_callable(patch)("select.select", side_effect=as_callable(Exception)("select error")):
-        _set_attr(server, "_running", True)
+    with ensure_callable(patch)("select.select", side_effect=ensure_callable(Exception)("select error")):
+        ensure_mutable(server)._running = ensure_eager_tensor(True)
 
         class MockServer:
             """Test class MockServer."""
@@ -312,7 +314,7 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
                 """Test function close."""
                 pass
 
-        _set_attr(server, "_server", MockServer())
+        ensure_mutable(server)._server = ensure_eager_tensor(MockServer())
 
         def mock_warn(msg: EagerValue, stacklevel: EagerValue) -> None:
             """Test function mock_warn.
@@ -321,17 +323,17 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
                 msg: Test parameter `msg`.
                 stacklevel: Test parameter `stacklevel`.
             """
-            _set_attr(server, "_running", False)
+            ensure_mutable(server)._running = ensure_eager_tensor(False)
 
         with patch("warnings.warn", side_effect=mock_warn):
             server._run_server()
 
-    with as_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=as_callable(Exception)("join mock fail")):
+    with ensure_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=ensure_callable(Exception)("join mock fail")):
         server.join()
 
-    _set_attr(server, "_server", MagicMock())
-    _get_attr(_state, "update")({"MockServer": MockServer, "mock_warn": mock_warn})
-    _state.update(_caller_locals())
+    ensure_mutable(server)._server = ensure_eager_tensor(MagicMock())
+    _state.update(ensure_tensor_dict({"MockServer": MockServer, "mock_warn": mock_warn}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -341,29 +343,28 @@ def _test_strategy_server_part_8(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     server = _state["server"]
-    _set_attr(server._server.close, "side_effect", Exception("close error"))
+    ensure_mutable(server._server.close).side_effect = ensure_eager_tensor(Exception("close error"))
     server.join()
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.distributed.strategy import DataParallelStrategy, MultiWorkerMirroredStrategy, Server
 
-    server = as_tensor(Server())
+    server = ensure_eager_tensor(Server())
     server.join()
 
-    _set_attr(server, "_running", True)
-    _set_attr(server, "_thread", MagicMock())
+    ensure_mutable(server)._running = ensure_eager_tensor(True)
+    ensure_mutable(server)._thread = ensure_eager_tensor(MagicMock())
     server.join()
 
     # Run the extra coverage tests
-    server = as_tensor(Server())
-    _set_attr(server, "_server", None)
+    server = ensure_eager_tensor(Server())
+    ensure_mutable(server)._server = ensure_eager_tensor(None)
     server._run_server()
 
-    _set_attr(server, "_server", MagicMock())
-    _set_attr(server, "_running", True)
-    _get_attr(_state, "update")({"DataParallelStrategy": DataParallelStrategy, "MagicMock": MagicMock, "MultiWorkerMirroredStrategy": MultiWorkerMirroredStrategy, "Server": Server})
-    _get_attr(_state, "update")({"patch": patch, "server": server})
-    _state.update(_caller_locals())
+    ensure_mutable(server)._server = ensure_eager_tensor(MagicMock())
+    ensure_mutable(server)._running = ensure_eager_tensor(True)
+    _state.update(ensure_tensor_dict({"DataParallelStrategy": DataParallelStrategy, "MagicMock": MagicMock, "MultiWorkerMirroredStrategy": MultiWorkerMirroredStrategy, "Server": Server}))
+    _state.update(ensure_tensor_dict({"patch": patch, "server": server}))
 
 
 def _test_strategy_server_part_9(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -401,17 +402,18 @@ def _test_strategy_server_part_9(_state: dict[str, EagerTensorProtocol]) -> None
                 elif self.calls == 3:
                     return data_len
                 elif self.calls == 4:
-                    _set_attr(server, "_running", False)
+                    ensure_mutable(server)._running = ensure_eager_tensor(False)
                     return b""  # chunk break
                 return b""
 
-        _set_attr(mock_conn.recv, "side_effect", RecvSeqBreak())
-        _set_attr(server._server.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([server._server], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(RecvSeqBreak())
+        ensure_mutable(server._server.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([server._server], [], []))
         server._run_server()
-    _get_attr(_state, "update")({"RecvSeqBreak": RecvSeqBreak, "data_len": data_len, "header": header, "header_len": header_len})
-    _get_attr(_state, "update")({"mock_conn": mock_conn, "mock_select": mock_select})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"RecvSeqBreak": RecvSeqBreak, "data_len": data_len, "header": header, "header_len": header_len}))
+    _state.update(ensure_tensor_dict({"mock_conn": mock_conn, "mock_select": mock_select}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "json": json, "patch": patch}))
+    _state.update(ensure_tensor_dict({"server": server}))
 
 
 def _test_strategy_server_part_10(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -421,8 +423,8 @@ def _test_strategy_server_part_10(_state: dict[str, EagerTensorProtocol]) -> Non
         _state: Shared test state dictionary.
     """
     server = _state["server"]
-    _set_attr(server, "_running", True)
-    _state.update(_caller_locals())
+    ensure_mutable(server)._running = ensure_eager_tensor(True)
+    _state.update(ensure_tensor_dict({"server": server}))
 
 
 def _test_strategy_server_part_11(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -457,17 +459,18 @@ def _test_strategy_server_part_11(_state: dict[str, EagerTensorProtocol]) -> Non
                 elif self.calls == 2:
                     return header
                 elif self.calls == 3:
-                    _set_attr(server, "_running", False)
+                    ensure_mutable(server)._running = ensure_eager_tensor(False)
                     return b""  # continue
                 return b""
 
-        _set_attr(mock_conn.recv, "side_effect", RecvSeqContinue())
-        _set_attr(server._server.accept, "return_value", (mock_conn, "addr"))
-        _set_attr(mock_select, "return_value", ([server._server], [], []))
+        ensure_mutable(mock_conn.recv).side_effect = ensure_eager_tensor(RecvSeqContinue())
+        ensure_mutable(server._server.accept).return_value = ensure_eager_tensor((mock_conn, "addr"))
+        ensure_mutable(mock_select).return_value = ensure_eager_tensor(([server._server], [], []))
         server._run_server()
-    _get_attr(_state, "update")({"RecvSeqContinue": RecvSeqContinue, "header": header, "header_len": header_len, "mock_conn": mock_conn})
-    _get_attr(_state, "update")({"mock_select": mock_select})
-    _state.update(_caller_locals())
+    _state.update(ensure_tensor_dict({"RecvSeqContinue": RecvSeqContinue, "header": header, "header_len": header_len, "mock_conn": mock_conn}))
+    _state.update(ensure_tensor_dict({"mock_select": mock_select}))
+    _state.update(ensure_tensor_dict({"MagicMock": MagicMock, "json": json, "patch": patch}))
+    _state.update(ensure_tensor_dict({"server": server}))
 
 
 def _test_strategy_server_part_12(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -491,10 +494,10 @@ def _test_strategy_server_part_12(_state: dict[str, EagerTensorProtocol]) -> Non
             self.called = True
 
     mock_b = MockBackendJoin()
-    with as_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
-        _set_attr(server, "_thread", MagicMock())
+    with ensure_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
+        ensure_mutable(server)._thread = ensure_eager_tensor(MagicMock())
         server.join()
-        assert _get_attr(mock_b, "called", False)
+        assert ensure_eager_tensor(mock_b).called
 
     mwms = MultiWorkerMirroredStrategy(target_env="browser")
     assert mwms.get_communication_protocol() == "webrtc"
@@ -505,7 +508,7 @@ def _test_strategy_server_part_12(_state: dict[str, EagerTensorProtocol]) -> Non
     dp = DataParallelStrategy(mesh_axis="data")
     assert dp.mesh_axis == "data"
     assert dp.get_communication_protocol() == "tcp"
-    _get_attr(_state, "update")({"MockBackendJoin": MockBackendJoin, "dp": dp, "mock_b": mock_b, "mwms": mwms})
+    _state.update(ensure_tensor_dict({"MockBackendJoin": MockBackendJoin, "dp": dp, "mock_b": mock_b, "mwms": mwms}))
 
 
 def test_strategy_server() -> None:

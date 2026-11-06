@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import _get_attr
+import typing
+
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+
+@typing.runtime_checkable
+class _ShapeMetaNodeProtocol(typing.Protocol):
+    """Protocol for nodes exposing `shape_metadata`."""
+
+    shape_metadata: dict[str, tuple[int, ...]] | tuple[int | str, ...] | list[int | str] | None
 
 
 def state_lowering_pass(graph: IRGraph) -> bool:
@@ -50,8 +59,11 @@ def _node_clean_name_and_shape(node: IRNode) -> tuple[str, tuple[int, ...]]:
     """
     param_name = node.attributes.get("param_name", node.attributes.get("variable_name", node.id))
     clean_name = str(param_name).replace(".", "_")
-    shape_meta = _get_attr(node, "shape_metadata", None)
-    shape = shape_meta.get("shape", (1, 1)) if isinstance(shape_meta, dict) else (1, 1)
+
+    raw_node: TensorOrScalar = node
+    shape_meta = raw_node.shape_metadata if isinstance(raw_node, _ShapeMetaNodeProtocol) else None
+    raw_shape = shape_meta.get("shape", (1, 1)) if isinstance(shape_meta, dict) else (1, 1)
+    shape = tuple(int(x) for x in raw_shape)
     return clean_name, shape
 
 

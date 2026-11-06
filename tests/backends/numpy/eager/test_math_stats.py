@@ -10,8 +10,7 @@ import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_stats as ms
 from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_randomcategorical, _np_randomshuffle
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_mod, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,7 +18,9 @@ if typing.TYPE_CHECKING:
 
 def test_math_stats_coverage() -> None:
     """Test function test_math_stats_coverage."""
-    ops = [_get_attr(ms, name) for name in dir(ms) if name.startswith("_") and callable(_get_attr(ms, name))]
+    from tests.testing_utils import get_test_members
+
+    ops = [ensure_callable(fn) for name, fn in get_test_members(ms).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -28,9 +29,9 @@ def test_math_stats_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y", "tensor"):
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
             else:
-                as_callable(args_to_pass.append)(arg)
+                ensure_callable(args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -47,11 +48,11 @@ def test_math_stats_exceptions() -> None:
     import ml_switcheroo_compiler.backends.numpy.eager.math_stats as ms
 
     with pytest.raises(ValueError):
-        ms._np_descriptive(np, a=None)
+        ms._np_descriptive(ensure_eager_tensor(np), a=None)
     with pytest.raises(IndexError):
-        ms._np_randompermutation(np, 5)
+        ms._np_randompermutation(ensure_eager_tensor(np), 5)
     with pytest.raises(TypeError):
-        ms._np_randomcategorical(np, [1, 2], p=[0.5, 0.5])
+        ms._np_randomcategorical(ensure_eager_tensor(np), [1, 2], p=[0.5, 0.5])
 
 
 def test_missing_math_stats2() -> None:
@@ -63,7 +64,7 @@ def test_missing_math_stats2() -> None:
 
         data = 5
 
-    ms._np_randompermutation(np, np.array([1.0]), x=as_tensor(MockData()))
+    ms._np_randompermutation(ensure_eager_tensor(np), np.array([1.0]), x=ensure_eager_tensor(MockData()))
 
     class MockDataP:
         """Test class MockDataP."""
@@ -75,21 +76,21 @@ def test_missing_math_stats2() -> None:
 
         data = [1.0]
 
-    ms._np_randomchoice(np, np.array([1.0]), a=as_tensor(MockDataList()), p=as_tensor(MockDataP()))
+    ms._np_randomchoice(ensure_eager_tensor(np), np.array([1.0]), a=ensure_eager_tensor(MockDataList()), p=ensure_eager_tensor(MockDataP()))
     assert callable(test_missing_math_stats2)
 
 
 def test_np_random_shuffle_list() -> None:
     """Test function test_np_random_shuffle_list."""
     x = [1, 2, 3]
-    res = _np_randomshuffle(as_mod(None), x)
+    res = _np_randomshuffle(ensure_mod(None), x)
     assert isinstance(res, np.ndarray)
     assert set(res) == {1, 2, 3}
 
 
 def test_randomcategorical_shape() -> None:
     """Test function test_randomcategorical_shape."""
-    res = _np_randomcategorical(as_mod(None), None, logits=np.array([1.0, 2.0]), shape=(1, 2))
-    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
-    res = _np_randomcategorical(as_mod(None), None, logits=np.array([[1.0, 2.0]]))
-    assert as_tensor(_get_attr(res, "shape")) == (1,)
+    res = _np_randomcategorical(ensure_mod(None), None, logits=np.array([1.0, 2.0]), shape=(1, 2))
+    assert ensure_eager_tensor(res).shape == (1, 2)
+    res = _np_randomcategorical(ensure_mod(None), None, logits=np.array([[1.0, 2.0]]))
+    assert ensure_eager_tensor(res).shape == (1,)

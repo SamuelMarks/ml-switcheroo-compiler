@@ -9,10 +9,9 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -54,7 +53,7 @@ def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
         return x
 
     vmapped = vmap(my_func, in_axes=0, out_axes=0)
-    as_callable(vmapped)(t)
+    ensure_callable(vmapped)(t)
     assert callable(test_vmap_eager)
 
 
@@ -81,7 +80,7 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
 
     vmapped = vmap(my_func, in_axes=(0, 1), out_axes=0)
     with pytest.raises(AttributeError):
-        as_callable(vmapped)(t, t)
+        ensure_callable(vmapped)(t, t)
 
 
 def test_vmap_not_tracing() -> None:
@@ -100,7 +99,7 @@ def test_vmap_not_tracing() -> None:
         return x
 
     with pytest.raises(RuntimeError):
-        as_callable(vmap)(my_func)(as_callable(Tensor)(as_callable(MockTensor)().data, as_callable(TensorConfig)((), DType.Float32, "cpu")))
+        ensure_callable(vmap)(my_func)(ensure_callable(Tensor)(ensure_callable(MockTensor)().data, ensure_callable(TensorConfig)((), DType.Float32, "cpu")))
 
 
 def test_vmap_eager_impl(mocker: EagerTensorProtocol) -> None:
@@ -172,7 +171,7 @@ def test_vmap_eager_execute() -> None:
             return R()
 
     old = reg.get_active_backend
-    _set_attr(reg, "get_active_backend", lambda: FakeBackend())
+    ensure_mutable(reg).get_active_backend = ensure_eager_tensor(lambda: FakeBackend())
     t = Tensor(MockData(), TensorConfig((2, 3), DType.Float32, "cpu"))
 
     def my_func(x: EagerValue) -> EagerValue:
@@ -184,7 +183,7 @@ def test_vmap_eager_execute() -> None:
         return x
 
     res = _eager_vmap(my_func, 0, 0, (t,))
-    assert as_tensor(_get_attr(res, "shape")) == (2, 3)
+    assert ensure_eager_tensor(res).shape == (2, 3)
     reg.get_active_backend = old
 
 
@@ -199,7 +198,7 @@ def test_vmap_resolve() -> None:
         dtype = DType.Float32
         device = "cpu"
 
-    assert as_callable(_compute_vmap_shape)(as_callable(FakeT)(), None) == ()
+    assert ensure_callable(_compute_vmap_shape)(ensure_callable(FakeT)(), None) == ()
 
 
 def test_vmap_trace() -> None:
@@ -219,8 +218,8 @@ def test_vmap_trace() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
-    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
+    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
 
     def my_func(x: EagerValue) -> EagerValue:
         """Test function my_func.
@@ -243,7 +242,7 @@ def test_vmap_trace() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph"):
         res = _trace_vmap(my_func, 0, 0, (t,))
-        assert as_tensor(_get_attr(res, "shape")) == (2,)
+        assert ensure_eager_tensor(res).shape == (2,)
 
 
 def test_vmap_non_tensor_arg() -> None:

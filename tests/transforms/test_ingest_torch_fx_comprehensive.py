@@ -6,9 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.foreign import ingest_torch_fx
-from tests.testing_utils import as_callable, as_str, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_str
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -68,7 +67,7 @@ class MockGraphModule:
 
     def named_modules(self) -> EagerValue:
         """Named modules."""
-        return as_tensor(_get_attr(self.modules, "items")())
+        return ensure_eager_tensor(ensure_eager_tensor(self.modules).items())
 
 
 def test_ingest_torch_fx_empty() -> None:
@@ -77,32 +76,36 @@ def test_ingest_torch_fx_empty() -> None:
         ingest_torch_fx(None)
 
     gm = MockGraphModule(no_graph=True)
-    g = as_callable(ingest_torch_fx)(gm)
+    g = ensure_callable(ingest_torch_fx)(gm)
     assert len(g.nodes) == 0
 
     gm2 = MockGraphModule(empty_nodes=True)
-    g2 = as_callable(ingest_torch_fx)(gm2)
+    g2 = ensure_callable(ingest_torch_fx)(gm2)
     assert len(g2.nodes) == 0
 
 
 def test_fx_call_method() -> None:
     """Test."""
     arg_node = MockNode("placeholder", "x", "x")
-    view_node = as_callable(MockNode)("call_method", "view_1", "view", args=(arg_node, -1, 10))
-    reshape_node = as_callable(MockNode)("call_method", "reshape_1", "reshape", args=(arg_node, 10, -1))
-    permute_node = as_callable(MockNode)("call_method", "permute_1", "permute", args=(arg_node, 1, 0))
-    transpose_node = as_callable(MockNode)("call_method", "transpose_1", "transpose", args=(arg_node, 0, 1))
-    contiguous_node = as_callable(MockNode)("call_method", "contiguous_1", "contiguous", args=(arg_node,))
-    relu_node = as_callable(MockNode)("call_method", "relu_1", "relu", args=(arg_node,))
-    flatten_node = as_callable(MockNode)("call_method", "flatten_1", "flatten", args=(arg_node, 1))
-    unsqueeze_node = as_callable(MockNode)("call_method", "unsqueeze_1", "unsqueeze", args=(arg_node, 0))
-    squeeze_node = as_callable(MockNode)("call_method", "squeeze_1", "squeeze", args=(arg_node, 0))
-    unknown_node = as_callable(MockNode)("call_method", "unknown_1", "unknown_target", args=(arg_node, "other"))
-    kwarg_node = as_callable(MockNode)("call_method", "kwarg_1", "view", args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": as_callable(object)()})
+    view_node = ensure_callable(MockNode)("call_method", "view_1", "view", args=(arg_node, -1, 10))
+    reshape_node = ensure_callable(MockNode)("call_method", "reshape_1", "reshape", args=(arg_node, 10, -1))
+    permute_node = ensure_callable(MockNode)("call_method", "permute_1", "permute", args=(arg_node, 1, 0))
+    transpose_node = ensure_callable(MockNode)("call_method", "transpose_1", "transpose", args=(arg_node, 0, 1))
+    contiguous_node = ensure_callable(MockNode)("call_method", "contiguous_1", "contiguous", args=(arg_node,))
+    relu_node = ensure_callable(MockNode)("call_method", "relu_1", "relu", args=(arg_node,))
+    flatten_node = ensure_callable(MockNode)("call_method", "flatten_1", "flatten", args=(arg_node, 1))
+    unsqueeze_node = ensure_callable(MockNode)("call_method", "unsqueeze_1", "unsqueeze", args=(arg_node, 0))
+    squeeze_node = ensure_callable(MockNode)("call_method", "squeeze_1", "squeeze", args=(arg_node, 0))
 
-    gm = as_callable(MockGraphModule)([arg_node, view_node, reshape_node, permute_node, transpose_node, contiguous_node, relu_node, flatten_node, unsqueeze_node, squeeze_node, unknown_node, kwarg_node])
+    class _BareDummy:
+        """Empty dummy class."""
 
-    g = as_callable(ingest_torch_fx)(gm)
+    unknown_node = ensure_callable(MockNode)("call_method", "unknown_1", "unknown_target", args=(arg_node, "other"))
+    kwarg_node = ensure_callable(MockNode)("call_method", "kwarg_1", "view", args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": ensure_callable(_BareDummy)()})
+
+    gm = ensure_callable(MockGraphModule)([arg_node, view_node, reshape_node, permute_node, transpose_node, contiguous_node, relu_node, flatten_node, unsqueeze_node, squeeze_node, unknown_node, kwarg_node])
+
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["view_1"].op_type == "Reshape"
     assert g.nodes["reshape_1"].op_type == "Reshape"
@@ -163,18 +166,22 @@ class UnknownModule:
 def test_fx_call_module() -> None:
     """Test."""
     arg_node = MockNode("placeholder", "x", "x")
-    conv_node = as_callable(MockNode)("call_module", "conv_1", "my_conv", args=(arg_node,))
-    batchnorm_node = as_callable(MockNode)("call_module", "bn_1", "my_bn", args=(arg_node,))
-    layernorm_node = as_callable(MockNode)("call_module", "ln_1", "my_ln", args=(arg_node,))
-    groupnorm_node = as_callable(MockNode)("call_module", "gn_1", "my_gn", args=(arg_node,))
-    linear_node = as_callable(MockNode)("call_module", "lin_1", "my_lin", args=(arg_node,))
-    dropout_node = as_callable(MockNode)("call_module", "drop_1", "my_drop", args=(arg_node,))
-    relu_node = as_callable(MockNode)("call_module", "relu_1", "my_relu", args=(arg_node,))
-    maxpool_node = as_callable(MockNode)("call_module", "mp_1", "my_mp", args=(arg_node,))
-    avgpool_node = as_callable(MockNode)("call_module", "ap_1", "my_ap", args=(arg_node,))
-    unknown_node = as_callable(MockNode)("call_module", "unk_1", "my_unknown", args=(arg_node, "other"))
-    kwarg_node = as_callable(MockNode)("call_module", "kwarg_1", "my_conv", args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": as_callable(object)()})
-    no_target_node = as_callable(MockNode)("call_module", "notgt_1", "missing_tgt", args=(arg_node,))
+    conv_node = ensure_callable(MockNode)("call_module", "conv_1", "my_conv", args=(arg_node,))
+    batchnorm_node = ensure_callable(MockNode)("call_module", "bn_1", "my_bn", args=(arg_node,))
+    layernorm_node = ensure_callable(MockNode)("call_module", "ln_1", "my_ln", args=(arg_node,))
+    groupnorm_node = ensure_callable(MockNode)("call_module", "gn_1", "my_gn", args=(arg_node,))
+    linear_node = ensure_callable(MockNode)("call_module", "lin_1", "my_lin", args=(arg_node,))
+    dropout_node = ensure_callable(MockNode)("call_module", "drop_1", "my_drop", args=(arg_node,))
+    relu_node = ensure_callable(MockNode)("call_module", "relu_1", "my_relu", args=(arg_node,))
+    maxpool_node = ensure_callable(MockNode)("call_module", "mp_1", "my_mp", args=(arg_node,))
+    avgpool_node = ensure_callable(MockNode)("call_module", "ap_1", "my_ap", args=(arg_node,))
+
+    class _BareDummy:
+        """Empty dummy class."""
+
+    unknown_node = ensure_callable(MockNode)("call_module", "unk_1", "my_unknown", args=(arg_node, "other"))
+    kwarg_node = ensure_callable(MockNode)("call_module", "kwarg_1", "my_conv", args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": ensure_callable(_BareDummy)()})
+    no_target_node = ensure_callable(MockNode)("call_module", "notgt_1", "missing_tgt", args=(arg_node,))
 
     modules = {
         "my_conv": Conv2d(),
@@ -189,7 +196,7 @@ def test_fx_call_module() -> None:
         "my_unknown": UnknownModule(),
     }
 
-    gm = as_callable(MockGraphModule)(
+    gm = ensure_callable(MockGraphModule)(
         [arg_node, conv_node, batchnorm_node, layernorm_node, groupnorm_node, linear_node, dropout_node, relu_node, maxpool_node, avgpool_node, unknown_node, kwarg_node, no_target_node],
         modules,
     )
@@ -213,11 +220,11 @@ def test_fx_call_module() -> None:
     # modules = dict(fx_graph_module.named_modules()) if hasattr(fx_graph_module, "named_modules") else {}
     # So if there is no named_modules, `modules` is empty dict.
     # Thus, "my_conv" is not in modules, so op_type remains "CallModule"
-    g_no_mod = as_callable(ingest_torch_fx)(as_callable(NoNamedModulesMock)([arg_node, conv_node], modules))
+    g_no_mod = ensure_callable(ingest_torch_fx)(ensure_callable(NoNamedModulesMock)([arg_node, conv_node], modules))
     assert "conv_1" in g_no_mod.nodes
     assert g_no_mod.nodes["conv_1"].op_type == "CallModule"
 
-    g = as_callable(ingest_torch_fx)(gm)
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["conv_1"].op_type == "Conv"
     assert g.nodes["bn_1"].op_type == "BatchNormalization"
@@ -240,8 +247,8 @@ def test_fx_get_attr() -> None:
     """Test."""
     attr_node = MockNode("get_attr", "w", "weight")
 
-    gm = as_callable(MockGraphModule)([attr_node])
-    g = as_callable(ingest_torch_fx)(gm)
+    gm = ensure_callable(MockGraphModule)([attr_node])
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["w"].op_type == "Constant"
     assert g.nodes["w"].attributes["target"] == "weight"
@@ -307,14 +314,17 @@ def test_fx_call_function() -> None:
 
     nodes = [arg_node]
     for name in func_names:
-        as_callable(nodes.append)(as_callable(MockNode)("call_function", f"{name}_1", as_callable(FunctionMock)(name), args=(arg_node,)))
+        ensure_callable(nodes.append)(ensure_callable(MockNode)("call_function", f"{name}_1", ensure_callable(FunctionMock)(name), args=(arg_node,)))
 
-    unknown_node = as_callable(MockNode)("call_function", "unk_1", as_callable(FunctionMock)("unknown"), args=(arg_node, "other"))
-    kwarg_node = as_callable(MockNode)("call_function", "kw_1", as_callable(FunctionMock)("add"), args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": as_callable(object)()})
-    as_callable(nodes.extend)([unknown_node, kwarg_node])
+    class _BareDummy:
+        """Empty dummy class."""
 
-    gm = as_callable(MockGraphModule)(nodes)
-    g = as_callable(ingest_torch_fx)(gm)
+    unknown_node = ensure_callable(MockNode)("call_function", "unk_1", ensure_callable(FunctionMock)("unknown"), args=(arg_node, "other"))
+    kwarg_node = ensure_callable(MockNode)("call_function", "kw_1", ensure_callable(FunctionMock)("add"), args=(arg_node,), kwargs={"dim": 1, "tup": (1, 2), "obj": ensure_callable(_BareDummy)()})
+    ensure_callable(nodes.extend)([unknown_node, kwarg_node])
+
+    gm = ensure_callable(MockGraphModule)(nodes)
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["add_1"].op_type == "Add"
     assert g.nodes["conv2d_1"].op_type == "Conv"
@@ -335,15 +345,15 @@ class MissingGraphNode:
 def test_fx_output() -> None:
     """Test."""
     arg_node = MockNode("placeholder", "x", "x")
-    out_node = as_callable(MockNode)("output", "out", "out", args=([arg_node],))
-    out_node2 = as_callable(MockNode)("output", "out2", "out2", args=(arg_node,))
+    out_node = ensure_callable(MockNode)("output", "out", "out", args=([arg_node],))
+    out_node2 = ensure_callable(MockNode)("output", "out2", "out2", args=(arg_node,))
 
-    gm1 = as_callable(MockGraphModule)([arg_node, out_node])
-    g1 = as_callable(ingest_torch_fx)(gm1)
+    gm1 = ensure_callable(MockGraphModule)([arg_node, out_node])
+    g1 = ensure_callable(ingest_torch_fx)(gm1)
     assert g1.outputs == ["x"]
 
-    gm2 = as_callable(MockGraphModule)([arg_node, out_node2])
-    g2 = as_callable(ingest_torch_fx)(gm2)
+    gm2 = ensure_callable(MockGraphModule)([arg_node, out_node2])
+    g2 = ensure_callable(ingest_torch_fx)(gm2)
     assert g2.outputs == ["x"]
 
 
@@ -351,8 +361,8 @@ def test_fx_unknown_op() -> None:
     """Test unknown node op type."""
     arg_node = MockNode("placeholder", "x", "x")
     unk_node = MockNode("some_unknown_op", "unk_1", "unk")
-    gm = as_callable(MockGraphModule)([arg_node, unk_node])
-    g = as_callable(ingest_torch_fx)(gm)
+    gm = ensure_callable(MockGraphModule)([arg_node, unk_node])
+    g = ensure_callable(ingest_torch_fx)(gm)
     assert "unk_1" not in g.nodes
 
 
@@ -372,17 +382,17 @@ def test_fx_call_function_fallback() -> None:
 
         def __str__(self) -> str:
             """Str."""
-            return as_str(self.__name__)
+            return ensure_str(self.__name__)
 
     arg_node = MockNode("placeholder", "x", "x")
 
     # Matches target_name.startswith(key + "_") -> "add_something" -> "Add"
-    fallback_node1 = as_callable(MockNode)("call_function", "f1", as_callable(FunctionMock)("add_something"), args=(arg_node,))
+    fallback_node1 = ensure_callable(MockNode)("call_function", "f1", ensure_callable(FunctionMock)("add_something"), args=(arg_node,))
     # Matches target_name.endswith("." + key) -> "my_module.add" -> "Add"
-    fallback_node2 = as_callable(MockNode)("call_function", "f2", as_callable(FunctionMock)("my_module.add"), args=(arg_node,))
+    fallback_node2 = ensure_callable(MockNode)("call_function", "f2", ensure_callable(FunctionMock)("my_module.add"), args=(arg_node,))
 
-    gm = as_callable(MockGraphModule)([arg_node, fallback_node1, fallback_node2])
-    g = as_callable(ingest_torch_fx)(gm)
+    gm = ensure_callable(MockGraphModule)([arg_node, fallback_node1, fallback_node2])
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["f1"].op_type == "Add"
     assert g.nodes["f2"].op_type == "Add"
@@ -391,9 +401,9 @@ def test_fx_call_function_fallback() -> None:
 def test_fx_call_module_dead_branch() -> None:
     """Test dead branch in call_module for missing module dict."""
     arg_node = MockNode("placeholder", "x", "x")
-    no_target_node = as_callable(MockNode)("call_module", "notgt_1", "missing_tgt", args=(arg_node,))
+    no_target_node = ensure_callable(MockNode)("call_module", "notgt_1", "missing_tgt", args=(arg_node,))
 
-    gm = as_callable(MockGraphModule)([arg_node, no_target_node], modules=None)
-    g = as_callable(ingest_torch_fx)(gm)
+    gm = ensure_callable(MockGraphModule)([arg_node, no_target_node], modules=None)
+    g = ensure_callable(ingest_torch_fx)(gm)
 
     assert g.nodes["notgt_1"].op_type == "CallModule"

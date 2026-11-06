@@ -7,10 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op
-from tests.testing_utils import as_tensor
+from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -31,7 +30,7 @@ def test_dynamic_infer_shape() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
     original = _YAML_REGISTRY.get("FakeShapeOp")
-    _get_attr(_YAML_REGISTRY, "__setitem__")("FakeShapeOp", {"operation": "FakeShapeOp"})
+    ensure_eager_tensor(_YAML_REGISTRY)["FakeShapeOp"] = {"operation": "FakeShapeOp"}
 
     try:
         OpCls = get_op("FakeShapeOp")
@@ -44,30 +43,30 @@ def test_dynamic_infer_shape() -> None:
             pass
 
         d1 = Dummy()
-        _set_attr(d1, "shape_metadata", (2, 2))
+        ensure_mutable(d1).shape_metadata = ensure_eager_tensor((2, 2))
         d2 = Dummy()
-        _set_attr(d2, "shape", (2, 2))
+        ensure_mutable(d2).shape = ensure_eager_tensor((2, 2))
 
-        assert op.infer_shape(as_tensor(d1)) == (2, 2)
-        assert op.infer_shape(inputs=[as_tensor(d2)]) == (2, 2)
+        assert op.infer_shape(ensure_eager_tensor(d1)) == (2, 2)
+        assert op.infer_shape(inputs=[ensure_eager_tensor(d2)]) == (2, 2)
 
         # 2. list of ints
         assert op.infer_shape([[2, 3]]) == (2, 3)
-        assert as_tensor(_get_attr(op, "get_yaml_data"))() == {"operation": "FakeShapeOp"}
+        assert ensure_eager_tensor(ensure_eager_tensor(op).get_yaml_data)() == {"operation": "FakeShapeOp"}
 
         # 3. broadcast
-        assert op.infer_shape(as_tensor(d1), inputs=[as_tensor(d2)]) == (2, 2)
+        assert op.infer_shape(ensure_eager_tensor(d1), inputs=[ensure_eager_tensor(d2)]) == (2, 2)
 
         # 4. no shapes
-        assert op.infer_shape(as_tensor(Dummy())) == ()
+        assert op.infer_shape(ensure_eager_tensor(Dummy())) == ()
 
         # 5. Broadcast mismatch raises ValueError
         d3 = Dummy()
-        _set_attr(d3, "shape", (3, 3))
+        ensure_mutable(d3).shape = ensure_eager_tensor((3, 3))
         d4 = Dummy()
-        _set_attr(d4, "shape", (2, 2))
+        ensure_mutable(d4).shape = ensure_eager_tensor((2, 2))
         with pytest.raises(ValueError):
-            op.infer_shape(as_tensor(d3), as_tensor(d4))
+            op.infer_shape(ensure_eager_tensor(d3), ensure_eager_tensor(d4))
 
     finally:
         if original is None:

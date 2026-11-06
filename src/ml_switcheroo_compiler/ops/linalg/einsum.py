@@ -7,10 +7,9 @@ import typing  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_list
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -430,9 +429,9 @@ class Einsum(OpDef):
 
     @staticmethod
     def _extract_equation(
-        args: tuple[str | tuple[int, ...] | Tensor | None, ...],
-        kwargs: dict[str, str | tuple[int, ...] | Tensor | None],
-    ) -> tuple[str, tuple[str | tuple[int, ...] | Tensor | None, ...]]:
+        args: tuple[TensorOrScalar, ...],
+        kwargs: dict[str, TensorOrScalar],
+    ) -> tuple[str, tuple[TensorOrScalar, ...]]:
         """Compute the extract equation tensor operation.
 
         Args:
@@ -463,7 +462,7 @@ class Einsum(OpDef):
             tuple[int, ...]: Result.
         """
         shapes: list[tuple[int, ...]] = []
-        for arg in _get_attr(args, "__iter__")():
+        for arg in ensure_eager_list(args):
             if arg is None:
                 continue
             if not isinstance(arg, tuple):
@@ -487,7 +486,7 @@ class Einsum(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        equation, remaining_args = _get_attr(self, "_extract_equation")(args, kwargs)
+        equation, remaining_args = self._extract_equation(args, kwargs)
         shapes = self._extract_shapes(remaining_args)
         if shapes is None:
             return ()

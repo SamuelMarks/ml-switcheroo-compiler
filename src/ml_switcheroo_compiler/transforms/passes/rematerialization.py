@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 
 import yaml
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -33,35 +34,36 @@ def _estimate_memory(node: IRNode) -> float:
     Returns:
         float: Estimated memory in bytes.
     """
-    shape = _get_attr(node, "shape_metadata", None)
-    if not shape:
-        return 4.0  # default scalar
-    if isinstance(shape, (int, float)):
+    raw_shape: TensorOrScalar = node.shape_metadata
+    if isinstance(raw_shape, (int, float)):
         return 4.0
+    if not isinstance(raw_shape, (list, tuple)) or not raw_shape:
+        return 4.0  # default scalar
     bytes_val = 4.0
-    for dim in shape:
-        bytes_val *= dim
+    for dim in raw_shape:
+        bytes_val *= float(int(dim) if isinstance(dim, (int, float)) else 1)
     return bytes_val
 
 
-def _estimate_compute(node: IRNode, rules: TensorOrScalar) -> float:
+def _estimate_compute(node: IRNode, rules: Mapping[str, list[str] | dict[str, float | int]]) -> float:
     """Estimate FLOPs of a node.
 
     Args:
         node (IRNode): The IR node.
-        rules (TensorOrScalar): The rules dict.
+        rules (Mapping[str, list[str] | dict[str, float | int]]): The rules dict.
 
     Returns:
         float: Estimated FLOPs.
     """
-    shape = _get_attr(node, "shape_metadata", None)
+    shape = node.shape_metadata
     if not shape:
         return 1.0
     flops = 1.0
     if isinstance(shape, (list, tuple)):
         for dim in shape:
-            flops *= dim
-    if node.op_type in _get_attr(rules, "get")("high_cost_ops", []):
+            flops *= float(int(dim) if isinstance(dim, (int, float)) else 1)
+    high_cost = rules.get("high_cost_ops", [])
+    if isinstance(high_cost, list) and node.op_type in high_cost:
         flops *= 100  # arbitrary higher cost
     return flops
 
@@ -70,7 +72,7 @@ def _find_target_nodes(
     nodes: list[IRNode],
     consumers: dict[str, list[str]],
     node_indices: dict[str, int],
-    rules: TensorOrScalar,
+    rules: Mapping[str, list[str] | dict[str, float | int]],
 ) -> list[IRNode]:
     """Find nodes suitable for rematerialization.
 
@@ -78,14 +80,17 @@ def _find_target_nodes(
         nodes (list[IRNode]): Sorted nodes.
         consumers (dict[str, list[str]]): Mapping from node ID to consumer node IDs.
         node_indices (dict[str, int]): Mapping from node ID to its topological index.
-        rules (TensorOrScalar): The rules dict.
+        rules (Mapping[str, list[str] | dict[str, float | int]]): The rules dict.
 
     Returns:
         list[IRNode]: List of nodes to rematerialize.
     """
-    target_ops = set(_get_attr(rules, "get")("target_ops", []))
-    min_mem = _get_attr(_get_attr(rules, "get")("thresholds", {}), "get")("min_memory_bytes", 1024 * 1024)
-    max_ratio = _get_attr(_get_attr(rules, "get")("thresholds", {}), "get")("max_compute_to_memory_ratio", 10.0)
+    raw_target_ops = rules.get("target_ops", [])
+    target_ops = set(raw_target_ops) if isinstance(raw_target_ops, list) else set()
+    raw_thresholds = rules.get("thresholds", {})
+    thresholds = raw_thresholds if isinstance(raw_thresholds, dict) else {}
+    min_mem = float(thresholds.get("min_memory_bytes", 1024 * 1024))
+    max_ratio = float(thresholds.get("max_compute_to_memory_ratio", 10.0))
 
     to_remat = []
     for n in nodes:
@@ -127,7 +132,7 @@ def rematerialization_pass(graph: IRGraph) -> bool:
         if clone_id not in graph.nodes:
             new_node = IRNode(id=clone_id, op_type=n.op_type, inputs=n.inputs.copy())
             new_node.attributes = n.attributes.copy()
-            new_node.shape_metadata = _get_attr(n, "shape_metadata", None)
+            new_node.shape_metadata = n.shape_metadata
             graph.nodes[clone_id] = new_node
             modified = True
 

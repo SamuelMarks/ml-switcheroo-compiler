@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gaussian_blur, _np_sharpen
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("RandomGaussianBlur")
 def _np_random_gaussian_blur(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
     kernel_size: tuple[int, int] | int,
     sigma: tuple[float, float] | float,
     **kwargs: float | int | str | None,
@@ -35,7 +35,7 @@ def _np_random_gaussian_blur(
 @numpy_eager_registry.register("RandomSharpness")
 def _np_random_sharpness(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    images: EagerValue,
     factor: float,
     **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:

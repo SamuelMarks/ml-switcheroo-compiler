@@ -4,9 +4,14 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
+from ml_switcheroo_compiler.core.shape import (
+    ShapeProtocol,
+    TensorOrScalar,
+    extract_shape,
+)
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
+from ml_switcheroo_compiler.ops.shape.utils import _extract_shape_or_seq
 
 
 @register_op("Concatenate")
@@ -27,8 +32,8 @@ class Concatenate(OpDef):
             tuple[int, ...]: The inferred shape of the concatenated output tensor.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = _cast_val("list[tuple[int, ...]] | tuple[tuple[int, ...], ...]", args[0])
-            axis = int(as_int(kwargs.get("axis", 0)))
+            shapes = [_extract_shape_or_seq(s) for s in args[0]]
+            axis = int(ensure_int(kwargs.get("axis", 0)))
             if not shapes:
                 return ()
             res = list(shapes[0])
@@ -76,8 +81,8 @@ class Split(OpDef):
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
         del kwargs
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            return tuple(_get_attr(args[0], "shape"))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            return extract_shape(args[0])
         return ()
 
 
@@ -99,8 +104,8 @@ class Hsplit(OpDef):
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
         del kwargs
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            return tuple(_get_attr(args[0], "shape"))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            return extract_shape(args[0])
         return ()
 
 
@@ -122,8 +127,8 @@ class Vsplit(OpDef):
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
         del kwargs
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            return tuple(_get_attr(args[0], "shape"))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            return extract_shape(args[0])
         return ()
 
 
@@ -145,8 +150,8 @@ class Dsplit(OpDef):
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
         del kwargs
-        if len(args) > 0 and _has_attr(args[0], "shape"):
-            return tuple(_get_attr(args[0], "shape"))
+        if len(args) > 0 and isinstance(args[0], ShapeProtocol):
+            return extract_shape(args[0])
         return ()
 
 
@@ -168,7 +173,7 @@ class Hstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [_get_attr(s, "shape") if _has_attr(s, "shape") else s for s in args[0]]
+            shapes = [_extract_shape_or_seq(s) for s in args[0]]
             if not shapes:
                 return ()
             # Hstack: if 1D, sum sizes. if >1D, sum along axis 1.
@@ -198,7 +203,7 @@ class Vstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [_get_attr(s, "shape") if _has_attr(s, "shape") else s for s in args[0]]
+            shapes = [_extract_shape_or_seq(s) for s in args[0]]
             if not shapes:
                 return ()
             # Vstack: if 1D, stack as rows => (N, M). if >1D, sum along axis 0.
@@ -228,7 +233,7 @@ class Dstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [_get_attr(s, "shape") if _has_attr(s, "shape") else s for s in args[0]]
+            shapes = [_extract_shape_or_seq(s) for s in args[0]]
             if not shapes:
                 return ()
             # Dstack: if 1D => (1, M, N). if 2D => (N, M, P). if 3D, sum along axis 2.
@@ -260,7 +265,7 @@ class ColumnStack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [_get_attr(s, "shape") if _has_attr(s, "shape") else s for s in args[0]]
+            shapes = [_extract_shape_or_seq(s) for s in args[0]]
             if not shapes:
                 return ()
             # ColumnStack: 1D arrays are treated as 2D columns (N, 1) and stacked horizontally.
@@ -329,15 +334,17 @@ class Append(OpDef):
         Returns:
             tuple: Result.
         """
-        if not args or not _has_attr(args[0], "shape"):
+        raw_args: tuple[TensorOrScalar, ...] = args
+        if not raw_args or not isinstance(raw_args[0], ShapeProtocol):
             return ()
         axis = kwargs.get("axis")
         if axis is not None:
-            res = list(args[0].shape)
-            as_tensor(res)[axis] += _get_attr(_get_attr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and _has_attr(_get_attr(args, "__getitem__")(1), "shape") else 1
+            ax = ensure_int(axis)
+            res = list(raw_args[0].shape)
+            ensure_eager_tensor(res)[axis] += raw_args[1].shape[ax] if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol) else 1
             return tuple(res)
         import math
 
-        s1 = math.prod(args[0].shape)
-        s2 = math.prod(args[1].shape) if len(args) > 1 and _has_attr(args[1], "shape") else 1
+        s1 = math.prod(raw_args[0].shape)
+        s2 = math.prod(raw_args[1].shape) if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol) else 1
         return (s1 + s2,)

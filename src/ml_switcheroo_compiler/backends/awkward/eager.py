@@ -7,7 +7,14 @@ import math
 import operator
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_float, as_float_list, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_float,
+    ensure_float_list,
+)
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
@@ -20,8 +27,8 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped raw data.
     """
-    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
-        return as_tensor(_get_attr(arg, "data"))
+    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
+        return ensure_eager_tensor(get_backend_member(arg, "data"))
     return arg
 
 
@@ -189,9 +196,9 @@ def _eval_operator(fn_name: str, args: tuple[EagerValue, ...]) -> tuple[bool, Ea
         tuple[bool, EagerValue]: Handled flag and result.
     """
     if fn_name in _BINARY_OPS and len(args) >= 2:
-        return True, as_callable(_BINARY_OPS[fn_name])(args[0], args[1])
+        return True, ensure_callable(_BINARY_OPS[fn_name])(args[0], args[1])
     if fn_name in _UNARY_OPS and len(args) >= 1:
-        return True, as_callable(_UNARY_OPS[fn_name])(args[0])
+        return True, ensure_callable(_UNARY_OPS[fn_name])(args[0])
     return False, None
 
 
@@ -229,15 +236,15 @@ def _eval_ragged_axis1_reduction(
     if fn_name == "count":
         res: EagerValue = [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
     elif fn_name == "sum":
-        res = [sum(as_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [sum(ensure_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     elif fn_name == "mean":
-        res = [sum(as_float_list(sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
+        res = [sum(ensure_float_list(sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
     elif fn_name == "min":
         res = [min([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     elif fn_name == "max":
         res = [max([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     else:
-        res = [math.prod(as_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [math.prod(ensure_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     return True, res
 
 
@@ -258,14 +265,14 @@ def _eval_ragged_global_reduction(
     if fn_name == "count":
         res: EagerValue = len([x for x in flat_items if x is not None])
     elif fn_name == "sum":
-        res = sum(as_float_list(flat_items))
+        res = sum(ensure_float_list(flat_items))
     elif fn_name == "mean":
-        res = sum(as_float_list(flat_items)) / len(flat_items) if flat_items else 0.0
+        res = sum(ensure_float_list(flat_items)) / len(flat_items) if flat_items else 0.0
     elif fn_name in ("min", "max"):
         flat_floats = [float(x) for x in flat_items if isinstance(x, (int, float))]
         res = (min(flat_floats) if fn_name == "min" else max(flat_floats)) if flat_floats else None
     else:
-        res = math.prod(as_float_list(flat_items)) if flat_items else 1
+        res = math.prod(ensure_float_list(flat_items)) if flat_items else 1
     return True, res
 
 
@@ -321,10 +328,10 @@ def _try_awkward_module_op(
     """
     if ak_mod is None:
         return False, None
-    target_fn_name: str | None = fn_name if _has_attr(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
-    if target_fn_name is not None and _has_attr(ak_mod, target_fn_name):
+    target_fn_name: str | None = fn_name if has_backend_member(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
+    if target_fn_name is not None and has_backend_member(ak_mod, target_fn_name):
         try:
-            return True, as_callable(_get_attr(ak_mod, target_fn_name))(*actual_args, **kwargs)
+            return True, ensure_callable(get_backend_member(ak_mod, target_fn_name))(*actual_args, **kwargs)
         except Exception as exc:
             msg = f"Failed executing awkward.{target_fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -341,12 +348,12 @@ def _apply_math_recursive(fn: Callable[[float], float], val: EagerValue) -> Eage
     Returns:
         EagerValue: Transformed structure preserving raggedness.
     """
-    source = as_callable(_get_attr(val, "to_list"))() if _has_attr(val, "to_list") else val
+    source = ensure_callable(get_backend_member(val, "to_list"))() if has_backend_member(val, "to_list") else val
     if isinstance(source, (list, tuple)):
         import awkward as ak
 
-        return as_tensor(ak.Array([_apply_math_recursive(fn, x) for x in source]))
-    return fn(float(as_float(source)))
+        return ensure_eager_tensor(ak.Array([_apply_math_recursive(fn, x) for x in source]))
+    return fn(float(ensure_float(source)))
 
 
 def _try_math_ufunc(
@@ -367,8 +374,8 @@ def _try_math_ufunc(
     """
     if fn_name in _MATH_UFUNCS and actual_args:
         try:
-            fn = operator.attrgetter(fn_name)(math) if _has_attr(math, fn_name) else _MATH_UFUNCS[fn_name]
-            return True, _apply_math_recursive(fn, actual_args[0])
+            raw_fn = get_backend_member(math, fn_name, _MATH_UFUNCS[fn_name])
+            return True, _apply_math_recursive(lambda x: float(ensure_float(ensure_callable(raw_fn)(x))), actual_args[0])
         except Exception as exc:
             msg = f"Failed executing math ufunc {fn_name} on Awkward array: {exc}"
             raise BackendNotSupportedError(msg) from exc

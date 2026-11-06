@@ -26,8 +26,15 @@ from __future__ import annotations
 #    SparseReduceSum,
 #    SparseSoftmax,
 # )
+from ml_switcheroo_compiler.backends.registry import ensure_shape
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_device,
+    extract_dtype,
+    extract_shape,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpArgValue, get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -49,19 +56,19 @@ def _sparse_op(op_name: str, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op(op_name, *[_get_attr(a, "data", a) for a in args], **kwargs)
+        data = backend.execute_op(op_name, *[extract_data(a) for a in args], **kwargs)
         return Tensor(
             data,
             TensorConfig(
-                _get_attr(data, "shape", ()),
-                _get_attr(args[0], "dtype", "float32"),
-                _get_attr(args[0], "device", "cpu"),
+                extract_shape(data),
+                extract_dtype(args[0], "float32"),
+                extract_device(args[0], "cpu"),
             ),
         )
 
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
-    return _emit_linalg_node(op_name, list(args), kwargs, [tuple(_get_attr(out_shape, "__iter__")())], [_get_attr(args[0], "dtype", "float32")])
+    return _emit_linalg_node(op_name, list(args), kwargs, [ensure_shape(out_shape)], [extract_dtype(args[0], "float32")])
 
 
 def sparse_bincount(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

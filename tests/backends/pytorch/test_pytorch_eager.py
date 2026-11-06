@@ -6,8 +6,7 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     import torch
@@ -42,7 +41,7 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
             """
             return "nested_padded"
 
-    assert as_callable(_execute_ragged_tensor_to_dense)(as_callable(MockNested)()) == "nested_padded"
+    assert ensure_callable(_execute_ragged_tensor_to_dense)(ensure_callable(MockNested)()) == "nested_padded"
 
     # 2. List of tensors
     list_tensors = [torch.tensor([1, 2]), torch.tensor([3])]
@@ -54,7 +53,7 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
     dict_named = {"values": torch.tensor([1, 2, 3]), "row_splits": torch.tensor([0, 2, 3])}
 
     res2 = _execute_ragged_tensor_to_dense(dict_named, default_value=0.0)
-    assert as_tensor(_get_attr(res2, "shape")) == (2, 2)
+    assert ensure_eager_tensor(res2).shape == (2, 2)
 
     # 4. Named tuple ragged encoding
     class MockNamed:
@@ -63,10 +62,10 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
         values = torch.tensor([1, 2, 3])
         row_splits = torch.tensor([0, 2, 3])
 
-    res3 = as_callable(_execute_ragged_tensor_to_dense)(as_callable(MockNamed)(), default_value=0.0)
-    assert as_tensor(_get_attr(res3, "shape")) == (2, 2)
+    res3 = ensure_callable(_execute_ragged_tensor_to_dense)(ensure_callable(MockNamed)(), default_value=0.0)
+    assert ensure_eager_tensor(res3).shape == (2, 2)
 
     # 5. Length <= 0
     dict_named_empty = {"values": torch.tensor([]), "row_splits": torch.tensor([0, 0, 0])}
     res4 = _execute_ragged_tensor_to_dense(dict_named_empty, default_value=0.0)
-    assert as_tensor(_get_attr(res4, "shape")) == (2, 0)
+    assert ensure_eager_tensor(res4).shape == (2, 0)

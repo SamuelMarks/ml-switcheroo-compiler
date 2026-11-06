@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.ops.unary.logical as unary_logical
-from ml_switcheroo_compiler.core.shape import _get_attr
+from tests.testing_utils import ensure_callable, get_test_members
 
 
 def test_unary_logical_functions() -> None:
@@ -15,20 +15,20 @@ def test_unary_logical_functions() -> None:
         shape = (10, 20)
 
     a = DummyNode()
-    for attr in dir(unary_logical):
+    for attr, val in get_test_members(unary_logical).items():
         if attr.startswith("_infer_shape_") or attr.startswith("_infer_dtype_"):
-            val = _get_attr(unary_logical, attr)
             if callable(val):
+                fn = ensure_callable(val)
                 try:
-                    val(a)
+                    fn(a)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
                 try:
-                    val(a, a)
+                    fn(a, a)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
                 try:
-                    val(a, a, a)
+                    fn()
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
     assert callable(test_unary_logical_functions)

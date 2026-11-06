@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import _get_attr
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.backends.registry import ensure_eager_list
+from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.binary import divide
 from ml_switcheroo_compiler.ops.linalg import power_iteration
@@ -104,5 +104,5 @@ def spectral_normalization(
     Returns:
         tuple[Tensor, Tensor]: Normalized weight and new u.
     """
-    _, u_new, sigma = _get_attr(power_iteration(w, num_iters=num_iters, u=u), "__iter__")()
-    return divide(w, sigma), u_new
+    _, u_new, sigma = ensure_eager_list(power_iteration(w, num_iters=num_iters, u=u))
+    return ensure_tensor(divide(w, sigma)), ensure_tensor(u_new)

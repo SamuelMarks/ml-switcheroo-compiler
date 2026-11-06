@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import (
     _dispatch_random,
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.random.state import (
     _get_numpy_rng,
     rng_uniform,
 )
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -48,9 +47,9 @@ def test_emit_random_node_tracing() -> None:
         result = _emit_random_node("RandomOp", [inp], (2,), dtypes.DType.Float32, {"attr1": "val1"})
 
         assert isinstance(result, Tensor)
-        assert as_tensor(_get_attr(result.data, "id")) == "mock-uuid"
-        assert as_tensor(_get_attr(result.data, "shape")) == (2,)
-        assert as_tensor(_get_attr(result.data, "dtype")) == "float32"
+        assert ensure_eager_tensor(ensure_eager_tensor(result.data).id) == "mock-uuid"
+        assert ensure_eager_tensor(result.data).shape == (2,)
+        assert ensure_eager_tensor(ensure_eager_tensor(result.data).dtype) == "float32"
         mock_global_state.add_node.assert_called_once()
 
         node = mock_global_state.add_node.call_args[0][0]
@@ -82,7 +81,7 @@ def test_dispatch_random_eager() -> None:
         mock_get_backend.return_value = mock_backend
 
         result = _dispatch_random_eager("func_name", "OpName", "arg1", kwarg1="val1")
-        assert as_tensor(result) == as_tensor("mocked_result")
+        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
         mock_backend.execute_op.assert_called_once_with("OpName", "arg1", kwarg1="val1")
 
 
@@ -93,7 +92,7 @@ def test_dispatch_random_eager_mode() -> None:
         mock_dispatch.return_value = "mocked_result"
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert as_tensor(result) == as_tensor("mocked_result")
+        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
         mock_dispatch.assert_called_once_with("my_op_func", "MyOpFunc", "arg1", kwarg1="val1")
 
 
@@ -108,7 +107,7 @@ def test_dispatch_random_tracing_has_op() -> None:
         mock_get_op.return_value = mock_op_cls
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert as_tensor(result) == as_tensor("mocked_result")
+        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
         mock_get_op.assert_called_once_with("MyOpFunc")
         mock_op_cls.assert_called_once()
         mock_op_instance.assert_called_once_with("arg1", kwarg1="val1")
@@ -121,7 +120,7 @@ def test_dispatch_random_tracing_no_op() -> None:
         mock_emit.return_value = "mocked_result"
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert as_tensor(result) == as_tensor("mocked_result")
+        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
         mock_emit.assert_called_once_with("MyOpFunc", ["arg1"], {"kwarg1": "val1"}, (), "float32")
 
 
@@ -130,7 +129,7 @@ def test_rng_uniform() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.state"], "_dispatch_random") as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
 
-        result = as_callable(rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
+        result = ensure_callable(rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
         assert result == "mocked_result"
         mock_dispatch.assert_called_once_with("rng_uniform", "a", "b", shape=(2,), dtype=dtypes.DType.Float64)
 
@@ -142,7 +141,7 @@ def test_get_numpy_rng() -> None:
         mock_backend_cls.get_numpy_rng.return_value = "mocked_rng"
         mock_get.return_value = mock_backend_cls
 
-        result = as_callable(_get_numpy_rng)("arg1", kwarg1="val1")
+        result = ensure_callable(_get_numpy_rng)("arg1", kwarg1="val1")
         assert result == "mocked_rng"
         mock_get.assert_called_once_with("numpy")
         mock_backend_cls.get_numpy_rng.assert_called_once_with("arg1", kwarg1="val1")

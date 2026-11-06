@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -20,7 +20,7 @@ def test_autodiff_common() -> None:
         inputs = [1, 2]
 
     vjp_fn = make_zero_vjp("dummy")
-    assert as_callable(vjp_fn)(None, as_callable(DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+    assert ensure_callable(vjp_fn)(None, ensure_callable(DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
 
     jvp_fn = make_zero_jvp("dummy")
-    assert as_callable(jvp_fn)(None, None, None) == ""
+    assert ensure_callable(jvp_fn)(None, None, None) == ""

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.transforms.passes.cse import (
@@ -15,7 +14,7 @@ from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     operator_fusion_pass,
 )
-from tests.testing_utils import as_attrs
+from tests.testing_utils import ensure_attrs, ensure_eager_tensor, ensure_mutable
 
 
 def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
@@ -33,7 +32,7 @@ def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
     body.outputs = ["b_add"]
 
     # Loop node whose output is never consumed and has no side effects
-    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes=as_attrs({"body": body}))
+    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes=ensure_attrs({"body": body}))
     used_add = IRNode(id="used_add", op_type="Add", inputs=["x", "y"])
 
     graph.nodes = NodeDict({"x": x, "y": y, "dead_loop": dead_loop, "used_add": used_add})
@@ -58,7 +57,7 @@ def test_dce_preserves_subgraph_with_side_effects() -> None:
     body.nodes = NodeDict({"b_in": b_in, "b_print": b_print})
     body.outputs = ["b_in"]
 
-    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes=as_attrs({"body": body}))
+    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes=ensure_attrs({"body": body}))
     graph.nodes = NodeDict({"x": x, "se_loop": side_effect_loop})
     graph.outputs = []  # No graph outputs, but loop has side effect
 
@@ -94,8 +93,8 @@ def test_cse_nested_subgraph_structural_hashing() -> None:
     g2.nodes = NodeDict({"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})})
     g2.outputs = ["c2"]
 
-    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=as_attrs({"sub": g1}))
-    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes=as_attrs({"sub": g2}))
+    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=ensure_attrs({"sub": g1}))
+    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes=ensure_attrs({"sub": g2}))
 
     hash1 = compute_node_structural_hash(n1, ["in_common"])
     hash2 = compute_node_structural_hash(n2, ["in_common"])
@@ -229,7 +228,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_ag = IRGraph()
     x = IRNode(id="x", op_type="Input")
     ag_node = IRNode(id="ag_in", op_type="Identity", inputs=["x"], attributes={"inject_collective": "AllGather"})
-    _set_attr(ag_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
+    ensure_mutable(ag_node).sharding = ensure_eager_tensor(SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
     g_ag.nodes = NodeDict({"x": x, "ag_in": ag_node})
     g_ag.outputs = ["ag_in"]
 
@@ -241,7 +240,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_a2a = IRGraph()
     x2 = IRNode(id="x2", op_type="Input")
     a2a_node = IRNode(id="a2a_in", op_type="Identity", inputs=["x2"], attributes={"inject_collective": "AllToAll"})
-    _set_attr(a2a_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
+    ensure_mutable(a2a_node).sharding = ensure_eager_tensor(SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
     g_a2a.nodes = NodeDict({"x2": x2, "a2a_in": a2a_node})
     g_a2a.outputs = ["a2a_in"]
 

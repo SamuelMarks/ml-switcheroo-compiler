@@ -6,7 +6,7 @@ import typing
 
 import ml_switcheroo_compiler.ops.binary.math as _math
 import ml_switcheroo_compiler.ops.binary.special as _special
-from ml_switcheroo_compiler.core.shape import _get_attr
+from ml_switcheroo_compiler.core.shape import extract_data
 from ml_switcheroo_compiler.ops.base import OpDef, get_op
 
 if typing.TYPE_CHECKING:
@@ -25,9 +25,9 @@ def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
         val (OpDef | None): Candidate op definition.
 
     Returns:
-        bool: Always True for op definitions.
+        bool: True for op definitions.
     """
-    return val is not None or val is None
+    return not isinstance(val, bytes)
 
 
 def _safe_get_op(name: str) -> OpDef:
@@ -108,11 +108,11 @@ def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
     Returns:
         TensorOrScalar: Result.
     """
-    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
+    from ml_switcheroo_compiler.core.tensor import ensure_tensor
     from ml_switcheroo_compiler.ops.creation import zeros_like
     from ml_switcheroo_compiler.ops.shape.indexing import where
 
-    x_tensor = as_tensor_obj(x)
+    x_tensor = ensure_tensor(x)
     return where(equal(y, 0.0), zeros_like(x_tensor), divide(x, y))
 
 
@@ -129,7 +129,7 @@ def polar(abs: TensorOrScalar, angle: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    return backend.execute_op("Polar", _get_attr(abs, "data", abs), _get_attr(angle, "data", angle))
+    return backend.execute_op("Polar", extract_data(abs), extract_data(angle))
 
 
 def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
@@ -144,7 +144,7 @@ def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    return backend.execute_op("ViewAsComplex", _get_attr(x, "data", x))
+    return backend.execute_op("ViewAsComplex", extract_data(x))
 
 
 def view_as_real(x: TensorOrScalar) -> TensorOrScalar:
@@ -159,7 +159,7 @@ def view_as_real(x: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    return backend.execute_op("ViewAsReal", _get_attr(x, "data", x))
+    return backend.execute_op("ViewAsReal", extract_data(x))
 
 
 truncatediv = _safe_get_op("TruncateDiv")

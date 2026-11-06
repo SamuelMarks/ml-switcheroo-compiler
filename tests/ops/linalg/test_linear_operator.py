@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import as_callable
+from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,5 +21,5 @@ def test_linear_operator_shape_inference() -> None:
 
         shape = (1, 2)
 
-    assert as_callable(LinearOperator)().infer_shape(as_callable(MockOperand)()) == (1, 2)
-    assert as_callable(LinearOperator)().infer_shape(operand=as_callable(MockOperand)()) == (1, 2)
+    assert ensure_callable(LinearOperator)().infer_shape(ensure_callable(MockOperand)()) == (1, 2)
+    assert ensure_callable(LinearOperator)().infer_shape(operand=ensure_callable(MockOperand)()) == (1, 2)
