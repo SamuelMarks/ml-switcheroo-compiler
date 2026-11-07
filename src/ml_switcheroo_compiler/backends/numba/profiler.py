@@ -5,16 +5,31 @@ from __future__ import annotations
 import resource
 import sys
 import time
+import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numba import kernels
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import (
     ShapeProtocol,
     TypedVariadicCallable,
 )
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+def _has_numba_shape(val: EagerValue) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes a `shape` attribute.
+
+    Args:
+        val (EagerValue): Candidate array.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
+
 
 numba: ModuleType | None = None
 try:
@@ -58,7 +73,7 @@ class NumbaProfiler:
         nb_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             raw_val: EagerValue = val
-            if isinstance(raw_val, ShapeProtocol) and not isinstance(val, (list, tuple)):
+            if _has_numba_shape(raw_val) and not isinstance(val, (list, tuple)):
                 nb_inputs_dict[k] = val
             else:
                 nb_inputs_dict[k] = kernels.asarray(val, dtype=kernels.float32)

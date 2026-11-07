@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 
 
 @typing.runtime_checkable
@@ -21,6 +22,18 @@ class LineEmitterProtocol(typing.Protocol):
             line (str): Line of code to append.
         """
         ...
+
+
+def _is_line_emitter(val: LineEmitterProtocol | PyTorchNNMixin | EagerValue) -> typing.TypeGuard[LineEmitterProtocol]:
+    """Check whether `val` exposes an `.add_line` attribute.
+
+    Args:
+        val (LineEmitterProtocol | PyTorchNNMixin | EagerValue): Candidate emitter object.
+
+    Returns:
+        bool: True if `val` has an `.add_line` attribute.
+    """
+    return has_backend_member(val, "add_line")
 
 
 class PyTorchScatterVisitor:
@@ -183,9 +196,9 @@ class PyTorchNNMixin:
         Args:
             line (str): Line of code to append.
         """
-        if isinstance(self, LineEmitterProtocol):
+        if _is_line_emitter(self):
             self.add_line(line)
-        elif self.generator and isinstance(self.generator, LineEmitterProtocol):
+        elif self.generator and _is_line_emitter(self.generator):
             self.generator.add_line(line)
 
     def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:

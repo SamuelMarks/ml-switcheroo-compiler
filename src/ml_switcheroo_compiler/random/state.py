@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
@@ -21,11 +22,22 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 RandomArg = typing.Union[Tensor, str, float, int, bool, Sequence[int], tuple[int, ...], dtypes.DType, "None"]
 
 
-@typing.runtime_checkable
 class _DataWrapperProtocol(typing.Protocol):
     """Protocol for tensor wrappers exposing a `.data` attribute."""
 
     data: TensorOrScalar
+
+
+def _is_data_wrapper(val: TensorOrScalar) -> typing.TypeGuard[_DataWrapperProtocol]:
+    """Check whether `val` exposes a `.data` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate input operand.
+
+    Returns:
+        bool: True if `val` has `.data`.
+    """
+    return has_backend_member(val, "data")
 
 
 def _is_random_tensor_like(val: TensorOrScalar) -> typing.TypeGuard[TensorLike]:
@@ -96,7 +108,7 @@ def _emit_random_node(
         return Tensor(res, TensorConfig(shape_tuple, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
-    in_ids = [str(inp.data.id) if isinstance(inp, _DataWrapperProtocol) and is_traced_data(inp.data) else str(inp) for inp in inputs]
+    in_ids = [str(inp.data.id) if _is_data_wrapper(inp) and is_traced_data(inp.data) else str(inp) for inp in inputs]
     attrs = dict(attributes) if attributes is not None else {}
 
     node = LogicalNode(

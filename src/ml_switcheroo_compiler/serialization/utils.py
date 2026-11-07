@@ -301,8 +301,7 @@ def is_numpy_array(array: TensorOrScalar) -> bool:
     Returns:
         bool: True if array is a numpy array or array-like.
     """
-    raw_arr: TensorOrScalar = array
-    return type(array).__module__ == "numpy" or isinstance(raw_arr, _NumpyMethodProtocol) or isinstance(raw_arr, _ArrayInterfaceProtocol)
+    return type(array).__module__ == "numpy" or has_backend_member(array, "numpy") or isinstance(array, _ArrayInterfaceProtocol)
 
 
 def _dtype_to_descr(dtype: TensorOrScalar) -> str:
@@ -335,6 +334,18 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
     return mapping.get(dtype, "<f4") if isinstance(dtype, DType) else "<f4"
 
 
+def _is_shape_obj(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes a `shape` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate array object.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
+
+
 def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
     """Extract shape and dtype string from an array object.
 
@@ -345,12 +356,12 @@ def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
         tuple[tuple[int, ...], str]: (shape, dtype_str).
     """
     raw_arr: TensorOrScalar = arr
-    raw_dt: TensorOrScalar = raw_arr.dtype if isinstance(raw_arr, _DTypeAttrProtocol) else None
-    if isinstance(raw_dt, _DTypeNameProtocol):
-        dtype_str = str(raw_dt.name)
+    raw_dt: TensorOrScalar = get_backend_member(raw_arr, "dtype") if has_backend_member(raw_arr, "dtype") else None
+    if has_backend_member(raw_dt, "name"):
+        dtype_str = str(get_backend_member(raw_dt, "name"))
     else:
         dtype_str = str(raw_dt if raw_dt is not None else "<f4")
-    shape_tup = _extract_util_shape(raw_arr.shape) if isinstance(raw_arr, ShapeProtocol) else ()
+    shape_tup = _extract_util_shape(raw_arr.shape) if _is_shape_obj(raw_arr) else ()
     return shape_tup, dtype_str
 
 
@@ -369,7 +380,7 @@ def _get_shape_and_dtype(tensor: TensorOrScalar) -> tuple[tuple[int, ...], str]:
         return _extract_arr_shape_dtype(_ensure_util_tensor(ensure_callable(get_backend_member(tensor, "numpy"))()))
     if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
         return _extract_arr_shape_dtype(_ensure_util_tensor(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))()))
-    shape_tup = _extract_util_shape(tensor.shape) if isinstance(tensor, ShapeProtocol) else ()
+    shape_tup = _extract_util_shape(tensor.shape) if _is_shape_obj(tensor) else ()
     dtype_val = str(get_backend_member(tensor, "dtype")) if has_backend_member(tensor, "dtype") else "<f4"
     return shape_tup, dtype_val
 
@@ -383,11 +394,10 @@ def _extract_arr_bytes(arr: TensorOrScalar | _ToBytesMethodProtocol | _DataField
     Returns:
         bytes: The raw data bytes.
     """
-    raw_arr: TensorOrScalar | _ToBytesMethodProtocol | _DataFieldProtocol = arr
-    if isinstance(raw_arr, _ToBytesMethodProtocol):
-        return _ensure_util_bytes(raw_arr.tobytes())
-    if isinstance(raw_arr, _DataFieldProtocol) and isinstance(raw_arr.data, _ToBytesMethodProtocol):
-        return _ensure_util_bytes(raw_arr.data.tobytes())
+    if has_backend_member(arr, "tobytes"):
+        return _ensure_util_bytes(ensure_callable(get_backend_member(arr, "tobytes"))())
+    if has_backend_member(arr, "data") and has_backend_member(get_backend_member(arr, "data"), "tobytes"):
+        return _ensure_util_bytes(ensure_callable(get_backend_member(get_backend_member(arr, "data"), "tobytes"))())
     return b""
 
 
@@ -400,13 +410,12 @@ def _get_data_bytes(tensor: TensorOrScalar | _EvalMethodProtocol | _NumpyMethodP
     Returns:
         bytes: The raw data bytes.
     """
-    raw_t: TensorOrScalar | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol = tensor
-    if isinstance(raw_t, _EvalMethodProtocol):
-        return _extract_arr_bytes(raw_t.eval())
-    if isinstance(raw_t, _NumpyMethodProtocol):
-        return _extract_arr_bytes(raw_t.numpy())
-    if isinstance(raw_t, _DataFieldProtocol) and isinstance(raw_t.data, _NumpyMethodProtocol):
-        return _extract_arr_bytes(raw_t.data.numpy())
+    if has_backend_member(tensor, "eval"):
+        return _extract_arr_bytes(ensure_callable(get_backend_member(tensor, "eval"))())
+    if has_backend_member(tensor, "numpy"):
+        return _extract_arr_bytes(ensure_callable(get_backend_member(tensor, "numpy"))())
+    if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
+        return _extract_arr_bytes(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))())
     return b""
 
 
@@ -451,8 +460,8 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend: TensorOrScalar = get_active_backend()
-    if isinstance(backend, _GetNpzBytesBackendProtocol):
-        return _ensure_util_bytes(backend.get_npz_bytes(weights))
+    if has_backend_member(backend, "get_npz_bytes"):
+        return _ensure_util_bytes(ensure_callable(get_backend_member(backend, "get_npz_bytes"))(weights))
 
     assert isinstance(weights, Mapping)
     buf = io.BytesIO()
@@ -463,6 +472,18 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
             zf.writestr(name, _tensor_to_npy_bytes(v))
         zf_out = buf
     return zf_out.getvalue()
+
+
+def _is_npz_files(val: TensorOrScalar) -> typing.TypeGuard[_NpzFilesProtocol]:
+    """Check whether `val` exposes a `files` attribute.
+
+    Args:
+        val (TensorOrScalar): Loaded npz archive.
+
+    Returns:
+        bool: True if `val` has `files`.
+    """
+    return has_backend_member(val, "files")
 
 
 def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
@@ -483,10 +504,22 @@ def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
         target = io.BytesIO(file_obj) if isinstance(file_obj, (bytes, bytearray)) else file_obj
         with np_mod.load(target) as data:
             raw_data: TensorOrScalar = data
-            files_list = raw_data.files if isinstance(raw_data, _NpzFilesProtocol) else ()
+            files_list = raw_data.files if _is_npz_files(raw_data) else ()
             return {k: _ensure_util_tensor(data)[k] for k in files_list}
     except Exception:
         return {}
+
+
+def _is_load_npz_backend(val: TensorOrScalar) -> typing.TypeGuard[_LoadNpzListBackendProtocol]:
+    """Check whether `val` exposes a `load_npz` method.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `load_npz`.
+    """
+    return has_backend_member(val, "load_npz")
 
 
 def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
@@ -501,7 +534,7 @@ def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend: TensorOrScalar = get_active_backend()
-    if isinstance(backend, _LoadNpzListBackendProtocol):
+    if _is_load_npz_backend(backend):
         try:
             return list(backend.load_npz(file_obj))
         except Exception as e:

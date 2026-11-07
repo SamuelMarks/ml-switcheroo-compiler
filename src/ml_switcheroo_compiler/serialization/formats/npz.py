@@ -5,13 +5,13 @@ from __future__ import annotations
 import typing
 from collections.abc import Mapping
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from ml_switcheroo_compiler.serialization.utils import parse_npz
 
 
-@typing.runtime_checkable
 class _LoadNpzBackendProtocol(typing.Protocol):
     """Protocol for backends implementing custom `load_npz`."""
 
@@ -27,7 +27,6 @@ class _LoadNpzBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _SaveNpzBackendProtocol(typing.Protocol):
     """Protocol for backends implementing custom `save_npz`."""
 
@@ -39,6 +38,30 @@ class _SaveNpzBackendProtocol(typing.Protocol):
             filepath (str): Destination `.npz` path.
         """
         ...
+
+
+def _is_load_npz_backend(val: TensorOrScalar) -> typing.TypeGuard[_LoadNpzBackendProtocol]:
+    """Check whether `val` exposes `load_npz`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `load_npz`.
+    """
+    return has_backend_member(val, "load_npz")
+
+
+def _is_save_npz_backend(val: TensorOrScalar) -> typing.TypeGuard[_SaveNpzBackendProtocol]:
+    """Check whether `val` exposes `save_npz`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `save_npz`.
+    """
+    return has_backend_member(val, "save_npz")
 
 
 class NpzWeightFormat(WeightLoader, WeightSaver):
@@ -56,7 +79,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend: TensorOrScalar = registry.get_active_backend()
-        if isinstance(backend, _LoadNpzBackendProtocol):
+        if _is_load_npz_backend(backend):
             try:
                 return dict(backend.load_npz(filepath))
             except Exception as e:
@@ -79,7 +102,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend: TensorOrScalar = registry.get_active_backend()
-        if isinstance(backend, _SaveNpzBackendProtocol):
+        if _is_save_npz_backend(backend):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()

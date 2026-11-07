@@ -9,6 +9,7 @@ import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_shape
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
     COOTensor,
@@ -23,7 +24,6 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-@typing.runtime_checkable
 class _SparseCoordsProtocol(typing.Protocol):
     """Protocol for external COO sparse arrays exposing `coords`, `data`, and `shape`."""
 
@@ -32,7 +32,6 @@ class _SparseCoordsProtocol(typing.Protocol):
     shape: tuple[int, ...]
 
 
-@typing.runtime_checkable
 class _TodenseProtocol(typing.Protocol):
     """Protocol for sparse arrays exposing `.todense()`."""
 
@@ -59,6 +58,54 @@ class _AddableOperandProtocol(typing.Protocol):
             EagerValue: Sum result.
         """
         ...
+
+
+def _is_sparse_coords(val: EagerValue) -> typing.TypeGuard[_SparseCoordsProtocol]:
+    """Check whether `val` exposes `coords`, `data`, and `shape`.
+
+    Args:
+        val (EagerValue): Candidate sparse array.
+
+    Returns:
+        bool: True if `val` has `coords`, `data`, and `shape`.
+    """
+    return has_backend_member(val, "coords") and has_backend_member(val, "data") and has_backend_member(val, "shape")
+
+
+def _is_shape_holder(val: EagerValue) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes a `shape` attribute.
+
+    Args:
+        val (EagerValue): Candidate array.
+
+    Returns:
+        bool: True if `val` has a `shape` attribute.
+    """
+    return has_backend_member(val, "shape")
+
+
+def _is_todense_callable(val: EagerValue) -> typing.TypeGuard[_TodenseProtocol]:
+    """Check whether `val` exposes a `.todense` method.
+
+    Args:
+        val (EagerValue): Candidate sparse array.
+
+    Returns:
+        bool: True if `val` has a `.todense` attribute.
+    """
+    return has_backend_member(val, "todense")
+
+
+def _is_addable_operand(val: EagerValue) -> typing.TypeGuard[_AddableOperandProtocol]:
+    """Check whether `val` exposes `__add__`.
+
+    Args:
+        val (EagerValue): Candidate operand.
+
+    Returns:
+        bool: True if `val` supports addition.
+    """
+    return isinstance(val, _AddableOperandProtocol)
 
 
 sparse: ModuleType | None = None
@@ -105,14 +152,14 @@ class SparseProfiler:
             raw_val: EagerValue = val
             if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
-            elif isinstance(raw_val, _SparseCoordsProtocol):
+            elif _is_sparse_coords(raw_val):
                 arr_dict[k] = COOTensor(
                     indices=_SP_BACKEND.asarray(raw_val.coords),
                     values=_SP_BACKEND.asarray(raw_val.data),
                     shape=ensure_shape(raw_val.shape),
                 )
-            elif isinstance(raw_val, ShapeProtocol) and not isinstance(val, (list, tuple)):
-                dense_val = raw_val.todense() if isinstance(raw_val, _TodenseProtocol) else val
+            elif _is_shape_holder(raw_val) and not isinstance(val, (list, tuple)):
+                dense_val = raw_val.todense() if _is_todense_callable(raw_val) else val
                 arr_dict[k] = COOTensor.from_dense(dense_val)
             elif isinstance(val, (list, tuple)):
                 np_arr = _SP_BACKEND.asarray(val, dtype=_SP_BACKEND.float32)
@@ -191,7 +238,7 @@ class SparseProfiler:
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:
                 raw_accum: EagerValue = accum
-                if isinstance(raw_accum, _AddableOperandProtocol):
+                if _is_addable_operand(raw_accum):
                     accum = ensure_eager_tensor(accum) + ensure_eager_tensor(t)
             return accum
 

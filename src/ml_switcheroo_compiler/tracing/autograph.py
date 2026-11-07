@@ -9,17 +9,29 @@ from types import TracebackType
 
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.ir import core as _ir_core  # noqa: F401
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 F = typing.TypeVar("F")
 
 
-@typing.runtime_checkable
 class _GraphMetadataProtocol(typing.Protocol):
     """Protocol for graph objects exposing a `metadata` dictionary."""
 
     metadata: dict[str, LoopOptions | None]
+
+
+def _has_graph_metadata(val: LogicalGraph | _GraphLoopOptionsProtocol) -> typing.TypeGuard[_GraphMetadataProtocol]:
+    """Check whether `val` exposes a `metadata` attribute.
+
+    Args:
+        val (LogicalGraph | _GraphLoopOptionsProtocol): Active graph instance.
+
+    Returns:
+        bool: True if `val` has `metadata`.
+    """
+    return has_backend_member(val, "metadata")
 
 
 class _GraphLoopOptionsProtocol(typing.Protocol):
@@ -68,7 +80,7 @@ def _set_graph_loop_options(active_g: LogicalGraph, opts: LoopOptions | None) ->
     """
     assert _is_loop_options_graph(active_g)
     active_g.loop_options = opts
-    if isinstance(active_g, _GraphMetadataProtocol) and isinstance(active_g.metadata, dict):
+    if _has_graph_metadata(active_g) and isinstance(active_g.metadata, dict):
         active_g.metadata["loop_options"] = opts
 
 

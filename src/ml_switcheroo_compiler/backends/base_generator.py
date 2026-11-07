@@ -18,6 +18,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     ensure_eager_tensor,
     ensure_str,
 )
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
@@ -43,6 +44,18 @@ class CleanableResourceProtocol(typing.Protocol):
     def cleanup(self) -> None:
         """Release or clean up associated resources."""
         ...
+
+
+def _is_cleanable_resource(val: EagerValue) -> typing.TypeGuard[CleanableResourceProtocol]:
+    """Check whether `val` exposes a `.cleanup` attribute.
+
+    Args:
+        val (EagerValue): Candidate resource object.
+
+    Returns:
+        bool: True if `val` has a `.cleanup` attribute.
+    """
+    return has_backend_member(val, "cleanup")
 
 
 def _resolve_visitor_method(
@@ -131,7 +144,7 @@ class CompiledArtifact(pydantic.BaseModel):
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
-        if self.temp_dir is not None and isinstance(self.temp_dir, CleanableResourceProtocol):
+        if self.temp_dir is not None and _is_cleanable_resource(self.temp_dir):
             self.temp_dir.cleanup()
             self.temp_dir = None
 

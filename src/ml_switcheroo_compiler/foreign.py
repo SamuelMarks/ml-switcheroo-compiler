@@ -10,7 +10,7 @@ from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol,
 )
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, VariadicCallableProtocol, invoke_callable
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, VariadicCallableProtocol, has_backend_member, invoke_callable
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -408,6 +408,90 @@ class _GenericAliasArgsProtocol(typing.Protocol):
         ...
 
 
+def _has_subgraph_holder(val: TensorOrScalar) -> typing.TypeGuard[_SubgraphHolderProtocol]:
+    """Check whether `val` exposes `subgraph`.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `subgraph`.
+    """
+    return has_backend_member(val, "subgraph")
+
+
+def _has_subgraph_node_meta(val: _SubgraphNodeMetaProtocol | LogicalNode | TensorOrScalar) -> typing.TypeGuard[_SubgraphNodeMetaProtocol]:
+    """Check whether `val` exposes `shape_metadata`.
+
+    Args:
+        val (_SubgraphNodeMetaProtocol | LogicalNode | TensorOrScalar): Candidate node.
+
+    Returns:
+        bool: True if `val` has `shape_metadata`.
+    """
+    return has_backend_member(val, "shape_metadata")
+
+
+def _has_foreign_shape(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes `shape`.
+
+    Args:
+        val (TensorOrScalar): Candidate array or tensor.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
+
+
+def _has_keras_output_shape(val: TensorOrScalar) -> typing.TypeGuard[KerasLayerProtocol]:
+    """Check whether `val` exposes `output_shape`.
+
+    Args:
+        val (TensorOrScalar): Candidate layer.
+
+    Returns:
+        bool: True if `val` has `output_shape`.
+    """
+    return has_backend_member(val, "output_shape")
+
+
+def _has_output_shapes_list(val: TensorOrScalar) -> typing.TypeGuard[_OutputShapesProtocol]:
+    """Check whether `val` exposes `output_shapes`.
+
+    Args:
+        val (TensorOrScalar): Candidate layer or module.
+
+    Returns:
+        bool: True if `val` has `output_shapes`.
+    """
+    return has_backend_member(val, "output_shapes")
+
+
+def _has_sig_return_annotation(val: TensorOrScalar) -> typing.TypeGuard[_SignatureReturnAnnotationProtocol]:
+    """Check whether `val` exposes `return_annotation`.
+
+    Args:
+        val (TensorOrScalar): Candidate signature.
+
+    Returns:
+        bool: True if `val` has `return_annotation`.
+    """
+    return has_backend_member(val, "return_annotation")
+
+
+def _has_generic_alias_args(val: TensorOrScalar) -> typing.TypeGuard[_GenericAliasArgsProtocol]:
+    """Check whether `val` exposes `__args__`.
+
+    Args:
+        val (TensorOrScalar): Candidate return annotation.
+
+    Returns:
+        bool: True if `val` has `__args__`.
+    """
+    return has_backend_member(val, "__args__")
+
+
 def _infer_shape_from_subgraph(first: TensorOrScalar) -> tuple[int, ...] | None:
     """Extract output shape metadata from an attached subgraph's output nodes.
 
@@ -418,11 +502,11 @@ def _infer_shape_from_subgraph(first: TensorOrScalar) -> tuple[int, ...] | None:
         tuple[int, ...] | None: Inferred shape tuple if found, else None.
     """
     raw_first: TensorOrScalar = first
-    if isinstance(raw_first, _SubgraphHolderProtocol):
+    if _has_subgraph_holder(raw_first):
         sub = raw_first.subgraph
         out_nodes = [sub.nodes.get(out) for out in sub.outputs if out in sub.nodes]
         first_node = out_nodes[0] if out_nodes else None
-        if first_node is not None and isinstance(first_node, _SubgraphNodeMetaProtocol) and first_node.shape_metadata:
+        if first_node is not None and _has_subgraph_node_meta(first_node) and first_node.shape_metadata:
             return _foreign_extract_shape(first_node.shape_metadata)
     return None
 
@@ -436,13 +520,13 @@ def _infer_shape_from_attributes(first: TensorOrScalar) -> tuple[int, ...] | Non
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if present, else None.
     """
-    raw_first: TensorOrScalar | KerasLayerProtocol | _OutputShapesProtocol = first
-    if isinstance(raw_first, ShapeProtocol):
+    raw_first: TensorOrScalar = first
+    if _has_foreign_shape(raw_first):
         return _foreign_extract_shape(raw_first.shape)
-    if isinstance(raw_first, KerasLayerProtocol):
+    if _has_keras_output_shape(raw_first):
         s = raw_first.output_shape
         return tuple(int(d) for d in s) if isinstance(s, (list, tuple)) else (_foreign_to_int(s),)
-    if isinstance(raw_first, _OutputShapesProtocol):
+    if _has_output_shapes_list(raw_first):
         s_list = raw_first.output_shapes
         return tuple(int(d) for d in s_list[0]) if isinstance(s_list, (list, tuple)) and len(s_list) > 0 else ()
     return _infer_shape_from_subgraph(first)
@@ -488,8 +572,8 @@ def _infer_shape_from_callable_annotations(first: TensorOrScalar) -> tuple[int, 
     try:
         sig = invoke_callable(inspect.signature, first)
         raw_sig: TensorOrScalar = sig
-        ret_anno: TensorOrScalar = raw_sig.return_annotation if isinstance(raw_sig, _SignatureReturnAnnotationProtocol) else None
-        if isinstance(ret_anno, _GenericAliasArgsProtocol) and _is_int_type_sequence(tuple(ret_anno.__args__)):
+        ret_anno: TensorOrScalar = raw_sig.return_annotation if _has_sig_return_annotation(raw_sig) else None
+        if _has_generic_alias_args(ret_anno) and _is_int_type_sequence(tuple(ret_anno.__args__)):
             return tuple(_foreign_to_int(x) for x in tuple(ret_anno.__args__) if isinstance(x, int) or x is int)
     except (ValueError, TypeError) as e:
         from ml_switcheroo_compiler.core.errors import ShapeInferenceError
@@ -606,10 +690,178 @@ class ForeignCall(OpDef):
 
             if len(args) > 1:
                 second: TensorOrScalar = args[1]
-                if isinstance(second, ShapeProtocol):
+                if _has_foreign_shape(second):
                     return _foreign_extract_shape(second.shape)
 
         return ()
+
+
+def _has_fx_node_kwargs(val: FxNodeProtocol | LogicalNode | TensorOrScalar) -> typing.TypeGuard[_FxNodeKwargsProtocol]:
+    """Check whether `val` exposes `kwargs`.
+
+    Args:
+        val (FxNodeProtocol | LogicalNode | TensorOrScalar): Candidate FX node.
+
+    Returns:
+        bool: True if `val` has `kwargs`.
+    """
+    return has_backend_member(val, "kwargs")
+
+
+def _has_fx_node_args(val: FxNodeProtocol | TensorOrScalar) -> typing.TypeGuard[_FxNodeArgsProtocol]:
+    """Check whether `val` exposes `args`.
+
+    Args:
+        val (FxNodeProtocol | TensorOrScalar): Candidate FX node.
+
+    Returns:
+        bool: True if `val` has `args`.
+    """
+    return has_backend_member(val, "args")
+
+
+def _has_fx_node_target(val: FxNodeProtocol | TensorOrScalar) -> typing.TypeGuard[_FxNodeTargetProtocol]:
+    """Check whether `val` exposes `target`.
+
+    Args:
+        val (FxNodeProtocol | TensorOrScalar): Candidate FX node.
+
+    Returns:
+        bool: True if `val` has `target`.
+    """
+    return has_backend_member(val, "target")
+
+
+def _has_name_attr(val: TensorOrScalar) -> typing.TypeGuard[_HasNameProtocol]:
+    """Check whether `val` exposes `name`.
+
+    Args:
+        val (TensorOrScalar): Candidate node or primitive.
+
+    Returns:
+        bool: True if `val` has `name`.
+    """
+    return has_backend_member(val, "name")
+
+
+def _has_dunder_name_attr(val: TensorOrScalar) -> typing.TypeGuard[_HasDunderNameProtocol]:
+    """Check whether `val` exposes `__name__`.
+
+    Args:
+        val (TensorOrScalar): Candidate callable.
+
+    Returns:
+        bool: True if `val` has `__name__`.
+    """
+    return has_backend_member(val, "__name__")
+
+
+def _has_fx_graph_module(val: TensorOrScalar) -> typing.TypeGuard[FxGraphModuleProtocol]:
+    """Check whether `val` exposes `graph`.
+
+    Args:
+        val (TensorOrScalar): Candidate FX GraphModule.
+
+    Returns:
+        bool: True if `val` has `graph`.
+    """
+    return has_backend_member(val, "graph")
+
+
+def _has_fx_graph_inner(val: _FxGraphInnerProtocol | TensorOrScalar) -> typing.TypeGuard[_FxGraphInnerProtocol]:
+    """Check whether `val` exposes `nodes`.
+
+    Args:
+        val (_FxGraphInnerProtocol | TensorOrScalar): Candidate FX inner graph.
+
+    Returns:
+        bool: True if `val` has `nodes`.
+    """
+    return has_backend_member(val, "nodes")
+
+
+def _has_named_modules(val: FxGraphModuleProtocol | TensorOrScalar) -> typing.TypeGuard[_NamedModulesProtocol]:
+    """Check whether `val` exposes `named_modules`.
+
+    Args:
+        val (FxGraphModuleProtocol | TensorOrScalar): Candidate FX GraphModule.
+
+    Returns:
+        bool: True if `val` has `named_modules`.
+    """
+    return has_backend_member(val, "named_modules")
+
+
+def _has_jaxpr_constvars(val: TensorOrScalar) -> typing.TypeGuard[_JaxprConstvarsProtocol]:
+    """Check whether `val` exposes `constvars`.
+
+    Args:
+        val (TensorOrScalar): Candidate jaxpr.
+
+    Returns:
+        bool: True if `val` has `constvars`.
+    """
+    return has_backend_member(val, "constvars")
+
+
+def _has_jaxpr_consts(val: TensorOrScalar) -> typing.TypeGuard[_JaxprConstsProtocol]:
+    """Check whether `val` exposes `consts`.
+
+    Args:
+        val (TensorOrScalar): Candidate jaxpr.
+
+    Returns:
+        bool: True if `val` has `consts`.
+    """
+    return has_backend_member(val, "consts")
+
+
+def _has_jaxpr_eqn(val: JaxprEqnProtocol | TensorOrScalar) -> typing.TypeGuard[JaxprEqnProtocol]:
+    """Check whether `val` exposes `primitive`, `invars`, and `outvars`.
+
+    Args:
+        val (JaxprEqnProtocol | TensorOrScalar): Candidate jaxpr equation.
+
+    Returns:
+        bool: True if `val` has `primitive`, `invars`, and `outvars`.
+    """
+    return has_backend_member(val, "primitive") and has_backend_member(val, "invars") and has_backend_member(val, "outvars")
+
+
+def _has_jaxpr_eqn_params(val: JaxprEqnProtocol | TensorOrScalar) -> typing.TypeGuard[_JaxprEqnParamsProtocol]:
+    """Check whether `val` exposes `params`.
+
+    Args:
+        val (JaxprEqnProtocol | TensorOrScalar): Candidate jaxpr equation.
+
+    Returns:
+        bool: True if `val` has `params`.
+    """
+    return has_backend_member(val, "params")
+
+
+def _has_jax_var_aval(val: _JaxVarProtocol | TensorOrScalar) -> typing.TypeGuard[_JaxVarProtocol]:
+    """Check whether `val` exposes `aval` with `shape`.
+
+    Args:
+        val (_JaxVarProtocol | TensorOrScalar): Candidate JAX var.
+
+    Returns:
+        bool: True if `val` has `aval` and `aval.shape`.
+    """
+    return has_backend_member(val, "aval") and has_backend_member(val, "aval.shape")
+
+
+def _has_jaxpr_eqns(val: TensorOrScalar) -> typing.TypeGuard[JaxprProtocol]:
+    """Check whether `val` exposes `eqns`.
+
+    Args:
+        val (TensorOrScalar): Candidate jaxpr.
+
+    Returns:
+        bool: True if `val` has `eqns`.
+    """
+    return has_backend_member(val, "eqns")
 
 
 def _extract_node_attributes(node: FxNodeProtocol | LogicalNode) -> dict[str, AttributeValue]:
@@ -623,7 +875,7 @@ def _extract_node_attributes(node: FxNodeProtocol | LogicalNode) -> dict[str, At
     """
     attributes: dict[str, AttributeValue] = {}
     raw_node: FxNodeProtocol | LogicalNode | TensorOrScalar = node
-    raw_kwargs: Mapping[str, TensorOrScalar] = raw_node.kwargs if isinstance(raw_node, _FxNodeKwargsProtocol) else {}
+    raw_kwargs: Mapping[str, TensorOrScalar] = raw_node.kwargs if _has_fx_node_kwargs(raw_node) else {}
     for k, v in raw_kwargs.items():
         if isinstance(v, (list, tuple)):
             attributes[str(k)] = [x for x in v if isinstance(x, (int, float, str, bool))]
@@ -663,7 +915,7 @@ def _extract_fx_inputs(args: Sequence[TensorOrScalar], node_map: dict[str, str])
     inputs: list[str] = []
     for arg in args:
         raw_arg: TensorOrScalar = arg
-        if isinstance(raw_arg, _HasNameProtocol) and raw_arg.name in node_map:
+        if _has_name_attr(raw_arg) and raw_arg.name in node_map:
             inputs.append(node_map[raw_arg.name])
         else:
             inputs.append(str(arg))
@@ -686,7 +938,7 @@ def _handle_fx_call_method(
     """
     del modules
     raw_node: FxNodeProtocol | TensorOrScalar = node
-    target_name = str(raw_node.target) if isinstance(raw_node, _FxNodeTargetProtocol) else ""
+    target_name = str(raw_node.target) if _has_fx_node_target(raw_node) else ""
 
     op_map = {
         "view": "Reshape",
@@ -701,7 +953,7 @@ def _handle_fx_call_method(
     }
 
     op_type = op_map.get(target_name, "Unknown")
-    node_args = raw_node.args if isinstance(raw_node, _FxNodeArgsProtocol) else ()
+    node_args = raw_node.args if _has_fx_node_args(raw_node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -762,9 +1014,9 @@ def _handle_fx_call_module(
         modules (dict[str, VariadicCallableProtocol] | None): Optional mapping of named submodules.
     """
     raw_node: FxNodeProtocol | TensorOrScalar = node
-    target_name = str(raw_node.target) if isinstance(raw_node, _FxNodeTargetProtocol) else ""
+    target_name = str(raw_node.target) if _has_fx_node_target(raw_node) else ""
     op_type = _resolve_fx_module_op_type(target_name, modules)
-    node_args = raw_node.args if isinstance(raw_node, _FxNodeArgsProtocol) else ()
+    node_args = raw_node.args if _has_fx_node_args(raw_node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -795,7 +1047,7 @@ def _handle_fx_get_attr(
     """
     del modules
     raw_node: FxNodeProtocol | TensorOrScalar = node
-    target_str = str(raw_node.target) if isinstance(raw_node, _FxNodeTargetProtocol) else ""
+    target_str = str(raw_node.target) if _has_fx_node_target(raw_node) else ""
     node_name = str(node.name)
     l_node = LogicalNode(
         id=node_name,
@@ -824,8 +1076,8 @@ def _handle_fx_call_function(
     """
     del modules
     raw_node: FxNodeProtocol | TensorOrScalar = node
-    target_obj: TensorOrScalar = raw_node.target if isinstance(raw_node, _FxNodeTargetProtocol) else ""
-    target_name = str(target_obj.__name__) if isinstance(target_obj, _HasDunderNameProtocol) else str(target_obj)
+    target_obj: TensorOrScalar = raw_node.target if _has_fx_node_target(raw_node) else ""
+    target_name = str(target_obj.__name__) if _has_dunder_name_attr(target_obj) else str(target_obj)
 
     op_map = {
         "add": "Add",
@@ -879,7 +1131,7 @@ def _handle_fx_call_function(
                 op_type = val
                 break
 
-    node_args = raw_node.args if isinstance(raw_node, _FxNodeArgsProtocol) else ()
+    node_args = raw_node.args if _has_fx_node_args(raw_node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -911,15 +1163,15 @@ def _handle_fx_output(
     del node_map, modules
     outputs: list[str] = []
     raw_node: FxNodeProtocol | TensorOrScalar = node
-    node_args = raw_node.args if (isinstance(raw_node, _FxNodeArgsProtocol) and raw_node.args) else (None,)
+    node_args = raw_node.args if (_has_fx_node_args(raw_node) and raw_node.args) else (None,)
     args = node_args[0]
     raw_args: TensorOrScalar = args
     if isinstance(args, (tuple, list)):
         for arg in args:
             raw_item: TensorOrScalar = arg
-            if isinstance(raw_item, _HasNameProtocol):
+            if _has_name_attr(raw_item):
                 outputs.append(str(raw_item.name))
-    elif isinstance(raw_args, _HasNameProtocol):
+    elif _has_name_attr(raw_args):
         outputs.append(str(raw_args.name))
     graph.outputs = outputs
 
@@ -942,7 +1194,7 @@ def ingest_torch_fx(fx_graph_module: TensorOrScalar) -> LogicalGraph:
     graph = LogicalGraph(name="torch_fx_ingested")
 
     raw_gm: TensorOrScalar = fx_graph_module
-    if not isinstance(raw_gm, FxGraphModuleProtocol) or not isinstance(raw_gm.graph, _FxGraphInnerProtocol):
+    if not _has_fx_graph_module(raw_gm) or not _has_fx_graph_inner(raw_gm.graph):
         return graph
     raw_inner = raw_gm.graph
 
@@ -956,7 +1208,7 @@ def ingest_torch_fx(fx_graph_module: TensorOrScalar) -> LogicalGraph:
     }
 
     modules: dict[str, VariadicCallableProtocol] = {}
-    if isinstance(raw_gm, _NamedModulesProtocol):
+    if _has_named_modules(raw_gm):
         modules = {str(k): v for k, v in raw_gm.named_modules()}
 
     node_map: dict[str, str] = {}
@@ -974,11 +1226,11 @@ def _extract_jaxpr_constants(jaxpr: TensorOrScalar, graph: LogicalGraph) -> None
         graph (LogicalGraph): Target LogicalGraph being populated.
     """
     raw_jaxpr: TensorOrScalar = jaxpr
-    constvars = jaxpr.constvars if isinstance(jaxpr, _JaxprConstvarsProtocol) else None
-    if isinstance(raw_jaxpr, _JaxprConstsProtocol):
+    constvars = jaxpr.constvars if _has_jaxpr_constvars(jaxpr) else None
+    if _has_jaxpr_consts(raw_jaxpr):
         for i, const_val in enumerate(raw_jaxpr.consts):
             const_id = str(id(constvars[i])) if constvars else f"const_{i}"
-            c_shape = _foreign_extract_shape(const_val.shape) if isinstance(const_val, ShapeProtocol) else ()
+            c_shape = _foreign_extract_shape(const_val.shape) if _has_foreign_shape(const_val) else ()
             c_attr: AttributeValue = const_val if isinstance(const_val, (int, float, str, bool, bytes)) or const_val is None else str(const_val)
             l_node = LogicalNode(
                 id=const_id,
@@ -1001,22 +1253,22 @@ def _translate_jax_equation(eqn: JaxprEqnProtocol | TensorOrScalar, graph: Logic
     """
     raw_eqn: JaxprEqnProtocol | TensorOrScalar = eqn
     op_type = "Unknown"
-    has_eqn_attrs = isinstance(raw_eqn, JaxprEqnProtocol)
-    primitive_obj: TensorOrScalar = raw_eqn.primitive if isinstance(raw_eqn, JaxprEqnProtocol) else ""
-    primitive_name = str(primitive_obj.name) if isinstance(primitive_obj, _HasNameProtocol) else str(primitive_obj)
+    has_eqn_attrs = _has_jaxpr_eqn(raw_eqn)
+    primitive_obj: TensorOrScalar = raw_eqn.primitive if _has_jaxpr_eqn(raw_eqn) else ""
+    primitive_name = str(primitive_obj.name) if _has_name_attr(primitive_obj) else str(primitive_obj)
     if primitive_name == "add":
         op_type = "Add"
     elif primitive_name == "mul":
         op_type = "Mul"
 
-    invars = raw_eqn.invars if isinstance(raw_eqn, JaxprEqnProtocol) else ()
+    invars = raw_eqn.invars if _has_jaxpr_eqn(raw_eqn) else ()
     inputs = [str(id(invar)) for invar in invars]
 
-    outvars = list(raw_eqn.outvars) if has_eqn_attrs and isinstance(raw_eqn, JaxprEqnProtocol) else []
+    outvars = list(raw_eqn.outvars) if has_eqn_attrs and _has_jaxpr_eqn(raw_eqn) else []
     out_id = str(id(outvars[0])) if outvars else "out"
 
     attributes: dict[str, AttributeValue] = {}
-    if isinstance(raw_eqn, _JaxprEqnParamsProtocol) and isinstance(raw_eqn.params, Mapping):
+    if _has_jaxpr_eqn_params(raw_eqn) and isinstance(raw_eqn.params, Mapping):
         for k, v in raw_eqn.params.items():
             if isinstance(v, (list, tuple)):
                 attributes[str(k)] = [x for x in v if isinstance(x, (int, float, str, bool))]
@@ -1025,8 +1277,8 @@ def _translate_jax_equation(eqn: JaxprEqnProtocol | TensorOrScalar, graph: Logic
 
     shape_metadata: tuple[int, ...] = ()
     if outvars:
-        first_out: TensorOrScalar | _JaxVarProtocol = outvars[0]
-        if isinstance(first_out, _JaxVarProtocol):
+        first_out: TensorOrScalar = outvars[0]
+        if _has_jax_var_aval(first_out):
             shape_metadata = tuple(int(d) for d in first_out.aval.shape)
 
     l_node = LogicalNode(
@@ -1060,7 +1312,7 @@ def ingest_jaxpr(jaxpr: TensorOrScalar) -> LogicalGraph:
     _extract_jaxpr_constants(jaxpr, graph)
 
     raw_jaxpr: TensorOrScalar = jaxpr
-    if isinstance(raw_jaxpr, JaxprProtocol):
+    if _has_jaxpr_eqns(raw_jaxpr):
         for eqn in raw_jaxpr.eqns:
             _translate_jax_equation(eqn, graph)
 

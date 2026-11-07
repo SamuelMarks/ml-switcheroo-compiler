@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import string
 import typing
 from collections.abc import Callable, Mapping, Sequence
 from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
@@ -501,6 +502,87 @@ def _is_int_shape_tuple(val: tuple[int | str | None, ...]) -> typing.TypeGuard[t
     return isinstance(val, tuple)
 
 
+_SHAPE_ATTR_FORMATTER = string.Formatter()
+_AttrObjT = typing.TypeVar("_AttrObjT")
+
+
+def has_backend_member(obj: _AttrObjT, attr: str) -> bool:
+    """Check whether `obj` exposes member `attr`.
+
+    Args:
+        obj (_AttrObjT): Candidate object.
+        attr (str): Attribute name.
+
+    Returns:
+        bool: True if `obj` has `attr`.
+    """
+    try:
+        _SHAPE_ATTR_FORMATTER.get_field(f"0.{attr}", (obj,), {})
+        return True
+    except Exception:
+        return False
+
+
+def _has_shape_attr(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes a `shape` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
+
+
+def _has_shape_metadata_attr(val: TensorOrScalar) -> typing.TypeGuard[ShapeMetadataProtocol]:
+    """Check whether `val` exposes a `shape_metadata` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `shape_metadata`.
+    """
+    return has_backend_member(val, "shape_metadata")
+
+
+def _has_dtype_holder_attr(val: TensorOrScalar) -> typing.TypeGuard[DTypeHolderProtocol]:
+    """Check whether `val` exposes a `dtype` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `dtype`.
+    """
+    return has_backend_member(val, "dtype")
+
+
+def _has_device_holder_attr(val: TensorOrScalar) -> typing.TypeGuard[DeviceHolderProtocol]:
+    """Check whether `val` exposes a `device` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `device`.
+    """
+    return has_backend_member(val, "device")
+
+
+def _has_data_holder_attr(val: TensorOrScalar) -> typing.TypeGuard[DataHolderProtocol]:
+    """Check whether `val` exposes a `data` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate object.
+
+    Returns:
+        bool: True if `val` has `data`.
+    """
+    return has_backend_member(val, "data")
+
+
 def extract_shape(
     val: TensorOrScalar,
     default: tuple[int, ...] = (),
@@ -514,11 +596,11 @@ def extract_shape(
     Returns:
         tuple[int, ...]: Extracted shape tuple.
     """
-    if isinstance(val, ShapeProtocol) and val.shape is not None:
+    if _has_shape_attr(val) and val.shape is not None:
         res_shape = tuple(val.shape)
         assert _is_int_shape_tuple(res_shape)
         return res_shape
-    if isinstance(val, ShapeMetadataProtocol) and val.shape_metadata is not None:
+    if _has_shape_metadata_attr(val) and val.shape_metadata is not None:
         res_meta = tuple(val.shape_metadata)
         assert _is_int_shape_tuple(res_meta)
         return res_meta
@@ -550,7 +632,7 @@ def extract_dtype(
     Returns:
         DType | str: Extracted dtype or fallback.
     """
-    if isinstance(val, DTypeHolderProtocol) and val.dtype is not None:
+    if _has_dtype_holder_attr(val) and val.dtype is not None:
         raw_dt: TensorOrScalar = val.dtype
         assert _is_dtype_or_str(raw_dt)
         return raw_dt
@@ -570,7 +652,7 @@ def extract_device(
     Returns:
         Device | str | None: Extracted device or fallback.
     """
-    if isinstance(val, DeviceHolderProtocol) and val.device is not None:
+    if _has_device_holder_attr(val) and val.device is not None:
         dev: Device | str = val.device
         return dev
     return default
@@ -597,7 +679,7 @@ def extract_data(val: TensorOrScalar) -> TensorOrScalar:
     Returns:
         TensorOrScalar: Unwrapped `.data` or `val`.
     """
-    if isinstance(val, DataHolderProtocol):
+    if _has_data_holder_attr(val):
         raw_d: TensorOrScalar = val.data
         return raw_d
     assert _is_tensor_or_scalar(val)
@@ -613,7 +695,7 @@ def is_traced_data(val: TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
     Returns:
         bool: True if `val` is a traced proxy data object.
     """
-    return isinstance(val, _IdMemberProtocol)
+    return has_backend_member(val, "id")
 
 
 def is_backend_buffer(val: TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
@@ -625,7 +707,7 @@ def is_backend_buffer(val: TensorOrScalar) -> typing.TypeGuard[BackendBufferProt
     Returns:
         bool: True if `val` is a backend array buffer.
     """
-    return isinstance(val, (_TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
+    return has_backend_member(val, "tolist") or has_backend_member(val, "item") or has_backend_member(val, "size")
 
 
 @typing.runtime_checkable

@@ -15,22 +15,48 @@ from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_filter_attributes,  # noqa: F401
     _extract_vision_transform_attributes,  # noqa: F401
 )
-from ml_switcheroo_compiler.backends.protocols import get_backend_member
+from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-@typing.runtime_checkable
 class _CodeTargetProtocol(typing.Protocol):
     """Protocol for objects exposing a `code` attribute."""
 
     code: EagerValue
 
 
-@typing.runtime_checkable
 class _GeneratorTargetProtocol(typing.Protocol):
     """Protocol for objects exposing a `generator` attribute."""
 
     generator: EagerValue
+
+
+def _has_code_target(
+    val: _CodeTargetProtocol | _GeneratorTargetProtocol | BaseGenerator | JaxDistributedVisitor | EagerValue,
+) -> typing.TypeGuard[_CodeTargetProtocol]:
+    """Check whether `val` exposes a `code` attribute.
+
+    Args:
+        val (_CodeTargetProtocol | _GeneratorTargetProtocol | BaseGenerator | JaxDistributedVisitor | EagerValue): Candidate visitor or generator.
+
+    Returns:
+        bool: True if `val` has `code`.
+    """
+    return has_backend_member(val, "code")
+
+
+def _has_generator_target(
+    val: _CodeTargetProtocol | _GeneratorTargetProtocol | BaseGenerator | JaxDistributedVisitor | EagerValue,
+) -> typing.TypeGuard[_GeneratorTargetProtocol]:
+    """Check whether `val` exposes a `generator` attribute.
+
+    Args:
+        val (_CodeTargetProtocol | _GeneratorTargetProtocol | BaseGenerator | JaxDistributedVisitor | EagerValue): Candidate visitor.
+
+    Returns:
+        bool: True if `val` has `generator`.
+    """
+    return has_backend_member(val, "generator")
 
 
 def _is_str_list(val: EagerValue) -> typing.TypeGuard[list[str]]:
@@ -88,9 +114,9 @@ class JaxDistributedVisitor:
         Returns:
             list[str]: Mutable code lines list.
         """
-        if isinstance(target, _CodeTargetProtocol) and _is_str_list(target.code):
+        if _has_code_target(target) and _is_str_list(target.code):
             return target.code
-        if isinstance(target, _GeneratorTargetProtocol) and isinstance(target.generator, _CodeTargetProtocol):
+        if _has_generator_target(target) and _has_code_target(target.generator):
             gen_code = target.generator.code
             if _is_str_list(gen_code):
                 return gen_code

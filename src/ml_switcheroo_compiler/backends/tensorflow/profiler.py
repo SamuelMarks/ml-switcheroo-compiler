@@ -10,7 +10,7 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
+from ml_switcheroo_compiler.backends.protocols import has_backend_member, resolve_backend_member
 from ml_switcheroo_compiler.core.shape import (
     DTypeHolderProtocol,
     ShapeProtocol,
@@ -26,7 +26,6 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-@typing.runtime_checkable
 class _NumpyCallableProtocol(typing.Protocol):
     """Protocol for tensors exposing `.numpy()`."""
 
@@ -37,6 +36,30 @@ class _NumpyCallableProtocol(typing.Protocol):
             EagerValue: Host NumPy array.
         """
         ...
+
+
+def _is_numpy_callable(val: EagerValue) -> typing.TypeGuard[_NumpyCallableProtocol]:
+    """Check whether `val` exposes a callable `.numpy()` method.
+
+    Args:
+        val (EagerValue): Candidate tensor value.
+
+    Returns:
+        bool: True if `val` has a `.numpy` attribute.
+    """
+    return has_backend_member(val, "numpy")
+
+
+def _is_tf_shape_dtype_tensor(val: EagerValue) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes both `shape` and `dtype` attributes.
+
+    Args:
+        val (EagerValue): Candidate tensor value.
+
+    Returns:
+        bool: True if `val` has `shape` and `dtype` attributes.
+    """
+    return has_backend_member(val, "shape") and has_backend_member(val, "dtype") and DTypeHolderProtocol is not None
 
 
 def _get_process_memory_mb() -> float:
@@ -89,7 +112,7 @@ def _sync_tf_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ..
             _sync_tf_result(item)
     else:
         raw_res: EagerValue = result
-        if isinstance(raw_res, _NumpyCallableProtocol) and callable(raw_res.numpy):
+        if _is_numpy_callable(raw_res) and callable(raw_res.numpy):
             try:
                 _ = raw_res.numpy()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -151,7 +174,7 @@ class TensorFlowProfiler:
         tf_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             raw_val: EagerValue = val
-            if isinstance(raw_val, ShapeProtocol) and isinstance(raw_val, DTypeHolderProtocol) and not isinstance(val, (list, tuple)):
+            if _is_tf_shape_dtype_tensor(raw_val) and not isinstance(val, (list, tuple)):
                 tf_inputs_dict[k] = val
             else:
                 tf_inputs_dict[k] = tf.convert_to_tensor(val, dtype=tf.float32)

@@ -12,7 +12,7 @@ import pydantic
 import yaml
 from ml_switcheroo_ir import AttributeValue, PartitionSpec
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, has_backend_member
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_pspec
 
 ShardingValue = typing.Union["SPMDShardingAnnotation", PartitionSpec, TensorOrScalar]
@@ -34,25 +34,46 @@ def _spmd_axis_to_int(val: AttributeValue) -> int:
     return 0
 
 
-@typing.runtime_checkable
 class _MeshMappingProtocol(typing.Protocol):
     """Protocol for sharding specifications exposing `mesh_mapping`."""
 
     mesh_mapping: Sequence[str | None]
 
 
-@typing.runtime_checkable
 class _MeshHolderProtocol(typing.Protocol):
     """Protocol for sharding specifications exposing `mesh`."""
 
     mesh: AttributeValue
 
 
-@typing.runtime_checkable
 class _GraphOutputsProtocol(typing.Protocol):
     """Protocol for graphs exposing an `outputs` list."""
 
     outputs: list[str]
+
+
+def _has_mesh_mapping(val: ShardingValue) -> typing.TypeGuard[_MeshMappingProtocol]:
+    """Check whether `val` exposes `mesh_mapping`.
+
+    Args:
+        val (ShardingValue): Candidate sharding specification.
+
+    Returns:
+        bool: True if `val` has `mesh_mapping`.
+    """
+    return has_backend_member(val, "mesh_mapping")
+
+
+def _has_mesh_holder(val: ShardingValue) -> typing.TypeGuard[_MeshHolderProtocol]:
+    """Check whether `val` exposes `mesh`.
+
+    Args:
+        val (ShardingValue): Candidate sharding specification.
+
+    Returns:
+        bool: True if `val` has `mesh`.
+    """
+    return has_backend_member(val, "mesh")
 
 
 def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
@@ -64,7 +85,7 @@ def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
     Returns:
         list[str]: Active sharding axis names.
     """
-    if not isinstance(sharding, _MeshMappingProtocol):
+    if not _has_mesh_mapping(sharding):
         return []
     return [str(m) for m in sharding.mesh_mapping if m is not None]
 
@@ -497,13 +518,13 @@ def _propagate_matmul_sharding(node: IRNode, graph: IRGraph) -> bool:
     lhs_sharding: ShardingValue = lhs.sharding if lhs else None
     rhs_sharding: ShardingValue = rhs.sharding if rhs else None
 
-    lhs_map: list[str | None] = list(lhs_sharding.mesh_mapping) if isinstance(lhs_sharding, _MeshMappingProtocol) else []
-    rhs_map: list[str | None] = list(rhs_sharding.mesh_mapping) if isinstance(rhs_sharding, _MeshMappingProtocol) else []
+    lhs_map: list[str | None] = list(lhs_sharding.mesh_mapping) if _has_mesh_mapping(lhs_sharding) else []
+    rhs_map: list[str | None] = list(rhs_sharding.mesh_mapping) if _has_mesh_mapping(rhs_sharding) else []
     if not lhs_map and not rhs_map:
         return False
 
-    lhs_mesh = lhs_sharding.mesh if isinstance(lhs_sharding, _MeshHolderProtocol) else None
-    rhs_mesh = rhs_sharding.mesh if isinstance(rhs_sharding, _MeshHolderProtocol) else None
+    lhs_mesh = lhs_sharding.mesh if _has_mesh_holder(lhs_sharding) else None
+    rhs_mesh = rhs_sharding.mesh if _has_mesh_holder(rhs_sharding) else None
     mesh = lhs_mesh or rhs_mesh
     while len(lhs_map) < 2:
         lhs_map.insert(0, None)
@@ -540,8 +561,8 @@ def _propagate_reduction_sharding(node: IRNode, graph: IRGraph) -> bool:
     if inp_sharding is None:
         return False
 
-    inp_map: list[str | None] = list(inp_sharding.mesh_mapping) if isinstance(inp_sharding, _MeshMappingProtocol) else []
-    mesh = inp_sharding.mesh if isinstance(inp_sharding, _MeshHolderProtocol) else None
+    inp_map: list[str | None] = list(inp_sharding.mesh_mapping) if _has_mesh_mapping(inp_sharding) else []
+    mesh = inp_sharding.mesh if _has_mesh_holder(inp_sharding) else None
     reduce_axis = node.attributes.get("axis", node.attributes.get("axes", 0))
     raw_axes = [_spmd_axis_to_int(a) for a in reduce_axis] if isinstance(reduce_axis, (list, tuple)) else [_spmd_axis_to_int(reduce_axis)]
     norm_reduce_axes = {a if a >= 0 else a + len(inp_map) for a in raw_axes}

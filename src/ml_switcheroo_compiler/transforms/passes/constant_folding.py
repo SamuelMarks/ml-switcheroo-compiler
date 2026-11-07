@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
+from ml_switcheroo_compiler.core.shape import has_backend_member
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -25,14 +26,12 @@ def _is_attr_dict(val: dict[str, AttributeValue]) -> typing.TypeGuard[dict[str, 
     return isinstance(val, dict)
 
 
-@typing.runtime_checkable
 class _SizeOneProtocol(typing.Protocol):
     """Protocol for tensor/array values exposing a `size` attribute."""
 
     size: int
 
 
-@typing.runtime_checkable
 class _NumelProtocol(typing.Protocol):
     """Protocol for tensor values exposing a `.numel()` method."""
 
@@ -45,7 +44,6 @@ class _NumelProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _BackendItemProtocol(typing.Protocol):
     """Protocol for backend classes/modules exposing `.item(val)`."""
 
@@ -61,7 +59,6 @@ class _BackendItemProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _ScalarItemProtocol(typing.Protocol):
     """Protocol for array values exposing `.item()`."""
 
@@ -72,6 +69,54 @@ class _ScalarItemProtocol(typing.Protocol):
             EvalValue: Extracted scalar value.
         """
         ...
+
+
+def _has_size_attr(val: EvalValue) -> typing.TypeGuard[_SizeOneProtocol]:
+    """Check whether `val` exposes a `size` attribute.
+
+    Args:
+        val (EvalValue): Evaluated array or scalar.
+
+    Returns:
+        bool: True if `val` has `size`.
+    """
+    return has_backend_member(val, "size")
+
+
+def _has_numel_method(val: EvalValue) -> typing.TypeGuard[_NumelProtocol]:
+    """Check whether `val` exposes a `numel` method.
+
+    Args:
+        val (EvalValue): Evaluated array or scalar.
+
+    Returns:
+        bool: True if `val` has `numel`.
+    """
+    return has_backend_member(val, "numel")
+
+
+def _has_backend_item(val: type) -> typing.TypeGuard[_BackendItemProtocol]:
+    """Check whether `val` exposes an `item` method.
+
+    Args:
+        val (type): Backend class.
+
+    Returns:
+        bool: True if `val` has `item`.
+    """
+    return has_backend_member(val, "item")
+
+
+def _has_scalar_item(val: EvalValue) -> typing.TypeGuard[_ScalarItemProtocol]:
+    """Check whether `val` exposes an `item` method.
+
+    Args:
+        val (EvalValue): Evaluated array.
+
+    Returns:
+        bool: True if `val` has `item`.
+    """
+    return has_backend_member(val, "item")
 
 
 def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> bool:
@@ -120,12 +165,15 @@ def _evaluate_constant_node(
         shape_metadata=node.shape_metadata,
     )
     outputs = evaluate_graph(subgraph, {}, backend=backend)
-    val = outputs[node.id]
-    if (isinstance(val, _SizeOneProtocol) and val.size == 1) or (isinstance(val, _NumelProtocol) and val.numel() == 1):
-        if isinstance(backend, _BackendItemProtocol):
-            val = backend.item(val)
-        elif isinstance(val, _ScalarItemProtocol):
-            val = val.item()
+    val: EvalValue = outputs[node.id]
+    raw_val: EvalValue = val
+    is_scalar_one = (_has_size_attr(raw_val) and raw_val.size == 1) or (_has_numel_method(val) and val.numel() == 1)
+    if is_scalar_one:
+        raw_out: EvalValue = outputs[node.id]
+        if _has_backend_item(backend):
+            val = backend.item(raw_out)
+        elif _has_scalar_item(raw_out):
+            val = raw_out.item()
     return val
 
 

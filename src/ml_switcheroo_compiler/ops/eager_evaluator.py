@@ -9,28 +9,30 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, extract_shape
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    TypedVariadicCallable,
+    extract_shape,
+    has_backend_member,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
 EagerPayload = TensorOrScalar
 
 
-@typing.runtime_checkable
 class _EagerEvalMethodProtocol(typing.Protocol):
     """Protocol for op classes/instances exposing `eager_eval`."""
 
     eager_eval: TypedVariadicCallable[EagerPayload]
 
 
-@typing.runtime_checkable
 class _ForwardMethodProtocol(typing.Protocol):
     """Protocol for op instances exposing `forward`."""
 
     forward: TypedVariadicCallable[EagerPayload]
 
 
-@typing.runtime_checkable
 class _ExecuteOpBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `execute_op`."""
 
@@ -46,6 +48,42 @@ class _ExecuteOpBackendProtocol(typing.Protocol):
             EagerPayload: Result tensor or scalar.
         """
         ...
+
+
+def _has_eager_eval_method(val: EagerPayload | type) -> typing.TypeGuard[_EagerEvalMethodProtocol]:
+    """Check whether `val` exposes `eager_eval`.
+
+    Args:
+        val (EagerPayload | type): Operation class or instance.
+
+    Returns:
+        bool: True if `val` has `eager_eval`.
+    """
+    return has_backend_member(val, "eager_eval")
+
+
+def _has_forward_method(val: EagerPayload | type) -> typing.TypeGuard[_ForwardMethodProtocol]:
+    """Check whether `val` exposes `forward`.
+
+    Args:
+        val (EagerPayload | type): Operation class or instance.
+
+    Returns:
+        bool: True if `val` has `forward`.
+    """
+    return has_backend_member(val, "forward")
+
+
+def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_ExecuteOpBackendProtocol]:
+    """Check whether `val` exposes `execute_op`.
+
+    Args:
+        val (EagerPayload | type): Backend class or instance.
+
+    Returns:
+        bool: True if `val` has `execute_op`.
+    """
+    return has_backend_member(val, "execute_op")
 
 
 class EvaluationContext(pydantic.BaseModel):
@@ -102,10 +140,10 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
             NotImplementedError: If neither eager_eval nor forward is callable.
         """
         op_cls = ctx.op_cls
-        op_inst: EagerPayload | _EagerEvalMethodProtocol | _ForwardMethodProtocol = op_cls() if isinstance(op_cls, type) else op_cls
-        if isinstance(op_inst, _EagerEvalMethodProtocol) and callable(op_inst.eager_eval):
+        op_inst: EagerPayload = op_cls() if isinstance(op_cls, type) else op_cls
+        if _has_eager_eval_method(op_inst) and callable(op_inst.eager_eval):
             return ensure_eager_tensor(op_inst.eager_eval(*ctx.args, **ctx.kwargs))
-        if isinstance(op_inst, _ForwardMethodProtocol) and callable(op_inst.forward):
+        if _has_forward_method(op_inst) and callable(op_inst.forward):
             return ensure_eager_tensor(op_inst.forward(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
@@ -122,8 +160,8 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
         """
-        raw_backend: EagerPayload | _ExecuteOpBackendProtocol = ctx.backend
-        assert isinstance(raw_backend, _ExecuteOpBackendProtocol)
+        raw_backend: EagerPayload = ctx.backend
+        assert _has_execute_op_backend(raw_backend)
         return ensure_eager_tensor(raw_backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
@@ -142,10 +180,10 @@ class EagerEvaluator:
         """
         from ml_switcheroo_compiler.ops.base import OpDef
 
-        raw_op_cls: type | _EagerEvalMethodProtocol = op_cls
-        raw_base: type | _EagerEvalMethodProtocol = OpDef
-        base_eval = raw_base.eager_eval if isinstance(raw_base, _EagerEvalMethodProtocol) else None
-        has_custom_eval = isinstance(raw_op_cls, _EagerEvalMethodProtocol) and raw_op_cls.eager_eval is not base_eval
+        raw_op_cls: type = op_cls
+        raw_base: type = OpDef
+        base_eval = raw_base.eager_eval if _has_eager_eval_method(raw_base) else None
+        has_custom_eval = _has_eager_eval_method(raw_op_cls) and raw_op_cls.eager_eval is not base_eval
         if has_custom_eval:
             return CustomEagerEvalStrategy()
         return BackendExecuteOpStrategy()

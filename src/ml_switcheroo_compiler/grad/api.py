@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.shape import (
     TensorOrScalar,
@@ -33,7 +34,6 @@ from .utils import (
 )
 
 
-@typing.runtime_checkable
 class _ExecuteGraphBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `execute_graph(graph, inputs_dict)`."""
 
@@ -50,7 +50,6 @@ class _ExecuteGraphBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _CompileGraphBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `compile_graph(graph)`."""
 
@@ -80,6 +79,54 @@ class _AddableProtocol(typing.Protocol):
             GradValue: Sum result.
         """
         ...
+
+
+def _is_execute_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
+    """Check whether `val` exposes `execute_graph`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `execute_graph`.
+    """
+    return has_backend_member(val, "execute_graph")
+
+
+def _is_compile_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
+    """Check whether `val` exposes `compile_graph`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `compile_graph`.
+    """
+    return has_backend_member(val, "compile_graph")
+
+
+def _is_addable_operand(val: TensorOrScalar) -> typing.TypeGuard[_AddableProtocol]:
+    """Check whether `val` exposes `__add__`.
+
+    Args:
+        val (TensorOrScalar): Candidate operand.
+
+    Returns:
+        bool: True if `val` supports addition.
+    """
+    return isinstance(val, _AddableProtocol)
+
+
+def _has_id_data_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
+    """Check whether `val` exposes `id`.
+
+    Args:
+        val (TensorOrScalar): Candidate proxy data.
+
+    Returns:
+        bool: True if `val` has `id`.
+    """
+    return has_backend_member(val, "id")
 
 
 class _MutableGradTargetProtocol(typing.Protocol):
@@ -144,7 +191,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
     raw_data: TensorOrScalar = tensor.data
-    loss_id = str(raw_data.id) if isinstance(raw_data, _IdDataProtocol) and raw_data.id is not None else str(tensor.data)
+    loss_id = str(raw_data.id) if _has_id_data_attr(raw_data) and raw_data.id is not None else str(tensor.data)
 
     if not wrt_ids:
         tensor.grad = 1.0
@@ -156,9 +203,9 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     inputs_dict = _get_inputs_dict(graph)
 
     backend: TensorOrScalar = get_active_backend()
-    if isinstance(backend, _ExecuteGraphBackendProtocol):
+    if _is_execute_graph_backend(backend):
         outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
-    elif isinstance(backend, _CompileGraphBackendProtocol):
+    elif _is_compile_graph_backend(backend):
         compiled_fn = backend.compile_graph(grad_graph)
         outputs_dict = compiled_fn(inputs_dict)
     else:
@@ -428,7 +475,7 @@ def jvp(
     perturbed: list[GradValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
         raw_p: TensorOrScalar = p
-        if isinstance(raw_p, _AddableProtocol):
+        if _is_addable_operand(raw_p):
             try:
                 perturbed.append(_ensure_grad_tensor(p) + _ensure_grad_tensor(t) * eps)
             except Exception:

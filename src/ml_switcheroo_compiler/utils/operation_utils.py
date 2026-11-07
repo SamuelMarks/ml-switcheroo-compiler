@@ -6,6 +6,7 @@ import abc
 import typing
 from collections.abc import Iterable, Sequence
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 
 
@@ -57,8 +58,7 @@ class _LineageTensorProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
-class _HasLineageHistoryProtocol(typing.Protocol):
+class _HasLineageHistoryProtocol(_LineageTensorProtocol, typing.Protocol):
     """Protocol for tensors carrying a `_lineage_history` attribute."""
 
     @property
@@ -71,6 +71,18 @@ class _HasLineageHistoryProtocol(typing.Protocol):
         ...
 
 
+def _has_lineage_history(val: _LineageTensorProtocol) -> typing.TypeGuard[_HasLineageHistoryProtocol]:
+    """Check whether `val` exposes a `_lineage_history` attribute.
+
+    Args:
+        val (_LineageTensorProtocol): Candidate tensor.
+
+    Returns:
+        bool: True if `val` has `_lineage_history`.
+    """
+    return has_backend_member(val, "_lineage_history")
+
+
 def get_source_inputs(tensor: _LineageTensorProtocol) -> list[_LineageTensorProtocol]:
     """Return the list of root input tensors that a tensor depends on via graph lineage.
 
@@ -80,7 +92,7 @@ def get_source_inputs(tensor: _LineageTensorProtocol) -> list[_LineageTensorProt
     Returns:
         list[_LineageTensorProtocol]: Root source input tensors.
     """
-    if isinstance(tensor, _HasLineageHistoryProtocol) and tensor._lineage_history is not None:
+    if _has_lineage_history(tensor) and tensor._lineage_history is not None:
         node = tensor._lineage_history.node
         if not node.operation.inputs:
             return [tensor]

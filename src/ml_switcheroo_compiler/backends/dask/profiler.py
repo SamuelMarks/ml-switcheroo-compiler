@@ -9,6 +9,7 @@ import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -22,7 +23,6 @@ except ImportError:
     da = None
 
 
-@typing.runtime_checkable
 class _ComputableDaskProtocol(typing.Protocol):
     """Protocol for lazy Dask arrays exposing `.compute()`."""
 
@@ -33,6 +33,18 @@ class _ComputableDaskProtocol(typing.Protocol):
             EagerValue: Concrete array result.
         """
         ...
+
+
+def _is_computable_dask(val: EagerValue) -> typing.TypeGuard[_ComputableDaskProtocol]:
+    """Check whether `val` exposes a `.compute` attribute.
+
+    Args:
+        val (EagerValue): Candidate lazy Dask array.
+
+    Returns:
+        bool: True if `val` has a `.compute` attribute.
+    """
+    return has_backend_member(val, "compute")
 
 
 def _get_process_memory_mb() -> float:
@@ -65,7 +77,7 @@ def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, 
         computed = [_sync_dask_result(item) for item in result]
         return type(result)(computed)
     raw_res: EagerValue = result
-    if isinstance(raw_res, _ComputableDaskProtocol) and callable(raw_res.compute):
+    if _is_computable_dask(raw_res) and callable(raw_res.compute):
         try:
             return ensure_eager_tensor(raw_res.compute())
         except Exception:
@@ -97,7 +109,7 @@ class DaskProfiler:
         da_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             raw_val: EagerValue = val
-            if isinstance(raw_val, _ComputableDaskProtocol):
+            if _is_computable_dask(raw_val):
                 da_inputs_dict[k] = val
             else:
                 da_inputs_dict[k] = da.asarray(val, dtype=float)

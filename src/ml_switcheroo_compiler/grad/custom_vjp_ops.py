@@ -7,6 +7,7 @@ import uuid
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
@@ -33,11 +34,34 @@ def _is_vjp_attr_dict(
     return isinstance(val, dict)
 
 
-@typing.runtime_checkable
 class _GraphHolderProtocol(typing.Protocol):
     """Protocol for objects exposing a `.graph` attribute."""
 
     graph: LogicalGraph
+
+
+def _has_vjp_graph_holder(val: TensorOrScalar) -> typing.TypeGuard[_GraphHolderProtocol]:
+    """Check whether `val` exposes `graph`.
+
+    Args:
+        val (TensorOrScalar): Candidate backward rule callable.
+
+    Returns:
+        bool: True if `val` has `graph`.
+    """
+    return has_backend_member(val, "graph")
+
+
+def _has_vjp_id_data(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
+    """Check whether `val` exposes `id`.
+
+    Args:
+        val (TensorOrScalar): Candidate proxy data.
+
+    Returns:
+        bool: True if `val` has `id`.
+    """
+    return has_backend_member(val, "id")
 
 
 class CustomVJPFunction:
@@ -70,7 +94,7 @@ class CustomVJPFunction:
             self.bwd_subgraph = bwd_subgraph
         elif isinstance(bwd, LogicalGraph):
             self.bwd_subgraph = bwd
-        elif isinstance(raw_bwd, _GraphHolderProtocol) and isinstance(raw_bwd.graph, LogicalGraph):
+        elif _has_vjp_graph_holder(raw_bwd) and isinstance(raw_bwd.graph, LogicalGraph):
             self.bwd_subgraph = raw_bwd.graph
         else:
             self.bwd_subgraph = None
@@ -152,7 +176,7 @@ class CustomVJPFunction:
         in_ids: list[str] = []
         for a in tensor_args:
             raw_data: TensorOrScalar = _unwrap_data(a)
-            if isinstance(raw_data, _IdDataProtocol):
+            if _has_vjp_id_data(raw_data):
                 in_ids.append(str(raw_data.id))
             else:
                 cid = str(uuid.uuid4())

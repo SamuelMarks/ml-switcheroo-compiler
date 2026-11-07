@@ -25,7 +25,6 @@ if not typing.TYPE_CHECKING:  # pragma: no cover
     jnp = importlib.import_module("jax.numpy") if _has_jax else None
 
 
-@typing.runtime_checkable
 class _MemoryStatsDeviceProtocol(typing.Protocol):
     """Protocol for JAX device objects exposing `memory_stats()`."""
 
@@ -38,7 +37,6 @@ class _MemoryStatsDeviceProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _BlockUntilReadyProtocol(typing.Protocol):
     """Protocol for JAX array objects exposing `block_until_ready()`."""
 
@@ -49,6 +47,30 @@ class _BlockUntilReadyProtocol(typing.Protocol):
             EagerValue: Synchronized array.
         """
         ...
+
+
+def _is_memory_stats_device(val: EagerValue) -> typing.TypeGuard[_MemoryStatsDeviceProtocol]:
+    """Check whether `val` exposes a `.memory_stats` attribute.
+
+    Args:
+        val (EagerValue): Candidate JAX device object.
+
+    Returns:
+        bool: True if `val` has a `.memory_stats` attribute.
+    """
+    return has_backend_member(val, "memory_stats")
+
+
+def _is_block_until_ready(val: EagerValue) -> typing.TypeGuard[_BlockUntilReadyProtocol]:
+    """Check whether `val` exposes a `.block_until_ready` attribute.
+
+    Args:
+        val (EagerValue): Candidate JAX array object.
+
+    Returns:
+        bool: True if `val` has a `.block_until_ready` attribute.
+    """
+    return has_backend_member(val, "block_until_ready")
 
 
 def _get_process_memory_mb() -> float:
@@ -75,7 +97,7 @@ def _extract_jax_peak_memory_mb() -> float:
         default_backend = jax.default_backend()
         if default_backend in ("gpu", "tpu", "cuda"):
             devs = jax.devices()
-            if devs and isinstance(devs[0], _MemoryStatsDeviceProtocol):
+            if devs and _is_memory_stats_device(devs[0]):
                 stats = devs[0].memory_stats()
                 if stats and "peak_bytes_in_use" in stats:
                     peak_mem = float(stats["peak_bytes_in_use"]) / (1024.0 * 1024.0)
@@ -116,7 +138,7 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
         try:
             leaves = jax.tree_util.tree_leaves(result)
             for leaf in leaves:
-                if isinstance(leaf, _BlockUntilReadyProtocol) and callable(leaf.block_until_ready):
+                if _is_block_until_ready(leaf) and callable(leaf.block_until_ready):
                     leaf.block_until_ready()
             return
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -127,7 +149,7 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_jax_result(item)
-    elif isinstance(result, _BlockUntilReadyProtocol) and callable(result.block_until_ready):
+    elif _is_block_until_ready(result) and callable(result.block_until_ready):
         result.block_until_ready()
 
 

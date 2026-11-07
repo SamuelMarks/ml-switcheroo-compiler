@@ -8,6 +8,7 @@ from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -141,6 +142,78 @@ class _GenerateCodeProtocol(typing.Protocol):
         ...
 
 
+def _is_tensor_arg(val: TensorOrScalar) -> typing.TypeGuard[_TensorArgProtocol]:
+    """Check whether `val` exposes `shape` and `dtype`.
+
+    Args:
+        val (TensorOrScalar): Candidate argument.
+
+    Returns:
+        bool: True if `val` has `shape` and `dtype`.
+    """
+    return has_backend_member(val, "shape") and has_backend_member(val, "dtype")
+
+
+def _has_device_attr(val: TensorOrScalar) -> typing.TypeGuard[_HasDeviceProtocol]:
+    """Check whether `val` exposes `device`.
+
+    Args:
+        val (TensorOrScalar): Candidate argument.
+
+    Returns:
+        bool: True if `val` has `device`.
+    """
+    return has_backend_member(val, "device")
+
+
+def _is_code_callable(val: TensorOrScalar) -> typing.TypeGuard[_CodeCallableProtocol]:
+    """Check whether `val` exposes `__code__` and `__name__`.
+
+    Args:
+        val (TensorOrScalar): Candidate callable.
+
+    Returns:
+        bool: True if `val` has `__code__` and `__name__`.
+    """
+    return has_backend_member(val, "__code__") and has_backend_member(val, "__name__")
+
+
+def _is_get_module_cls(val: TensorOrScalar) -> typing.TypeGuard[_GetModuleProtocol]:
+    """Check whether `val` exposes `get_module`.
+
+    Args:
+        val (TensorOrScalar): Candidate generator class.
+
+    Returns:
+        bool: True if `val` has `get_module`.
+    """
+    return has_backend_member(val, "get_module")
+
+
+def _is_compile_aot_obj(val: TensorOrScalar) -> typing.TypeGuard[_CompileAotProtocol]:
+    """Check whether `val` exposes `compile_aot`.
+
+    Args:
+        val (TensorOrScalar): Candidate generator class or instance.
+
+    Returns:
+        bool: True if `val` has `compile_aot`.
+    """
+    return has_backend_member(val, "compile_aot")
+
+
+def _is_generate_code_obj(val: TensorOrScalar) -> typing.TypeGuard[_GenerateCodeProtocol]:
+    """Check whether `val` exposes `generate`.
+
+    Args:
+        val (TensorOrScalar): Candidate generator instance.
+
+    Returns:
+        bool: True if `val` has `generate`.
+    """
+    return has_backend_member(val, "generate")
+
+
 def _fallback_eager(
     fn: TensorOrScalar,
     args: tuple[TensorOrScalar, ...],
@@ -179,13 +252,13 @@ def _build_signature_key(fn: TensorOrScalar, backend: str, args: TensorOrScalar)
     args_iter: Iterable[TensorOrScalar] = args if isinstance(args, Iterable) else ()
     for a in args_iter:
         raw_a: TensorOrScalar = a
-        if isinstance(raw_a, _TensorArgProtocol):
+        if _is_tensor_arg(raw_a):
             sig_parts.append(f"T({raw_a.shape},{raw_a.dtype})")
         else:
             sig_parts.append(f"S({type(a).__name__})")
     raw_fn: TensorOrScalar = fn
-    code_sig = raw_fn.__code__ if isinstance(raw_fn, _CodeCallableProtocol) else None
-    fn_name = str(raw_fn.__name__) if isinstance(raw_fn, _CodeCallableProtocol) else ""
+    code_sig = raw_fn.__code__ if _is_code_callable(raw_fn) else None
+    fn_name = str(raw_fn.__name__) if _is_code_callable(raw_fn) else ""
     return f"{fn_name}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
 
 
@@ -201,7 +274,7 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
     proxy_args: list[TensorOrScalar] = []
     for i, a in enumerate(args):
         raw_a: TensorOrScalar = a
-        if isinstance(raw_a, _TensorArgProtocol):
+        if _is_tensor_arg(raw_a):
             arg_id = f"arg_{i}"
             shape = _extract_aot_shape(raw_a.shape)
             raw_dt = raw_a.dtype
@@ -218,7 +291,7 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
                     dtype = DType.Float32
                     dt_str = "float32"
             proxy = ProxyTensor(id=arg_id, shape=shape, dtype=dt_str)
-            device = raw_a.device if isinstance(raw_a, _HasDeviceProtocol) else "cpu"
+            device = raw_a.device if _has_device_attr(raw_a) else "cpu"
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
             TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)
 
@@ -269,7 +342,7 @@ def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, Ten
     """
     namespace: dict[str, TensorOrScalar] = {}
     raw_gen_cls: TensorOrScalar = generator_cls
-    if isinstance(raw_gen_cls, _GetModuleProtocol):
+    if _is_get_module_cls(raw_gen_cls):
         namespace[backend] = raw_gen_cls.get_module()
     elif backend == "numpy":
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
@@ -356,7 +429,7 @@ def _try_static_compile_aot(
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
     raw_gen_cls: TensorOrScalar = generator_cls
-    if not isinstance(raw_gen_cls, _CompileAotProtocol):
+    if not _is_compile_aot_obj(raw_gen_cls):
         return None
     try:
         is_base_gen_sub = isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)
@@ -527,7 +600,7 @@ def _compile_with_generator_instance(
         return _fallback_eager(fn, args, kw)
 
     raw_gen: TensorOrScalar = generator
-    if isinstance(raw_gen, _CompileAotProtocol):
+    if _is_compile_aot_obj(raw_gen):
         try:
             res_aot = raw_gen.compile_aot(graph, **kwargs)
             if callable(res_aot):
@@ -541,7 +614,7 @@ def _compile_with_generator_instance(
                 raise CompilationError(f"AOT compilation failed: {e}") from e
             return _fallback_eager(fn, args, kw)
 
-    code = str(raw_gen.generate()) if isinstance(raw_gen, _GenerateCodeProtocol) else ""
+    code = str(raw_gen.generate()) if _is_generate_code_obj(raw_gen) else ""
     return _execute_generated_code(code, generator_cls, backend, key, strict, fn, args, kw)
 
 

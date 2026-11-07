@@ -7,6 +7,7 @@ import struct
 import typing
 from collections.abc import Mapping, Sequence
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
@@ -25,7 +26,6 @@ def _is_safetensors_entry(val: dict[str, bytes | str | list[int]]) -> typing.Typ
     return isinstance(val, dict)
 
 
-@typing.runtime_checkable
 class _FromBufferBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `from_buffer(buffer, dtype, shape)`."""
 
@@ -43,7 +43,6 @@ class _FromBufferBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _SafetensorsArrayProtocol(typing.Protocol):
     """Protocol for array-like objects serializable into Safetensors format."""
 
@@ -57,6 +56,30 @@ class _SafetensorsArrayProtocol(typing.Protocol):
             bytes: Raw array bytes.
         """
         ...
+
+
+def _is_from_buffer_backend(val: TensorOrScalar) -> typing.TypeGuard[_FromBufferBackendProtocol]:
+    """Check whether `val` exposes `from_buffer`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `from_buffer`.
+    """
+    return has_backend_member(val, "from_buffer")
+
+
+def _is_safetensors_array(val: TensorOrScalar) -> typing.TypeGuard[_SafetensorsArrayProtocol]:
+    """Check whether `val` exposes `dtype`, `shape`, and `tobytes`.
+
+    Args:
+        val (TensorOrScalar): Candidate array object.
+
+    Returns:
+        bool: True if `val` has `dtype`, `shape`, and `tobytes`.
+    """
+    return has_backend_member(val, "dtype") and has_backend_member(val, "shape") and has_backend_member(val, "tobytes")
 
 
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):
@@ -91,7 +114,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
                 backend: TensorOrScalar = get_active_backend()
-                if isinstance(backend, _FromBufferBackendProtocol):
+                if _is_from_buffer_backend(backend):
                     weights[k] = backend.from_buffer(buffer, dtype=v["dtype"], shape=v["shape"])
                 else:
                     # Pass the raw buffer if no converter is available
@@ -119,7 +142,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         assert isinstance(weights_np, Mapping)
         for k, v in weights_np.items():
             raw_v: TensorOrScalar = v
-            if not isinstance(raw_v, _SafetensorsArrayProtocol):
+            if not _is_safetensors_array(raw_v):
                 continue
 
             import os

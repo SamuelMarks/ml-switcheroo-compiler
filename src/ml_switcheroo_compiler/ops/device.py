@@ -5,14 +5,18 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.registry import ensure_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data, extract_shape
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    extract_data,
+    extract_shape,
+    has_backend_member,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@typing.runtime_checkable
 class _BackendEvalProtocol(typing.Protocol):
     """Protocol for backends exposing `.eval(*args)`."""
 
@@ -25,7 +29,6 @@ class _BackendEvalProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _BackendSynchronizeProtocol(typing.Protocol):
     """Protocol for backends exposing `.synchronize()`."""
 
@@ -34,7 +37,6 @@ class _BackendSynchronizeProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _BackendPeakMemoryProtocol(typing.Protocol):
     """Protocol for backends exposing `.get_peak_memory()`."""
 
@@ -47,6 +49,42 @@ class _BackendPeakMemoryProtocol(typing.Protocol):
         ...
 
 
+def _is_eval_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendEvalProtocol]:
+    """Check whether `val` exposes `eval`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `eval`.
+    """
+    return has_backend_member(val, "eval")
+
+
+def _is_synchronize_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendSynchronizeProtocol]:
+    """Check whether `val` exposes `synchronize`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `synchronize`.
+    """
+    return has_backend_member(val, "synchronize")
+
+
+def _is_peak_memory_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendPeakMemoryProtocol]:
+    """Check whether `val` exposes `get_peak_memory`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `get_peak_memory`.
+    """
+    return has_backend_member(val, "get_peak_memory")
+
+
 def eval(*args: TensorOrScalar) -> None:
     """Force the evaluation of the given tensors.
 
@@ -55,8 +93,8 @@ def eval(*args: TensorOrScalar) -> None:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar | _BackendEvalProtocol = get_active_backend()
-    if isinstance(backend, _BackendEvalProtocol):
+    backend: TensorOrScalar = get_active_backend()
+    if _is_eval_backend(backend):
         backend.eval(*args)
     else:
         # Fallback for backends that evaluate eagerly
@@ -68,8 +106,8 @@ def synchronize() -> None:
     """Synchronize the default device."""
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar | _BackendSynchronizeProtocol = get_active_backend()
-    if isinstance(backend, _BackendSynchronizeProtocol):
+    backend: TensorOrScalar = get_active_backend()
+    if _is_synchronize_backend(backend):
         backend.synchronize()
 
 
@@ -81,8 +119,8 @@ def get_peak_memory() -> int:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar | _BackendPeakMemoryProtocol = get_active_backend()
-    if isinstance(backend, _BackendPeakMemoryProtocol):
+    backend: TensorOrScalar = get_active_backend()
+    if _is_peak_memory_backend(backend):
         return ensure_int(backend.get_peak_memory())
     return 0
 

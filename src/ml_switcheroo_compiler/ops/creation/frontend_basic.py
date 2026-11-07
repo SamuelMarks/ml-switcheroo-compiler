@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.core.shape import (
     extract_data,
     extract_dtype,
     extract_shape,
+    has_backend_member,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
@@ -29,7 +30,6 @@ from .frontend_utils import (
 )
 
 
-@typing.runtime_checkable
 class _ArrayBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `.array(...)`."""
 
@@ -46,7 +46,6 @@ class _ArrayBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _ConvertToNumpyBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `.convert_to_numpy(...)`."""
 
@@ -62,7 +61,6 @@ class _ConvertToNumpyBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _AsarrayBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `.asarray(...)`."""
 
@@ -78,7 +76,6 @@ class _AsarrayBackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _NumpyMethodProtocol(typing.Protocol):
     """Protocol for tensors exposing `.numpy()`."""
 
@@ -89,6 +86,90 @@ class _NumpyMethodProtocol(typing.Protocol):
             TensorOrScalar: Converted numpy array.
         """
         ...
+
+
+def _is_array_backend(val: TensorOrScalar) -> typing.TypeGuard[_ArrayBackendProtocol]:
+    """Check whether `val` exposes an `array` method.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `array`.
+    """
+    return has_backend_member(val, "array")
+
+
+def _is_convert_to_numpy_backend(val: TensorOrScalar) -> typing.TypeGuard[_ConvertToNumpyBackendProtocol]:
+    """Check whether `val` exposes a `convert_to_numpy` method.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `convert_to_numpy`.
+    """
+    return has_backend_member(val, "convert_to_numpy")
+
+
+def _is_asarray_backend(val: TensorOrScalar) -> typing.TypeGuard[_AsarrayBackendProtocol]:
+    """Check whether `val` exposes an `asarray` method.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `asarray`.
+    """
+    return has_backend_member(val, "asarray")
+
+
+def _is_numpy_method_obj(val: TensorOrScalar) -> typing.TypeGuard[_NumpyMethodProtocol]:
+    """Check whether `val` exposes a `numpy` method.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor.
+
+    Returns:
+        bool: True if `val` has `numpy`.
+    """
+    return has_backend_member(val, "numpy")
+
+
+def _is_data_holder_obj(val: TensorOrScalar) -> typing.TypeGuard[DataHolderProtocol]:
+    """Check whether `val` exposes a `data` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor wrapper.
+
+    Returns:
+        bool: True if `val` has `data`.
+    """
+    return has_backend_member(val, "data")
+
+
+def _is_item_holder_obj(val: TensorOrScalar) -> typing.TypeGuard[_ItemProtocol]:
+    """Check whether `val` exposes an `item` method.
+
+    Args:
+        val (TensorOrScalar): Candidate scalar array.
+
+    Returns:
+        bool: True if `val` has `item`.
+    """
+    return has_backend_member(val, "item")
+
+
+def _is_value_holder_obj(val: TensorOrScalar) -> typing.TypeGuard[_ValueHolderProtocol]:
+    """Check whether `val` exposes a `value` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate dtype object.
+
+    Returns:
+        bool: True if `val` has `value`.
+    """
+    return has_backend_member(val, "value")
 
 
 def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
@@ -102,13 +183,13 @@ def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
     """
     unpacked_shape: list[int] = []
     for s in shape:
-        raw_s: TensorOrScalar | _ItemProtocol = s
-        if isinstance(raw_s, DataHolderProtocol):
-            s_val: TensorOrScalar | _ItemProtocol = raw_s.data
-            if isinstance(s_val, _ItemProtocol):
+        raw_s: TensorOrScalar = s
+        if _is_data_holder_obj(raw_s):
+            s_val: TensorOrScalar = raw_s.data
+            if _is_item_holder_obj(s_val):
                 s_val = s_val.item()
             unpacked_shape.append(ensure_int(s_val))
-        elif isinstance(raw_s, _ItemProtocol):
+        elif _is_item_holder_obj(raw_s):
             unpacked_shape.append(ensure_int(raw_s.item()))
         else:
             unpacked_shape.append(ensure_int(raw_s))
@@ -142,7 +223,7 @@ def _get_dtype_val(dtype: DType | str | type | None) -> str | type | None:
         str | type | None: Result.
     """
     raw_dtype: TensorOrScalar = dtype
-    if isinstance(raw_dtype, _ValueHolderProtocol):
+    if _is_value_holder_obj(raw_dtype):
         return str(raw_dtype.value)
     if isinstance(raw_dtype, _NameHolderProtocol):
         return str(raw_dtype)
@@ -164,7 +245,7 @@ def _try_create_array(
     Returns:
         TensorOrScalar: Result.
     """
-    assert isinstance(backend, _ArrayBackendProtocol)
+    assert _is_array_backend(backend)
     if dtype_val is None:
         try:
             return ensure_eager_tensor(backend.array(obj))
@@ -332,8 +413,8 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
         float | int | bool: Result.
     """
     raw_fill: TensorOrScalar = fill_value
-    val: TensorOrScalar = raw_fill.data if isinstance(raw_fill, DataHolderProtocol) else raw_fill
-    if isinstance(val, _ItemProtocol):
+    val: TensorOrScalar = raw_fill.data if _is_data_holder_obj(raw_fill) else raw_fill
+    if _is_item_holder_obj(val):
         val = val.item()
     assert isinstance(val, (float, int, bool))
     return val
@@ -535,13 +616,13 @@ def convert_to_numpy(x: Tensor) -> TensorOrScalar:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar | _ConvertToNumpyBackendProtocol | _AsarrayBackendProtocol = get_active_backend()
-    if isinstance(backend, _ConvertToNumpyBackendProtocol):
+    backend: TensorOrScalar = get_active_backend()
+    if _is_convert_to_numpy_backend(backend):
         return ensure_eager_tensor(backend.convert_to_numpy(x))
-    raw_x: TensorOrScalar | _NumpyMethodProtocol = x
-    if isinstance(raw_x, _NumpyMethodProtocol):
+    raw_x: TensorOrScalar = x
+    if _is_numpy_method_obj(raw_x):
         return ensure_eager_tensor(raw_x.numpy())
-    assert isinstance(backend, _AsarrayBackendProtocol)
+    assert _is_asarray_backend(backend)
     return backend.asarray(extract_data(x))
 
 

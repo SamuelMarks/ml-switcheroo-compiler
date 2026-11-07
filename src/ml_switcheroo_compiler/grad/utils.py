@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     ShapeProtocol,
 )
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -135,6 +136,114 @@ class _GraphInputsProtocol(typing.Protocol):
     inputs: Sequence[str]
 
 
+def _has_id_data(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
+    """Check whether `val` exposes `id`.
+
+    Args:
+        val (TensorOrScalar): Candidate data object.
+
+    Returns:
+        bool: True if `val` has `id`.
+    """
+    return has_backend_member(val, "id")
+
+
+def _has_concrete_value(val: TensorOrScalar) -> typing.TypeGuard[_ConcreteValueProtocol]:
+    """Check whether `val` exposes `concrete_value`.
+
+    Args:
+        val (TensorOrScalar): Candidate data object.
+
+    Returns:
+        bool: True if `val` has `concrete_value`.
+    """
+    return has_backend_member(val, "concrete_value")
+
+
+def _has_private_data(val: TensorOrScalar) -> typing.TypeGuard[_PrivateDataProtocol]:
+    """Check whether `val` exposes `_data`.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor object.
+
+    Returns:
+        bool: True if `val` has `_data`.
+    """
+    return has_backend_member(val, "_data")
+
+
+def _has_data_field(val: TensorOrScalar) -> typing.TypeGuard[_DataFieldProtocol]:
+    """Check whether `val` exposes `data`.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor object.
+
+    Returns:
+        bool: True if `val` has `data`.
+    """
+    return has_backend_member(val, "data")
+
+
+def _has_requires_grad(val: TensorOrScalar) -> typing.TypeGuard[_RequiresGradProtocol]:
+    """Check whether `val` exposes `requires_grad`.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor object.
+
+    Returns:
+        bool: True if `val` has `requires_grad`.
+    """
+    return has_backend_member(val, "requires_grad")
+
+
+def _has_trainable(val: TensorOrScalar) -> typing.TypeGuard[_TrainableProtocol]:
+    """Check whether `val` exposes `trainable`.
+
+    Args:
+        val (TensorOrScalar): Candidate variable object.
+
+    Returns:
+        bool: True if `val` has `trainable`.
+    """
+    return has_backend_member(val, "trainable")
+
+
+def _has_graph_nodes(val: TensorOrScalar) -> typing.TypeGuard[_GraphNodesProtocol]:
+    """Check whether `val` exposes `nodes`.
+
+    Args:
+        val (TensorOrScalar): Candidate graph object.
+
+    Returns:
+        bool: True if `val` has `nodes`.
+    """
+    return has_backend_member(val, "nodes")
+
+
+def _has_graph_inputs(val: TensorOrScalar) -> typing.TypeGuard[_GraphInputsProtocol]:
+    """Check whether `val` exposes `inputs`.
+
+    Args:
+        val (TensorOrScalar): Candidate graph object.
+
+    Returns:
+        bool: True if `val` has `inputs`.
+    """
+    return has_backend_member(val, "inputs")
+
+
+def _has_shape_field(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes `shape`.
+
+    Args:
+        val (TensorOrScalar): Candidate tensor or array.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
+
+
 def _unwrap_data(val: GradValue) -> GradValue:
     """Return `val.data` if `val` exposes `.data`, otherwise `val`.
 
@@ -145,7 +254,7 @@ def _unwrap_data(val: GradValue) -> GradValue:
         GradValue: Unwrapped data payload.
     """
     raw: TensorOrScalar = val
-    return raw.data if isinstance(raw, _DataFieldProtocol) else val
+    return raw.data if _has_data_field(raw) else val
 
 
 def _extract_shape(val: GradValue) -> tuple[int, ...]:
@@ -158,7 +267,7 @@ def _extract_shape(val: GradValue) -> tuple[int, ...]:
         tuple[int, ...]: Shape tuple.
     """
     raw: TensorOrScalar = val
-    return _coerce_grad_shape(raw.shape) if isinstance(raw, ShapeProtocol) else ()
+    return _coerce_grad_shape(raw.shape) if _has_shape_field(raw) else ()
 
 
 @typing.runtime_checkable
@@ -277,17 +386,17 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
     """
     all_tensors = _collect_live_tensors()
     raw_graph: TensorOrScalar = graph
-    graph_nodes = raw_graph.nodes if isinstance(raw_graph, _GraphNodesProtocol) else {}
+    graph_nodes = raw_graph.nodes if _has_graph_nodes(raw_graph) else {}
     wrt_tensors: list[GradValue] = []
     wrt_ids: list[str] = []
     for t in all_tensors:
         raw_t: TensorOrScalar = t
         raw_data: TensorOrScalar = t.data
-        if isinstance(raw_data, _IdDataProtocol):
+        if _has_id_data(raw_data):
             node_id = str(raw_data.id)
             if node_id in graph_nodes:
-                req_grad = isinstance(raw_t, _RequiresGradProtocol) and bool(raw_t.requires_grad)
-                trainable = isinstance(raw_t, _TrainableProtocol) and bool(raw_t.trainable)
+                req_grad = _has_requires_grad(raw_t) and bool(raw_t.requires_grad)
+                trainable = _has_trainable(raw_t) and bool(raw_t.trainable)
                 if req_grad or trainable or isinstance(t, Variable):
                     wrt_tensors.append(t)
                     wrt_ids.append(node_id)
@@ -304,12 +413,12 @@ def _get_concrete_val(t: GradValue) -> GradValue:
         GradValue: Concrete backing array value, or None if unavailable.
     """
     raw_data: TensorOrScalar = _unwrap_data(t)
-    val: GradValue = raw_data.concrete_value if isinstance(raw_data, _ConcreteValueProtocol) else None
+    val: GradValue = raw_data.concrete_value if _has_concrete_value(raw_data) else None
     if val is None:
         raw_t: TensorOrScalar = t
-        priv_data = raw_t._data if isinstance(raw_t, _PrivateDataProtocol) else None
+        priv_data = raw_t._data if _has_private_data(raw_t) else None
         raw_priv: TensorOrScalar = priv_data
-        val = raw_priv.concrete_value if isinstance(raw_priv, _ConcreteValueProtocol) else priv_data
+        val = raw_priv.concrete_value if _has_concrete_value(raw_priv) else priv_data
     return val
 
 
@@ -338,12 +447,12 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
     """
     all_tensors = _collect_live_tensors()
     raw_graph: TensorOrScalar = graph
-    graph_nodes = raw_graph.nodes if isinstance(raw_graph, _GraphNodesProtocol) else {}
-    graph_inputs = raw_graph.inputs if isinstance(raw_graph, _GraphInputsProtocol) else ()
+    graph_nodes = raw_graph.nodes if _has_graph_nodes(raw_graph) else {}
+    graph_inputs = raw_graph.inputs if _has_graph_inputs(raw_graph) else ()
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
         raw_data: TensorOrScalar = _unwrap_data(t)
-        node_id = str(raw_data.id) if isinstance(raw_data, _IdDataProtocol) else ""
+        node_id = str(raw_data.id) if _has_id_data(raw_data) else ""
         if node_id and node_id in graph_nodes:
             val = _get_concrete_val(t)
             if val is not None:

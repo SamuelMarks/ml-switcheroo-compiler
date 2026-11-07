@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from types import ModuleType
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
@@ -22,7 +23,6 @@ if typing.TYPE_CHECKING:
     import h5py as h5py_types
 
 
-@typing.runtime_checkable
 class _LoadH5BackendProtocol(typing.Protocol):
     """Protocol for backends implementing custom `load_h5`."""
 
@@ -38,7 +38,6 @@ class _LoadH5BackendProtocol(typing.Protocol):
         ...
 
 
-@typing.runtime_checkable
 class _SaveH5BackendProtocol(typing.Protocol):
     """Protocol for backends implementing custom `save_h5`."""
 
@@ -50,6 +49,30 @@ class _SaveH5BackendProtocol(typing.Protocol):
             filepath (str): Destination file path.
         """
         ...
+
+
+def _is_load_h5_backend(val: TensorOrScalar) -> typing.TypeGuard[_LoadH5BackendProtocol]:
+    """Check whether `val` exposes `load_h5`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `load_h5`.
+    """
+    return has_backend_member(val, "load_h5")
+
+
+def _is_save_h5_backend(val: TensorOrScalar) -> typing.TypeGuard[_SaveH5BackendProtocol]:
+    """Check whether `val` exposes `save_h5`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `save_h5`.
+    """
+    return has_backend_member(val, "save_h5")
 
 
 @typing.runtime_checkable
@@ -103,7 +126,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend: TensorOrScalar = get_active_backend()
-        if isinstance(backend, _LoadH5BackendProtocol):
+        if _is_load_h5_backend(backend):
             return dict(backend.load_h5(filepath))
 
         if h5py is None:
@@ -139,7 +162,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend: TensorOrScalar = get_active_backend()
-        if isinstance(backend, _SaveH5BackendProtocol):
+        if _is_save_h5_backend(backend):
             backend.save_h5(weights_np, filepath)
             return
 

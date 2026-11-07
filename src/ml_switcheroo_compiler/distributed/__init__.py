@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import _backend_name
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, invoke_callable
@@ -42,7 +43,6 @@ def _ensure_dist_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
     return val
 
 
-@typing.runtime_checkable
 class _InitializeDistributedBackendProtocol(typing.Protocol):
     """Protocol for backends supporting `initialize_distributed()`."""
 
@@ -54,6 +54,18 @@ class _InitializeDistributedBackendProtocol(typing.Protocol):
             **kwargs (AttrValue): Keyword arguments.
         """
         ...
+
+
+def _is_initialize_distributed_backend(val: TensorOrScalar) -> typing.TypeGuard[_InitializeDistributedBackendProtocol]:
+    """Check whether `val` exposes `initialize_distributed`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `initialize_distributed`.
+    """
+    return has_backend_member(val, "initialize_distributed")
 
 
 class Distribution:
@@ -170,7 +182,7 @@ def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     backend: TensorOrScalar = registry.get_active_backend()
-    if isinstance(backend, _InitializeDistributedBackendProtocol):
+    if _is_initialize_distributed_backend(backend):
         backend.initialize_distributed(*args, **kwargs)
     else:
         raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support initialize_distributed()")

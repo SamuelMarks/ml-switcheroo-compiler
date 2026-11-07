@@ -9,6 +9,7 @@ from collections.abc import Iterable, Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -153,6 +154,102 @@ class _IdBlockProtocol(typing.Protocol):
     id: str
 
 
+def _has_graph_holder(val: TensorOrScalar) -> typing.TypeGuard[_GraphHolderProtocol]:
+    """Check whether `val` exposes `graph`.
+
+    Args:
+        val (TensorOrScalar): Candidate rule callable.
+
+    Returns:
+        bool: True if `val` has `graph`.
+    """
+    return has_backend_member(val, "graph")
+
+
+def _has_dtype_attr(val: TensorOrScalar) -> typing.TypeGuard[_DTypeAttrProtocol]:
+    """Check whether `val` exposes `dtype`.
+
+    Args:
+        val (TensorOrScalar): Candidate array or tensor.
+
+    Returns:
+        bool: True if `val` has `dtype`.
+    """
+    return has_backend_member(val, "dtype")
+
+
+def _has_dtype_value(val: TensorOrScalar) -> typing.TypeGuard[_DTypeValueProtocol]:
+    """Check whether `val` exposes `value`.
+
+    Args:
+        val (TensorOrScalar): Candidate dtype object.
+
+    Returns:
+        bool: True if `val` has `value`.
+    """
+    return has_backend_member(val, "value")
+
+
+def _has_tolist_method(val: TensorOrScalar) -> typing.TypeGuard[_ToListProtocol]:
+    """Check whether `val` exposes `tolist`.
+
+    Args:
+        val (TensorOrScalar): Candidate array.
+
+    Returns:
+        bool: True if `val` has `tolist`.
+    """
+    return has_backend_member(val, "tolist")
+
+
+def _is_execute_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
+    """Check whether `val` exposes `execute_graph`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `execute_graph`.
+    """
+    return has_backend_member(val, "execute_graph")
+
+
+def _is_compile_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
+    """Check whether `val` exposes `compile_graph`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `compile_graph`.
+    """
+    return has_backend_member(val, "compile_graph")
+
+
+def _has_id_block_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdBlockProtocol]:
+    """Check whether `val` exposes `id`.
+
+    Args:
+        val (TensorOrScalar): Traced block or data.
+
+    Returns:
+        bool: True if `val` has `id`.
+    """
+    return has_backend_member(val, "id")
+
+
+def _has_id_data_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
+    """Check whether `val` exposes `id`.
+
+    Args:
+        val (TensorOrScalar): Candidate proxy data.
+
+    Returns:
+        bool: True if `val` has `id`.
+    """
+    return has_backend_member(val, "id")
+
+
 def _resolve_dtype_value(val: GradValue) -> str:
     """Resolve the string dtype value from `val.dtype` if present, else `'float32'`.
 
@@ -163,7 +260,7 @@ def _resolve_dtype_value(val: GradValue) -> str:
         str: Resolved dtype string.
     """
     raw: TensorOrScalar = val
-    return str(raw.dtype.value) if isinstance(raw, _DTypeAttrProtocol) and isinstance(raw.dtype, _DTypeValueProtocol) else "float32"
+    return str(raw.dtype.value) if _has_dtype_attr(raw) and _has_dtype_value(raw.dtype) else "float32"
 
 
 def _to_list_or_self(val: GradValue) -> GradValue:
@@ -176,7 +273,7 @@ def _to_list_or_self(val: GradValue) -> GradValue:
         GradValue: Python list or original value.
     """
     raw: TensorOrScalar = val
-    return raw.tolist() if isinstance(raw, _ToListProtocol) else val
+    return raw.tolist() if _has_tolist_method(raw) else val
 
 
 def _extract_node_id(val: GradValue) -> str:
@@ -190,7 +287,7 @@ def _extract_node_id(val: GradValue) -> str:
     """
     p_data = _unwrap_data(val)
     raw_data: TensorOrScalar = p_data
-    return str(raw_data.id) if isinstance(raw_data, _IdDataProtocol) else str(p_data)
+    return str(raw_data.id) if _has_id_data_attr(raw_data) else str(p_data)
 
 
 def _unpack_pair(val: GradValue) -> tuple[GradValue, GradValue]:
@@ -241,7 +338,7 @@ class CustomJVPFunction:
             self.jvp_subgraph = jvp_subgraph
         elif isinstance(jvp_rule, LogicalGraph):
             self.jvp_subgraph = jvp_rule
-        elif isinstance(raw_rule, _GraphHolderProtocol) and isinstance(raw_rule.graph, LogicalGraph):
+        elif _has_graph_holder(raw_rule) and isinstance(raw_rule.graph, LogicalGraph):
             self.jvp_subgraph = raw_rule.graph
         else:
             self.jvp_subgraph = None
@@ -295,7 +392,7 @@ class CustomJVPFunction:
         in_ids: list[str] = []
         for a in tensor_args:
             raw_data: TensorOrScalar = _unwrap_data(a)
-            if isinstance(raw_data, _IdDataProtocol):
+            if _has_id_data_attr(raw_data):
                 in_ids.append(str(raw_data.id))
             else:
                 cid = str(uuid.uuid4())
@@ -400,7 +497,7 @@ def _build_traced_logical_graph(
     """
     block = _trace_function(fun_primal, tuple(tensor_primals), f"{prefix}_{uuid.uuid4().hex[:6]}")
     raw_b: TensorOrScalar = block
-    block_name = str(raw_b.id) if isinstance(raw_b, _IdBlockProtocol) and raw_b.id else (block.name or prefix)
+    block_name = str(raw_b.id) if _has_id_block_attr(raw_b) and raw_b.id else (block.name or prefix)
     forward_graph = LogicalGraph(name=block_name)
     raw_nodes: TensorOrScalar = block.nodes
     nodes_iter: Iterable[LogicalNode] = block.nodes.values() if isinstance(raw_nodes, Mapping) else as_node_list(block.nodes)
@@ -424,9 +521,9 @@ def _execute_autodiff_graph(graph: LogicalGraph, inputs_dict: dict[str, GradValu
     from ml_switcheroo_compiler.interpreter import evaluate_graph
 
     backend: TensorOrScalar = get_active_backend()
-    if isinstance(backend, _ExecuteGraphBackendProtocol):
+    if _is_execute_graph_backend(backend):
         return dict(backend.execute_graph(graph, inputs_dict))
-    if isinstance(backend, _CompileGraphBackendProtocol):
+    if _is_compile_graph_backend(backend):
         compiled_fn = backend.compile_graph(graph)
         return dict(compiled_fn(inputs_dict))
     return evaluate_graph(graph, inputs_dict)

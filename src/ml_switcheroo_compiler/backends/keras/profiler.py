@@ -10,7 +10,7 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_opt_callable
-from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
+from ml_switcheroo_compiler.backends.protocols import has_backend_member, resolve_backend_member
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
@@ -22,7 +22,6 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-@typing.runtime_checkable
 class _NumpyCallableProtocol(typing.Protocol):
     """Protocol for tensors exposing `.numpy()`."""
 
@@ -33,6 +32,18 @@ class _NumpyCallableProtocol(typing.Protocol):
             EagerValue: Host NumPy array.
         """
         ...
+
+
+def _is_numpy_callable(val: EagerValue) -> typing.TypeGuard[_NumpyCallableProtocol]:
+    """Check whether `val` exposes a `.numpy` attribute.
+
+    Args:
+        val (EagerValue): Candidate tensor value.
+
+    Returns:
+        bool: True if `val` has a `.numpy` attribute.
+    """
+    return has_backend_member(val, "numpy")
 
 
 def _get_process_memory_mb() -> float:
@@ -93,7 +104,7 @@ def _sync_keras_result(result: EagerValue | list[EagerValue] | tuple[EagerValue,
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     else:
         raw_res: EagerValue = result
-        if isinstance(raw_res, _NumpyCallableProtocol) and callable(raw_res.numpy):
+        if _is_numpy_callable(raw_res) and callable(raw_res.numpy):
             try:
                 _ = raw_res.numpy()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):

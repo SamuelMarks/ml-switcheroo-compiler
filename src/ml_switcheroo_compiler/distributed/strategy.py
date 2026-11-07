@@ -14,6 +14,7 @@ import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, NodeDict, PartitionSpec
 
 import ml_switcheroo_compiler.backends.registry as registry
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, invoke_callable
 from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.distributed.config_models import TopologyConfig
@@ -83,6 +84,54 @@ class _CustomJoinServerBackendProtocol(typing.Protocol):
         ...
 
 
+def _has_mock_children(val: TensorOrScalar) -> typing.TypeGuard[_MockChildrenProtocol]:
+    """Check whether `val` exposes `_mock_children`.
+
+    Args:
+        val (TensorOrScalar): Candidate backend or mock.
+
+    Returns:
+        bool: True if `val` has `_mock_children`.
+    """
+    return has_backend_member(val, "_mock_children")
+
+
+def _is_custom_server_backend(val: TensorOrScalar) -> typing.TypeGuard[_CustomServerBackendProtocol]:
+    """Check whether `val` exposes `start_server`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `start_server`.
+    """
+    return has_backend_member(val, "start_server")
+
+
+def _is_custom_join_server_backend(val: TensorOrScalar) -> typing.TypeGuard[_CustomJoinServerBackendProtocol]:
+    """Check whether `val` exposes `join_server`.
+
+    Args:
+        val (TensorOrScalar): Active backend.
+
+    Returns:
+        bool: True if `val` has `join_server`.
+    """
+    return has_backend_member(val, "join_server")
+
+
+def _is_socket_connection(val: _SocketConnectionProtocol | AbstractContextManager[TensorOrScalar] | TensorOrScalar) -> typing.TypeGuard[_SocketConnectionProtocol]:
+    """Check whether `val` exposes `setblocking`, `recv`, and `sendall`.
+
+    Args:
+        val (_SocketConnectionProtocol | AbstractContextManager[TensorOrScalar] | TensorOrScalar): Candidate socket connection.
+
+    Returns:
+        bool: True if `val` has `setblocking`, `recv`, and `sendall`.
+    """
+    return has_backend_member(val, "setblocking") and has_backend_member(val, "recv") and has_backend_member(val, "sendall")
+
+
 def _resolve_backend_hook(backend: TensorOrScalar, hook_name: AttrType) -> TypedVariadicCallable[TensorOrScalar] | None:
     """Resolve a dynamic hook callable on `backend` if `hook_name` is a non-empty string.
 
@@ -93,7 +142,7 @@ def _resolve_backend_hook(backend: TensorOrScalar, hook_name: AttrType) -> Typed
     Returns:
         TypedVariadicCallable[TensorOrScalar] | None: Bound or static hook callable if present, else None.
     """
-    if isinstance(backend, _MockChildrenProtocol) and isinstance(hook_name, str):
+    if _has_mock_children(backend) and isinstance(hook_name, str):
         raw: TensorOrScalar = backend._mock_children.get(hook_name)
     elif isinstance(hook_name, str) and hook_name:
         members = dict(inspect.getmembers(backend))
@@ -622,7 +671,7 @@ class Server:
 
         try:
             backend: TensorOrScalar = registry.get_active_backend()
-            if isinstance(backend, _CustomServerBackendProtocol):
+            if _is_custom_server_backend(backend):
                 backend.start_server(self)
                 return
         except Exception as e:
@@ -701,7 +750,7 @@ class Server:
 
         assert _is_context_manager(conn)
         with conn:
-            assert isinstance(conn, _SocketConnectionProtocol)
+            assert _is_socket_connection(conn)
             conn.setblocking(True)
             header_len_b: TensorOrScalar = conn.recv(4)
             if not header_len_b or not isinstance(header_len_b, (bytes, bytearray)):
@@ -747,7 +796,7 @@ class Server:
 
         try:
             backend: TensorOrScalar = registry.get_active_backend()
-            if isinstance(backend, _CustomJoinServerBackendProtocol):
+            if _is_custom_join_server_backend(backend):
                 backend.join_server(self)
                 return
         except Exception as e:

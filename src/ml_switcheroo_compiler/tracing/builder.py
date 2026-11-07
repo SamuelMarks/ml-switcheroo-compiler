@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
+from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     AttrValue,
@@ -63,6 +64,18 @@ def _extract_builder_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
     res = tuple(seq)
     assert _is_builder_shape_tuple(res)
     return res
+
+
+def _has_shape_attr(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes a `shape` attribute.
+
+    Args:
+        val (TensorOrScalar): Candidate array or proxy.
+
+    Returns:
+        bool: True if `val` has `shape`.
+    """
+    return has_backend_member(val, "shape")
 
 
 @typing.runtime_checkable
@@ -145,7 +158,7 @@ class TracingNodeBuilder:
         backend = get_active_backend()
         arr: TensorOrScalar = backend.array(a)
         val = arr.tolist() if is_backend_buffer(arr) else arr
-        shape = _extract_builder_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
+        shape = _extract_builder_shape(arr.shape) if _has_shape_attr(arr) else ()
         out_id = TracingNodeBuilder.create_constant_node(val, shape)
         return out_id, shape
 
@@ -173,7 +186,7 @@ class TracingNodeBuilder:
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif isinstance(a, ProxyTensor) or is_traced_data(a):
                 raw_a: TensorOrScalar = a
-                out_id, shape = str(a.id), (_extract_builder_shape(raw_a.shape) if isinstance(raw_a, ShapeProtocol) else ())
+                out_id, shape = str(a.id), (_extract_builder_shape(raw_a.shape) if _has_shape_attr(raw_a) else ())
             else:
                 out_id, shape = TracingNodeBuilder.extract_from_constant(a)
 
