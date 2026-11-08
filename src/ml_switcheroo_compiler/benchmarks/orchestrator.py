@@ -35,9 +35,7 @@ def _to_metric_float(val: float | list[float] | int | str | None) -> float:
     Returns:
         float: Coerced float value.
     """
-    if isinstance(val, (int, float)):
-        return float(val)
-    return 0.0
+    return float(val) if isinstance(val, (int, float)) else 0.0
 
 
 @typing.runtime_checkable
@@ -122,8 +120,6 @@ def _instantiate_profiler(mod_name: str, cls_name: str) -> _ProfilerProtocol:
     """
     mod = importlib.import_module(mod_name)
     members = dict(inspect.getmembers(mod))
-    if cls_name not in members:
-        raise AttributeError(f"module {mod_name!r} has no attribute {cls_name!r}")
     profiler_cls: TensorOrScalar = members[cls_name]
     assert _is_profiler_factory(profiler_cls)
     return profiler_cls()

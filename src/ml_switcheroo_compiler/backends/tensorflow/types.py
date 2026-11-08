@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
+import typing
+
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
     generic_asarray,
@@ -11,10 +15,12 @@ from ml_switcheroo_compiler.backends.eager import (
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
 from ml_switcheroo_compiler.backends.protocols import ensure_mod
 
-try:
+if typing.TYPE_CHECKING:
     import tensorflow as tf
-except ImportError:
-    tf = ensure_mod(None)
+
+_has_tf = sys.modules.get("tensorflow") is not None or ("tensorflow" not in sys.modules and importlib.util.find_spec("tensorflow") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    tf = ensure_mod(importlib.import_module("tensorflow") if _has_tf else None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:

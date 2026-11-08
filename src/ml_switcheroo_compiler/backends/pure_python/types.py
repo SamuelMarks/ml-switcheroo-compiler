@@ -6,8 +6,15 @@ import math
 import typing
 from collections.abc import Callable, Sequence
 
-Numeric = typing.Union[int, "float"]
-NestedList = typing.Union[Numeric, "Sequence['NestedList']"]
+Numeric = typing.Union[int, float]  # noqa: UP007
+
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _NestedListSelf = Numeric
+
+if typing.TYPE_CHECKING:
+    _NestedListSelf: typing.TypeAlias = "NestedList"
+
+NestedList = typing.Union[Numeric, Sequence[_NestedListSelf]]  # noqa: UP007
 
 
 class PurePythonTensor:

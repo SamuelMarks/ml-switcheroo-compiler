@@ -94,6 +94,12 @@ def f_missing_specific_arg(x: int, y: int) -> None:
         x (int): X val.
     """
     pass
+
+@overload
+def f_overload_name(x: int) -> int: ...
+
+@typing.overload
+def f_overload_attr(x: str) -> str: ...
 '''
     )
     f1 = tree.body[0]
@@ -124,6 +130,14 @@ def f_missing_specific_arg(x: int, y: int) -> None:
     f_missing_specific_arg = tree.body[5]
     assert isinstance(f_missing_specific_arg, ast.FunctionDef)
     assert _is_function_doc_complete(f_missing_specific_arg) is False
+
+    f_ov1 = tree.body[6]
+    assert isinstance(f_ov1, ast.FunctionDef)
+    assert _is_function_doc_complete(f_ov1) is True
+
+    f_ov2 = tree.body[7]
+    assert isinstance(f_ov2, ast.FunctionDef)
+    assert _is_function_doc_complete(f_ov2) is True
 
 
 def test_get_test_coverage_success() -> None:

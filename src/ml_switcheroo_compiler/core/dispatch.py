@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import inspect
-import types
 import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
@@ -12,7 +11,6 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     AttrValue,
     TensorOrScalar,
-    TypedVariadicCallable,
     invoke_callable,
 )
 
@@ -42,18 +40,6 @@ def _ensure_dispatch_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
     return val
 
 
-def _is_dispatch_callable(val: TensorOrScalar) -> typing.TypeGuard[TypedVariadicCallable[TensorOrScalar]]:
-    """Type guard narrowing `val` to `TypedVariadicCallable[TensorOrScalar]`.
-
-    Args:
-        val (TensorOrScalar): Candidate callable.
-
-    Returns:
-        bool: True if callable.
-    """
-    return callable(val)
-
-
 @typing.runtime_checkable
 class _HasDTypeProtocol(typing.Protocol):
     """Protocol for objects exposing a `.dtype` attribute."""
@@ -78,33 +64,10 @@ def _lookup_attr(obj: TensorOrScalar, attr: str) -> tuple[bool, TensorOrScalar]:
     Returns:
         tuple[bool, TensorOrScalar]: `(found, value)` pair.
     """
-    try:
-        if attr not in dir(obj):
-            return False, None
-        members = dict(inspect.getmembers(obj))
-        if attr not in members:
-            return False, None
-        raw: TensorOrScalar = members[attr]
-        if inspect.isfunction(raw) and not isinstance(obj, (type, types.ModuleType)):
-            assert _is_dispatch_callable(raw)
-            fn = raw
-
-            def _bound(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-                """Invoke bound method on `obj`.
-
-                Args:
-                    *args (TensorOrScalar): Positional arguments.
-                    **kwargs (TensorOrScalar): Keyword arguments.
-
-                Returns:
-                    TensorOrScalar: Method call result.
-                """
-                return fn(obj, *args, **kwargs)
-
-            return True, _ensure_dispatch_tensor(_bound)
-        return True, _ensure_dispatch_tensor(raw)
-    except AttributeError:
+    if attr not in dir(obj):
         return False, None
+    members = dict(inspect.getmembers(obj))
+    return True, _ensure_dispatch_tensor(members[attr])
 
 
 def dispatch(module_name: str, func_name: str, *args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:

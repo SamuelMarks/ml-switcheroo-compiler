@@ -36,13 +36,8 @@ def _extract_array_index(val: TensorOrScalar | _ScalarIntItemProtocol) -> int:
     Returns:
         int: Integer index.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, _ScalarIntItemProtocol):
-        item_val = val.item()
-        if isinstance(item_val, (int, float)):
-            return int(item_val)
-    return 0
+    item_val = val.item() if isinstance(val, _ScalarIntItemProtocol) else val
+    return int(item_val) if isinstance(item_val, (int, float)) else 0
 
 
 class TensorArray:

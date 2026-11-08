@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-AsyncResultType = typing.Union[Tensor, IRNode, "OpArgValue"]
+AsyncResultType = typing.Union[Tensor, IRNode, OpArgValue]  # noqa: UP007
 
 
 class AsyncIOFuture:

@@ -57,13 +57,7 @@ def _ensure_cf_list(val: TensorOrScalar) -> list[TensorOrScalar]:
     Returns:
         list[TensorOrScalar]: Converted list.
     """
-    if isinstance(val, list):
-        return val
-    if isinstance(val, tuple):
-        return list(val)
-    if isinstance(val, Iterable):
-        return list(val)
-    return [val]
+    return list(val) if isinstance(val, Iterable) else [val]
 
 
 def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) -> TensorOrScalar:

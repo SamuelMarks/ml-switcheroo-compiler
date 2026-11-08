@@ -6,6 +6,10 @@ import enum
 import typing
 from collections.abc import Callable, Sequence
 
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    LogicalGraph = int
+    LogicalNode = int
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -17,8 +21,8 @@ class UnconnectedGradients(enum.Enum):
     ZERO = "zero"
 
 
-VJPCallable = Callable[["LogicalGraph", "LogicalNode", str], tuple[UnconnectedGradients, ...]]
-JVPCallable = Callable[["LogicalGraph", "LogicalNode", typing.Union[Sequence[str], str]], str]  # noqa: UP007
+VJPCallable = Callable[[LogicalGraph, LogicalNode, str], tuple[UnconnectedGradients, ...]]
+JVPCallable = Callable[[LogicalGraph, LogicalNode, typing.Union[Sequence[str], str]], str]  # noqa: UP007
 
 
 def make_zero_vjp(name: str) -> VJPCallable:

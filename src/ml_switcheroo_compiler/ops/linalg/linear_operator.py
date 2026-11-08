@@ -7,6 +7,9 @@ import typing
 from ml_switcheroo_compiler.core.shape import extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    Tensor = int
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -17,7 +20,7 @@ class HasShape(typing.Protocol):
     shape: tuple[int, ...]
 
 
-ShapeOperand = typing.Union["Tensor", HasShape, int, float, str, None]
+ShapeOperand = typing.Union[Tensor, HasShape, int, float, str, None]  # noqa: UP007
 
 
 class BaseLinearOperator(OpDef):

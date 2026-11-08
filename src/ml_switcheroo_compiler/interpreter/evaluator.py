@@ -60,11 +60,7 @@ def _eval_to_int(val: TensorOrScalar | EvalValue, default: int = 0) -> int:
     Returns:
         int: Coerced integer value.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return default
+    return int(val) if isinstance(val, (int, float)) else default
 
 
 as_tensor_like = _ensure_eval_tensor

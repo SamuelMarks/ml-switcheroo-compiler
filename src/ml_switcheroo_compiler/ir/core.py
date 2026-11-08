@@ -26,19 +26,26 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    SymInt = int
+    SymNode = int
+    _AttrValueSelf = AttributeValue
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
-SymbolicDim = typing.Union[str, "SymNode", "SymInt"]
-ShapeLike = typing.Union[tuple[typing.Union[int, "str"], ...], Sequence[typing.Union[int, "str"]], "None"]
-AxesLike = typing.Union[int, Sequence[int], "None"]
-ScalarLike = typing.Union[int, float, bool, "complex"]
-AttrValue = typing.Union[
+    _AttrValueSelf: typing.TypeAlias = "AttrValue"
+
+SymbolicDim = typing.Union[str, SymNode, SymInt]  # noqa: UP007
+ShapeLike = typing.Union[tuple[typing.Union[int, str], ...], Sequence[typing.Union[int, str]], None]  # noqa: UP007
+AxesLike = typing.Union[int, Sequence[int], None]  # noqa: UP007
+ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
+AttrValue = typing.Union[  # noqa: UP007
     ScalarLike,
-    "str",
+    str,
     bytes,
-    Sequence["AttrValue"],
-    Mapping[str, "AttrValue"],
+    Sequence[_AttrValueSelf],
+    Mapping[str, _AttrValueSelf],
     DType,
     Device,
     IRGraph,

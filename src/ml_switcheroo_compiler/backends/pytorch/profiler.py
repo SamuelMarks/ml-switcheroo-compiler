@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import resource
 import sys
@@ -14,10 +15,12 @@ from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_me
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-try:
+if typing.TYPE_CHECKING:
     import torch
-except ImportError:
-    torch = ensure_mod(None)
+
+_has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
 
 
 def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]]:

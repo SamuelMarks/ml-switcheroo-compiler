@@ -52,11 +52,7 @@ def _hc_to_int(val: TensorOrScalar, default: int = 0) -> int:
     Returns:
         int: Coerced integer value.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return default
+    return int(val) if isinstance(val, (int, float)) else default
 
 
 def _hc_extract_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
@@ -80,11 +76,7 @@ def _hc_opt_str(val: TensorOrScalar) -> str | None:
     Returns:
         str | None: String representation or None.
     """
-    if val is None:
-        return None
-    if isinstance(val, str):
-        return val
-    return str(val)
+    return str(val) if val is not None else None
 
 
 @typing.runtime_checkable

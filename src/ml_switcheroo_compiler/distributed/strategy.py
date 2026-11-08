@@ -20,7 +20,13 @@ from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.distributed.config_models import TopologyConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _AttrTypeSelf = AttributeValue
+
+if typing.TYPE_CHECKING:
+    _AttrTypeSelf: typing.TypeAlias = "AttrType"
+
+AttrType = typing.Union[int, float, str, bool, list[_AttrTypeSelf], tuple[_AttrTypeSelf, ...], dict[str, _AttrTypeSelf], None]  # noqa: UP007
 
 
 def _is_strategy_attr_dict(
@@ -144,30 +150,12 @@ def _resolve_backend_hook(backend: TensorOrScalar, hook_name: AttrType) -> Typed
     """
     if _has_mock_children(backend) and isinstance(hook_name, str):
         raw: TensorOrScalar = backend._mock_children.get(hook_name)
-    elif isinstance(hook_name, str) and hook_name:
-        members = dict(inspect.getmembers(backend))
-        raw = members.get(hook_name)
     else:
-        raw = None
+        members = dict(inspect.getmembers(backend))
+        raw = members.get(str(hook_name)) if isinstance(hook_name, str) and hook_name else None
     if raw is None or not _is_hook_callable(raw):
         return None
-    fn = raw
-    if inspect.isfunction(raw) and isinstance(backend, type):
-
-        def _bound(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-            """Invoke bound backend hook on `backend` instance.
-
-            Args:
-                *args (TensorOrScalar): Positional arguments.
-                **kwargs (TensorOrScalar): Keyword arguments.
-
-            Returns:
-                TensorOrScalar: Hook execution result.
-            """
-            return fn(backend, *args, **kwargs)
-
-        return _bound
-    return fn
+    return raw
 
 
 @typing.runtime_checkable
@@ -891,36 +879,8 @@ def _ensure_graph_attributes(graph: IRGraph) -> dict[str, AttributeValue]:
         dict[str, AttributeValue]: Graph attributes dictionary.
     """
     raw_g: TensorOrScalar = graph
-    if not isinstance(raw_g, _GraphAttributesProtocol):
-        mut_g: _MutableGraphAttributesProtocol = typing_narrow_graph_attrs(raw_g)
-        mut_g.attributes = {}
     assert isinstance(raw_g, _GraphAttributesProtocol)
     return raw_g.attributes
-
-
-def _is_mutable_graph_attrs(val: TensorOrScalar) -> typing.TypeGuard[_MutableGraphAttributesProtocol]:
-    """Type guard narrowing `val` to `_MutableGraphAttributesProtocol`.
-
-    Args:
-        val (TensorOrScalar): Graph instance.
-
-    Returns:
-        bool: Always True for runtime graph instances.
-    """
-    return val is not None
-
-
-def typing_narrow_graph_attrs(val: TensorOrScalar) -> _MutableGraphAttributesProtocol:
-    """Narrow `val` to `_MutableGraphAttributesProtocol`.
-
-    Args:
-        val (TensorOrScalar): Graph instance.
-
-    Returns:
-        _MutableGraphAttributesProtocol: Narrowed graph instance.
-    """
-    assert _is_mutable_graph_attrs(val)
-    return val
 
 
 def _is_mutable_sharded_node(val: IRNode) -> typing.TypeGuard[_MutableShardedNodeProtocol]:

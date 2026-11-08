@@ -10,12 +10,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_ca
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-try:
+if typing.TYPE_CHECKING:
     import torch
-except ImportError:
-    torch = ensure_mod(None)
 
 _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
 F: BackendModuleProtocol = ensure_mod(importlib.import_module("torch.nn.functional") if _has_torch else None)
 
 

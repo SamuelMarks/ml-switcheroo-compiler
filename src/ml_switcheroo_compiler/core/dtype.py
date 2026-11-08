@@ -163,7 +163,7 @@ def _setup_runtime_dtype() -> type[DType]:
     return ret_cls
 
 
-if not typing.TYPE_CHECKING:
+if not typing.TYPE_CHECKING:  # pragma: no cover
     DType = _setup_runtime_dtype()
 
 

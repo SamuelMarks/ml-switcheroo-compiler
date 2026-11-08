@@ -9,7 +9,13 @@ from collections.abc import Iterable, Iterator, Sequence
 
 import pydantic
 
-DatasetElement = typing.Union[
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _DatasetElementSelf = int
+
+if typing.TYPE_CHECKING:
+    _DatasetElementSelf: typing.TypeAlias = "DatasetElement"
+
+DatasetElement = typing.Union[  # noqa: UP007
     int,
     float,
     str,
@@ -18,8 +24,8 @@ DatasetElement = typing.Union[
     list[float],
     list[str],
     tuple[int, ...],
-    "tuple[float, ...]",
-    Sequence["DatasetElement"],
+    tuple[float, ...],
+    Sequence[_DatasetElementSelf],
 ]
 
 

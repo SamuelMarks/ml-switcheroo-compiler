@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
+import typing
+
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member
 
-try:
+if typing.TYPE_CHECKING:
     import torch
-except ImportError:
-    torch = ensure_mod(None)
+
+_has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:

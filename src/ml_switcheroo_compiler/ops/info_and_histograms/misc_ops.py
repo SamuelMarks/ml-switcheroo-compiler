@@ -7,6 +7,9 @@ import typing
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    Tensor = int
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.dispatcher import DispatchArg
@@ -18,10 +21,10 @@ class HasShape(typing.Protocol):
     shape: tuple[int, ...]
 
 
-MiscArg = typing.Union[
-    "Tensor",
+MiscArg = typing.Union[  # noqa: UP007
+    Tensor,
     HasShape,
-    TypedVariadicCallable[typing.Union["Tensor", int, float, str, bool, None]],
+    TypedVariadicCallable[typing.Union[Tensor, int, float, str, bool, None]],  # noqa: UP007
     int,
     float,
     str,

@@ -43,11 +43,7 @@ def _to_grad_float(val: TensorOrScalar | GradValue) -> float:
     Returns:
         float: Coerced float value.
     """
-    if isinstance(val, (int, float)):
-        return float(val)
-    raw = _ensure_grad_tensor(val)
-    item_val = raw.item()
-    return float(item_val) if isinstance(item_val, (int, float, str, bytes)) else 0.0
+    return float(val) if isinstance(val, (int, float)) else 0.0
 
 
 def check_numerical_grads(

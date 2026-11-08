@@ -75,23 +75,7 @@ def _resolve_visitor_method(
     raw = members.get(method_name)
     if raw is None or not callable(raw):
         return None
-    fn = ensure_callable(raw)
-    if inspect.ismethod(raw):
-        return fn
-
-    def _bound(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Invoke bound visitor method on `target`.
-
-        Args:
-            *args (EagerValue): Positional visitor arguments.
-            **kwargs (EagerValue): Keyword visitor arguments.
-
-        Returns:
-            EagerValue: Visitor method return value.
-        """
-        return fn(target, *args, **kwargs)
-
-    return _bound
+    return ensure_callable(raw)
 
 
 if typing.TYPE_CHECKING:

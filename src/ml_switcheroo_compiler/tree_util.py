@@ -9,8 +9,14 @@ from collections.abc import Callable, Iterable, Iterator
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _TreeDefRef = TensorOrScalar
+
+if typing.TYPE_CHECKING:
+    _TreeDefRef: typing.TypeAlias = "TreeDef"
+
 T = typing.TypeVar("T")
-PyTree = typing.Union[TensorOrScalar, "TreeDef"]
+PyTree = typing.Union[TensorOrScalar, _TreeDefRef]  # noqa: UP007
 
 
 class TreeDef:

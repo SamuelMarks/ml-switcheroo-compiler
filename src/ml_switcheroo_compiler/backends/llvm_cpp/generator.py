@@ -25,7 +25,13 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.ir.core import as_opt_graph, ensure_graph
 
-AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _AttrTypeSelf = EagerValue
+
+if typing.TYPE_CHECKING:
+    _AttrTypeSelf: typing.TypeAlias = "AttrType"
+
+AttrType = typing.Union[int, float, str, bool, list[_AttrTypeSelf], tuple[_AttrTypeSelf, ...], dict[str, _AttrTypeSelf], None]  # noqa: UP007
 
 import yaml
 

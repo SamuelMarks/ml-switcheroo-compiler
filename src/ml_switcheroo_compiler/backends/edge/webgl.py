@@ -25,9 +25,7 @@ def _node_inputs_list(node: EagerValue) -> list[str]:
         list[str]: Node input IDs.
     """
     raw = get_backend_member(node, "inputs", [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
 def _node_shape_meta(node: EagerValue) -> tuple[EagerValue, ...] | list[EagerValue] | None:

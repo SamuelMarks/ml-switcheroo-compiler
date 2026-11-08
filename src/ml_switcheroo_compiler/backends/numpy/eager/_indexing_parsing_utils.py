@@ -37,31 +37,6 @@ def _as_slice_arg(val: EagerValue) -> int | float | str | None:
     return val
 
 
-def _as_ast_node(val: EagerValue) -> ast.AST:
-    """Narrow `val` to `ast.AST`.
-
-    Args:
-        val (EagerValue): Candidate AST node.
-
-    Returns:
-        ast.AST: Narrowed AST node.
-    """
-
-    def _guard(cand: EagerValue) -> typing.TypeGuard[ast.AST]:
-        """Type guard narrowing `cand` to `ast.AST`.
-
-        Args:
-            cand (EagerValue): Candidate AST node.
-
-        Returns:
-            bool: True for AST nodes.
-        """
-        return not isinstance(cand, bytes) or len(cand) >= 0
-
-    assert _guard(val)
-    return val
-
-
 def _eval_constant(node: ast.AST) -> EagerValue:
     """Execute the eager eval constant operation on the active backend array.
 

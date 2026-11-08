@@ -263,7 +263,7 @@ class S:
         return hash(self.name)
 
 
-DimType = typing.Union[int, "S"]
+DimType = typing.Union[int, S]  # noqa: UP007
 ShapeType = tuple[DimType, ...]
 
 
@@ -1172,11 +1172,9 @@ def infer_shape(
                     raw_res = instance.infer_shape(*shapes, **kwargs)
                 except Exception:
                     raw_res = instance.infer_shape(*args, **kwargs)
-                if isinstance(raw_res, (list, tuple)):
-                    res_tup = tuple(raw_res)
-                    assert _is_shape_type(res_tup)
-                    return res_tup
-                return ()
+                res_tup = tuple(raw_res) if isinstance(raw_res, (list, tuple)) else ()
+                assert _is_shape_type(res_tup)
+                return res_tup
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

@@ -63,11 +63,7 @@ def _to_generic_float(val: TensorOrScalar) -> float:
     Returns:
         float: Coerced float value.
     """
-    if isinstance(val, (int, float)):
-        return float(val)
-    if isinstance(val, str):
-        return float(val)
-    return 0.0
+    return float(val) if isinstance(val, (int, float)) else 0.0
 
 
 @typing.runtime_checkable

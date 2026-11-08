@@ -53,10 +53,7 @@ def flatten_state_dict(
     for k, v in state_dict.items():
         new_key: str = f"{prefix}.{k}" if prefix else k
         if isinstance(v, dict):
-            sub_map: dict[str, StateValue] = {}
-            for sk, sv in v.items():
-                if isinstance(sk, str):
-                    sub_map[sk] = sv
+            sub_map: dict[str, StateValue] = {str(sk): sv for sk, sv in v.items()}
             flat.update(flatten_state_dict(sub_map, new_key))
         else:
             flat[new_key] = v

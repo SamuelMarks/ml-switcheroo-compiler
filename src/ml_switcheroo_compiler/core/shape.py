@@ -796,6 +796,7 @@ if not typing.TYPE_CHECKING:  # pragma: no cover
     TensorLike = int
     pydantic = _pydantic_rt
     _EllipsisType = type(Ellipsis)
+    _TensorOrScalarSelf = AttributeValue
 
 if typing.TYPE_CHECKING:
     import pydantic
@@ -815,6 +816,7 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
 
     _EllipsisType = builtins.ellipsis
+    _TensorOrScalarSelf: typing.TypeAlias = "TensorOrScalar"
 
 
 @typing.runtime_checkable
@@ -930,12 +932,12 @@ TensorOrScalar = typing.Annotated[
         CallableObjectProtocol,
         EagerCallableProtocol,
         VariadicCallableProtocol,
-        TypedVariadicCallable["TensorOrScalar"],
-        Sequence["TensorOrScalar"],
-        Mapping["TensorOrScalar", "TensorOrScalar"],
-        Mapping[str, "TensorOrScalar"],
-        Mapping[typing.Union[str, int], "TensorOrScalar"],  # noqa: UP007
-        set["TensorOrScalar"],
+        TypedVariadicCallable[_TensorOrScalarSelf],
+        Sequence[_TensorOrScalarSelf],
+        Mapping[_TensorOrScalarSelf, _TensorOrScalarSelf],
+        Mapping[str, _TensorOrScalarSelf],
+        Mapping[typing.Union[str, int], _TensorOrScalarSelf],  # noqa: UP007
+        set[_TensorOrScalarSelf],
     ],
     _AttributeValuePydanticAnnotation,
 ]

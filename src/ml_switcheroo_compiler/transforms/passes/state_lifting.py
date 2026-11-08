@@ -588,8 +588,7 @@ def _lift_block(block: LogicalGraph | _BlockNodesProtocol | AttributeValue) -> b
     Returns:
         bool: True if any stateful operation was lifted.
     """
-    if not isinstance(block, _BlockNodesProtocol):
-        return False
+    assert isinstance(block, _BlockNodesProtocol)
     block_mod: bool = False
     for nid, node in _get_node_items(block):
         block_mod = _lift_node_state(node, nid, block) or block_mod

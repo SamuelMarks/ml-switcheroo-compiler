@@ -38,9 +38,7 @@ def _node_inputs_list(node: EagerValue) -> list[str]:
         list[str]: Node input IDs.
     """
     raw = get_backend_member(node, "inputs", [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
 def _node_shape_tuple(node: EagerValue) -> tuple[int, ...]:
@@ -69,18 +67,6 @@ def _node_attrs_dict(node: EagerValue) -> dict[str, EagerValue]:
     """
     raw = get_backend_member(node, "attributes", {})
     return {str(k): v for k, v in raw.items()} if isinstance(raw, dict) else {}
-
-
-def _is_delegates_list(val: EagerValue) -> typing.TypeGuard[list[BaseGenerator] | None]:
-    """Type guard narrowing `val` to `list[BaseGenerator] | None`.
-
-    Args:
-        val (EagerValue): Candidate delegates list.
-
-    Returns:
-        bool: True for optional delegate lists.
-    """
-    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _is_graph_proto(val: EagerValue) -> typing.TypeGuard[GraphProtoType]:

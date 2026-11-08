@@ -40,11 +40,7 @@ def _dim_to_int(dim: int | str | float | SymbolicDim | None) -> int:
     Returns:
         int: Integer dimension value (at least 1).
     """
-    if isinstance(dim, (int, float)):
-        return max(1, int(dim))
-    if isinstance(dim, str) and dim.isdigit():
-        return max(1, int(dim))
-    return 1
+    return max(1, int(dim)) if isinstance(dim, (int, float)) else 1
 
 
 class CostModel(typing.Protocol):

@@ -23,15 +23,21 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_graph
 
-WasmAttrType = typing.Union[
-    "IRNode",
-    "IRGraph",
-    dict[str, "WasmAttrType"],
-    list["WasmAttrType"],
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _WasmAttrSelf = EagerValue
+
+if typing.TYPE_CHECKING:
+    _WasmAttrSelf: typing.TypeAlias = "WasmAttrType"
+
+WasmAttrType = typing.Union[  # noqa: UP007
+    IRNode,
+    IRGraph,
+    dict[str, _WasmAttrSelf],
+    list[_WasmAttrSelf],
     str,
     int,
     float,
-    tuple["WasmAttrType", ...],
+    tuple[_WasmAttrSelf, ...],
     bool,
     None,
 ]

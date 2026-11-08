@@ -2273,7 +2273,7 @@ class ShapeTracker:
         return resolved_bounds
 
 
-ShapeType = tuple[typing.Union[int, str, SymNode, "SymInt"], ...]
+ShapeType = tuple[typing.Union[int, str, SymNode, SymInt], ...]  # noqa: UP007
 
 
 def _broadcast_dim(

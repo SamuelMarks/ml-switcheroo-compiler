@@ -43,9 +43,7 @@ def _node_inputs_list(node: EagerValue) -> list[str]:
         list[str]: Node input IDs.
     """
     raw = get_backend_member(node, "inputs", [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
 def _as_wgsl_visit_result(val: EagerValue) -> tuple[list[str], str, str, str]:

@@ -15,7 +15,13 @@ from ml_switcheroo_ir import AttributeValue, PartitionSpec
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, has_backend_member
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_pspec
 
-ShardingValue = typing.Union["SPMDShardingAnnotation", PartitionSpec, TensorOrScalar]
+if not typing.TYPE_CHECKING:  # pragma: no cover
+    _SPMDShardingAnnotationRef = TensorOrScalar
+
+if typing.TYPE_CHECKING:
+    _SPMDShardingAnnotationRef: typing.TypeAlias = "SPMDShardingAnnotation"
+
+ShardingValue = typing.Union[_SPMDShardingAnnotationRef, PartitionSpec, TensorOrScalar]  # noqa: UP007
 
 
 def _spmd_axis_to_int(val: AttributeValue) -> int:
@@ -27,11 +33,7 @@ def _spmd_axis_to_int(val: AttributeValue) -> int:
     Returns:
         int: Coerced integer axis.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return 0
+    return int(val) if isinstance(val, (int, float)) else 0
 
 
 class _MeshMappingProtocol(typing.Protocol):

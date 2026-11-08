@@ -60,9 +60,7 @@ def _coerce_node_attrs(raw: AttributeValue | LogicalGraph) -> dict[str, Attribut
     Returns:
         dict[str, AttributeValue]: Coerced attributes dictionary.
     """
-    if isinstance(raw, dict):
-        return {str(k): v for k, v in raw.items()}
-    return {}
+    return {str(k): v for k, v in raw.items()} if isinstance(raw, dict) else {}
 
 
 @typing.runtime_checkable

@@ -55,6 +55,18 @@ def _has_non_none_return(returns: ast.expr | None) -> bool:
     return not (isinstance(returns, ast.Name) and returns.id == "None")
 
 
+def _is_overload_decorated(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Return True if the function has an `@overload` or `@typing.overload` decorator.
+
+    Args:
+        node (ast.FunctionDef | ast.AsyncFunctionDef): Function AST node.
+
+    Returns:
+        bool: True if decorated with `@overload`.
+    """
+    return any((isinstance(dec, ast.Name) and dec.id == "overload") or (isinstance(dec, ast.Attribute) and dec.attr == "overload") for dec in node.decorator_list)
+
+
 def _is_function_doc_complete(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     """Verify that a function/method node has a valid docstring with documented args and return.
 
@@ -64,21 +76,17 @@ def _is_function_doc_complete(node: ast.FunctionDef | ast.AsyncFunctionDef) -> b
     Returns:
         bool: True if the docstring exists and satisfies argument and return documentation rules.
     """
+    if _is_overload_decorated(node):
+        return True
     doc = ast.get_docstring(node)
-    if not doc or not doc.strip():
-        return False
-    if "(" + "Any)" in doc or "(" + "object)" in doc:
+    if not doc or not doc.strip() or "(" + "Any)" in doc or "(" + "object)" in doc:
         return False
     expected_args = _extract_expected_arg_names(node.args)
     if expected_args and "Args:" not in doc:
         return False
-    for arg_name in expected_args:
-        if not re.search(rf"\b{re.escape(arg_name)}\b", doc):
-            return False
-    if _has_non_none_return(node.returns):
-        if "Returns:" not in doc and "Yields:" not in doc:
-            return False
-    return True
+    if any(not re.search(rf"\b{re.escape(arg_name)}\b", doc) for arg_name in expected_args):
+        return False
+    return not (_has_non_none_return(node.returns) and "Returns:" not in doc and "Yields:" not in doc)
 
 
 class _DocVisitor(ast.NodeVisitor):

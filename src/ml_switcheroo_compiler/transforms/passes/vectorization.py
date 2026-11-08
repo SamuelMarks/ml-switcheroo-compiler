@@ -23,11 +23,7 @@ def _to_int(val: AttributeValue | int | str | SymNode | SymInt | None) -> int:
     Returns:
         int: Integer value.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return 0
+    return int(val) if isinstance(val, (int, float)) else 0
 
 
 def _to_shape_tuple(
@@ -41,11 +37,7 @@ def _to_shape_tuple(
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
     """
-    if isinstance(val, (list, tuple)):
-        return tuple(_to_int(x) for x in val)
-    if isinstance(val, int):
-        return (val,)
-    return ()
+    return tuple(_to_int(x) for x in val) if isinstance(val, (list, tuple)) else ()
 
 
 @typing.runtime_checkable

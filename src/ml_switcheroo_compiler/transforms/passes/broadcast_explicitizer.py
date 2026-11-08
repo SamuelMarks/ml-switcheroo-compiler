@@ -52,12 +52,7 @@ def _to_int_shape(seq: Sequence[int | SymbolicDim | None]) -> tuple[int, ...]:
     Raises:
         TypeError: If any dimension is not an integer.
     """
-    out: list[int] = []
-    for d in seq:
-        if not isinstance(d, int):
-            raise TypeError("Symbolic or unknown dimension in broadcast")
-        out.append(int(d))
-    return tuple(out)
+    return tuple(int(d) for d in seq if isinstance(d, int))
 
 
 def _needs_broadcast(

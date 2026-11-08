@@ -61,8 +61,8 @@ def _load_yaml_registry(force: bool = False) -> None:
         _YAML_REGISTRY.clear()
         for k, v in OPS_REGISTRY.items():
             raw_v: TensorOrScalar = v
-            if _is_yaml_entry_dict(raw_v):
-                _YAML_REGISTRY[k] = raw_v
+            assert _is_yaml_entry_dict(raw_v)
+            _YAML_REGISTRY[k] = raw_v
 
 
 def register_op(name: str) -> Callable[[type], type]:

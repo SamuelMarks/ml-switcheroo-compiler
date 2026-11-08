@@ -163,8 +163,6 @@ def _resolve_by_import(api_str: str) -> AttributeValue | None:
         mod: AttributeValue = importlib.import_module(parts[0])
         for p in parts[1:]:
             members = dict(inspect.getmembers(mod))
-            if p not in members:
-                return None
             mod = ensure_eager_tensor(members[p])
         return mod
     except Exception:

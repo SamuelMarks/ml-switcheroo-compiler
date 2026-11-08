@@ -32,9 +32,7 @@ def _extract_scalar_int(val: TensorOrScalar) -> int:
     """
     if isinstance(val, _ScalarItemProtocol):
         return int(val.item())
-    if isinstance(val, (int, float)):
-        return int(val)
-    return 0
+    return int(val) if isinstance(val, (int, float)) else 0
 
 
 def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str = "float32") -> TensorOrScalar:

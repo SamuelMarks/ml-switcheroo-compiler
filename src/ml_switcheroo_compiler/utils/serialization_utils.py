@@ -69,7 +69,7 @@ class SerializableCallableProtocol(typing.Protocol):
         ...
 
 
-SerializableType = typing.Union[type, "SerializableCallableProtocol"]
+SerializableType = typing.Union[type, SerializableCallableProtocol]  # noqa: UP007
 
 
 def _is_serializable_type(val: T) -> typing.TypeGuard[SerializableType]:
@@ -286,6 +286,6 @@ def deserialize_object(
     if cls_obj is not None and isinstance(config_dict, dict):
         if isinstance(cls_obj, _FromConfigClassProtocol):
             return cls_obj.from_config(config_dict)
-        if isinstance(cls_obj, SerializableCallableProtocol):
-            return cls_obj(**config_dict)
+        assert isinstance(cls_obj, SerializableCallableProtocol)
+        return cls_obj(**config_dict)
     return identifier

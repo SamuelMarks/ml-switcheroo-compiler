@@ -73,9 +73,7 @@ def _node_inputs_list(node: EagerValue) -> list[str]:
         list[str]: Node input IDs.
     """
     raw = get_backend_member(node, "inputs", [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
 def _graph_str_list(graph: EagerValue, attr: str) -> list[str]:
@@ -89,9 +87,7 @@ def _graph_str_list(graph: EagerValue, attr: str) -> list[str]:
         list[str]: List of string identifiers.
     """
     raw = get_backend_member(graph, attr, [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
 def _graph_nodes_values(graph: IRGraph) -> list[IRNode]:
@@ -124,8 +120,7 @@ def _calculate_node_bytes(node: EagerTensorProtocol | IRNode) -> tuple[int, int]
     if isinstance(shape, (list, tuple)) and shape:
         num_elements = 1
         for d in shape:
-            if isinstance(d, (int, float, str)):
-                num_elements *= int(d)
+            num_elements *= int(d) if isinstance(d, (int, float, str)) else 1
     else:
         num_elements = 1024
     bytes_per_elem = 4
