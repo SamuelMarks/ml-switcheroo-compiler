@@ -83,8 +83,24 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
     assert MLXCodeGenerator.savez_compressed("dummy.npz", None) is None
 
 
-def test_mlx_generator_zeros_and_item() -> None:
-    """Test MLXCodeGenerator.zeros, array, asarray, and item classmethods."""
+def test_mlx_generator_zeros_and_item(monkeypatch: EagerTensorProtocol) -> None:
+    """Test MLXCodeGenerator.zeros, array, asarray, and item classmethods.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
+    import types
+
+    import numpy as np
+
+    import ml_switcheroo_compiler.backends.mlx.types as mlx_types
+
+    if ensure_eager_tensor(mlx_types.mx) is None:
+        mock_mx = types.ModuleType("mlx.core")
+        ensure_mutable(mock_mx).zeros = ensure_eager_tensor(np.zeros)
+        ensure_mutable(mock_mx).array = ensure_eager_tensor(np.array)
+        monkeypatch.setattr(mlx_types, "mx", mock_mx)
+
     z_arr = MLXCodeGenerator.zeros((1,))
     assert MLXCodeGenerator.item(z_arr) == 0.0
     a_arr = MLXCodeGenerator.array([1.0])
