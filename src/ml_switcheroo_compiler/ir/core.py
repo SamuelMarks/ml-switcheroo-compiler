@@ -25,32 +25,15 @@ from ml_switcheroo_ir.types import TensorSpec
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    SymInt = int
-    SymNode = int
-    _AttrValueSelf = AttributeValue
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
-
-    _AttrValueSelf: typing.TypeAlias = "AttrValue"
+from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
 SymbolicDim = typing.Union[str, SymNode, SymInt]  # noqa: UP007
 ShapeLike = typing.Union[tuple[typing.Union[int, str], ...], Sequence[typing.Union[int, str]], None]  # noqa: UP007
 AxesLike = typing.Union[int, Sequence[int], None]  # noqa: UP007
 ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
-AttrValue = typing.Union[  # noqa: UP007
-    ScalarLike,
-    str,
-    bytes,
-    Sequence[_AttrValueSelf],
-    Mapping[str, _AttrValueSelf],
-    DType,
-    Device,
-    IRGraph,
-    None,
-]
+_AttrD1 = typing.Union[ScalarLike, str, bytes, DType, Device, IRGraph, None]  # noqa: UP007
+_AttrD2 = typing.Union[_AttrD1, Sequence[_AttrD1], Mapping[str, _AttrD1]]  # noqa: UP007
+AttrValue = typing.Union[_AttrD2, Sequence[_AttrD2], Mapping[str, _AttrD2]]  # noqa: UP007
 
 # Re-export TensorSpec, ZeroTangent, and NoTangent from ml_switcheroo_ir
 TensorSpec = TensorSpec
@@ -99,7 +82,7 @@ def _is_opt_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph 
     Returns:
         bool: Always True for optional graph values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is None or isinstance(val, LogicalGraph) or not isinstance(val, type(Ellipsis))
 
 
 def as_opt_graph(val: TensorOrScalar) -> LogicalGraph | None:
@@ -124,7 +107,7 @@ def _is_attr_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, AttributeVa
     Returns:
         bool: Always True for attribute dictionaries.
     """
-    return isinstance(val, dict) or not isinstance(val, bytes)
+    return isinstance(val, dict) or not isinstance(val, type(Ellipsis))
 
 
 def ensure_attrs(val: TensorOrScalar) -> dict[str, AttributeValue]:
@@ -149,7 +132,7 @@ def _is_attr_val(val: TensorOrScalar) -> typing.TypeGuard[AttributeValue]:
     Returns:
         bool: Always True for attribute values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_attr_val(val: TensorOrScalar) -> AttributeValue:
@@ -199,7 +182,7 @@ def _is_opt_pspec(val: TensorOrScalar) -> typing.TypeGuard[PartitionSpec | None]
     Returns:
         bool: Always True for optional partition specs.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is None or isinstance(val, PartitionSpec) or not isinstance(val, type(Ellipsis))
 
 
 def as_opt_pspec(val: TensorOrScalar) -> PartitionSpec | None:

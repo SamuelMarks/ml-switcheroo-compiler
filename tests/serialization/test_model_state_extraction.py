@@ -392,6 +392,28 @@ def test_export_methods() -> None:
         assert f2.read() == "{}"
     os.remove("test.json")
 
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.serialization import _validate_and_map_weights
+
+    real_g = IRGraph(name="real_export")
+    real_g.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
+    real_g.outputs = ["x"]
+    export_to_onnx(real_g, "test_real.onnx")
+    assert os.path.exists("test_real.onnx")
+    os.remove("test_real.onnx")
+    export_to_tflite(real_g, "test_real.tflite")
+    assert os.path.exists("test_real.tflite")
+    with open("test_real.tflite", "rb") as f_tfl:
+        assert f_tfl.read().startswith(b"TFL3")
+    os.remove("test_real.tflite")
+
+    class DummyTargetModel:
+        """Dummy model for target_model validation."""
+
+        weights: list[int] = []
+
+    assert ensure_callable(_validate_and_map_weights)({"a": 1}, DummyTargetModel()) == {"a": 1}
+
 
 def test_init_exports_mocked() -> None:
     """Test function test_init_exports_mocked."""

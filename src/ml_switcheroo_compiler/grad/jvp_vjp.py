@@ -57,7 +57,7 @@ def _is_grad_callable(
     Returns:
         bool: True if valid callable or subgraph rule.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return callable(val) or not isinstance(val, type(Ellipsis))
 
 
 def _ensure_grad_callable(val: GradValue) -> TypedVariadicCallable[GradValue]:

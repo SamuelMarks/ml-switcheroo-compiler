@@ -23,7 +23,7 @@ def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float6
     Returns:
         bool: True for runtime array values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, np.ndarray) or not isinstance(val, type(Ellipsis))
 
 
 def ensure_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:

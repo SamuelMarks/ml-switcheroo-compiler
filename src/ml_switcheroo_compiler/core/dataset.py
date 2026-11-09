@@ -24,7 +24,7 @@ def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]
     Returns:
         bool: True if valid dataset element.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, (tuple, Tensor)) or not isinstance(val, type(Ellipsis))
 
 
 def _ensure_dataset_tensor(val: TensorOrScalar) -> Tensor:
@@ -115,6 +115,13 @@ class Dataset:
         self._seed: int | None = None
         self._reshuffle: bool | None = None
         self._map_func: TensorOrScalar = None
+        self._padded_cardinality: int | None = None
+        self._window_config: dict[str, TensorOrScalar] | None = None
+        self._resample_config: dict[str, TensorOrScalar] | None = None
+        self._interleave_config: dict[str, TensorOrScalar] | None = None
+        self._target_device: str | None = None
+        self._snapshot_path: str | None = None
+        self._saved_path: str | None = None
         self.options_ = Options()
 
     @classmethod
@@ -199,7 +206,7 @@ class Dataset:
         Returns:
             Dataset: The padded dataset stream (`self`).
         """
-        _ = cardinality
+        self._padded_cardinality = cardinality
         return self
 
     def dense_to_ragged_batch(self, batch_size: int, drop_remainder: bool = False) -> Dataset:
@@ -239,7 +246,8 @@ class Dataset:
         Returns:
             Dataset: The transformed dataset stream (`self`).
         """
-        _ = num_parallel_batches
+        if num_parallel_batches is not None:
+            self.options_.threading["num_parallel_batches"] = num_parallel_batches
         self._map_func = map_func
         self._batch_size = batch_size
         self._drop_remainder = bool(drop_remainder)
@@ -265,7 +273,13 @@ class Dataset:
         Returns:
             Dataset: The windowed dataset stream (`self`).
         """
-        _ = (key_func, reduce_func, window_size, window_shift, window_stride)
+        self._window_config = {
+            "key_func": key_func,
+            "reduce_func": reduce_func,
+            "window_size": window_size,
+            "window_shift": window_shift,
+            "window_stride": window_stride,
+        }
         return self
 
     def rejection_resample(
@@ -286,7 +300,12 @@ class Dataset:
         Returns:
             Dataset: The resampled dataset stream (`self`).
         """
-        _ = (class_func, target_dist, initial_dist, seed)
+        self._resample_config = {
+            "class_func": class_func,
+            "target_dist": target_dist,
+            "initial_dist": initial_dist,
+            "seed": seed,
+        }
         return self
 
     def parallel_interleave(
@@ -309,7 +328,13 @@ class Dataset:
         Returns:
             Dataset: The interleaved dataset stream (`self`).
         """
-        _ = (map_func, cycle_length, block_length, slack, prefetch_input_elements)
+        self._interleave_config = {
+            "map_func": map_func,
+            "cycle_length": cycle_length,
+            "block_length": block_length,
+            "slack": slack,
+            "prefetch_input_elements": prefetch_input_elements,
+        }
         return self
 
     def prefetch_to_device(self, device: str, buffer_size: int | None = None) -> Dataset:
@@ -322,7 +347,9 @@ class Dataset:
         Returns:
             Dataset: The device-prefetched dataset stream (`self`).
         """
-        _ = (device, buffer_size)
+        self._target_device = device
+        if buffer_size is not None:
+            self._prefetch_buffer = buffer_size
         return self
 
     def shuffle(
@@ -387,7 +414,8 @@ class Dataset:
         Returns:
             Dataset: The snapshotted dataset stream (`self`).
         """
-        _ = (path, compression, reader_func, shard_func)
+        _ = (compression, reader_func, shard_func)
+        self._snapshot_path = path
         return self
 
     def save(self, path: str, compression: str | None = None, shard_func: TensorOrScalar = None) -> Dataset:
@@ -401,7 +429,8 @@ class Dataset:
         Returns:
             Dataset: The saved dataset stream (`self`).
         """
-        _ = (path, compression, shard_func)
+        _ = (compression, shard_func)
+        self._saved_path = path
         return self
 
     @classmethod
@@ -423,8 +452,10 @@ class Dataset:
         Returns:
             Dataset: Loaded dataset stream instance.
         """
-        _ = (path, element_spec, compression, reader_func)
-        return cls()
+        _ = (element_spec, compression, reader_func)
+        ds = cls()
+        ds._saved_path = path
+        return ds
 
     def __iter__(self) -> Iterator[tuple[Tensor, ...]]:
         """Iterate over batches of tensors yielded by the stream.
@@ -585,8 +616,11 @@ class SqlDataset(Dataset):
             query (str): SQL SELECT query to execute.
             output_types (tuple[DType, ...]): Tuple of column data types.
         """
-        _ = (driver_name, data_source_name, query, output_types)
         super().__init__()
+        self.driver_name = driver_name
+        self.data_source_name = data_source_name
+        self.query = query
+        self.output_types = output_types
 
 
 class BinaryRecordReader(Dataset):
@@ -607,8 +641,11 @@ class BinaryRecordReader(Dataset):
             buffer_size (Optional[int]): Optional read buffer size in bytes.
             num_parallel_reads (Optional[int]): Optional number of files to read in parallel.
         """
-        _ = (filenames, compression_type, buffer_size, num_parallel_reads)
         super().__init__()
+        self.filenames = filenames
+        self.compression_type = compression_type
+        self.buffer_size = buffer_size
+        self.num_parallel_reads = num_parallel_reads
 
 
 TFRecordReader = BinaryRecordReader

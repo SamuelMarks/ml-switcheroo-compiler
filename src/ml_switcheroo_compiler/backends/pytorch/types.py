@@ -13,8 +13,7 @@ if typing.TYPE_CHECKING:
     import torch
 
 _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
+ensure_mod(sys.modules[__name__]).torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:

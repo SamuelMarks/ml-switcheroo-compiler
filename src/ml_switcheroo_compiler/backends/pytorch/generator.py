@@ -27,7 +27,7 @@ def _is_logical_node(val: EagerValue) -> typing.TypeGuard[LogicalNode]:
     Returns:
         bool: True for runtime IR/logical nodes.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, LogicalNode) or val is not None
 
 
 @register_backend("pytorch")

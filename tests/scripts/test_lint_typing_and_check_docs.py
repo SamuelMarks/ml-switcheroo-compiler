@@ -35,6 +35,15 @@ class Sub:
         self.y = typing.cast(int, 2)
         self.z = self.__add__(3)
         self.w = self.__dict__
+
+
+if not typing.TYPE_CHECKING:
+    BadAlias = int
+
+
+def bad_guard(val: int) -> typing.TypeGuard[int]:
+    """Bad guard."""
+    return not isinstance(val, bytes) or len(val) >= 0
 ''',
         encoding="utf-8",
     )
@@ -46,6 +55,8 @@ class Sub:
     assert any("prohibited 'typing.cast()' call" in v for v in violations)
     assert any("prohibited direct dunder call '.__add__()'" in v for v in violations)
     assert any("prohibited dunder attribute '.__dict__'" in v for v in violations)
+    assert any("prohibited 'if TYPE_CHECKING: ... else: ...' type-erasure block" in v for v in violations)
+    assert any("prohibited tautological TypeGuard 'bad_guard'" in v for v in violations)
     assert lt.scan_file(str(exact_file)) == []
 
     assert lt.main([str(tmp_path)]) == 1

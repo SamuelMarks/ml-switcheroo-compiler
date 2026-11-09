@@ -201,6 +201,7 @@ class TracingNodeBuilder:
         input_ids: list[str],
         kwargs: dict[str, AttrValue],
         out_shape: Sequence[int | str],
+        node_id: str | None = None,
     ) -> str:
         """Create and add a new logical node to the active tracing graph.
 
@@ -209,11 +210,12 @@ class TracingNodeBuilder:
             input_ids (list[str]): The input node IDs.
             kwargs (dict[str, AttrValue]): The attributes for the node.
             out_shape (Sequence[int | str]): The output shape metadata.
+            node_id (str | None): Optional explicit node identifier; defaults to a generated UUID.
 
         Returns:
             str: The unique identifier of the created node.
         """
-        out_id = str(uuid.uuid4())
+        out_id = node_id if node_id is not None else str(uuid.uuid4())
         attrs: dict[str, AttributeValue] = {str(k): _coerce_attr_val(v) for k, v in kwargs.items()}
         from ml_switcheroo_ir import SymInt, SymNode
 

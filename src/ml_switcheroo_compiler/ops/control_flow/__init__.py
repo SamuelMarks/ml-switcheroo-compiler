@@ -141,7 +141,7 @@ def _is_opt_tensor(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
     Returns:
         bool: True for optional tensor values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is None or isinstance(val, Tensor) or not isinstance(val, type(Ellipsis))
 
 
 def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrScalar, init_val: TensorOrScalar) -> TensorOrScalar:

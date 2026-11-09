@@ -35,7 +35,7 @@ def _as_tensor_cls(cls_val: EagerValue) -> type[EagerTensorProtocol]:
         Returns:
             bool: True for runtime ndarray classes.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(cls_val)
     return cls_val

@@ -2,6 +2,7 @@
 
 Allowed global third-party dependencies outside tests:
 - pyyaml (yaml)
+- pillow (PIL)
 - pydantic
 - cdd / cdd-python
 - libcst
@@ -107,6 +108,8 @@ STDLIB_MODULES: set[str] = (
 )
 ALLOWED_GLOBAL_EXTERNAL: set[str] = {
     "yaml",
+    "PIL",
+    "pillow",
     "pydantic",
     "cdd",
     "libcst",

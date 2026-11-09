@@ -23,24 +23,9 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_graph
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _WasmAttrSelf = EagerValue
-
-if typing.TYPE_CHECKING:
-    _WasmAttrSelf: typing.TypeAlias = "WasmAttrType"
-
-WasmAttrType = typing.Union[  # noqa: UP007
-    IRNode,
-    IRGraph,
-    dict[str, _WasmAttrSelf],
-    list[_WasmAttrSelf],
-    str,
-    int,
-    float,
-    tuple[_WasmAttrSelf, ...],
-    bool,
-    None,
-]
+_WasmLeaf = typing.Union[IRNode, IRGraph, str, int, float, bool, None]  # noqa: UP007
+_WasmD1 = typing.Union[_WasmLeaf, dict[str, _WasmLeaf], list[_WasmLeaf], tuple[_WasmLeaf, ...]]  # noqa: UP007
+WasmAttrType = typing.Union[_WasmD1, dict[str, _WasmD1], list[_WasmD1], tuple[_WasmD1, ...]]  # noqa: UP007
 
 
 def _node_attrs(node: EagerValue) -> dict[str, WasmAttrType]:
@@ -75,7 +60,7 @@ def _as_wasm_attr_val(val: EagerValue) -> WasmAttrType:
         Returns:
             bool: True if valid.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

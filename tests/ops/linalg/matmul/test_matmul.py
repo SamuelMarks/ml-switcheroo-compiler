@@ -17,8 +17,8 @@ if typing.TYPE_CHECKING:
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
 
-class DummyTensor:
-    """Test class DummyTensor."""
+class Tensor:
+    """Test class Tensor."""
 
     def __init__(self, shape: EagerValue) -> None:
         """Test function __init__.
@@ -31,18 +31,8 @@ class DummyTensor:
         self.dtype = "float32"
         self.device = None
 
-    if not typing.TYPE_CHECKING:
 
-        @property
-        def __class__(self) -> type:
-            """Test function __class__."""
-
-            class TensorClass:
-                """Test class TensorClass."""
-
-                __name__ = "Tensor"
-
-            return TensorClass
+DummyTensor = Tensor
 
 
 def test_matmul_tracing() -> None:

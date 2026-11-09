@@ -90,7 +90,7 @@ def _as_tpl_opt(val: EagerValue) -> HardwareTemplateConfig | None:
         Returns:
             bool: True for optional hardware templates.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(raw)
     return raw

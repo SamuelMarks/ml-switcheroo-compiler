@@ -15,13 +15,57 @@ from ml_switcheroo_ir import AttributeValue, PartitionSpec
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, has_backend_member
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_pspec
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _SPMDShardingAnnotationRef = TensorOrScalar
 
-if typing.TYPE_CHECKING:
-    _SPMDShardingAnnotationRef: typing.TypeAlias = "SPMDShardingAnnotation"
+class SPMDShardingAnnotation(PartitionSpec):
+    """Lightweight multi-axis sharding specification container."""
 
-ShardingValue = typing.Union[_SPMDShardingAnnotationRef, PartitionSpec, TensorOrScalar]  # noqa: UP007
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    mesh: AttributeValue = None
+    mesh_mapping: tuple[str | None, ...] = ()
+    mesh_shape: tuple[int, ...] | None = None
+    mesh_axes: tuple[str, ...] | None = None
+
+    def __init__(
+        self,
+        mesh: AttributeValue,
+        mesh_mapping: typing.Sequence[str | None],
+        mesh_shape: typing.Sequence[int] | None = None,
+        mesh_axes: typing.Sequence[str] | None = None,
+    ) -> None:
+        """Initialize SPMDShardingAnnotation.
+
+        Args:
+            mesh (AttributeValue): DeviceMesh or mesh configuration.
+            mesh_mapping (typing.Sequence[str | None]): Axis sharding names.
+            mesh_shape (typing.Sequence[int] | None): Optional device mesh dimensions.
+            mesh_axes (typing.Sequence[str] | None): Optional device mesh axis names (e.g., ['dp', 'tp', 'pp']).
+        """
+        super().__init__(axes=tuple(mesh_mapping))
+        self.mesh = mesh
+        self.mesh_mapping = tuple(mesh_mapping)
+        self.mesh_shape = tuple(mesh_shape) if mesh_shape is not None else None
+        self.mesh_axes = tuple(mesh_axes) if mesh_axes is not None else None
+
+    @property
+    def is_sharded(self) -> bool:
+        """Check if any tensor dimension is sharded across mesh axes.
+
+        Returns:
+            bool: True if at least one axis is sharded.
+        """
+        return any(m is not None for m in self.mesh_mapping)
+
+    def __repr__(self) -> str:
+        """Return representation.
+
+        Returns:
+            str: String representation.
+        """
+        return f"SPMDShardingAnnotation(mesh={self.mesh}, mesh_mapping={self.mesh_mapping})"
+
+
+ShardingValue = typing.Union[SPMDShardingAnnotation, PartitionSpec, TensorOrScalar]  # noqa: UP007
 
 
 def _spmd_axis_to_int(val: AttributeValue) -> int:
@@ -424,55 +468,6 @@ def inject_spmd_communication_pass(graph: IRGraph) -> bool:
 
     graph.nodes = NodeDict(new_nodes)
     return modified
-
-
-class SPMDShardingAnnotation(PartitionSpec):
-    """Lightweight multi-axis sharding specification container."""
-
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True, extra="forbid")
-
-    mesh: AttributeValue = None
-    mesh_mapping: tuple[str | None, ...] = ()
-    mesh_shape: tuple[int, ...] | None = None
-    mesh_axes: tuple[str, ...] | None = None
-
-    def __init__(
-        self,
-        mesh: AttributeValue,
-        mesh_mapping: typing.Sequence[str | None],
-        mesh_shape: typing.Sequence[int] | None = None,
-        mesh_axes: typing.Sequence[str] | None = None,
-    ) -> None:
-        """Initialize SPMDShardingAnnotation.
-
-        Args:
-            mesh (AttributeValue): DeviceMesh or mesh configuration.
-            mesh_mapping (typing.Sequence[str | None]): Axis sharding names.
-            mesh_shape (typing.Sequence[int] | None): Optional device mesh dimensions.
-            mesh_axes (typing.Sequence[str] | None): Optional device mesh axis names (e.g., ['dp', 'tp', 'pp']).
-        """
-        super().__init__(axes=tuple(mesh_mapping))
-        self.mesh = mesh
-        self.mesh_mapping = tuple(mesh_mapping)
-        self.mesh_shape = tuple(mesh_shape) if mesh_shape is not None else None
-        self.mesh_axes = tuple(mesh_axes) if mesh_axes is not None else None
-
-    @property
-    def is_sharded(self) -> bool:
-        """Check if any tensor dimension is sharded across mesh axes.
-
-        Returns:
-            bool: True if at least one axis is sharded.
-        """
-        return any(m is not None for m in self.mesh_mapping)
-
-    def __repr__(self) -> str:
-        """Return representation.
-
-        Returns:
-            str: String representation.
-        """
-        return f"SPMDShardingAnnotation(mesh={self.mesh}, mesh_mapping={self.mesh_mapping})"
 
 
 def _set_collective_attribute(node: IRNode) -> None:

@@ -467,8 +467,18 @@ def jvp(
     Returns:
         tuple[GradValue, GradValue]: Tuple of `(primal_out, tangent_out)`.
     """
+    from .jvp_vjp import jvp as _symbolic_jvp
+
     primals_tuple = tuple(primals)
     tangents_tuple = tuple(tangents)
+    if all(isinstance(p, (Tensor, int, float)) for p in primals_tuple):
+        try:
+            sym_res = _symbolic_jvp(fun, primals_tuple, tangents_tuple)
+            if isinstance(sym_res, tuple) and len(sym_res) == 2:
+                return sym_res[0], sym_res[1]
+        except Exception:
+            pass
+
     primal_out = invoke_callable(fun, *primals_tuple)
 
     eps = 1e-5

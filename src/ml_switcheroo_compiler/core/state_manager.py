@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
@@ -74,15 +74,6 @@ def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
     Returns:
         LogicalGraph: The functionalized graph.
     """
-    new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
-    sorted_nodes = topological_sort(graph)
-    state_env: dict[str, str] = {v: v for v in state_vars}
+    from ml_switcheroo_compiler.transforms.passes.state_lifting import functionalize_assign_graph
 
-    for node in sorted_nodes:
-        if node.op_type == "Assign":
-            _process_assign_node(node, state_env)
-        else:
-            new_graph.nodes[node.id] = _rewrite_node(node, state_env)
-
-    new_graph.outputs = _build_functional_outputs(graph.outputs, state_vars, state_env)
-    return new_graph
+    return functionalize_assign_graph(graph, state_vars)

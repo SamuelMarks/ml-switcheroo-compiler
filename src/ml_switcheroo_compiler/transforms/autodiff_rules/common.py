@@ -6,12 +6,7 @@ import enum
 import typing
 from collections.abc import Callable, Sequence
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    LogicalGraph = int
-    LogicalNode = int
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 class UnconnectedGradients(enum.Enum):

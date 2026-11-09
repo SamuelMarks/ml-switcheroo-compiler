@@ -8,16 +8,21 @@ import typing
 from collections.abc import Callable, Mapping, Sequence
 from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
 
-import pydantic as _pydantic_rt
+import pydantic
 from ml_switcheroo_ir import (
     AttributeValue,
+    LogicalGraph,
+    LogicalNode,
     TensorShape,
     TensorSpec,
 )
 from ml_switcheroo_ir import DType as IRDType
+from ml_switcheroo_ir import LogicalGraph as IRGraph
 from ml_switcheroo_ir import SymInt as IRSymInt
 from ml_switcheroo_ir import SymNode as IRSymNode
 from ml_switcheroo_ir.types import _AttributeValuePydanticAnnotation
+
+from ml_switcheroo_compiler.core.dtype import DType
 
 DimT = typing.TypeVar("DimT", int, typing.Union[int, "str"])
 _R_co = typing.TypeVar("_R_co", covariant=True)
@@ -658,18 +663,6 @@ def extract_device(
     return default
 
 
-def _is_tensor_or_scalar(val: TensorOrScalar) -> typing.TypeGuard[TensorOrScalar]:
-    """Type guard narrowing `val` to `TensorOrScalar`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: True for valid tensor or scalar values.
-    """
-    return not isinstance(val, bytes) or len(val) >= 0
-
-
 def extract_data(val: TensorOrScalar) -> TensorOrScalar:
     """Safely unwrap `.data` from `val` if present, otherwise return `val`.
 
@@ -682,7 +675,6 @@ def extract_data(val: TensorOrScalar) -> TensorOrScalar:
     if _has_data_holder_attr(val):
         raw_d: TensorOrScalar = val.data
         return raw_d
-    assert _is_tensor_or_scalar(val)
     return val
 
 
@@ -778,29 +770,76 @@ def invoke_callable(
     return fn(*args, **kwargs)
 
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    BackendModuleProtocol = int
-    COOTensor = int
-    DType = int
-    Device = int
-    EagerCallableProtocol = int
-    EagerTensorProtocol = int
-    GradTensorProtocol = int
-    IRGraph = int
-    LogicalGraph = int
-    LogicalNode = int
-    SymInt = int
-    SymNode = int
-    SymVar = int
-    Tensor = int
-    TensorLike = int
-    pydantic = _pydantic_rt
-    _EllipsisType = type(Ellipsis)
-    _TensorOrScalarSelf = AttributeValue
+@typing.runtime_checkable
+class _RuntimePlaceholderProtocol(typing.Protocol):
+    """Runtime-checkable placeholder protocol for forward-referenced compiler types."""
+
+    @property
+    def __doc__(self) -> str | None:
+        """Return docstring attribute.
+
+        Returns:
+            str | None: Docstring.
+        """
+        ...
+
+
+class _ShapeModuleProtocol(typing.Protocol):
+    """Protocol for registering runtime placeholder attributes on `shape` module."""
+
+    BackendModuleProtocol: type
+    COOTensor: type
+    EagerCallableProtocol: type
+    EagerTensorProtocol: type
+    GradTensorProtocol: type
+    Tensor: type
+    TensorLike: type
+    SymInt: type
+    SymNode: type
+    SymVar: type
+    Device: type
+    TensorOrScalar: type
+    _EllipsisType: type
+    _TensorOrScalarSelf: type
+
+
+def _is_shape_mod(mod: ModuleType) -> typing.TypeGuard[_ShapeModuleProtocol]:
+    """Type guard narrowing `ModuleType` to `_ShapeModuleProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+def _setup_shape_runtime_protocols() -> None:
+    """Register runtime-checkable protocol placeholders for forward-referenced types prior to `TensorOrScalar` evaluation."""
+    import sys
+
+    curr_mod = sys.modules[__name__]
+    assert _is_shape_mod(curr_mod)
+    curr_mod.BackendModuleProtocol = _RuntimePlaceholderProtocol
+    curr_mod.COOTensor = _RuntimePlaceholderProtocol
+    curr_mod.EagerCallableProtocol = _RuntimePlaceholderProtocol
+    curr_mod.EagerTensorProtocol = _RuntimePlaceholderProtocol
+    curr_mod.GradTensorProtocol = _RuntimePlaceholderProtocol
+    curr_mod.Tensor = _RuntimePlaceholderProtocol
+    curr_mod.TensorLike = _RuntimePlaceholderProtocol
+    curr_mod.SymInt = _RuntimePlaceholderProtocol
+    curr_mod.SymNode = _RuntimePlaceholderProtocol
+    curr_mod.SymVar = _RuntimePlaceholderProtocol
+    curr_mod.Device = _RuntimePlaceholderProtocol
+    curr_mod.TensorOrScalar = _RuntimePlaceholderProtocol
+    curr_mod._EllipsisType = type(Ellipsis)
+    curr_mod._TensorOrScalarSelf = _RuntimePlaceholderProtocol
+
+
+_setup_shape_runtime_protocols()
 
 if typing.TYPE_CHECKING:
-    import pydantic
-
     from ml_switcheroo_compiler.backends.registry import (
         BackendModuleProtocol,
         COOTensor,
@@ -815,7 +854,7 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalGraph, LogicalNode
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
 
-    _EllipsisType = builtins.ellipsis
+    _EllipsisType: typing.TypeAlias = builtins.ellipsis
     _TensorOrScalarSelf: typing.TypeAlias = "TensorOrScalar"
 
 

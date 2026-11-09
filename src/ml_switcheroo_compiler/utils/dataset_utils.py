@@ -4,13 +4,35 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 import typing
 from collections.abc import Iterable, Iterator, Sequence
+from types import ModuleType
 
 import pydantic
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _DatasetElementSelf = int
+
+class _DatasetUtilsModProtocol(typing.Protocol):
+    """Protocol for binding `_DatasetElementSelf` onto `dataset_utils` module."""
+
+    _DatasetElementSelf: type
+
+
+def _is_ds_mod(mod: ModuleType) -> typing.TypeGuard[_DatasetUtilsModProtocol]:
+    """Type guard narrowing `ModuleType` to `_DatasetUtilsModProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+_ds_mod = sys.modules[__name__]
+assert _is_ds_mod(_ds_mod)
+_ds_mod._DatasetElementSelf = int
 
 if typing.TYPE_CHECKING:
     _DatasetElementSelf: typing.TypeAlias = "DatasetElement"

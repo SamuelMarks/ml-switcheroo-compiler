@@ -6,6 +6,7 @@ import ast
 import inspect
 import logging
 import os
+import sys
 import typing
 from contextlib import AbstractContextManager
 from types import ModuleType
@@ -20,12 +21,31 @@ from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.distributed.config_models import TopologyConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _AttrTypeSelf = AttributeValue
+
+class _StrategyModProtocol(typing.Protocol):
+    """Protocol for binding `_AttrTypeSelf` onto `strategy` module."""
+
+    _AttrTypeSelf: type
+
+
+def _is_strat_mod(mod: ModuleType) -> typing.TypeGuard[_StrategyModProtocol]:
+    """Type guard narrowing `ModuleType` to `_StrategyModProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+_st_mod = sys.modules[__name__]
+assert _is_strat_mod(_st_mod)
+_st_mod._AttrTypeSelf = int
 
 if typing.TYPE_CHECKING:
     _AttrTypeSelf: typing.TypeAlias = "AttrType"
-
 AttrType = typing.Union[int, float, str, bool, list[_AttrTypeSelf], tuple[_AttrTypeSelf, ...], dict[str, _AttrTypeSelf], None]  # noqa: UP007
 
 

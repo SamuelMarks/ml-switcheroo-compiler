@@ -13,4 +13,4 @@ def test_scan_bind_coverage() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     res = scan_bind(lambda x: x, [1, 2, 3])
-    assert res is not None
+    assert isinstance(res, tuple) and len(res) == 2

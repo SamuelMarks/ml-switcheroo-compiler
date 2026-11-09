@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import sys
 import typing
 from enum import Enum
+from types import ModuleType
 
 from ml_switcheroo_ir.types import DType as _IRDType
 
@@ -123,6 +125,24 @@ def _is_dtype_enum_cls(cls_obj: type[_IRDType]) -> typing.TypeGuard[type[DType]]
     return isinstance(cls_obj, type)
 
 
+class _DTypeModuleProtocol(typing.Protocol):
+    """Protocol for binding the runtime `DType` enum onto the module."""
+
+    DType: type[DType]
+
+
+def _is_dtype_mod(mod: ModuleType) -> typing.TypeGuard[_DTypeModuleProtocol]:
+    """Type guard narrowing `ModuleType` to `_DTypeModuleProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
 def _setup_runtime_dtype() -> type[DType]:
     """Configure runtime PascalCase attribute aliases on the canonical IR `DType` enum.
 
@@ -160,11 +180,13 @@ def _setup_runtime_dtype() -> type[DType]:
     raw_cls.object_ = _IRDType["object"]
     ret_cls = _IRDType
     assert _is_dtype_enum_cls(ret_cls)
+    curr_mod = sys.modules[__name__]
+    assert _is_dtype_mod(curr_mod)
+    curr_mod.DType = ret_cls
     return ret_cls
 
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    DType = _setup_runtime_dtype()
+_setup_runtime_dtype()
 
 
 class QuantDType(Enum):

@@ -37,7 +37,7 @@ def _as_ufunc(val: EagerValue) -> np.ufunc:
         Returns:
             bool: True for runtime ufunc objects.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

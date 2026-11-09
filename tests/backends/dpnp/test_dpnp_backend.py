@@ -75,7 +75,7 @@ def test_dpnp_generator_and_aot() -> None:
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
     res = ensure_callable(runner)(t_in1, in2=ensure_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
-    assert res is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [[6.0, 8.0], [10.0, 12.0]])
 
     # AOT compile multi-output
     g_multi = _create_sample_graph(multi_output=True)
@@ -95,25 +95,25 @@ def test_dpnp_types() -> None:
     """Verify DPNP types creation functions and fallback handling."""
     # Direct calls with tuples / sequences
     z = dpnp_pkg.zeros((2, 3))
-    assert z is not None
+    assert ensure_eager_tensor(z).shape == (2, 3)
     z_cls = dpnp_pkg.DPNPGenerator.zeros((2, 3))
-    assert z_cls is not None
+    assert ensure_eager_tensor(z_cls).shape == (2, 3)
 
     arr = dpnp_pkg.array([1.0, 2.0])
-    assert arr is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr)), [1.0, 2.0])
     arr_cls = dpnp_pkg.DPNPGenerator.array([1.0, 2.0])
-    assert arr_cls is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr_cls)), [1.0, 2.0])
 
     # Custom dtype branch
     arr_dtype = dpnp_pkg.array([1.0, 2.0], dtype="float64")
-    assert arr_dtype is not None
+    assert str(ensure_eager_tensor(arr_dtype).dtype) == "float64"
     arr_dtype_cls = dpnp_pkg.DPNPGenerator.array([1.0, 2.0], dtype="float32")
-    assert arr_dtype_cls is not None
+    assert str(ensure_eager_tensor(arr_dtype_cls).dtype) == "float32"
 
     as_arr = dpnp_pkg.asarray([3.0, 4.0])
-    assert as_arr is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr)), [3.0, 4.0])
     as_arr_cls = dpnp_pkg.DPNPGenerator.asarray([3.0, 4.0])
-    assert as_arr_cls is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr_cls)), [3.0, 4.0])
 
     # item extraction
     val = dpnp_pkg.item(np.array([4.2]))

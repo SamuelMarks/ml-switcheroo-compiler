@@ -180,7 +180,7 @@ def _is_template_entry(val: TensorOrScalar | TemplateEntryType) -> typing.TypeGu
     Returns:
         bool: True for valid template entries.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, (HardwareTemplateConfig, dict, list, str))
 
 
 class HardwareTemplatesConfig(BaseModel):

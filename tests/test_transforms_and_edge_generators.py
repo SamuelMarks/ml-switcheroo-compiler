@@ -94,7 +94,8 @@ def test_control_flow_opt_branches() -> None:
         attributes=ensure_attrs({"true_branch": None, "false_branch": f_block}),
     )
     res_graph = control_flow_optimization_pass(g_opt)
-    assert res_graph is not None
+    assert isinstance(res_graph, IRGraph)
+    assert "cond_node" in res_graph.nodes
 
     # 8. Step 2 invariant hoisting where hoisted is empty
     g_no_hoist = IRGraph()
@@ -110,7 +111,8 @@ def test_control_flow_opt_branches() -> None:
         attributes=ensure_attrs({"true_branch": b1, "false_branch": b2}),
     )
     res_no_hoist = control_flow_optimization_pass(g_no_hoist)
-    assert res_no_hoist is not None
+    assert isinstance(res_no_hoist, IRGraph)
+    assert "cond_dyn" in res_no_hoist.nodes
 
 
 def test_parallel_scan_branches() -> None:
@@ -154,7 +156,7 @@ def test_vectorization_branches() -> None:
     # 2. _align_batch_axis when inp_id not in graph.nodes
     g = IRGraph()
     res_align = _align_batch_axis(g, "missing_node", current_axis=1, target_axis=0, shape=(2, 4))
-    assert res_align is not None
+    assert res_align in g.nodes
 
     # 3. vectorize_graph when input node not in graph.nodes (line 141->143) and unmapped Input node (line 155->157)
     g_missing_inp = IRGraph()
@@ -229,7 +231,7 @@ def test_autodiff_provider_branches() -> None:
 
     # 5. _parse_expression starting with negative sign "- "
     neg_id = _parse_expression(g, "- $output", node)
-    assert neg_id is not None
+    assert neg_id in g.nodes
 
     # 6. _fallback_finite_difference_jvp where len(tangents) < len(node.inputs)
     node_multi_in = IRNode(id="n_multi", op_type="Add", inputs=["in1", "in2"])
@@ -374,15 +376,15 @@ def test_webgpu_generator_branches() -> None:
 
         mm_node = IRNode(id="mm", op_type="MatMul", inputs=["x", "x"], shape_metadata=(4, 4))
         wgsl_mm, _, _, _ = ensure_callable(gen._get_wgsl_for_op)(mm_node, (4, 4), 16, "mm")
-        assert wgsl_mm is not None
+        assert "@compute" in str(wgsl_mm)
 
         conv_node = IRNode(id="conv", op_type="Conv2D", inputs=["x4d", "w4d"], shape_metadata=(1, 1, 4, 4))
         wgsl_conv, _, _, _ = ensure_callable(gen._get_wgsl_for_op)(conv_node, (1, 1, 4, 4), 16, "conv")
-        assert wgsl_conv is not None
+        assert "@compute" in str(wgsl_conv)
 
         pool_node = IRNode(id="pool", op_type="MaxPool2D", inputs=["x4d"], shape_metadata=(1, 1, 4, 4), attributes={"window_size": (2, 2)})
         wgsl_pool, _, _, _ = ensure_callable(gen._get_wgsl_for_op)(pool_node, (1, 1, 4, 4), 16, "pool")
-        assert wgsl_pool is not None
+        assert "@compute" in str(wgsl_pool)
 
         # 3. _compile_aot_impl with graph == self.graph and graph != self.graph
         bundle_same = gen._compile_aot_impl(g)

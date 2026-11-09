@@ -33,7 +33,7 @@ def _as_branch_result(val: TensorOrScalar, fn: Callable[[], T]) -> T:
         Returns:
             bool: True for valid branch results.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

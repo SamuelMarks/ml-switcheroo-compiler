@@ -89,8 +89,12 @@ def test_dataset_options_batch_unbatch_map_batch() -> None:
     ds = ds.dense_to_ragged_batch(2, drop_remainder=True)
     assert ds._batch_size == 2
 
-    ds = ds.map_and_batch(lambda x: x, 2, drop_remainder=True)
+    ds = ds.map_and_batch(lambda x: x, 2, num_parallel_batches=4, drop_remainder=True)
     assert ds._batch_size == 2
+    assert ds.options_.threading["num_parallel_batches"] == 4
+    ds = ds.prefetch_to_device("gpu:0", buffer_size=8)
+    assert ds._target_device == "gpu:0"
+    assert ds._prefetch_buffer == 8
 
     ds = ds.group_by_window(lambda x: x, lambda x: x, 2)
     ds = ds.rejection_resample(lambda x: x, [0.5, 0.5])

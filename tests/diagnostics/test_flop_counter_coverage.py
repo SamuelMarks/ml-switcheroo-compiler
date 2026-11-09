@@ -32,8 +32,10 @@ def test_flop_counter_exhaustive() -> None:
     """Verify flop counter across MatMul, valid shapes, invalid shapes, and unknown ops."""
     graph = LogicalGraph(name="test_graph", outputs=["out"])
 
-    # 1. MatMul node
-    n_matmul = LogicalNode("n0", "MatMul", inputs=["a", "b"])
+    # 1. MatMul node with input shapes (4, 8) and (8, 5) -> 2 * 4 * 5 * 8 = 320 FLOPs
+    graph.nodes["a"] = LogicalNode("a", "Input", shape_metadata=(4, 8))
+    graph.nodes["b"] = LogicalNode("b", "Input", shape_metadata=(8, 5))
+    n_matmul = LogicalNode("n0", "MatMul", inputs=["a", "b"], shape_metadata=(4, 5))
     graph.nodes["n0"] = n_matmul
 
     # 2. Node with valid shape_metadata
@@ -46,14 +48,14 @@ def test_flop_counter_exhaustive() -> None:
     ensure_mutable(n_bad_shape).shape_metadata = ensure_eager_tensor(_DummyBadShape())
     graph.nodes["n2"] = n_bad_shape
 
-    # 4. Node without shape_metadata and op_type != 'Foo'
+    # 4. Node without shape_metadata
     n_other = LogicalNode("n3", "CustomOp", inputs=["n2"])
     graph.nodes["n3"] = n_other
 
-    # 5. Node with op_type == 'Foo' without shape_metadata
-    n_foo = LogicalNode("n4", "Foo", inputs=["n3"])
-    graph.nodes["n4"] = n_foo
+    # 5. Zero-flop node (Identity) without shape_metadata
+    n_id = LogicalNode("n4", "Identity", inputs=["n3"])
+    graph.nodes["n4"] = n_id
 
     total = flop_mod.estimate_flops(graph)
-    # 100 (MatMul) + 512 (4*8*16) + 1 (bad shape) + 1 (CustomOp) + 0 (Foo) = 614
-    assert total == 614
+    # 0 (Inputs a, b) + 320 (MatMul) + 512 (4*8*16) + 1 (bad shape) + 1 (CustomOp) + 0 (Identity) = 834
+    assert total == 834

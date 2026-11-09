@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import typing
 from collections.abc import Mapping
+from types import ModuleType
 
 import yaml
 
@@ -130,12 +132,30 @@ def load_backend_mappings(backends_dir: str = "src/ml_switcheroo_compiler/backen
     return mappings
 
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _OpRegistryValueSelf = str
+class _GenRegModProtocol(typing.Protocol):
+    """Protocol for binding `_OpRegistryValueSelf` onto `generated_registry` module."""
+
+    _OpRegistryValueSelf: type
+
+
+def _is_gen_reg_mod(mod: ModuleType) -> typing.TypeGuard[_GenRegModProtocol]:
+    """Type guard narrowing `ModuleType` to `_GenRegModProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+_gr_mod = sys.modules[__name__]
+assert _is_gen_reg_mod(_gr_mod)
+_gr_mod._OpRegistryValueSelf = str
 
 if typing.TYPE_CHECKING:
     _OpRegistryValueSelf: typing.TypeAlias = "OpRegistryValue"
-
 OpRegistryValue = typing.Union[str, int, float, bool, list[_OpRegistryValueSelf], dict[str, _OpRegistryValueSelf], Mapping[str, _OpRegistryValueSelf], tuple[_OpRegistryValueSelf, ...], None]  # noqa: UP007
 
 

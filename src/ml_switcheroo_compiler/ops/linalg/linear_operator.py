@@ -5,13 +5,8 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.shape import extract_shape
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    Tensor = int
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 class HasShape(typing.Protocol):

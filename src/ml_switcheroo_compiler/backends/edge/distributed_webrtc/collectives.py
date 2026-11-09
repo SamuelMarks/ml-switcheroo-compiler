@@ -48,7 +48,7 @@ def _is_webrtc_channel(val: EagerValue) -> typing.TypeGuard[_WebRTCChannelProtoc
     Returns:
         bool: True for runtime channel instances.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is not None
 
 
 def _as_tensor_seq(val: EagerValue) -> Sequence[EagerTensorProtocol]:

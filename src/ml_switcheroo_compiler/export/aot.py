@@ -293,15 +293,7 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
             proxy = ProxyTensor(id=arg_id, shape=shape, dtype=dt_str)
             device = raw_a.device if _has_device_attr(raw_a) else "cpu"
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
-            TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)
-
-            active_graph = global_tracing_state.active_graph
-            assert active_graph is not None
-            last_node = list(active_graph.nodes.values())[-1]
-            old_id = last_node.id
-            del active_graph.nodes[old_id]
-            last_node.id = arg_id
-            active_graph.nodes[arg_id] = last_node
+            TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape, node_id=arg_id)
         else:
             proxy_args.append(a)
     return proxy_args
@@ -345,9 +337,9 @@ def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, Ten
     if _is_get_module_cls(raw_gen_cls):
         namespace[backend] = raw_gen_cls.get_module()
     elif backend == "numpy":
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        namespace[backend] = BackendRegistry.get("numpy").get_module()
+        namespace[backend] = get_active_backend().get_module()
     return namespace
 
 

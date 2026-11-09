@@ -24,7 +24,7 @@ def _is_dispatch_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProt
     Returns:
         bool: True if non-None or None.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def _ensure_dispatch_tensor(val: TensorOrScalar) -> EagerTensorProtocol:

@@ -863,3 +863,41 @@ def state_lifting_pass(graph: IRGraph) -> bool:
         bool: True if the graph was modified.
     """
     return StateLiftingPass().run(graph)
+
+
+def functionalize_assign_graph(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
+    """Lift mutable `Assign` nodes on `state_vars` into pure functional graph outputs.
+
+    Args:
+        graph (LogicalGraph): The input graph containing state `Assign` nodes.
+        state_vars (list[str]): The IDs of nodes representing initial state variables.
+
+    Returns:
+        LogicalGraph: The functionalized graph with updated state outputs appended.
+    """
+    from ml_switcheroo_ir import topological_sort
+
+    new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
+    sorted_nodes = topological_sort(graph)
+    state_env: dict[str, str] = {v: v for v in state_vars}
+
+    for node in sorted_nodes:
+        if node.op_type == "Assign":
+            if len(node.inputs) >= 2 and node.inputs[0] in state_env:
+                state_env[node.inputs[0]] = node.inputs[1]
+        else:
+            new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
+            new_graph.nodes[node.id] = LogicalNode(
+                id=node.id,
+                op_type=node.op_type,
+                domain=node.domain,
+                version=node.version,
+                attributes=dict(node.attributes),
+                inputs=new_inputs,
+                shape_metadata=node.shape_metadata,
+                source_ast_ref=node.source_ast_ref,
+                sharding=node.sharding,
+            )
+
+    new_graph.outputs = list(graph.outputs) + [state_env[v] for v in state_vars]
+    return new_graph

@@ -5,6 +5,7 @@ from __future__ import annotations
 import builtins
 import typing
 from collections.abc import Callable, Generator, Sequence
+from types import ModuleType
 
 from ml_switcheroo_ir import AttributeValue
 from ml_switcheroo_ir.types import _AttributeValuePydanticAnnotation
@@ -99,13 +100,44 @@ class EagerCallableProtocol(_BaseCallableProto):
         default_rng: EagerCallableProtocol
 
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    BaseGenerator = int
-    FallbackPrefixProtocol = int
-    GraphProtoType = int
-    NodeProtoType = int
-    VisitorProtocol = int
-    ZerosModule = int
+class _EagerModuleProtocol(typing.Protocol):
+    """Protocol for registering runtime placeholder attributes on `eager_registry` module."""
+
+    BaseGenerator: type
+    FallbackPrefixProtocol: type
+    GraphProtoType: type
+    NodeProtoType: type
+    VisitorProtocol: type
+    ZerosModule: type
+
+
+def _is_eager_mod(mod: ModuleType) -> typing.TypeGuard[_EagerModuleProtocol]:
+    """Type guard narrowing `ModuleType` to `_EagerModuleProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+def _setup_eager_runtime_protocols() -> None:
+    """Register runtime placeholders for forward-referenced generator and protobuf types in `EagerOperand`."""
+    import sys
+
+    curr_mod = sys.modules[__name__]
+    assert _is_eager_mod(curr_mod)
+    curr_mod.BaseGenerator = _BaseCallableProto
+    curr_mod.FallbackPrefixProtocol = _BaseCallableProto
+    curr_mod.GraphProtoType = _BaseCallableProto
+    curr_mod.NodeProtoType = _BaseCallableProto
+    curr_mod.VisitorProtocol = _BaseCallableProto
+    curr_mod.ZerosModule = _BaseCallableProto
+
+
+_setup_eager_runtime_protocols()
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, VisitorProtocol
@@ -134,25 +166,23 @@ EagerOperand = typing.Annotated[
 class _BaseTensorProto(typing.Protocol):
     """Protocol defining the structural type contract for eager backend array/tensor objects."""
 
-    if not typing.TYPE_CHECKING:
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: EagerValue,
+        handler: EagerTensorProtocol,
+    ) -> EagerValue:
+        """Return core_schema.any_schema() for runtime EagerTensorProtocol field preservation.
 
-        @classmethod
-        def __get_pydantic_core_schema__(
-            cls,
-            source_type: EagerValue,
-            handler: EagerTensorProtocol,
-        ) -> EagerValue:
-            """Return core_schema.any_schema() for runtime EagerTensorProtocol field preservation.
+        Args:
+            source_type (EagerValue): Annotated source type.
+            handler (EagerTensorProtocol): Pydantic core schema handler.
 
-            Args:
-                source_type (EagerValue): Annotated source type.
-                handler (EagerTensorProtocol): Pydantic core schema handler.
-
-            Returns:
-                EagerValue: Pydantic CoreSchema instance.
-            """
-            del source_type
-            return ensure_eager_tensor(handler.generate_schema(AttributeValue))
+        Returns:
+            EagerValue: Pydantic CoreSchema instance.
+        """
+        del source_type
+        return ensure_eager_tensor(ensure_callable(_AttributeValuePydanticAnnotation.__get_pydantic_core_schema__)(AttributeValue, handler))
 
     if typing.TYPE_CHECKING:
 
@@ -2179,7 +2209,7 @@ def _is_eager_tensor(val: _ValT) -> typing.TypeGuard[EagerTensorProtocol]:
     Returns:
         bool: True for valid runtime values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_eager_tensor(val: _ValT) -> EagerTensorProtocol:
@@ -2204,7 +2234,7 @@ def _is_eager_callable(val: EagerOperand) -> typing.TypeGuard[EagerCallableProto
     Returns:
         bool: Always True for runtime callables.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_callable(val: EagerOperand) -> EagerCallableProtocol:
@@ -2229,7 +2259,7 @@ def _is_int(val: EagerOperand) -> typing.TypeGuard[int]:
     Returns:
         bool: Always True for runtime int values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_int(val: EagerOperand, default: int = 0) -> int:
@@ -2256,7 +2286,7 @@ def _is_float(val: EagerOperand) -> typing.TypeGuard[float]:
     Returns:
         bool: Always True for runtime float values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_float(val: EagerOperand, default: float = 0.0) -> float:
@@ -2283,7 +2313,7 @@ def _is_shape(val: EagerOperand) -> typing.TypeGuard[tuple[int, ...]]:
     Returns:
         bool: Always True for runtime shape tuples.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_shape(val: EagerOperand) -> tuple[int, ...]:
@@ -2308,7 +2338,7 @@ def _is_int_list(val: EagerOperand) -> typing.TypeGuard[list[int]]:
     Returns:
         bool: Always True for runtime integer lists.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_int_list(val: EagerOperand) -> list[int]:
@@ -2333,7 +2363,7 @@ def _is_str(val: EagerOperand) -> typing.TypeGuard[str]:
     Returns:
         bool: Always True for runtime string values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_str(val: EagerOperand, default: str = "") -> str:
@@ -2360,7 +2390,7 @@ def _is_opt_str(val: EagerOperand) -> typing.TypeGuard[str | None]:
     Returns:
         bool: Always True for optional string values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_opt_str(val: EagerOperand) -> str | None:
@@ -2385,7 +2415,7 @@ def _is_opt_int(val: EagerOperand) -> typing.TypeGuard[int | None]:
     Returns:
         bool: Always True for optional int values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_opt_int(val: EagerOperand) -> int | None:
@@ -2410,7 +2440,7 @@ def _is_bool(val: EagerOperand) -> typing.TypeGuard[bool]:
     Returns:
         bool: Always True for runtime boolean values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_bool(val: EagerOperand) -> bool:
@@ -2435,7 +2465,7 @@ def _is_bytes(val: EagerOperand) -> typing.TypeGuard[bytes]:
     Returns:
         bool: Always True for runtime bytes values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_bytes(val: EagerOperand) -> bytes:
@@ -2461,7 +2491,7 @@ def _is_float_list(val: EagerOperand) -> typing.TypeGuard[list[float]]:
     Returns:
         bool: Always True for runtime float lists.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_float_list(val: EagerOperand) -> list[float]:
@@ -2486,7 +2516,7 @@ def _is_eager_list(val: EagerOperand) -> typing.TypeGuard[list[EagerValue]]:
     Returns:
         bool: Always True for runtime eager lists.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_eager_list(val: EagerOperand) -> list[EagerValue]:
@@ -2511,7 +2541,7 @@ def _is_tensor_pair(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProt
     Returns:
         bool: Always True for tensor pairs.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_pair(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol]:
@@ -2536,7 +2566,7 @@ def _is_tensor_triple(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorPr
     Returns:
         bool: Always True for tensor triples.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_triple(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
@@ -2561,7 +2591,7 @@ def _is_tensor_quad(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProt
     Returns:
         bool: Always True for tensor quadruples.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_quad(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
@@ -2586,7 +2616,7 @@ def _is_opt_int_seq(val: EagerOperand) -> typing.TypeGuard[Sequence[int] | None]
     Returns:
         bool: Always True for optional integer sequences.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_opt_int_seq(val: EagerOperand) -> Sequence[int] | None:
@@ -2611,7 +2641,7 @@ def _is_int_or_seq(val: EagerOperand) -> typing.TypeGuard[int | tuple[int, ...]]
     Returns:
         bool: Always True for int or int tuple values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_int_or_seq(val: EagerOperand) -> int | tuple[int, ...]:
@@ -2636,7 +2666,7 @@ def _is_opt_callable(val: EagerOperand) -> typing.TypeGuard[EagerCallableProtoco
     Returns:
         bool: Always True for optional callables.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_opt_callable(val: EagerOperand) -> EagerCallableProtocol | None:

@@ -13,13 +13,34 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_zeros,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod
+
+
+class _JaxTypesModProtocol(typing.Protocol):
+    """Protocol for binding `jnp` onto `types` module."""
+
+    jnp: BackendModuleProtocol
+
+
+def _is_jax_types_mod(mod: EagerValue) -> typing.TypeGuard[_JaxTypesModProtocol]:
+    """Type guard narrowing `mod` to `_JaxTypesModProtocol`.
+
+    Args:
+        mod (EagerValue): Module instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return mod is not None
+
 
 if typing.TYPE_CHECKING:
     import jax.numpy as jnp
 
 _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    jnp = importlib.import_module("jax.numpy") if _has_jax else None
+_jt_mod: EagerValue = sys.modules[__name__]
+assert _is_jax_types_mod(_jt_mod)
+_jt_mod.jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:

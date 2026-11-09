@@ -3,17 +3,38 @@
 from __future__ import annotations
 
 import math
+import sys
 import typing
 from collections.abc import Callable, Sequence
+from types import ModuleType
 
 Numeric = typing.Union[int, float]  # noqa: UP007
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _NestedListSelf = Numeric
+
+class _PurePythonTypesModProtocol(typing.Protocol):
+    """Protocol for binding `_NestedListSelf` onto `types` module."""
+
+    _NestedListSelf: type
+
+
+def _is_pp_mod(mod: ModuleType) -> typing.TypeGuard[_PurePythonTypesModProtocol]:
+    """Type guard narrowing `ModuleType` to `_PurePythonTypesModProtocol`.
+
+    Args:
+        mod (ModuleType): Module instance.
+
+    Returns:
+        bool: True if `mod` is a `ModuleType`.
+    """
+    return isinstance(mod, ModuleType)
+
+
+_pp_mod = sys.modules[__name__]
+assert _is_pp_mod(_pp_mod)
+_pp_mod._NestedListSelf = int
 
 if typing.TYPE_CHECKING:
     _NestedListSelf: typing.TypeAlias = "NestedList"
-
 NestedList = typing.Union[Numeric, Sequence[_NestedListSelf]]  # noqa: UP007
 
 

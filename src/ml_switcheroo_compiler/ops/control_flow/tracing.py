@@ -47,7 +47,7 @@ def _as_traced_data(val: TensorOrScalar) -> TracedDataProtocol:
         Returns:
             bool: True for traced data payloads.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val
@@ -74,7 +74,7 @@ def _as_state_val(val: TensorOrScalar, ref: _StateT) -> _StateT:
         Returns:
             bool: True for state values.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

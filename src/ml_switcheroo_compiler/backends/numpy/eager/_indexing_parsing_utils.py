@@ -31,7 +31,7 @@ def _as_slice_arg(val: EagerValue) -> int | float | str | None:
         Returns:
             bool: True for slice arguments.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

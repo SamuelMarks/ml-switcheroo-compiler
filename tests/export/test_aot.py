@@ -48,11 +48,11 @@ def test_aot_tensor_caching() -> None:
 
     # First call will trace and compile
     res = ensure_callable(c)(t1, t2)
-    assert res is not None  # Actually, returning evaluated tensor
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [3.0])
 
     # Second call uses cache
     res2 = ensure_callable(c)(t1, t2)
-    assert res2 is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res2)), [3.0])
 
 
 def test_aot_list_output() -> None:
@@ -70,7 +70,7 @@ def test_aot_list_output() -> None:
     t1 = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
 
     res = ensure_callable(c)(t1)
-    assert res is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [[1.0], [2.0]])
 
 
 def test_aot_backend_missing_generator() -> None:
@@ -89,7 +89,7 @@ def test_aot_backend_missing_generator() -> None:
     t1 = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     # it should just fallback
     res = ensure_callable(c)(t1)
-    assert res is not None
+    assert id(res) == id(t1)
 
 
 def test_aot_compile_aot_hasattr() -> None:
@@ -419,14 +419,17 @@ def test_aot_custom_dtype_string_prefix() -> None:
         return x
 
     c = compile_function(f, backend="numpy")
-    res1 = ensure_callable(c)(ensure_callable(CustomArray)("DType.float32"))
-    assert res1 is not None
+    ca1 = ensure_callable(CustomArray)("DType.float32")
+    res1 = ensure_callable(c)(ca1)
+    assert ensure_eager_tensor(res1).shape == (2, 3)
 
-    res2 = ensure_callable(c)(ensure_callable(CustomArray)("float32"))
-    assert res2 is not None
+    ca2 = ensure_callable(CustomArray)("float32")
+    res2 = ensure_callable(c)(ca2)
+    assert ensure_eager_tensor(res2).shape == (2, 3)
 
-    res3 = ensure_callable(c)(ensure_callable(CustomArray)("unknown_custom_dtype"))
-    assert res3 is not None
+    ca3 = ensure_callable(CustomArray)("unknown_custom_dtype")
+    res3 = ensure_callable(c)(ca3)
+    assert ensure_eager_tensor(res3).shape == (2, 3)
 
 
 def test_aot_no_func_wrapper_tensor() -> None:

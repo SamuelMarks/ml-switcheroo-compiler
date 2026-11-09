@@ -232,7 +232,7 @@ def _is_typeguard_return(returns: ast.expr | None) -> bool:
 
 
 def _is_tautological_return_expr(expr: ast.expr | None) -> bool:
-    """Return True if `expr` is `True` or `x is None or x is not None`.
+    """Return True if `expr` is `True`, `x is None or x is not None`, or `not isinstance(x, bytes) or len(x) >= 0`.
 
     Args:
         expr (ast.expr | None): Return expression AST node.
@@ -246,7 +246,10 @@ def _is_tautological_return_expr(expr: ast.expr | None) -> bool:
         a, b = expr.values
         if isinstance(a, ast.Compare) and isinstance(b, ast.Compare) and a.ops and b.ops:
             ops_pair = (type(a.ops[0]), type(b.ops[0]))
-            return ops_pair in ((ast.Is, ast.IsNot), (ast.IsNot, ast.Is))
+            if ops_pair in ((ast.Is, ast.IsNot), (ast.IsNot, ast.Is)):
+                return True
+        if isinstance(b, ast.Compare) and b.ops and isinstance(b.ops[0], ast.GtE) and b.comparators and isinstance(b.comparators[0], ast.Constant) and b.comparators[0].value == 0:
+            return True
     return False
 
 
@@ -382,6 +385,18 @@ def _is_type_checking_test(test: ast.expr) -> bool:
     return isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
 
 
+def _is_negated_type_checking_test(test: ast.expr) -> bool:
+    """Return True if `test` is `not TYPE_CHECKING` or `not typing.TYPE_CHECKING`.
+
+    Args:
+        test (ast.expr): Conditional test AST expression.
+
+    Returns:
+        bool: True if test negates `TYPE_CHECKING`.
+    """
+    return isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not) and _is_type_checking_test(test.operand)
+
+
 def _check_misc_node(file_path: str, node: ast.AST) -> list[str]:
     """Inspect non-call/function/class AST nodes for prohibited attributes, names, constants, or imports.
 
@@ -398,7 +413,7 @@ def _check_misc_node(file_path: str, node: ast.AST) -> list[str]:
         return [f"{file_path}:{node.lineno}: prohibited catch-all type '{node.id}'"]
     if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value in _FORBIDDEN_DUNDER_STRINGS:
         return [f"{file_path}:{node.lineno}: prohibited dunder string literal '{node.value}'"]
-    if isinstance(node, ast.If) and _is_type_checking_test(node.test) and node.orelse:
+    if isinstance(node, ast.If) and (_is_negated_type_checking_test(node.test) or (_is_type_checking_test(node.test) and node.orelse)):
         return [f"{file_path}:{node.lineno}: prohibited 'if TYPE_CHECKING: ... else: ...' type-erasure block"]
     if isinstance(node, ast.ImportFrom):
         return [f"{file_path}:{node.lineno}: prohibited import '{alias.name}'" for alias in node.names if alias.name in ("_DynamicAttrType", "attrgetter", "itemgetter", "methodcaller", "getattr_static")]

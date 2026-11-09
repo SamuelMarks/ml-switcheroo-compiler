@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import typing
 
-from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
@@ -60,7 +60,7 @@ def encode_image(tensor: Tensor) -> bytes:
     import struct
     import zlib
 
-    np_mod = BackendRegistry.get("numpy").get_module()
+    np_mod = get_active_backend().get_module()
     raw_data = tensor.data if isinstance(tensor, _TensorDataProtocol) else tensor
     arr = np_mod.asarray(raw_data)
     if arr.ndim == 4:

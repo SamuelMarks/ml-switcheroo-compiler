@@ -78,7 +78,7 @@ def test_pyarrow_compute_generator_and_aot() -> None:
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
     res = ensure_callable(runner)(t_in1, in2=ensure_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
-    assert res is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [[6.0, 8.0], [10.0, 12.0]])
 
     # AOT multi-output
     g_multi = _create_sample_graph(multi_output=True)
@@ -97,19 +97,19 @@ def test_pyarrow_compute_generator_and_aot() -> None:
 def test_pyarrow_compute_types() -> None:
     """Verify PyArrow Compute array creation, scalar extraction, and fallbacks."""
     z = pa_pkg.zeros((4,))
-    assert z is not None
+    assert len(ensure_eager_tensor(z)) == 4
     z_cls = pa_pkg.PyArrowComputeGenerator.zeros((4,))
-    assert z_cls is not None
+    assert len(ensure_eager_tensor(z_cls)) == 4
 
     arr = pa_pkg.array([10.0, 20.0])
-    assert arr is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr)), [10.0, 20.0])
     arr_cls = pa_pkg.PyArrowComputeGenerator.array([10.0, 20.0])
-    assert arr_cls is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr_cls)), [10.0, 20.0])
 
     as_arr = pa_pkg.asarray([30.0, 40.0])
-    assert as_arr is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr)), [30.0, 40.0])
     as_arr_cls = pa_pkg.PyArrowComputeGenerator.asarray([30.0, 40.0])
-    assert as_arr_cls is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr_cls)), [30.0, 40.0])
 
     # item extraction via as_py
     import pyarrow as pa
@@ -227,38 +227,38 @@ def test_pyarrow_compute_eager_dispatch() -> None:
 
     pa_val = pa.array([-5.0, 3.0])
     res_abs = pa_pkg.execute_op("Abs", pa_val)
-    assert res_abs is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res_abs)), [5.0, 3.0])
 
     res = pa_pkg.execute_op("Mul", np.array([2.0, 3.0]), np.array([4.0, 5.0]))
-    assert res is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [8.0, 15.0])
 
     # Classmethod execution
     res_cls = pa_pkg.PyArrowComputeGenerator.execute_op("Mul", np.array([2.0, 3.0]), np.array([4.0, 5.0]))
-    assert res_cls is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res_cls)), [8.0, 15.0])
 
     # Operations mapped in pc_map (sum, mean, equal, etc.)
     pa_1 = pa.array([1.0, 2.0])
     pa_2 = pa.array([3.0, 4.0])
     res_add = pa_pkg.execute_op("Add", pa_1, pa_2)
-    assert res_add is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res_add)), [4.0, 6.0])
     res_sub = pa_pkg.execute_op("Sub", pa_2, pa_1)
-    assert res_sub is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res_sub)), [2.0, 2.0])
     res_div = pa_pkg.execute_op("Div", pa_2, pa_1)
-    assert res_div is not None
+    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res_div)), [3.0, 2.0])
     res_sum = pa_pkg.execute_op("Sum", pa_1)
-    assert res_sum is not None
+    assert np.isclose(pa_pkg.item(res_sum), 3.0)
     res_mean = pa_pkg.execute_op("Mean", pa_1)
-    assert res_mean is not None
+    assert np.isclose(pa_pkg.item(res_mean), 1.5)
     res_min = pa_pkg.execute_op("Min", pa_1)
-    assert res_min is not None
+    assert np.isclose(pa_pkg.item(res_min), 1.0)
     res_max = pa_pkg.execute_op("Max", pa_1)
-    assert res_max is not None
+    assert np.isclose(pa_pkg.item(res_max), 2.0)
     res_eq = pa_pkg.execute_op("Equal", pa_1, pa_2)
-    assert res_eq is not None
+    assert list(ensure_eager_tensor(res_eq).to_pylist()) == [False, False]
     res_gt = pa_pkg.execute_op("Greater", pa_2, pa_1)
-    assert res_gt is not None
+    assert list(ensure_eager_tensor(res_gt).to_pylist()) == [True, True]
     res_lt = pa_pkg.execute_op("Less", pa_1, pa_2)
-    assert res_lt is not None
+    assert list(ensure_eager_tensor(res_lt).to_pylist()) == [True, True]
 
     # Error when pyarrow.compute cannot be imported
     with mock.patch(

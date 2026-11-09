@@ -68,7 +68,7 @@ def _is_ser_attr_val(val: TensorOrScalar | AttributeValue) -> typing.TypeGuard[A
     Returns:
         bool: True if non-None or None.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def _ensure_ser_attr_val(val: TensorOrScalar | AttributeValue) -> AttributeValue:
@@ -362,8 +362,11 @@ def _validate_and_map_weights(
     Returns:
         dict[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]: Validated weights dict.
     """
-    _ = target_model
-    return dict(weights_dict)
+    mapped: dict[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]] = dict(weights_dict)
+    if target_model is not None and not isinstance(target_model, LoadedModel):
+        restored_attrs: dict[str, AttributeValue] = {str(k): _ensure_ser_attr_val(v) for k, v in mapped.items()}
+        _validate_restored_target_weights(restored_attrs, _ensure_ser_attr_val(target_model), None)
+    return mapped
 
 
 def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOrScalar:
@@ -393,30 +396,46 @@ def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, *
     """
     _ = (overwrite, kwargs)
     weights = _extract_model_weights(model) if model is not None else {}
-    with open(filepath, "wb") as f:
-        pickle.dump(weights, f)
+    fmt = _infer_weight_format(filepath)
+    if fmt == "pickle":
+        with open(filepath, "wb") as f:
+            pickle.dump(weights, f)
+    else:
+        handler = _get_format_handler(fmt)
+        handler.save({str(k): _ensure_ser_tensor(v) for k, v in weights.items()}, filepath)
 
 
-def export_to_onnx(graph: IRGraph, filepath: str) -> None:
+def export_to_onnx(graph: IRGraph | TensorOrScalar, filepath: str) -> None:
     """Export the internal representation graph to ONNX format.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph | TensorOrScalar): The graph parameter.
         filepath (str): The filepath parameter.
     """
-    _ = graph
+    from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph as CoreIRGraph
+
+    if isinstance(graph, CoreIRGraph):
+        ONNXCodeGenerator(graph).export_onnx(filepath)
+        return
     with open(filepath, "wb") as f:
         f.write(b"ONNX")
 
 
-def export_to_tflite(graph: IRGraph, filepath: str) -> None:
+def export_to_tflite(graph: IRGraph | TensorOrScalar, filepath: str) -> None:
     """Export the internal representation graph to TFLite format.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph | TensorOrScalar): The graph parameter.
         filepath (str): The filepath parameter.
     """
-    _ = graph
+    from ml_switcheroo_compiler.ir.core import IRGraph as CoreIRGraph
+
+    if isinstance(graph, CoreIRGraph):
+        payload = graph.to_json().encode("utf-8")
+        with open(filepath, "wb") as f:
+            f.write(b"TFL3" + payload)
+        return
     with open(filepath, "wb") as f:
         f.write(b"TFLITE")
 
@@ -1263,10 +1282,10 @@ def load_variable(path: str, name: str) -> Tensor:
     """
     import os
 
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    backend_cls = BackendRegistry.get("numpy")
+    backend_cls = get_active_backend()
     var_path = os.path.join(path, f"{name}.npy")
     if os.path.exists(var_path):
         data = backend_cls.load(var_path)
@@ -1286,9 +1305,9 @@ def _load_restored_weights_from_dir(path: str) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Loaded weights mapping.
     """
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_mod = BackendRegistry.get("numpy").get_module()
+    backend_mod = get_active_backend().get_module()
     restored: dict[str, AttributeValue] = {}
     entries = os.listdir(path)
     for st in (f for f in entries if f.endswith(".safetensors")):

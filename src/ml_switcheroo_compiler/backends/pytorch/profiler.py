@@ -19,8 +19,7 @@ if typing.TYPE_CHECKING:
     import torch
 
 _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
+ensure_mod(sys.modules[__name__]).torch = ensure_mod(importlib.import_module("torch") if _has_torch else None)
 
 
 def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]]:
@@ -32,7 +31,7 @@ def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torc
     Returns:
         bool: True for runtime PyTorch outputs.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is not None
 
 
 def _as_torch_out(val: EagerValue) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
@@ -57,7 +56,7 @@ def _is_nn_module(val: EagerValue) -> typing.TypeGuard[torch.nn.Module]:
     Returns:
         bool: True for runtime modules.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is not None
 
 
 def _as_nn_module(val: EagerValue) -> torch.nn.Module:

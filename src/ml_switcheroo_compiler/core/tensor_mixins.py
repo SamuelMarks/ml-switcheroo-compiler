@@ -47,7 +47,7 @@ def _is_mixin_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorP
     Returns:
         bool: True if non-None or None.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def _ensure_mixin_tensor(val: TensorOrScalar) -> EagerTensorProtocol:

@@ -185,16 +185,13 @@ def rng_uniform(
 
 
 def _get_numpy_rng(*args: int | None, **kwargs: int | None) -> TensorLike:
-    """Obtain a NumPy random number generator instance via BackendRegistry.
+    """Obtain a random number generator instance via the active backend.
 
     Args:
         *args (int | None): Positional seed arguments.
         **kwargs (int | None): Keyword seed arguments.
 
     Returns:
-        TensorLike: NumPy RNG instance.
+        TensorLike: Active backend RNG instance.
     """
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
-    backend_cls = BackendRegistry.get("numpy")
-    return backend_cls.get_numpy_rng(*args, **kwargs)
+    return get_active_backend().get_numpy_rng(*args, **kwargs)

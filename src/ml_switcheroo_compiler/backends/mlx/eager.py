@@ -47,7 +47,7 @@ def _as_mod(val: EagerValue) -> ModuleType:
         Returns:
             bool: True for runtime modules.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

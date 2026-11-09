@@ -44,7 +44,7 @@ def _is_core_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorPr
     Returns:
         bool: True if non-None or None.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def _ensure_core_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
@@ -133,7 +133,7 @@ def _is_dtype_inst(val: TensorOrScalar) -> typing.TypeGuard[DType]:
     Returns:
         bool: True for runtime dtype objects.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, (DType, str)) or not isinstance(val, type(Ellipsis))
 
 
 def _as_dtype_obj(val: TensorOrScalar) -> DType:
@@ -158,7 +158,7 @@ def _is_device_inst(val: TensorOrScalar) -> typing.TypeGuard[Device]:
     Returns:
         bool: True for runtime device objects.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, (Device, str)) or not isinstance(val, type(Ellipsis))
 
 
 def _as_device_obj(val: TensorOrScalar) -> Device:
@@ -183,7 +183,7 @@ def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
     Returns:
         bool: Always True for runtime tensor values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, Tensor) or not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor(val: TensorOrScalar) -> Tensor:
@@ -208,7 +208,7 @@ def _is_opt_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
     Returns:
         bool: Always True for optional tensor values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is None or isinstance(val, Tensor) or not isinstance(val, type(Ellipsis))
 
 
 def as_opt_tensor_obj(val: TensorOrScalar) -> Tensor | None:

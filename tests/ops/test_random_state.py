@@ -44,7 +44,6 @@ def test_random_state() -> None:
             res = rng_uniform(0, 1, (2,), "float32")
             assert ensure_eager_tensor(res) == ensure_eager_tensor("mock_val")
 
-        with patch("ml_switcheroo_compiler.backends.registry.BackendRegistry.get", return_value=mock_backend):
             assert ensure_eager_tensor(_get_numpy_rng()) == ensure_eager_tensor("rng")
 
         config.eager_mode = False

@@ -136,14 +136,14 @@ def test_rng_uniform() -> None:
 
 def test_get_numpy_rng() -> None:
     """Test _get_numpy_rng function."""
-    with patch("ml_switcheroo_compiler.backends.registry.BackendRegistry.get") as mock_get:
+    with patch("ml_switcheroo_compiler.random.state.get_active_backend") as mock_get:
         mock_backend_cls = MagicMock()
         mock_backend_cls.get_numpy_rng.return_value = "mocked_rng"
         mock_get.return_value = mock_backend_cls
 
         result = ensure_callable(_get_numpy_rng)("arg1", kwarg1="val1")
         assert result == "mocked_rng"
-        mock_get.assert_called_once_with("numpy")
+        mock_get.assert_called_once_with()
         mock_backend_cls.get_numpy_rng.assert_called_once_with("arg1", kwarg1="val1")
 
 

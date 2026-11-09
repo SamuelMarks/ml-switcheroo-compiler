@@ -33,6 +33,7 @@ def test_state_manager() -> None:
     g.nodes["state1"] = LogicalNode(id="state1", op_type="Variable", domain="ml_switcheroo")
     g.nodes["val1"] = LogicalNode(id="val1", op_type="Constant", domain="ml_switcheroo")
     g.nodes["a"] = n_assign
+    g.nodes["a2"] = n_assign2
     g.nodes["op1"] = n_op
     g.outputs = ["op1"]
 

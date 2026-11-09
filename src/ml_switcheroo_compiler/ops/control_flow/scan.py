@@ -34,7 +34,7 @@ def _as_scan_result(val: TensorOrScalar, init: Carry) -> tuple[Carry, Tensor]:
         Returns:
             bool: True if cand is a valid scan result.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

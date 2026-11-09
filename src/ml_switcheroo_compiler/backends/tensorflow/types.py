@@ -19,8 +19,7 @@ if typing.TYPE_CHECKING:
     import tensorflow as tf
 
 _has_tf = sys.modules.get("tensorflow") is not None or ("tensorflow" not in sys.modules and importlib.util.find_spec("tensorflow") is not None)
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    tf = ensure_mod(importlib.import_module("tensorflow") if _has_tf else None)
+ensure_mod(sys.modules[__name__]).tf = ensure_mod(importlib.import_module("tensorflow") if _has_tf else None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:

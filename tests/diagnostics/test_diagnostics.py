@@ -106,11 +106,31 @@ def test_debug_shapes() -> None:
 
 def test_estimate_flops() -> None:
     """Verify the FLOPs estimation utility for logical graphs."""
+    from ml_switcheroo_compiler.diagnostics.flop_counter import _estimate_node_flops
+
     graph = LogicalGraph(name="test")
+    graph.nodes["in_a"] = LogicalNode(id="in_a", op_type="Input", shape_metadata=(4, 8))
+    graph.nodes["in_b"] = LogicalNode(id="in_b", op_type="Input", shape_metadata=(8, 5))
     graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
-    graph.nodes["n2"] = LogicalNode(id="n2", op_type="MatMul", shape_metadata=(10, 10))
+    graph.nodes["n2"] = LogicalNode(id="n2", op_type="MatMul", inputs=["in_a", "in_b"], shape_metadata=(4, 5))
+    graph.nodes["n2_no_out_shape"] = LogicalNode(id="n2_no_out_shape", op_type="MatMul", inputs=["in_a", "in_b"])
+    graph.nodes["in_3d_a"] = LogicalNode(id="in_3d_a", op_type="Input", shape_metadata=(2, 4, 8))
+    graph.nodes["in_3d_b"] = LogicalNode(id="in_3d_b", op_type="Input", shape_metadata=(2, 8, 5))
+    graph.nodes["n2_batched_no_out"] = LogicalNode(id="n2_batched_no_out", op_type="MatMul", inputs=["in_3d_a", "in_3d_b"])
+    graph.nodes["n2_fallback_2d"] = LogicalNode(id="n2_fallback_2d", op_type="MatMul", shape_metadata=(10, 10))
+    graph.nodes["n2_fallback_1d"] = LogicalNode(id="n2_fallback_1d", op_type="MatMul", shape_metadata=(10,))
+    graph.nodes["n2_no_shape"] = LogicalNode(id="n2_no_shape", op_type="MatMul")
+    graph.nodes["in_1d"] = LogicalNode(id="in_1d", op_type="Input", shape_metadata=(8,))
+    graph.nodes["n2_1d_in"] = LogicalNode(id="n2_1d_in", op_type="MatMul", inputs=["in_1d", "in_1d"], shape_metadata=(1,))
+    graph.nodes["conv_in"] = LogicalNode(id="conv_in", op_type="Input", shape_metadata=(1, 3, 8, 8))
+    graph.nodes["conv_w_oihw"] = LogicalNode(id="conv_w_oihw", op_type="Input", shape_metadata=(16, 3, 3, 3))
+    graph.nodes["conv_w_hwio"] = LogicalNode(id="conv_w_hwio", op_type="Input", shape_metadata=(3, 3, 3, 16))
+    graph.nodes["conv1"] = LogicalNode(id="conv1", op_type="Conv2D", inputs=["conv_in", "conv_w_oihw"], shape_metadata=(1, 16, 6, 6))
+    graph.nodes["conv2"] = LogicalNode(id="conv2", op_type="Conv2D", inputs=["conv_in", "conv_w_hwio"], shape_metadata=(1, 6, 6, 8))
+    graph.nodes["conv_bad_w"] = LogicalNode(id="conv_bad_w", op_type="Conv2D", inputs=["conv_in", "in_1d"], shape_metadata=(1, 6, 6, 16))
+    graph.nodes["conv_fallback"] = LogicalNode(id="conv_fallback", op_type="Conv2D", shape_metadata=(1, 6, 6, 16))
+    graph.nodes["conv_no_shape"] = LogicalNode(id="conv_no_shape", op_type="Conv2D")
     graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add")
-    graph.nodes["n4"] = LogicalNode(id="n4", op_type="Foo")
 
     class BadShape:
         """Bad Shape class."""
@@ -124,14 +144,18 @@ def test_estimate_flops() -> None:
     ensure_mutable(n5).shape_metadata = ensure_eager_tensor(BadShape())
     graph.nodes["n5"] = n5
     flops = estimate_flops(graph)
-    assert flops == 202
+    assert flops > 2000
+    assert _estimate_node_flops(LogicalNode(id="x", op_type="Input")) == 0
 
 
 def test_memory_profiler() -> None:
     """Verify the memory profiling utility for logical graphs."""
+    from ml_switcheroo_ir import DType as IRDType
+
     graph = LogicalGraph(name="test")
-    graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
-    graph.nodes["n2"] = LogicalNode(id="n2", op_type="Add")
+    graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10), dtype=IRDType.float32)
+    graph.nodes["n2"] = LogicalNode(id="n2", op_type="Add", attributes={"dtype": "DType.float64"})
+    graph.nodes["n_f16"] = LogicalNode(id="n_f16", op_type="Add", shape_metadata=(10,), dtype=IRDType.float16)
 
     class BadShape:
         """Bad Shape class."""
@@ -145,7 +169,7 @@ def test_memory_profiler() -> None:
     ensure_mutable(n3).shape_metadata = ensure_eager_tensor(BadShape())
     graph.nodes["n3"] = n3
     mem = memory_profiler(graph)
-    assert mem == 408
+    assert mem == 400 + 8 + 20 + 4
 
 
 def test_numerical_anomaly_detector() -> None:
@@ -244,8 +268,13 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
         assert f.read() == b"mock_proto_data"
 
     # 5. Test debugging.enable_dump_debug_info
-    from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
+    from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info, get_debug_dump_config
 
     dump_dir: str = str(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug"))
-    enable_dump_debug_info(dump_dir)
+    enable_dump_debug_info(dump_dir, tensor_debug_mode="FULL_TENSOR", circular_buffer_size=128)
     assert ensure_callable((ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug")).exists)()
+    dbg_cfg = get_debug_dump_config()
+    assert dbg_cfg["enabled"] is True
+    assert dbg_cfg["dump_root"] == dump_dir
+    assert dbg_cfg["tensor_debug_mode"] == "FULL_TENSOR"
+    assert dbg_cfg["circular_buffer_size"] == 128

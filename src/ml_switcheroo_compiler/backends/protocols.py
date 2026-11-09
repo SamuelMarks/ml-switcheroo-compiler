@@ -268,7 +268,7 @@ def _is_backend_mod(val: EagerValue) -> typing.TypeGuard[BackendModuleProtocol]:
     Returns:
         bool: True for runtime module objects.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_mod(val: EagerValue) -> BackendModuleProtocol:

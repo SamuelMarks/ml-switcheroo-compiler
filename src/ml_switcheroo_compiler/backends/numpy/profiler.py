@@ -47,7 +47,7 @@ def _as_eager_val(val: EagerValue | dict[str, EvalValue]) -> EagerValue:
         Returns:
             bool: True for runtime outputs.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

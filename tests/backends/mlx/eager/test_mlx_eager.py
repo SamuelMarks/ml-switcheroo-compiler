@@ -34,18 +34,18 @@ def test_mlx_eager_coverage_part1() -> None:
 
     cls = DummyBackend()
     res = ensure_callable(execute_op)(cls, "TakeAlongAxis", ensure_callable(mx.array)([1, 2]), ensure_callable(mx.array)([0]), axis=0)
-    assert res is not None
+    assert ensure_eager_tensor(res).tolist() == [1]
     res = ensure_callable(execute_op)(cls, "Take", ensure_callable(mx.array)([1, 2]), ensure_callable(mx.array)([0]), axis=0)
-    assert res is not None
+    assert ensure_eager_tensor(res).tolist() == [1]
     with patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value="scatter_res"):
         ensure_callable(execute_op)(cls, "ScatterNd", ensure_callable(mx.array)([0]), ensure_callable(mx.array)([0]), ensure_callable(mx.array)([1]))
     shape_mock = MagicMock()
     shape_mock.data = [2]
     shape_mock.tolist.return_value = [2]
     res = ensure_callable(execute_op)(cls, "Reshape", ensure_callable(mx.array)([1, 2]), shape=shape_mock)
-    assert res is not None
+    assert ensure_eager_tensor(res).shape == (2,)
     res = ensure_callable(execute_op)(cls, "Reshape", ensure_callable(mx.array)([1, 2]), newshape=(2,))
-    assert res is not None
+    assert ensure_eager_tensor(res).shape == (2,)
 
 
 def test_mlx_eager_coverage_part2() -> None:

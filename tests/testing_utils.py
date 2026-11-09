@@ -39,7 +39,7 @@ def _is_callable_proto(val: _TestValT) -> typing.TypeGuard[EagerCallableProtocol
     Returns:
         bool: Always True for runtime callables.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_callable(val: _TestValT) -> EagerCallableProtocol:
@@ -64,7 +64,7 @@ def _is_tensor_proto(val: _TestValT) -> typing.TypeGuard[EagerTensorProtocol]:
     Returns:
         bool: Always True for runtime tensors.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_eager_tensor(val: _TestValT) -> EagerTensorProtocol:
@@ -89,7 +89,7 @@ def _is_mod_proto(val: _TestValT) -> typing.TypeGuard[BackendModuleProtocol]:
     Returns:
         bool: Always True for runtime backend modules.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_mod(val: _TestValT) -> BackendModuleProtocol:
@@ -114,7 +114,7 @@ def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, 
     Returns:
         bool: Always True for runtime arrays.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
@@ -140,7 +140,7 @@ def _is_tensor_inst_proto(val: _TestValT) -> typing.TypeGuard[Tensor]:
     Returns:
         bool: Always True for runtime Tensor instances.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_obj(val: _TestValT) -> Tensor:
@@ -165,7 +165,7 @@ def _is_attrs_proto(val: _TestValT) -> typing.TypeGuard[dict[str, AttributeValue
     Returns:
         bool: Always True for runtime attribute dicts.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_attrs(val: _TestValT) -> dict[str, AttributeValue]:
@@ -191,7 +191,7 @@ def _is_attr_val_proto(val: _TestValT) -> typing.TypeGuard[AttributeValue]:
     Returns:
         bool: Always True for runtime attribute values.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_attr_val(val: _TestValT) -> AttributeValue:
@@ -217,7 +217,7 @@ def _is_graph_proto(val: _TestValT) -> typing.TypeGuard[LogicalGraph]:
     Returns:
         bool: Always True for runtime graphs.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_graph(val: _TestValT) -> LogicalGraph:
@@ -243,7 +243,7 @@ def _is_tensor_dict(val: _TestValT) -> typing.TypeGuard[dict[str, EagerTensorPro
     Returns:
         bool: Always True for runtime tensor dictionaries.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_dict(val: _TestValT) -> dict[str, EagerTensorProtocol]:
@@ -268,7 +268,7 @@ def _is_tensor_list(val: _TestValT) -> typing.TypeGuard[list[EagerTensorProtocol
     Returns:
         bool: Always True for runtime tensor lists.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_tensor_list(val: _TestValT) -> list[EagerTensorProtocol]:
@@ -293,7 +293,7 @@ def _is_node_dict(val: _TestValT) -> typing.TypeGuard[dict[str, LogicalNode]]:
     Returns:
         bool: Always True for runtime node dictionaries.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_node_dict(val: _TestValT) -> dict[str, LogicalNode]:
@@ -318,7 +318,7 @@ def _is_logical_node(val: _TestValT) -> typing.TypeGuard[LogicalNode]:
     Returns:
         bool: Always True for runtime nodes.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_node(val: _TestValT) -> LogicalNode:
@@ -343,7 +343,7 @@ def _is_module_type(val: _TestValT) -> typing.TypeGuard[types.ModuleType]:
     Returns:
         bool: Always True for runtime modules.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_module_type(val: _TestValT) -> types.ModuleType:
@@ -368,7 +368,7 @@ def _is_type_obj(val: _TestValT) -> typing.TypeGuard[type]:
     Returns:
         bool: Always True for runtime types.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_type_obj(val: _TestValT) -> type:
@@ -660,7 +660,7 @@ def _is_mutable_proto(val: _TestValT) -> typing.TypeGuard[TestMutableProtocol]:
     Returns:
         bool: Always True for runtime mutable objects.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return not isinstance(val, type(Ellipsis))
 
 
 def ensure_mutable(val: _TestValT) -> TestMutableProtocol:

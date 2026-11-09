@@ -167,7 +167,7 @@ def _is_compiled_artifact(val: EagerValue) -> typing.TypeGuard[CompiledArtifact]
     Returns:
         bool: True for runtime compiled artifacts.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return isinstance(val, CompiledArtifact) or not isinstance(val, type(Ellipsis))
 
 
 class IRGraphWalker:

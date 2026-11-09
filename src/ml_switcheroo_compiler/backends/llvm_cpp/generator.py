@@ -11,6 +11,7 @@ from __future__ import annotations
 import ctypes
 import os
 import subprocess
+import sys
 import tempfile
 import typing
 from collections.abc import Callable  # noqa: F401
@@ -25,12 +26,30 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.ir.core import as_opt_graph, ensure_graph
 
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    _AttrTypeSelf = EagerValue
 
+class _LlvmModProtocol(typing.Protocol):
+    """Protocol for binding `_AttrTypeSelf` onto `generator` module."""
+
+    _AttrTypeSelf: type
+
+
+def _is_llvm_mod(mod: EagerValue) -> typing.TypeGuard[_LlvmModProtocol]:
+    """Type guard narrowing `mod` to `_LlvmModProtocol`.
+
+    Args:
+        mod (EagerValue): Module instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return mod is not None
+
+
+_llvm_mod: EagerValue = sys.modules[__name__]
+assert _is_llvm_mod(_llvm_mod)
+_llvm_mod._AttrTypeSelf = int
 if typing.TYPE_CHECKING:
     _AttrTypeSelf: typing.TypeAlias = "AttrType"
-
 AttrType = typing.Union[int, float, str, bool, list[_AttrTypeSelf], tuple[_AttrTypeSelf, ...], dict[str, _AttrTypeSelf], None]  # noqa: UP007
 
 import yaml
@@ -59,7 +78,7 @@ def _as_attr_val(val: EagerValue) -> AttrType:
         Returns:
             bool: True if valid.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

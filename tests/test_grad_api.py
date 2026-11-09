@@ -30,9 +30,9 @@ def test_value_and_grad_has_aux() -> None:
     wrapped = value_and_grad(func, opts)
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
     (val, aux), g_out = ensure_callable(wrapped)(t_in)
-    assert val is not None
-    assert aux is not None
-    assert g_out is not None
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(val).numpy()), [1.0])
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(aux).numpy()), [1.0])
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(g_out).numpy()), [1.0])
 
 
 def test_hook_gradient() -> None:
@@ -65,11 +65,11 @@ def test_hook_gradient() -> None:
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
     g = grad(func)
     res1 = g(t_in)
-    assert res1 is not None
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(res1).numpy()), [2.0])
 
     g2 = grad(func2)
     res2 = g2(t_in)
-    assert res2 is not None
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(res2).numpy()), [1.0])
 
 
 def test_value_and_grad_no_aux() -> None:
@@ -87,12 +87,13 @@ def test_value_and_grad_no_aux() -> None:
     wrapped = value_and_grad(func, opts)
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
     val, g_out = ensure_callable(wrapped)(t_in)
-    assert val is not None
-    assert g_out is not None
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(val).numpy()), [1.0])
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(g_out).numpy()), [1.0])
 
 
 def test_api_jvp_basic() -> None:
-    """Test numerical jvp with standard numeric scalar/array values."""
+    """Test symbolic and fallback jvp with standard numeric scalar/array values."""
+    from unittest.mock import patch
 
     def f(x: float, y: float) -> float:
         """Test function f.
@@ -107,7 +108,19 @@ def test_api_jvp_basic() -> None:
     tangents = (1.0, 2.0)
     primal_out, tangent_out = jvp(f, primals, tangents)
     assert ensure_callable(np.isclose)(primal_out, 7.0)
-    assert ensure_callable(np.isclose)(tangent_out, 10.0, atol=1e-3)
+    assert ensure_callable(np.isclose)(tangent_out, 10.0, atol=1e-5)
+
+    t_p = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
+    t_t = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
+    p_ten, t_ten = jvp(lambda x: x * x, (t_p,), (t_t,))
+    np.testing.assert_allclose(np.asarray(ensure_tensor_obj(p_ten).numpy()), [4.0])
+    np.testing.assert_allclose(np.asarray(t_ten), [12.0])
+
+    # Also test fallback when _symbolic_jvp returns non-pair or raises
+    with patch("ml_switcheroo_compiler.grad.jvp_vjp.jvp", return_value="not_a_tuple"):
+        p_out2, t_out2 = jvp(f, primals, tangents)
+        assert ensure_callable(np.isclose)(p_out2, 7.0)
+        assert ensure_callable(np.isclose)(t_out2, 10.0, atol=1e-3)
 
 
 def test_api_jvp_no_add_and_add_exception() -> None:

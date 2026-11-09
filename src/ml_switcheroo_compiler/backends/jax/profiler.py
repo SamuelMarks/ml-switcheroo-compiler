@@ -10,19 +10,40 @@ import time
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, has_backend_member
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+class _JaxProfilerModProtocol(typing.Protocol):
+    """Protocol for binding `jax` and `jnp` onto `profiler` module."""
+
+    jax: BackendModuleProtocol
+    jnp: BackendModuleProtocol
+
+
+def _is_jax_prof_mod(mod: EagerValue) -> typing.TypeGuard[_JaxProfilerModProtocol]:
+    """Type guard narrowing `mod` to `_JaxProfilerModProtocol`.
+
+    Args:
+        mod (EagerValue): Module instance.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return mod is not None
+
 
 if typing.TYPE_CHECKING:
     import jax
     import jax.numpy as jnp
 
 _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-if not typing.TYPE_CHECKING:  # pragma: no cover
-    jax = importlib.import_module("jax") if _has_jax else None
-    jnp = importlib.import_module("jax.numpy") if _has_jax else None
+_jp_mod: EagerValue = sys.modules[__name__]
+assert _is_jax_prof_mod(_jp_mod)
+_jp_mod.jax = ensure_mod(importlib.import_module("jax") if _has_jax else None)
+_jp_mod.jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
 
 
 class _MemoryStatsDeviceProtocol(typing.Protocol):

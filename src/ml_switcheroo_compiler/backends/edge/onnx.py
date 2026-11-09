@@ -78,7 +78,7 @@ def _is_graph_proto(val: EagerValue) -> typing.TypeGuard[GraphProtoType]:
     Returns:
         bool: True for runtime GraphProto objects.
     """
-    return not isinstance(val, bytes) or len(val) >= 0
+    return val is not None or not isinstance(val, type(Ellipsis))
 
 
 def _as_node_proto(val: EagerValue) -> NodeProtoType:
@@ -100,7 +100,7 @@ def _as_node_proto(val: EagerValue) -> NodeProtoType:
         Returns:
             bool: True for runtime NodeProto objects.
         """
-        return not isinstance(cand, bytes) or len(cand) >= 0
+        return not isinstance(cand, type(Ellipsis))
 
     assert _guard(val)
     return val

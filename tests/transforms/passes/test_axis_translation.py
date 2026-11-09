@@ -61,6 +61,33 @@ def test_axis_translation_conv2d() -> None:
     assert transp_out_node.inputs == ["conv_1"]
     assert transp_out_node.attributes["axes"] == [0, 3, 1, 2]
 
+    # 3. Test with 2 inputs (input + 4D weight and unshaped weight)
+    g2 = IRGraph()
+    g2.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input", shape_metadata=(1, 3, 8, 8)),
+            "w": IRNode(id="w", op_type="Input", shape_metadata=(16, 3, 3, 3)),
+            "conv": IRNode(id="conv", op_type="Conv2D", inputs=["x", "w"], attributes={"layout": "NCHW"}, shape_metadata=(1, 16, 6, 6)),
+        }
+    )
+    g2.outputs = ["conv"]
+    assert axis_translation_pass(g2) is True
+    assert g2.nodes["conv"].attributes["kernel_layout"] == "HWIO"
+    w_transp_id = g2.nodes["conv"].inputs[1]
+    assert g2.nodes[w_transp_id].shape_metadata == (3, 3, 3, 16)
+    assert g2.nodes[w_transp_id].attributes["axes"] == [2, 3, 1, 0]
+
+    g3 = IRGraph()
+    g3.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input"),
+            "w": IRNode(id="w", op_type="Input"),
+            "conv": IRNode(id="conv", op_type="Conv2D", inputs=["x", "w"], attributes={"layout": "NCHW"}),
+        }
+    )
+    assert axis_translation_pass(g3) is True
+    assert g3.nodes[g3.nodes["conv"].inputs[1]].shape_metadata is None
+
 
 def test_axis_translation_conv2d_no_shape() -> None:
     """Test inserting Transpose nodes around Conv2D when shape is None."""
