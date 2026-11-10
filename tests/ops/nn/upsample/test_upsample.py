@@ -77,7 +77,7 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         class DummyBackend:
             """Dummy backend for upsample testing."""
 
-            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
                 """Execute op return dummy array.
 
                 Args:
@@ -87,7 +87,7 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
                 """
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
-            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
                 """Convert array.
 
                 Args:
@@ -170,7 +170,7 @@ def test_upsample_brute() -> None:
         class DummyBackend1D:
             """Dummy backend for 1D upsampling."""
 
-            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
                 """Execute op return dummy array.
 
                 Args:
@@ -180,7 +180,7 @@ def test_upsample_brute() -> None:
                 """
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
-            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
                 """Convert array.
 
                 Args:

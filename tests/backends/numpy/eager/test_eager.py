@@ -1317,8 +1317,6 @@ def test_io_fallbacks_load() -> None:
                 raise NotImplementedError()
 
         mock_get.return_value = DummyBackend
-        if False:
-            pass
 
 
 def test_io_fallbacks_decode_backend() -> None:

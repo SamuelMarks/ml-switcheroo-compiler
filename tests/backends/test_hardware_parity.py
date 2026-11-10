@@ -167,9 +167,9 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-    a_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
-    ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
+    a_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    b_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
+    ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
     ensure_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("torch") is not None:
@@ -193,14 +193,14 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
         mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
         ensure_callable(np.testing.assert_allclose)(ensure_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
-    x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
+    x_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.sum(x_np, axis=-1, keepdims=True)
     ref_mean = ensure_callable(np.mean)(x_np, axis=-1, keepdims=True)
     ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
     ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
-    x_act: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
-    ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = 1.0 / (1.0 + np.exp(-x_act))
-    ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.tanh(x_act)
+    x_act: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
+    ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = 1.0 / (1.0 + np.exp(-x_act))
+    ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.tanh(x_act)
     ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
     ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
 

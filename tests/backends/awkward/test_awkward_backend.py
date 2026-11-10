@@ -151,7 +151,7 @@ def test_awkward_types() -> None:
     class NoItemAkObj:
         """Object without .to_list() or .item()."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Convert to array.
 
             Returns:

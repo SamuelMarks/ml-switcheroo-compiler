@@ -22,7 +22,9 @@ def test_jax_ragged_eager(monkeypatch: pytest.MonkeyPatch) -> None:
 
     jnp: types.ModuleType
     try:
-        import jax.numpy as jnp
+        import jax.numpy as _jnp
+
+        jnp = _jnp
     except ImportError:
         jnp = np
         monkeypatch.setattr(jax_eager, "jnp", np)

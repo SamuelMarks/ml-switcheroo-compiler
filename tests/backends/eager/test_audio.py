@@ -97,7 +97,7 @@ def test_mel_conversions() -> None:
     assert np.isclose(hz_val, recovered_hz, atol=1e-4)
 
     # Array conversions
-    hz_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([0.0, 500.0, 1000.0, 4000.0], dtype=np.float32)
+    hz_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([0.0, 500.0, 1000.0, 4000.0], dtype=np.float32)
     mel_arr = _hz_to_mel(ensure_eager_tensor(np), hz_arr)
     assert isinstance(mel_arr, np.ndarray)
     recovered_arr = _mel_to_hz(mel_arr)
@@ -191,7 +191,7 @@ def test_tensor_conversion_helpers() -> None:
     class DummyTorch:
         """Test class DummyTorch."""
 
-        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
             """Test function __init__.
 
             Args:
@@ -199,7 +199,7 @@ def test_tensor_conversion_helpers() -> None:
             """
             self.arr = arr
 
-        def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Test function numpy."""
             return self.arr
 

@@ -344,7 +344,7 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     # 3. Homography estimation when abs(h[-1]) <= 1e-12
     orig_svd = np.linalg.svd
 
-    def mock_svd(a: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def mock_svd(a: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
         """Test function mock_svd.
 
         Args:

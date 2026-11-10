@@ -109,7 +109,7 @@ def test_hvp_api_delegation() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def scalar_quad(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def scalar_quad(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Quadratic polynomial.
 
             Args:

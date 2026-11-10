@@ -130,7 +130,7 @@ def test_pyarrow_compute_types() -> None:
     class NoItemPaObj:
         """Object without specialized item methods."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Convert to array.
 
             Returns:

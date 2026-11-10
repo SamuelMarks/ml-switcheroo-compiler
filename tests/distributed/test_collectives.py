@@ -912,7 +912,7 @@ async def test_multi_peer_ring_all_reduce() -> None:
     # Sum: 1* + 2* + 3* + 4* = 10 * [1, 2, 3, 4] = [10, 20, 30, 40]
     expected_sum = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
 
-    async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_sum.
 
         Args:
@@ -928,7 +928,7 @@ async def test_multi_peer_ring_all_reduce() -> None:
     mesh_prod = _create_mesh_channels(world_size)
     inputs_prod = [np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32) for _ in range(world_size)]
 
-    async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_prod.
 
         Args:
@@ -945,7 +945,7 @@ async def test_multi_peer_ring_all_reduce() -> None:
     mesh_max = _create_mesh_channels(world_size)
     inputs_max = [np.array([float(r), float(r * 2), float(r * 3), float(r * 4)], dtype=np.float32) for r in range(world_size)]
 
-    async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_max.
 
         Args:
@@ -961,7 +961,7 @@ async def test_multi_peer_ring_all_reduce() -> None:
     # MIN
     mesh_min = _create_mesh_channels(world_size)
 
-    async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_min.
 
         Args:
@@ -1000,7 +1000,7 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     inputs = [np.array([[float(r)]], dtype=np.float32) for r in range(world_size)]
     expected = np.array([[0.0], [1.0], [2.0], [3.0]], dtype=np.float32)
 
-    async def run_rank(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank.
 
         Args:
@@ -1015,7 +1015,7 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     # Test through all_gather with algorithm="recursive_doubling"
     mesh2 = _create_mesh_channels(world_size)
 
-    async def run_rank2(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank2(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank2.
 
         Args:
@@ -1036,7 +1036,7 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     mesh_3 = _create_mesh_channels(world_size_3)
     inputs_3 = [np.array([[float(r)]], dtype=np.float32) for r in range(world_size_3)]
 
-    async def run_rank_3(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_3(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_3.
 
         Args:
@@ -1083,7 +1083,7 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
     # Scatter dim 0 -> rank r gets [10 * (r + 1)]
     inputs = [np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32) * (r + 1) for r in range(world_size)]
 
-    async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_sum.
 
         Args:
@@ -1098,7 +1098,7 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
     # Test through reduce_scatter with algorithm="ring"
     mesh_ring = _create_mesh_channels(world_size)
 
-    async def run_rank_ring(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_ring(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_ring.
 
         Args:
@@ -1126,7 +1126,7 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
     mesh_prod, world_size = _state["mesh_prod"], _state["world_size"]
     inputs_prod = [np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32) for _ in range(world_size)]
 
-    async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_prod.
 
         Args:
@@ -1143,7 +1143,7 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
     mesh_max = ensure_callable(_create_mesh_channels)(world_size)
     inputs_max = [np.array([float(r), float(r * 2), float(r * 3), float(r * 4)], dtype=np.float32) for r in range(world_size)]
 
-    async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_max.
 
         Args:
@@ -1172,7 +1172,7 @@ async def _test_multi_peer_ring_reduce_scatter_part_3(_state: dict[str, EagerTen
     # MIN test
     mesh_min = ensure_callable(_create_mesh_channels)(world_size)
 
-    async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank_min.
 
         Args:

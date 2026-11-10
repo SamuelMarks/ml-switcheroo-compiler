@@ -20,7 +20,7 @@ class MockBackend:
         """Mock get_printoptions."""
         return {"precision": 8}
 
-    def rawmatmul(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def rawmatmul(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Mock rawmatmul.
 
         Args:

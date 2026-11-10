@@ -125,7 +125,7 @@ def test_dpnp_types() -> None:
     class NoItemObj:
         """Object without .item() method implementing __array__."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Convert to array.
 
             Returns:

@@ -57,11 +57,12 @@ def _resolve_stack_dtype_str(first_tensor: TensorOrScalar) -> str:
         str: Lowercase dtype name string.
     """
     out_dtype: TensorOrScalar = first_tensor.dtype if isinstance(first_tensor, DTypeHolderProtocol) and first_tensor.dtype is not None else "float32"
+    out_dtype_val: TensorOrScalar = out_dtype
     if isinstance(out_dtype, _NameHolderProtocol):
         return str(out_dtype.name).lower()
     if isinstance(out_dtype, _DunderNameProtocol):
         return str(out_dtype.__name__)
-    val = out_dtype.value if isinstance(out_dtype, _ValueHolderProtocol) else out_dtype
+    val = out_dtype_val.value if isinstance(out_dtype_val, _ValueHolderProtocol) else out_dtype_val
     return str(val).split(".")[-1].lower()
 
 

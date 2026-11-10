@@ -110,7 +110,6 @@ def test_text_eager_mode_exceptions() -> None:
                 string_substr(img, 0, 1)
     except Exception as e:
         raise e
-        pass
     assert callable(test_text_eager_mode_exceptions)
 
 
@@ -137,7 +136,6 @@ def test_text_tracing_mode() -> None:
                 global_tracing_state.stop_tracing()
     except Exception as e:
         raise e
-        pass
 
 
 def test_text_new_ops() -> None:
@@ -161,7 +159,6 @@ def test_text_new_ops() -> None:
             global_tracing_state.stop_tracing()
     except Exception as e:
         raise e
-        pass
     assert callable(test_text_new_ops)
 
 

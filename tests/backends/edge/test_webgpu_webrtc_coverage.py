@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 
 MetricsVal = typing.Union[list[float], "float"]
 
-ProcessArg = typing.Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, "None"]
+ProcessArg = typing.Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str, int, EagerValue, "None"]
 
 
 class MockSimpleProfiler:
@@ -25,7 +25,7 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -172,7 +172,7 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:

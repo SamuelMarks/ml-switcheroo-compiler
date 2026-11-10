@@ -28,7 +28,6 @@ def test_group_mean_eager() -> None:
         ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
-        pass
 
 
 def test_group_variance_eager() -> None:
@@ -45,7 +44,6 @@ def test_group_variance_eager() -> None:
         ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
-        pass
 
 
 def test_group_norm_eager() -> None:
@@ -64,7 +62,6 @@ def test_group_norm_eager() -> None:
         ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
-        pass
 
 
 def test_group_norm_5d_eager() -> None:
@@ -86,7 +83,6 @@ def test_group_norm_5d_eager() -> None:
         ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
-        pass
 
 
 def test_group_norm_invalid_channels() -> None:

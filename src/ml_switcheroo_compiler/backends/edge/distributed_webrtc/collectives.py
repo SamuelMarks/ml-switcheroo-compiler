@@ -206,15 +206,16 @@ class WebRTCDataChannelStream:
             return await self._recv_queue.get()
         recv_fn = get_backend_member(self.channel, "recv", None)
         if callable(recv_fn):
+            recv_call = ensure_callable(recv_fn)
             if asyncio.iscoroutinefunction(recv_fn):
-                res = await recv_fn()
+                res = await recv_call()
             else:
-                res = recv_fn()
-                if asyncio.iscoroutine(res):
-                    res = await res
+                res = recv_call()
+                if inspect.isawaitable(res):
+                    res = await ensure_eager_tensor(res)
             from ml_switcheroo_compiler.backends.eager_registry import ensure_bytes
 
-            return ensure_bytes(res) if not isinstance(res, bytes) else res
+            return ensure_bytes(res)
         return await self._recv_queue.get()
 
 

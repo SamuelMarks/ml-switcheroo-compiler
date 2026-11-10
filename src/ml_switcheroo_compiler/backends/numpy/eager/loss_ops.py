@@ -143,7 +143,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     O_p = 1 + ensure_eager_tensor(margin)
     O_n = -ensure_eager_tensor(margin)
     Delta_p = 1 - ensure_eager_tensor(margin)
-    Delta_n = margin
+    Delta_n = ensure_eager_tensor(margin)
 
     alpha_p = get_backend_member(np, "maximum")(0, O_p - y_pred)
     alpha_n = np.maximum(0, y_pred - O_n)
@@ -156,7 +156,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     neg_mask = y_true == 0
 
     logit_p = -ensure_eager_tensor(gamma) * p_loss
-    logit_n = gamma * n_loss
+    logit_n = ensure_eager_tensor(gamma) * n_loss
 
     # Use logaddexp for numerical stability
     # L = log(1 + sum(exp(logit_n)) * sum(exp(logit_p)))

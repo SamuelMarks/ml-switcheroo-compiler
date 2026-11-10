@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
 from tests.testing_utils import ensure_tensor_obj
 
 
-def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> Tensor:
     """Create a CPU float32 Tensor from a NumPy array.
 
     Args:

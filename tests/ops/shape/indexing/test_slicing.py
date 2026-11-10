@@ -172,7 +172,7 @@ def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> No
     # 8. Slice with rank == 0 scalar tensor
     t_0d = Tensor(None, TensorConfig((), "float32", "cpu"))
     slice(t_0d, axis=0)
-    assert captured_shapes["Slice"] == ()
+    assert captured_shapes.get("Slice") == ()
 
     # 9. IndexInDim with negative axis
     assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((1,)), axis=-1) == (2, 1)

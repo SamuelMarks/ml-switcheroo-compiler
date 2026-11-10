@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 
 
 def _create_tensor(
-    data: list[float] | list[list[float]] | float | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    data: list[float] | list[list[float]] | float | np.ndarray[tuple[int, ...], np.dtype[np.float64]] | np.ndarray[tuple[int, ...], np.dtype[np.float32]],
     shape: tuple[int, ...] = (),
     dtype: DType = DType.Float32,
 ) -> Tensor:
@@ -47,7 +47,7 @@ def _compute_finite_difference_grad(
     func: Callable[[Tensor], EagerTensorProtocol | Tensor],
     x: Tensor,
     eps: float = 1e-3,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
     """Compute numerical gradient using central finite differences.
 
     Args:
@@ -87,7 +87,7 @@ def _compute_finite_difference_hvp(
     x: Tensor,
     v: Tensor,
     eps: float = 1e-3,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute numerical Hessian-vector product using central differences of gradients.
 
     Args:

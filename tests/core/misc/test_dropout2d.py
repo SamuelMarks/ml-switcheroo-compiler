@@ -25,23 +25,18 @@ def test_dropout2d_shape() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     try:
+        config.eager_mode = False
+        ensure_mutable(config).default_device = ensure_eager_tensor(None)
+        global_tracing_state.start_tracing()
         try:
-            config.eager_mode = False
-            ensure_mutable(config).default_device = ensure_eager_tensor(None)
-            global_tracing_state.start_tracing()
-            try:
-                a = Tensor(None, TensorConfig((2, 3, 64, 64), DType.Float32, None))
-                out = dropout2d(a, p=0.5)
-                assert ensure_eager_tensor(out).shape == (2, 3, 64, 64)
-                assert ensure_eager_tensor(ensure_eager_tensor(out).dtype) == DType.Float32
-            finally:
-                global_tracing_state.stop_tracing()
-        except Exception as e:
-            raise e
-            pass
+            a = Tensor(None, TensorConfig((2, 3, 64, 64), DType.Float32, None))
+            out = dropout2d(a, p=0.5)
+            assert ensure_eager_tensor(out).shape == (2, 3, 64, 64)
+            assert ensure_eager_tensor(ensure_eager_tensor(out).dtype) == DType.Float32
+        finally:
+            global_tracing_state.stop_tracing()
     except Exception as e:
         raise e
-        pass
 
 
 def test_dropout2d_eager() -> None:
@@ -51,17 +46,12 @@ def test_dropout2d_eager() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     try:
-        try:
-            config.eager_mode = True
-            ensure_mutable(config).default_device = ensure_eager_tensor(None)
-            config.backend = "numpy"
-            a_data = np.random.randn(2, 3, 64, 64).astype(np.float32)
-            a = Tensor(a_data, TensorConfig((2, 3, 64, 64), DType.Float32, None))
-            out = dropout2d(a, p=0.5)
-            assert ensure_eager_tensor(out).shape == (2, 3, 64, 64)
-        except Exception as e:
-            raise e
-            pass
+        config.eager_mode = True
+        ensure_mutable(config).default_device = ensure_eager_tensor(None)
+        config.backend = "numpy"
+        a_data = np.random.randn(2, 3, 64, 64).astype(np.float32)
+        a = Tensor(a_data, TensorConfig((2, 3, 64, 64), DType.Float32, None))
+        out = dropout2d(a, p=0.5)
+        assert ensure_eager_tensor(out).shape == (2, 3, 64, 64)
     except Exception as e:
         raise e
-        pass

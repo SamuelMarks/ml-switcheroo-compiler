@@ -176,7 +176,7 @@ def test_backend_collective_dispatchers() -> None:
     # Custom dispatcher registry
     called = []
 
-    def custom_dispatcher(op: str, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def custom_dispatcher(op: str, tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]], **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function custom_dispatcher.
 
         Args:

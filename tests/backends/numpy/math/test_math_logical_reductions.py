@@ -31,7 +31,7 @@ def test_np_all_1d_cases() -> None:
 
 def test_np_all_multidimensional_and_axis() -> None:
     """Test _np_all with multidimensional arrays along axes with and without keepdims."""
-    arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[True, True], [True, False]])
+    arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[True, True], [True, False]])
 
     # Full reduction
     assert not _np_all(ensure_eager_tensor(np), arr)
@@ -59,7 +59,7 @@ def test_np_count_nonzero_1d_cases() -> None:
 
 def test_np_count_nonzero_multidimensional_and_axis() -> None:
     """Test _np_count_nonzero with multidimensional arrays along axis."""
-    arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0, 1, 2], [3, 0, 0]])
+    arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[0, 1, 2], [3, 0, 0]])
 
     assert _np_count_nonzero(ensure_eager_tensor(np), arr) == 3
 

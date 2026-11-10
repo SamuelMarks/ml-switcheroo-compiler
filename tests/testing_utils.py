@@ -105,7 +105,7 @@ def ensure_mod(val: _TestValT) -> BackendModuleProtocol:
     return val
 
 
-def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Type guard narrowing `val` to `np.ndarray`.
 
     Args:
@@ -117,7 +117,7 @@ def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, 
     return not isinstance(val, type(Ellipsis))
 
 
-def ensure_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def ensure_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Narrow `val` to `np.ndarray`.
 
     Args:
@@ -717,7 +717,19 @@ class _MockTorchDevice:
         return self.type == str(other).split(":")[0]
 
 
-class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
+def _is_mock_torch_tensor(val: _TestValT) -> typing.TypeGuard[_MockTorchTensor]:
+    """Type guard narrowing `val` to `_MockTorchTensor`.
+
+    Args:
+        val (_TestValT): Candidate array value.
+
+    Returns:
+        bool: True for runtime `_MockTorchTensor` views.
+    """
+    return not isinstance(val, type(Ellipsis))
+
+
+class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.float64]]):
     """NumPy-backed mock torch.Tensor."""
 
     def to(self, *args: EagerValue, **kwargs: EagerValue) -> _MockTorchTensor:
@@ -749,7 +761,7 @@ class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
         """
         return self
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Convert to NumPy ndarray.
 
         Returns:
@@ -763,7 +775,9 @@ class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
         Returns:
             _MockTorchTensor: Cloned tensor.
         """
-        return np.asarray(self).copy().view(_MockTorchTensor)
+        cloned = np.asarray(self).copy().view(_MockTorchTensor)
+        assert _is_mock_torch_tensor(cloned)
+        return cloned
 
     @property
     def device(self) -> _MockTorchDevice:
@@ -795,7 +809,9 @@ class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
             _MockTorchTensor: Broadcasted tensor.
         """
         target = sizes[0] if len(sizes) == 1 and isinstance(sizes[0], (tuple, list)) else sizes
-        return np.broadcast_to(np.asarray(self), ensure_shape(target)).copy().view(_MockTorchTensor)
+        expanded = np.broadcast_to(np.asarray(self), ensure_shape(target)).copy().view(_MockTorchTensor)
+        assert _is_mock_torch_tensor(expanded)
+        return expanded
 
 
 class _MockNNModule:
@@ -902,7 +918,7 @@ class _MockNNLinear(_MockNNModule):
         return np.asarray(res, dtype=np.float32).view(_MockTorchTensor)
 
 
-class _MockJaxArray(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
+class _MockJaxArray(np.ndarray[tuple[int, ...], np.dtype[np.float64]]):
     """NumPy-backed mock jax.Array."""
 
     def block_until_ready(self) -> _MockJaxArray:

@@ -99,7 +99,7 @@ def test_quantized_ops_trace() -> None:
         config.eager_mode = orig
 
 
-def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> Tensor:
     """Create a CPU Float32 Tensor from a NumPy array.
 
     Args:

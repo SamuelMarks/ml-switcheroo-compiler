@@ -292,13 +292,13 @@ def test_keras_generator_compile_aot() -> None:
     class MockTensorWithData:
         """Mock tensor wrapper holding underlying array data."""
 
-        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
             """Initialize mock tensor.
 
             Args:
                 data (np.ndarray): Underlying array.
             """
-            self.data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = data
+            self.data: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = data
 
     gen_single = KerasCodeGenerator(g_single)
     with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):

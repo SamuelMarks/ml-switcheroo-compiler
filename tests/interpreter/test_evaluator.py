@@ -31,7 +31,6 @@ def test_evaluator_not_implemented() -> None:
             evaluate_graph(g, {})
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_greater() -> None:
@@ -50,7 +49,6 @@ def test_evaluator_greater() -> None:
         assert ensure_eager_tensor(res)["c"][0]
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_relu() -> None:
@@ -68,7 +66,6 @@ def test_evaluator_relu() -> None:
         ensure_callable(np.testing.assert_array_equal)(res["c"], ensure_callable(np.array)([0.0, 2.0]))
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_where() -> None:
@@ -88,7 +85,6 @@ def test_evaluator_where() -> None:
         ensure_callable(np.testing.assert_array_equal)(res["d"], ensure_callable(np.array)([1.0, 4.0]))
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_unimplemented() -> None:
@@ -123,7 +119,6 @@ def test_evaluator_exception() -> None:
             evaluate_graph(g, {"n1": 1})
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_stubs() -> None:
@@ -154,7 +149,6 @@ def test_evaluator_stubs() -> None:
         assert ensure_eager_tensor(res2)["nw"][0] == 2.0
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_shape_kwargs() -> None:
@@ -182,7 +176,6 @@ def test_evaluator_shape_kwargs() -> None:
         assert ensure_eager_tensor(res2)["nr"].shape == (1, 2)
     except Exception as e:
         raise e
-        pass
 
 
 def test_evaluator_edge_cases_basic() -> None:

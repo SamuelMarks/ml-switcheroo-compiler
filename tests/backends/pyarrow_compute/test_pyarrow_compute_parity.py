@@ -593,7 +593,7 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
     class FailArrayObj:
         """Test class FailArrayObj."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Test function __array__."""
             raise TypeError("fail")
 

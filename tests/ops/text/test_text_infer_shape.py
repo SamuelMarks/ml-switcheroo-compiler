@@ -41,4 +41,3 @@ def test_text_infer_shape() -> None:
         assert ensure_callable(AsString)().infer_shape(t) == (2, 2)
     except Exception as e:
         raise e
-        pass

@@ -245,7 +245,7 @@ def test_constant_folding_exceptions_and_fallback() -> None:
     n_out = LogicalNode(id="n_out", op_type="Relu", inputs=["c1"])
     g.nodes = NodeDict({"c1": c1, "n_err": n_val_err, "n_unimpl": n_unimpl, "n_out": n_out})
 
-    def mock_eval(node: LogicalNode, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def mock_eval(node: LogicalNode, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function mock_eval.
 
         Args:

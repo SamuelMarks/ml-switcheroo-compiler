@@ -444,11 +444,12 @@ def item(data: EagerValue) -> float:
         float: Extracted scalar value.
     """
     raw_op: EagerValue = data
+    raw_scalar: EagerValue = data
     if isinstance(raw_op, ArrowRecordBatchProtocol) or (has_backend_member(data, "num_columns") and has_backend_member(data, "column")):
         if ensure_int(get_backend_member(data, "num_columns", 0)) > 0:
             return item(ensure_callable(get_backend_member(data, "column"))(0))
         return 0.0
-    if isinstance(raw_op, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
+    if isinstance(raw_scalar, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
         return float(ensure_float(ensure_callable(get_backend_member(data, "as_py"))()))
     if has_backend_member(data, "to_pylist"):
         lst: EagerValue = ensure_callable(get_backend_member(data, "to_pylist"))()
@@ -750,16 +751,18 @@ def from_arrow(
         return record_batch_to_tensor(data)
 
     # Table
-    raw_data: EagerValue = data
-    if isinstance(raw_data, ArrowTableProtocol) or has_backend_member(data, "to_batches"):
+    raw_table: EagerValue = data
+    if isinstance(raw_table, ArrowTableProtocol) or has_backend_member(data, "to_batches"):
         return _table_to_tensor(data)
 
     # ChunkedArray / Array
-    if isinstance(raw_data, ArrowArrayProtocol) or has_backend_member(data, "to_numpy"):
+    raw_arr: EagerValue = data
+    if isinstance(raw_arr, ArrowArrayProtocol) or has_backend_member(data, "to_numpy"):
         return _chunked_or_array_to_tensor(data)
 
     # Scalar
-    if isinstance(raw_data, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
+    raw_scalar: EagerValue = data
+    if isinstance(raw_scalar, _ArrowScalarProtocol) or has_backend_member(data, "as_py"):
         return ensure_eager_tensor(ensure_callable(get_backend_member(data, "as_py"))())
 
     # Fallback

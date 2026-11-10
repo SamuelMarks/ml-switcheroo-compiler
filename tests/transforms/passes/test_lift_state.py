@@ -139,7 +139,7 @@ def test_lift_module_state_and_functionalize() -> None:
             self.w = np.array([[1.0, 2.0]], dtype=np.float32)
             self.b = np.array([0.5], dtype=np.float32)
 
-        def __call__(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __call__(self, x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Evaluate container on x.
 
             Args:

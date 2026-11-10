@@ -30,7 +30,7 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
-def _to_tensor(arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+def _to_tensor(arr: np.ndarray[tuple[int, ...], np.dtype[np.float32]] | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> Tensor:
     """Convert numpy array into a Tensor instance with valid TensorConfig.
 
     Args:

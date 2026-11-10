@@ -700,7 +700,7 @@ def test_keras_profiler_branches() -> None:
     class MockTensor:
         """Mock tensor with numpy export."""
 
-        def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Return numpy array."""
             return np.array([1.0])
 
@@ -848,7 +848,7 @@ def test_sparse_profiler_branches() -> None:
     class MockCOO:
         """Mock COO array."""
 
-        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float32]]) -> None:
             """Test function __init__.
 
             Args:
@@ -856,12 +856,12 @@ def test_sparse_profiler_branches() -> None:
             """
             self.arr = arr
 
-        def todense(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def todense(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
             """Test function todense."""
             return self.arr
 
         @classmethod
-        def from_numpy(cls, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> MockCOO:
+        def from_numpy(cls, arr: np.ndarray[tuple[int, ...], np.dtype[np.float32]]) -> MockCOO:
             """Test function from_numpy.
 
             Args:

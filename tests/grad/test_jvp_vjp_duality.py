@@ -23,7 +23,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def matmul_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], y: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def matmul_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], y: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Matrix multiplication wrapper.
 
             Args:
@@ -39,7 +39,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)
         check_jvp_vjp_duality(matmul_fn, (x_val, y_val))
 
-        def scale_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def scale_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Scaling operation.
 
             Args:
@@ -62,7 +62,7 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def poly_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def poly_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Polynomial composite function.
 
             Args:
@@ -86,7 +86,7 @@ def test_jvp_vjp_duality_reductions() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def linear_comb_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def linear_comb_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Linear combination function.
 
             Args:
@@ -110,7 +110,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def simple_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
+        def simple_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
             """Simple multiplication.
 
             Args:

@@ -38,7 +38,7 @@ def test_exporter() -> None:
     exp = exporter("dummy")
     assert exp is not None
     with exporter(1, 2, a=3) as ctx:
-        assert ctx.args == (1, 2)
+        assert list(ctx.args) == [1, 2]
         assert ctx.kwargs == {"a": 3}
     assert ctx.args == ()
     assert ctx.kwargs == {}

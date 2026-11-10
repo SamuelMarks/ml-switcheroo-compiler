@@ -80,7 +80,8 @@ def _dtype_to_str(dtype: TensorOrScalar) -> str:
     Returns:
         str: String representation of `dtype`.
     """
-    return str(dtype.value if isinstance(dtype, _ValueHolderProtocol) else (dtype.name if isinstance(dtype, _NameHolderProtocol) else dtype))
+    dtype_name: TensorOrScalar = dtype
+    return str(dtype.value if isinstance(dtype, _ValueHolderProtocol) else (dtype_name.name if isinstance(dtype_name, _NameHolderProtocol) else dtype))
 
 
 def _emit_creation_node(

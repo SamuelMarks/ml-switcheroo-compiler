@@ -194,7 +194,7 @@ def _apply_conv_dilation(tensor: EagerValue, dilation: Sequence[int], spatial_di
     for i, d in enumerate(dilation):
         new_shape[2 + i] = (get_backend_member(tensor, "shape")[2 + i] - 1) * d + 1
     dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "zeros")(new_shape, dtype=get_backend_member(tensor, "dtype")))
-    slices: list[SliceType] = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
+    slices = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
     dilated[tuple(slices)] = ensure_ndarray(tensor)
     return dilated
 
@@ -332,7 +332,7 @@ def _apply_conv_padding_helper(lhs_c: EagerValue, rhs_c: EagerValue, config: Con
     new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(lhs_sh, pad_width))
     padded = np.zeros(new_shape, dtype=get_backend_member(lhs_c, "dtype"))
     slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(lhs_sh, pad_width))
-    padded[slices] = lhs_c
+    padded[slices] = ensure_ndarray(lhs_c)
     return padded
 
 

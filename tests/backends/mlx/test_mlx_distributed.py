@@ -60,7 +60,7 @@ class MockMLXArray:
         """
         return MockMLXArray(ensure_eager_tensor(self._data) * ensure_eager_tensor(other._data))
 
-    def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Extract NumPy view."""
         return self._data
 

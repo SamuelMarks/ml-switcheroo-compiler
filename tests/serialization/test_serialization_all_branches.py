@@ -281,9 +281,9 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 """
                 self.name = name
                 self.shape = shape
-                self.assigned_val: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+                self.assigned_val: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
 
-            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
                 """Test function assign.
 
                 Args:

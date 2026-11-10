@@ -486,7 +486,7 @@ async def test_broadcast_collective() -> None:
     mesh = create_interconnected_mesh(world_size)
     tensor = np.array([10.0, 20.0, 30.0], dtype=np.float32)
 
-    async def run_rank(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rank(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rank.
 
         Args:
@@ -523,7 +523,7 @@ async def test_ring_all_reduce_collective() -> None:
         mesh_op = create_interconnected_mesh(world_size)
         inputs = [np.arange(6, dtype=np.float32) + (r + 1) * 2 for r in range(world_size)]
 
-        async def run_ring(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh_op, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        async def run_ring(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh_op, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Test function run_ring.
 
             Args:
@@ -556,7 +556,7 @@ async def test_all_reduce_direct_and_ring() -> None:
         mesh = create_interconnected_mesh(world_size)
         inputs = [np.arange(6, dtype=np.float32) + (r + 1) for r in range(world_size)]
 
-        async def run_direct(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        async def run_direct(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Test function run_direct.
 
             Args:
@@ -584,7 +584,7 @@ async def test_all_reduce_direct_and_ring() -> None:
     mesh_ring = create_interconnected_mesh(world_size)
     inputs_ring = [np.arange(6, dtype=np.float32) + (r + 1) for r in range(world_size)]
 
-    async def run_ring_disp(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_ring_disp(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_ring_disp.
 
         Args:
@@ -617,7 +617,7 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
     mesh_dir = create_interconnected_mesh(world_size_3)
     inputs_3 = [np.array([[r * 10, r * 10 + 1]], dtype=np.float32) for r in range(world_size_3)]
 
-    async def run_direct(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_direct(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_direct.
 
         Args:
@@ -635,7 +635,7 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
     mesh_rd = create_interconnected_mesh(world_size_2)
     inputs_2 = [np.array([[r * 10, r * 10 + 1]], dtype=np.float32) for r in range(world_size_2)]
 
-    async def run_rd(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_rd(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_rd.
 
         Args:
@@ -663,7 +663,7 @@ async def test_reduce_scatter_and_ring() -> None:
     for op in ("SUM", "PROD", "MAX", "MIN"):
         mesh_op = create_interconnected_mesh(world_size)
 
-        async def run_ring_op(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh_op, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        async def run_ring_op(r: int, op_name: str = op, m: list[list[BiPipeChannel | None]] = mesh_op, inp: EagerValue = inputs) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Test function run_ring_op.
 
             Args:
@@ -689,7 +689,7 @@ async def test_reduce_scatter_and_ring() -> None:
 
     mesh_dir = create_interconnected_mesh(world_size)
 
-    async def run_dir_rs(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_dir_rs(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_dir_rs.
 
         Args:
@@ -721,7 +721,7 @@ async def test_all_to_all_collective() -> None:
     mesh = create_interconnected_mesh(world_size)
     inputs = [np.arange(6, dtype=np.float32).reshape(3, 2) * 10 + r for r in range(world_size)]
 
-    async def run_all_to_all(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    async def run_all_to_all(r: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function run_all_to_all.
 
         Args:
@@ -765,7 +765,7 @@ def _test_dispatch_collective_and_registry_part_1(_state: dict[str, EagerTensorP
         _state: Shared test state dictionary.
     """
 
-    def custom_disp(op: str, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def custom_disp(op: str, tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]], **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function custom_disp.
 
         Args:

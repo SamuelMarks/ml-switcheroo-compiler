@@ -242,7 +242,7 @@ def test_variable_restoration_engine() -> None:
                 self.shape = shape
                 self.assigned = None
 
-            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
                 """Test function assign.
 
                 Args:

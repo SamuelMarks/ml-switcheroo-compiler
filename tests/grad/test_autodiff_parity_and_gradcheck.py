@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
-def _make_tensor(data: float | list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.generic]], shape: tuple[int, ...] = ()) -> Tensor:
+def _make_tensor(data: float | list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.float64]], shape: tuple[int, ...] = ()) -> Tensor:
     """Create a tensor for gradient testing with Float32 on CPU.
 
     Args:
@@ -36,12 +36,12 @@ def _make_tensor(data: float | list[float] | list[list[float]] | np.ndarray[tupl
     Returns:
         Tensor: Constructed tensor object.
     """
-    arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(data, dtype=np.float32)
+    arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array(data, dtype=np.float32)
     actual_shape: tuple[int, ...] = shape if shape else arr.shape
     return Tensor(arr, TensorConfig(actual_shape, DType.Float32, Device("cpu")))
 
 
-def _finite_difference_grad(func: Callable[[Tensor], Tensor], x: Tensor, eps: float = 1e-3) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _finite_difference_grad(func: Callable[[Tensor], Tensor], x: Tensor, eps: float = 1e-3) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute numerical gradient using central finite differences.
 
     Args:
@@ -52,8 +52,8 @@ def _finite_difference_grad(func: Callable[[Tensor], Tensor], x: Tensor, eps: fl
     Returns:
         np.ndarray: Numerically approximated gradient array.
     """
-    x_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(x.data, dtype=np.float32)
-    num_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.zeros_like(x_arr)
+    x_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array(x.data, dtype=np.float32)
+    num_grad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros_like(x_arr)
     it = np.nditer(x_arr, flags=["multi_index"])
     with ConfigContext(eager_mode=True):
         while not it.finished:
@@ -150,8 +150,8 @@ def test_activation_vjp_rules() -> None:
         assert out is not None
         grads = ensure_callable(vjp_fn)(cot)
         assert ensure_callable(len)(grads) == 1
-        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(ensure_eager_tensor(ensure_eager_tensor(grads)[0].data))
-        num_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_act, x)
+        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array(ensure_eager_tensor(ensure_eager_tensor(grads)[0].data))
+        num_grad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _finite_difference_grad(f_act, x)
         ensure_callable(np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
 
 
@@ -477,15 +477,15 @@ def test_erf_and_outer_finite_difference_grad() -> None:
         return ensure_tensor_obj(dispatch_op("Erf", x))
 
     x: Tensor = _make_tensor([0.2, 0.5, -0.8, 1.2])
-    num_grad_erf: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_erf, x)
+    num_grad_erf: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _finite_difference_grad(f_erf, x)
 
     # Analytical derivative: 2 / sqrt(pi) * exp(-x^2)
-    expected_erf_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = (2.0 / np.sqrt(np.pi)) * np.exp(-(np.array(x.data) ** 2))
+    expected_erf_grad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = (2.0 / np.sqrt(np.pi)) * np.exp(-(np.array(x.data) ** 2))
     ensure_callable(np.testing.assert_allclose)(num_grad_erf, expected_erf_grad, rtol=1e-3, atol=1e-3)
 
     # 2. Outer product finite-difference verification
     u: Tensor = _make_tensor([1.0, 2.0, 3.0])
-    v_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([4.0, 5.0], dtype=np.float32)
+    v_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([4.0, 5.0], dtype=np.float32)
 
     def f_outer(u_in: Tensor) -> Tensor:
         """Outer product with fixed second vector.
@@ -498,9 +498,9 @@ def test_erf_and_outer_finite_difference_grad() -> None:
         v_t: Tensor = _make_tensor(v_arr)
         return ensure_tensor_obj(dispatch_op("Outer", u_in, v_t))
 
-    num_grad_outer: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_outer, u)
+    num_grad_outer: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _finite_difference_grad(f_outer, u)
     # Derivative wrt u of sum(u otimes v) is sum(v) for all entries
-    expected_outer_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.full_like(u.data, np.sum(v_arr))
+    expected_outer_grad: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.full_like(u.data, np.sum(v_arr))
     ensure_callable(np.testing.assert_allclose)(num_grad_outer, expected_outer_grad, rtol=1e-3, atol=1e-3)
 
 

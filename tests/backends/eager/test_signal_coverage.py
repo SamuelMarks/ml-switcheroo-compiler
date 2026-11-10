@@ -19,15 +19,15 @@ if typing.TYPE_CHECKING:
 class MockCpuResult:
     """Mock cpu container with numpy conversion."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
         """Initialize container.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Convert to numpy array.
 
         Returns:
@@ -39,13 +39,13 @@ class MockCpuResult:
 class MockDetachResult:
     """Mock detach result providing cpu method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
         """Initialize mock detach.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = arr
 
     def cpu(self) -> MockCpuResult:
         """Move to cpu.
@@ -59,13 +59,13 @@ class MockDetachResult:
 class MockTorchDetachOnly:
     """Mock object with detach method but no direct numpy attribute."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
         """Initialize mock.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = arr
 
     def detach(self) -> MockDetachResult:
         """Detach tensor.
@@ -79,15 +79,15 @@ class MockTorchDetachOnly:
 class MockHasNumpyOnly:
     """Mock object with only a numpy method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
         """Initialize mock.
 
         Args:
             arr (np.ndarray): Underlying numpy array.
         """
-        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Convert to numpy array.
 
         Returns:
@@ -99,7 +99,7 @@ class MockHasNumpyOnly:
 class MockBackendModule:
     """Mock backend module supporting array operations."""
 
-    def array(self, val: list[int] | np.ndarray[tuple[int, ...], np.dtype[np.generic]], dtype: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def array(self, val: list[int] | np.ndarray[tuple[int, ...], np.dtype[np.float64]], dtype: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Convert input to array.
 
         Args:
@@ -129,7 +129,7 @@ class MockOriginalTensor:
 class MockTorchStyleBackend:
     """Mock backend using dim and keepdim instead of axis and keepdims."""
 
-    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], dim: tuple[int, ...], keepdim: bool = True) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Compute mean across dimensions.
 
         Args:
@@ -142,7 +142,7 @@ class MockTorchStyleBackend:
         """
         return ensure_ndarray(ensure_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
-    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Compute variance across dimensions.
 
         Args:
@@ -169,7 +169,7 @@ class MockFailingAxisBackend:
         """
         self.fallback: MockTorchStyleBackend = fallback
 
-    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Compute mean or raise TypeError if axis in kwargs.
 
         Args:
@@ -189,7 +189,7 @@ class MockFailingAxisBackend:
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
-    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Compute variance or raise TypeError if axis in kwargs.
 
         Args:
@@ -214,7 +214,7 @@ class MockFailingAxisBackend:
 class MockMathBackend:
     """Mock backend providing elementwise mathematical operations."""
 
-    def add(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def add(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Add two arrays or array and scalar.
 
         Args:
@@ -226,7 +226,7 @@ class MockMathBackend:
         """
         return np.add(a, b)
 
-    def subtract(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def subtract(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Subtract two arrays or array and scalar.
 
         Args:
@@ -238,7 +238,7 @@ class MockMathBackend:
         """
         return np.subtract(a, b)
 
-    def multiply(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def multiply(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Multiply two arrays or array and scalar.
 
         Args:
@@ -250,7 +250,7 @@ class MockMathBackend:
         """
         return np.multiply(a, b)
 
-    def divide(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def divide(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Divide two arrays or array and scalar.
 
         Args:
@@ -262,7 +262,7 @@ class MockMathBackend:
         """
         return np.divide(a, b)
 
-    def sqrt(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def sqrt(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Compute square root.
 
         Args:
@@ -288,10 +288,10 @@ class SignalBackendWrapper:
 
     def pad(
         self,
-        arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+        arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
         pad_width: tuple[tuple[int, int], tuple[int, int], tuple[int, int], tuple[int, int]],
         mode: str = "reflect",
-    ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Pad 4D array without relying on ufunc initial sentinel.
 
         Args:
@@ -313,7 +313,7 @@ class SignalBackendWrapper:
 class MockRandModuleWithUniformAndRand:
     """Mock random module having uniform and rand."""
 
-    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate uniform random values.
 
         Args:
@@ -324,7 +324,7 @@ class MockRandModuleWithUniformAndRand:
         """
         return np.ones(size)
 
-    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate random values.
 
         Args:
@@ -343,7 +343,7 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
         """Return callable only on second check."""
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
@@ -352,17 +352,17 @@ class MockRandFallbackModule:
         return lambda *args, **kwargs: np.ones((2, 2))
 
     @property
-    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
         """Dynamic uniform attribute."""
         return self._get_fn("uniform")
 
     @property
-    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
         """Dynamic normal attribute."""
         return self._get_fn("normal")
 
     @property
-    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
         """Dynamic randint attribute."""
         return self._get_fn("randint")
 
@@ -378,7 +378,7 @@ class MockBackendWithFallback:
 class MockSubRand:
     """Sub-module offering rand operation."""
 
-    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate random values.
 
         Args:
@@ -401,7 +401,7 @@ class MockBackendWithRandOnly:
 class MockBackendDirectRand:
     """Mock backend having rand directly."""
 
-    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate random array.
 
         Args:
@@ -416,7 +416,7 @@ class MockBackendDirectRand:
 class MockBackendDirectUniform:
     """Mock backend having uniform directly."""
 
-    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate uniform array.
 
         Args:
@@ -431,7 +431,7 @@ class MockBackendDirectUniform:
 class MockSubRandn:
     """Sub-module offering randn operation."""
 
-    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate standard normal array.
 
         Args:
@@ -454,7 +454,7 @@ class MockBackendWithRandnOnly:
 class MockBackendDirectRandn:
     """Mock backend having randn directly."""
 
-    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate standard normal array.
 
         Args:
@@ -469,7 +469,7 @@ class MockBackendDirectRandn:
 class MockBackendDirectNormal:
     """Mock backend having normal directly."""
 
-    def normal(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def normal(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Generate normal array.
 
         Args:

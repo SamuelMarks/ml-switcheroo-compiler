@@ -1206,7 +1206,7 @@ def test_cuda_prepare_input_buffers() -> None:
     class _WrapperWithData:
         """Test class _WrapperWithData."""
 
-        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
             """Test function __init__.
 
             Args:
@@ -1244,7 +1244,7 @@ def test_cuda_evaluate_fallback() -> None:
     class _MockTensor:
         """Test class _MockTensor."""
 
-        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
             """Test function __init__.
 
             Args:

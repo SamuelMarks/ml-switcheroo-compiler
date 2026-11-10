@@ -552,7 +552,7 @@ def test_sparse_eager_execute_op() -> None:
             del global_eager_registry._registry["coo_todense"]
 
     # Global eager registry fallback with COOTensor arguments
-    def custom_eager(backend_mod: EagerValue, x: EagerValue, scale: EagerValue = 2.0) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def custom_eager(backend_mod: EagerValue, x: EagerValue, scale: EagerValue = 2.0) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Test function custom_eager.
 
         Args:

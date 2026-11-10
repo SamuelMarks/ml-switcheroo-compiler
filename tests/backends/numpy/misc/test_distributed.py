@@ -141,6 +141,8 @@ def test_ipc_worker_retry_then_success() -> None:
     class MockClient:
         """Test class MockClient."""
 
+        calls: int = 0
+
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
             """Test function __init__.
 
@@ -148,9 +150,9 @@ def test_ipc_worker_retry_then_success() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            self.calls = ensure_eager_tensor(type(self)).calls
-            type(self).calls = self.calls + 1
-            if type(self).calls < 2:
+            self.calls = MockClient.calls
+            MockClient.calls = self.calls + 1
+            if MockClient.calls < 2:
                 raise ConnectionRefusedError("fail first time")
             self.mock = MagicMock()
 

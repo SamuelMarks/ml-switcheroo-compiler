@@ -23,8 +23,8 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def _make_test_adj(n: int = 4) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], COOTensor]:
-    """Create a sample graph adjacency matrix and corresponding COOTensor.
+def _make_test_adj(n: int = 4) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float32]], COOTensor]:
+    """Create a symmetric sparse adjacency matrix and dense reference.
 
     Args:
         n (int): Number of nodes.

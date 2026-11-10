@@ -205,7 +205,7 @@ def _test_math_log_exp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -
             """Initialize proxy."""
             self.linalg = LinalgProxy()
 
-        def asarray(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def asarray(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Mock asarray.
 
             Args:

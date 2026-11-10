@@ -331,7 +331,7 @@ def test_dpnp_types_buffer_management() -> None:
     class CustomAsNumpyObj:
         """Object exposing custom asnumpy."""
 
-        def asnumpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def asnumpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
             """Extract numpy array.
 
             Returns:

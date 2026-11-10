@@ -38,7 +38,6 @@ def test_block_masked_mm_shape() -> None:
             global_tracing_state.stop_tracing()
     except Exception as e:
         raise e
-        pass
 
 
 def test_block_masked_mm_eager() -> None:
@@ -59,4 +58,3 @@ def test_block_masked_mm_eager() -> None:
         assert ensure_eager_tensor(out).shape == (2, 64, 64)
     except Exception as e:
         raise e
-        pass
