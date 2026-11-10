@@ -206,7 +206,7 @@ def test_package_inits() -> None:
     assert SparseGenerator.asarray([1.0, 0.0]).shape == (2,)
     assert SparseGenerator.item([3.5]) == 3.5
     assert SparseGenerator.execute_op("Add", SparseGenerator.array([1.0]), SparseGenerator.array([2.0])) is not None
-    assert KerasCodeGenerator.execute_op("Add", [1.0], [2.0]) is not None
+    assert KerasCodeGenerator.execute_op("TupleGetItem", (10, 20), 0) == 10
 
     assert cmo_mod._accumulate_n is not None
     assert bnp_mod.NumpyGenerator is not None

@@ -9,6 +9,9 @@ from ml_switcheroo_compiler.backends.registry import ensure_callable
 from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ops.base import OpDef
 
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.ops.shape_inference import ShapeType
+
 _REGISTRY: dict[str, type[OpDef]] = {}
 _YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
 _UTIL_REGISTRY: dict[str, TypedVariadicCallable[TensorOrScalar]] = {}
@@ -187,7 +190,7 @@ def get_op(op_name: str) -> type[OpDef]:
                 """
                 return cls._yaml_data
 
-            def infer_shape(self, *args: tuple[int, ...], **kwargs: int) -> tuple[int, ...]:
+            def infer_shape(self, *args: tuple[int, ...], **kwargs: int) -> ShapeType:
                 """Infer shape declaratively using declarative shape signatures.
 
                 Args:
@@ -195,14 +198,14 @@ def get_op(op_name: str) -> type[OpDef]:
                     **kwargs (int): Shape inference keyword parameters.
 
                 Returns:
-                    tuple[int, ...]: Inferred output shape tuple.
+                    ShapeType: Inferred output shape tuple.
 
                 Raises:
                     ValueError: If input shapes violate the operation's declarative shape signature.
                 """
                 from ml_switcheroo_compiler.ops.shape_inference import infer_shape as _infer_shape
 
-                return tuple(int(x) if isinstance(x, int) else 0 for x in _infer_shape(op_name, *args, **kwargs))
+                return _infer_shape(op_name, *args, **kwargs)
 
         DynamicOpDef.__name__ = op_name
         DynamicOpDef.__qualname__ = op_name

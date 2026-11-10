@@ -8,10 +8,10 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.backends.dask.types as dask_types
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_float
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class _MockBackendModule:
@@ -125,9 +125,12 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
         class _FakeDaskArray:
             """Fake Dask array wrapping a NumPy ndarray."""
 
+            _arr: EagerTensorProtocol
+
             def __init__(self, arr: EagerValue) -> None:
                 """Initialize fake Dask array."""
-                self._arr = np.asarray(ensure_eager_tensor(arr)._arr)
+                raw: EagerValue = arr._arr if isinstance(arr, _FakeDaskArray) else arr
+                self._arr = ensure_eager_tensor(np.asarray(raw))
                 self.shape = self._arr.shape
 
             def compute(self) -> EagerValue:
@@ -140,11 +143,11 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
 
             def item(self) -> float:
                 """Extract scalar float."""
-                return float(self._arr.item())
+                return ensure_float(self._arr.item())
 
         mock_da.zeros.side_effect = lambda s, dtype=None, **kw: _FakeDaskArray(np.zeros(s, dtype=dtype))
-        mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(ensure_eager_tensor(d)._arr, dtype=dtype))
-        mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(ensure_eager_tensor(d)._arr, dtype=dtype))
+        mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype))
+        mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype))
         mock_da.asarray.side_effect = lambda d, **kw: _FakeDaskArray(d)
         mock_dask = MagicMock()
         mock_dask.array = mock_da
