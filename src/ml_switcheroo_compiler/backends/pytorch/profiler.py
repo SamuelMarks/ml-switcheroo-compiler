@@ -31,7 +31,7 @@ def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torc
     Returns:
         bool: True for runtime PyTorch outputs.
     """
-    return val is not None
+    return not isinstance(val, bytes)
 
 
 def _as_torch_out(val: EagerValue) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:

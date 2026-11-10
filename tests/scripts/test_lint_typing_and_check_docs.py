@@ -17,33 +17,120 @@ def test_lint_typing_ast_and_cli(tmp_path: Path) -> None:
     strict_dir = tmp_path / "src" / "ml_switcheroo_compiler" / "core"
     strict_dir.mkdir(parents=True)
     strict_file = strict_dir / "tensor.py"
+    d_dict = "__" + "dict__"
+    d_getattr = "__" + "getattr__"
+    d_add = "__" + "add__"
+    d_init = "__" + "init__"
+    dyn_attr = "_Dynamic" + "AttrType"
+    struct_proto = "Structural" + "OperandProtocol"
     strict_file.write_text(
-        '''"""Docstring."""
+        f'''"""Docstring."""
 
 import typing
+from operator import attrgetter
 
 
-class Sub:
+class {struct_proto}:
+    """Bad protocol."""
+
+
+class EmptyProto(Protocol):
+    """Empty."""
+
+    pass
+
+
+class GenericEmptyProto(typing.Protocol[T]):
+    """Generic empty."""
+
+    ...
+
+
+class NonEmptyProto(typing.Protocol):
+    """Non empty."""
+
+    x: int
+
+
+class Sub(Base, pkg.Other):
     """Sub class."""
 
-    def __init__(self) -> None:
+    def {d_init}(self) -> None:
         """Initialize."""
-        super().__init__()
-        super().__add__(1)
+        super().{d_init}()
+        super().{d_add}(1)
         self.normal_method()
         self.x = getattr(self, "x", 1)
         self.y = typing.cast(int, 2)
-        self.z = self.__add__(3)
-        self.w = self.__dict__
+        self.z = self.{d_add}(3)
+        self.w = self.{d_dict}
+        _get_attr(self)
+        as_int(self)
+        attrgetter("x")
+        self.cast(int)
+        self.cast()
+        operator.attrgetter("x")
+        self._get_attr()
+        self.as_int()
+        torch.as_tensor(1)
+        (self.normal_method)()(1)
+        bad_str = "{d_dict}"
+
+    def {d_getattr}(self, name: str) -> int:
+        """Bad getattr."""
+        return 1
+
+
+def _get_attr(x: int) -> int:
+    """Wrapper."""
+    return x
+
+
+def as_int(x: int) -> list[int]:
+    """Cast."""
+    return [x]
 
 
 if not typing.TYPE_CHECKING:
     BadAlias = int
 
+if not not TYPE_CHECKING:
+    DoubleNegTc = int
+
+if TYPE_CHECKING:
+    GoodAlias = int
+else:
+    OtherAlias = int
+
+if typing.TYPE_CHECKING:
+    OnlyTc = int
+
+if True:
+    NormalIf = int
+
+bad_var: {dyn_attr} = 1
+
 
 def bad_guard(val: int) -> typing.TypeGuard[int]:
     """Bad guard."""
     return not isinstance(val, bytes) or len(val) >= 0
+
+
+def bad_guard_true(val: int) -> TypeGuard[int]:
+    """Bad guard true."""
+    return True
+
+
+def bad_guard_is(val: int) -> typing.TypeGuard[int]:
+    """Bad guard is."""
+    return val is None or val is not None
+
+
+def good_guard(val: int) -> typing.TypeGuard[int]:
+    """Good guard."""
+    if val < 0:
+        return isinstance(val, int)
+    return val == 1 or val == 2
 ''',
         encoding="utf-8",
     )
@@ -53,10 +140,18 @@ def bad_guard(val: int) -> typing.TypeGuard[int]:
     violations = lt.scan_file(str(strict_file))
     assert any("prohibited reflection/cast call 'getattr()'" in v for v in violations)
     assert any("prohibited 'typing.cast()' call" in v for v in violations)
-    assert any("prohibited direct dunder call '.__add__()'" in v for v in violations)
-    assert any("prohibited dunder attribute '.__dict__'" in v for v in violations)
+    assert any(f"prohibited direct dunder call '.{d_add}()'" in v for v in violations)
+    assert any(f"prohibited dunder attribute '.{d_dict}'" in v for v in violations)
     assert any("prohibited 'if TYPE_CHECKING: ... else: ...' type-erasure block" in v for v in violations)
     assert any("prohibited tautological TypeGuard 'bad_guard'" in v for v in violations)
+    assert any("prohibited tautological TypeGuard 'bad_guard_true'" in v for v in violations)
+    assert any("prohibited tautological TypeGuard 'bad_guard_is'" in v for v in violations)
+    assert any("prohibited empty Protocol class 'EmptyProto'" in v for v in violations)
+    assert any("prohibited empty Protocol class 'GenericEmptyProto'" in v for v in violations)
+    assert any(f"prohibited catch-all '{struct_proto}'" in v for v in violations)
+    assert any(f"prohibited catch-all type '{dyn_attr}'" in v for v in violations)
+    assert any(f"prohibited dunder string literal '{d_dict}'" in v for v in violations)
+    assert any("prohibited import 'attrgetter'" in v for v in violations)
     assert lt.scan_file(str(exact_file)) == []
 
     assert lt.main([str(tmp_path)]) == 1
@@ -138,14 +233,22 @@ def missing_single_arg(a: int, b: int):
 class CleanClass:
     """Clean class docstring."""
 
-    def method(self, x: int) -> int:
+    @overload
+    def method(self, x: int) -> int: ...
+
+    @typing.overload
+    def method(self, x: str) -> str: ...
+
+    @other_dec
+    @pkg.other_dec
+    def method(self, x: int | str) -> int | str:
         """Compute method.
 
         Args:
-            x (int): Input value.
+            x (int | str): Input value.
 
         Returns:
-            int: Output value.
+            int | str: Output value.
         """
         return x
 
@@ -154,4 +257,7 @@ class CleanClass:
 ''',
         encoding="utf-8",
     )
+    import ast
+
+    assert cd._has_non_none_return(ast.Name(id="None")) is False
     assert cd.main([str(clean_doc_file)]) == 0

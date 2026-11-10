@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import runpy
 import subprocess
 import sys
@@ -158,6 +159,8 @@ def fn(a: {any_name}, *args: {obj_name}, **kwargs: typing.{any_name}) -> {any_na
     non_py = pkg_dir / "readme.txt"
     non_py.write_text("hello", encoding="utf-8")
     assert la.scan_file_for_any(str(bad_syn)) == []
+    assert la._scan_type_ignore_comments("unclosed.py", '"""unclosed') == []
+    assert la._check_import_or_assign_node("other.py", ast.Pass(), False) == []
     assert lp.check_test_file_ast(str(bad_syn)) == []
     assert len(la.scan_directory_for_any(str(tmp_path))) >= 1
 

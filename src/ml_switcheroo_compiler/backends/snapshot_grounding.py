@@ -654,10 +654,11 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
     for node in tree.body:
         val_node = node.value if isinstance(node, (ast.Assign, ast.AnnAssign, ast.Expr)) else None
         list_node = val_node.args[0] if isinstance(val_node, ast.Call) and val_node.args else val_node
-        if isinstance(list_node, ast.List) and "CANONICAL_" in ast.unparse(node):
+        unparsed = ast.unparse(node) if isinstance(list_node, ast.List) else ""
+        if isinstance(list_node, ast.List) and ("CANONICAL_" in unparsed or "_DEFS" in unparsed):
             raw_ops = ast.literal_eval(list_node)
             assert isinstance(raw_ops, list)
-            collected.extend(raw_ops)
+            collected.extend({"name": it[0], "api_path": it[1], "kind": it[2], "params": [{"name": p[0], "kind": p[1], "default": p[2]} for p in it[-2]], "docstring": it[-1]} if isinstance(it, tuple) else it for it in raw_ops)
     return collected
 
 
@@ -814,7 +815,9 @@ class SnapshotGroundingEngine:
         self._endpoint_item_cache: dict[str, dict[str, dict[str, AttributeValue]]] = {}
         self._ghost_ref_cache: dict[str, dict[str, ExtendedGhostRef]] = {}
         self._raw_snapshots: dict[str, dict[str, AttributeValue] | list[AttributeValue]] = {}
-        self.frameworks_dir: str = os.path.abspath(os.path.join(os.path.dirname(self.snapshot_dir), "frameworks"))
+        sibling_fw_dir: str = os.path.abspath(os.path.join(os.path.dirname(self.snapshot_dir), "frameworks"))
+        repo_fw_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ml-ecosystem-snapshots", "src", "ml_ecosystem_snapshots", "frameworks"))
+        self.frameworks_dir: str = repo_fw_dir if (self._is_default_snapshot_dir and not os.path.isdir(sibling_fw_dir) and os.path.isdir(repo_fw_dir)) else sibling_fw_dir
 
         self._grounding_engine: AttributeValue | None = None
 

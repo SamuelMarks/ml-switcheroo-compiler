@@ -67,6 +67,7 @@ def test_get_exports_from_submodule() -> None:
         ensure_mutable(MockMod).mod = ensure_eager_tensor(types.ModuleType("sub"))
         mock_import.return_value = MockMod()
         assert ge._get_exports_from_submodule("foo") == ["func", "visible"]
+        assert ge._is_submodule_member(types.ModuleType("empty_mod"), "missing_member") is False
     with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError("mock error")):
         assert ge._get_exports_from_submodule("foo") == []
 
