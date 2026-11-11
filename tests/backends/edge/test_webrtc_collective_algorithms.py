@@ -536,13 +536,13 @@ async def test_ring_all_reduce_collective() -> None:
 
         outputs = await asyncio.gather(*(run_ring(r) for r in range(world_size)))
         if op == "SUM":
-            expected = sum(inputs)
+            expected = ensure_ndarray(sum(inputs))
         elif op == "PROD":
-            expected = inputs[0] * inputs[1] * inputs[2]
+            expected = ensure_ndarray(inputs[0] * inputs[1] * inputs[2])
         elif op == "MAX":
-            expected = np.maximum(inputs[0], np.maximum(inputs[1], inputs[2]))
+            expected = ensure_ndarray(np.maximum(inputs[0], np.maximum(inputs[1], inputs[2])))
         else:
-            expected = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
+            expected = ensure_ndarray(np.minimum(inputs[0], np.minimum(inputs[1], inputs[2])))
 
         for out in outputs:
             ensure_callable(np.testing.assert_allclose)(out, expected)
@@ -569,13 +569,13 @@ async def test_all_reduce_direct_and_ring() -> None:
 
         outputs = await asyncio.gather(*(run_direct(r) for r in range(world_size)))
         if op == "SUM":
-            expected = sum(inputs)
+            expected = ensure_ndarray(sum(inputs))
         elif op == "PROD":
-            expected = inputs[0] * inputs[1] * inputs[2]
+            expected = ensure_ndarray(inputs[0] * inputs[1] * inputs[2])
         elif op == "MAX":
-            expected = np.maximum(inputs[0], np.maximum(inputs[1], inputs[2]))
+            expected = ensure_ndarray(np.maximum(inputs[0], np.maximum(inputs[1], inputs[2])))
         else:
-            expected = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
+            expected = ensure_ndarray(np.minimum(inputs[0], np.minimum(inputs[1], inputs[2])))
 
         for out in outputs:
             ensure_callable(np.testing.assert_allclose)(out, expected)
@@ -676,13 +676,13 @@ async def test_reduce_scatter_and_ring() -> None:
 
         res_ring = await asyncio.gather(*(run_ring_op(r) for r in range(world_size)))
         if op == "SUM":
-            tot = sum(inputs)
+            tot = ensure_ndarray(sum(inputs))
         elif op == "PROD":
-            tot = inputs[0] * inputs[1] * inputs[2]
+            tot = ensure_ndarray(inputs[0] * inputs[1] * inputs[2])
         elif op == "MAX":
-            tot = np.maximum(inputs[0], np.maximum(inputs[1], inputs[2]))
+            tot = ensure_ndarray(np.maximum(inputs[0], np.maximum(inputs[1], inputs[2])))
         else:
-            tot = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
+            tot = ensure_ndarray(np.minimum(inputs[0], np.minimum(inputs[1], inputs[2])))
         exp_chunks = np.array_split(tot, world_size, axis=0)
         for r in range(world_size):
             ensure_callable(np.testing.assert_allclose)(res_ring[r], exp_chunks[r])

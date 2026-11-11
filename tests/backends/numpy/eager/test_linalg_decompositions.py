@@ -37,7 +37,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _np_tridiagonal_solve,
     _parse_dot_dimension_numbers,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_ndarray, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -105,11 +105,11 @@ def _test_linalg_extras_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert _get_uncontracted_dims([1, 2, 3], [0], [2]) == [2]
     dn = (((2,), (1,)), ((0,), (0,)))
     assert ensure_callable(_parse_dot_dimension_numbers)(dn) == ((2,), (1,), (0,), (0,))
-    a = np.ones((2, 3, 4))
-    b = np.ones((2, 4, 5))
+    a = ensure_ndarray(np.ones((2, 3, 4)))
+    b = ensure_ndarray(np.ones((2, 4, 5)))
     res = _dot_general(a, b, dn)
     assert ensure_eager_tensor(res).shape == (2, 3, 5)
-    a = np.array([[1, 2], [3, 4]])
+    a = ensure_ndarray(np.array([[1, 2], [3, 4]]))
     assert _np_trace(ensure_mod(DummyBackend()), a) == 5
     assert _np_matrix_rank(ensure_mod(DummyBackend()), a) == 2
     assert ensure_callable(np.array_equal)(ensure_callable(_np_matrix_transpose)(ensure_callable(DummyBackend)(), a), a.T)
@@ -117,7 +117,7 @@ def _test_linalg_extras_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert ensure_callable(np.array_equal)(ensure_callable(_np_adjoint)(ensure_callable(DummyBackend)(), a), ensure_callable(a.T.conj)())
     assert _np_cholesky_solve(ensure_mod(DummyBackend()), 1) == 1
     A = np.array([[2, -1], [-1, 2]], dtype=float)
-    b = np.array([1, 0], dtype=float)
+    b = ensure_ndarray(np.array([1, 0], dtype=float))
     L = np.linalg.cholesky(A)
     assert ensure_callable(np.allclose)(ensure_callable(_np_cholesky_solve)(ensure_callable(DummyBackend)(), b, L, upper=False), [2 / 3, 1 / 3])
     assert _np_eigh_tridiagonal(ensure_mod(DummyBackend()), 1) == 1

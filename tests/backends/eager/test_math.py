@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_general import _ad
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import _np_tensorarraywrite, _np_topk
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_manipulation import _all_gather, _np_updateslice, _updateslice
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int_list, ensure_mod, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int_list, ensure_mod, ensure_mutable, ensure_ndarray, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -73,7 +73,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     db = _state["db"]
-    arr = np.zeros((3, 3))
+    arr = ensure_ndarray(np.zeros((3, 3)))
     update = np.ones((2, 2))
     res = _updateslice(db, arr, update, [1, 1])
     assert (
@@ -88,7 +88,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # math_manipulation.py 367 (_np_updateslice)
     db = ensure_eager_tensor(DummyBackend())
-    arr = np.array([0.0, 0.0])
+    arr = ensure_ndarray(np.array([0.0, 0.0]))
     res = _np_updateslice(db, arr, 0, 5)
     np.testing.assert_allclose(np.asarray(res), [5.0, 0.0])
 
@@ -114,7 +114,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     # math_general.py 736 (_indexindim keepdims=True)
     db = ensure_eager_tensor(DummyBackend())
     ensure_mutable(db).array = ensure_eager_tensor(ensure_eager_tensor(np).array)
-    arr = np.array([1, 2, 3])
+    arr = ensure_ndarray(np.array([1, 2, 3]))
     res = _indexindim(db, arr, index=1, keepdims=True)
     assert ensure_callable(list)(res) == [2]
 
