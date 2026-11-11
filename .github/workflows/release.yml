@@ -83,7 +83,7 @@ jobs:
             os_name: linux
             arch: aarch64
             ext: ""
-          - runner: macos-14
+          - runner: macos-latest
             os_name: macos
             arch: arm64
             ext: ""
