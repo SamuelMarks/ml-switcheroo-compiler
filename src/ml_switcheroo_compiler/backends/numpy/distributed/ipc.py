@@ -189,13 +189,13 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
 
         # Perform reduction
         if op == "sum":
-            reduced = np.add.reduce(arr_exchanged)
+            reduced = np.asarray(get_backend_member(np.add, "reduce")(arr_exchanged), dtype=np.float64)
         elif op == "max":
-            reduced = np.maximum.reduce(arr_exchanged)
+            reduced = np.asarray(get_backend_member(np.maximum, "reduce")(arr_exchanged), dtype=np.float64)
         elif op == "min":
-            reduced = np.minimum.reduce(arr_exchanged)
+            reduced = np.asarray(get_backend_member(np.minimum, "reduce")(arr_exchanged), dtype=np.float64)
         else:
-            reduced = np.add.reduce(arr_exchanged)
+            reduced = np.asarray(get_backend_member(np.add, "reduce")(arr_exchanged), dtype=np.float64)
 
         # Scatter (slice and return own chunk)
         sub_arrays: list[npt.NDArray[np.float64]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)

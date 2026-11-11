@@ -38,6 +38,18 @@ class SubgraphRegionProtocol(typing.Protocol):
     sorted_nodes: Sequence[IRNode]
 
 
+def _is_subgraph_region(val: EagerValue) -> typing.TypeGuard[SubgraphRegionProtocol]:
+    """Type guard narrowing `val` to `SubgraphRegionProtocol`.
+
+    Args:
+        val (EagerValue): Candidate subgraph region value.
+
+    Returns:
+        bool: True if `val` is a subgraph region exposing `sorted_nodes`.
+    """
+    return isinstance(val, (IRGraph, SubgraphRegionProtocol))
+
+
 def _iter_ints(val: EagerValue) -> list[int]:
     """Extract a list of integers from an integer or iterable attribute value.
 
@@ -511,14 +523,14 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         self.add_line(f'  {res_var} = "stablehlo.if"({cond_var}) ({{')
         then_ret = f"%v_{nid}_then"
-        if then_branch and isinstance(then_branch, SubgraphRegionProtocol):
+        if _is_subgraph_region(then_branch):
             for sn in then_branch.sorted_nodes:
                 if sn.op_type != "Input":
                     then_ret = self.generic_visit(sn, [])
         self.add_line(f'    "stablehlo.return"({then_ret}) : ({out_type}) -> ()')
         self.add_line("  }, {")
         else_ret = f"%v_{nid}_else"
-        if else_branch and isinstance(else_branch, SubgraphRegionProtocol):
+        if _is_subgraph_region(else_branch):
             for sn in else_branch.sorted_nodes:
                 if sn.op_type != "Input":
                     else_ret = self.generic_visit(sn, [])
@@ -538,7 +550,7 @@ class StableHLOCodeGenerator(BaseGenerator):
             str: Final SSA variable returned by the region.
         """
         ret_var = default_ret
-        if branch and isinstance(branch, SubgraphRegionProtocol):
+        if _is_subgraph_region(branch):
             sorted_nodes = branch.sorted_nodes
             branch_inputs = [sn for sn in sorted_nodes if sn.op_type == "Input"]
             for idx, inp_node in enumerate(branch_inputs):

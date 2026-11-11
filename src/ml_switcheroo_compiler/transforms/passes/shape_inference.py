@@ -82,11 +82,13 @@ def _ensure_graph_annotations(graph: IRGraph) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Mutable annotations dictionary.
     """
-    if isinstance(graph, _GraphAnnotationsProtocol):
-        if isinstance(graph.annotations, dict):
-            return graph.annotations
-        del graph.annotations
     assert _is_annotations_holder(graph)
+    try:
+        existing = graph.annotations
+    except AttributeError:
+        existing = None
+    if isinstance(existing, dict):
+        return existing
     new_ann: dict[str, AttributeValue] = {}
     graph.annotations = new_ann
     return new_ann
