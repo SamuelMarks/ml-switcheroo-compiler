@@ -34,7 +34,11 @@ def test_tensor_array() -> None:
             self.val = val
 
         def __int__(self) -> EagerValue:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                EagerValue: Computed output value from `__int__`.
+            """
             return self.val
 
         def __array__(self, dtype: EagerValue = None) -> EagerValue:
@@ -42,6 +46,9 @@ def test_tensor_array() -> None:
 
             Args:
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
             """
             return np.array(self.val)
 

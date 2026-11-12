@@ -41,7 +41,11 @@ def test_extract_numpy_weights() -> None:
         """Test class TensorWithNumpy."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return np.array([1])
 
     class TensorWithDataNumpy:
@@ -51,7 +55,11 @@ def test_extract_numpy_weights() -> None:
             """Test class Data."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return np.array([2])
 
         data = Data()
@@ -60,7 +68,11 @@ def test_extract_numpy_weights() -> None:
         """Test class TensorWithToList."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [3]
 
     class ErrorTensor:
@@ -86,7 +98,11 @@ def test_to_numpy() -> None:
         """Test class TensorWithNumpy."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return np.array([1])
 
     class TensorWithDataNumpy:
@@ -96,7 +112,11 @@ def test_to_numpy() -> None:
             """Test class Data."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return np.array([2])
 
         data = Data()
@@ -105,7 +125,11 @@ def test_to_numpy() -> None:
         """Test class TensorWithToList."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [3]
 
     class ErrorTensor:
@@ -138,7 +162,11 @@ def test_is_numpy_array() -> None:
         """Test class FakeArray."""
 
         def __array__(self) -> EagerValue:
-            """Return numpy array."""
+            """Return numpy array.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return np.array([1])
 
     assert ensure_callable(is_numpy_array)(ensure_callable(FakeArray)())
@@ -147,7 +175,11 @@ def test_is_numpy_array() -> None:
         """Test class FakeNumpy."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return np.array([1])
 
     assert ensure_callable(is_numpy_array)(ensure_callable(FakeNumpy)())
@@ -183,7 +215,11 @@ def test_get_shape_and_dtype() -> None:
         """Test class TensorWithEval."""
 
         def eval(self) -> EagerValue:
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                EagerValue: Computed output value from `eval`.
+            """
             return np.array([1, 2], dtype=np.float32)
 
     assert ensure_callable(_get_shape_and_dtype)(ensure_callable(TensorWithEval)()) == ((2,), "float32")
@@ -192,7 +228,11 @@ def test_get_shape_and_dtype() -> None:
         """Test class TensorWithNumpy."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return np.array([1], dtype=np.float64)
 
     assert ensure_callable(_get_shape_and_dtype)(ensure_callable(TensorWithNumpy)()) == ((1,), "float64")
@@ -204,7 +244,11 @@ def test_get_shape_and_dtype() -> None:
             """Test class Data."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return np.array([1], dtype=np.int32)
 
         data = Data()
@@ -223,7 +267,11 @@ def test_get_data_bytes() -> None:
         """Test class TensorWithEval."""
 
         def eval(self) -> EagerValue:
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                EagerValue: Computed output value from `eval`.
+            """
             return arr
 
     assert ensure_callable(_get_data_bytes)(ensure_callable(TensorWithEval)()) == ensure_callable(arr.tobytes)()
@@ -232,7 +280,11 @@ def test_get_data_bytes() -> None:
         """Test class TensorWithNumpy."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return arr
 
     assert ensure_callable(_get_data_bytes)(ensure_callable(TensorWithNumpy)()) == ensure_callable(arr.tobytes)()
@@ -244,7 +296,11 @@ def test_get_data_bytes() -> None:
             """Test class Data."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return arr
 
         data = Data()
@@ -266,7 +322,11 @@ def test_get_data_bytes() -> None:
             """Test class Data."""
 
             def tobytes(self) -> EagerValue:
-                """Test function tobytes."""
+                """Test function tobytes.
+
+                Returns:
+                    EagerValue: Computed output value from `tobytes`.
+                """
                 return b"test"
 
         data = Data()

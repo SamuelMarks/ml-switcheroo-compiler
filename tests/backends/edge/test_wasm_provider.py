@@ -22,7 +22,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def reset_wasm_templates() -> Iterator[None]:
-    """Test function reset_wasm_templates."""
+    """Test function reset_wasm_templates.
+
+    Yields:
+        None: Yielded test context or value from `reset_wasm_templates`.
+    """
     old = provider._WASM_TEMPLATES
     provider._WASM_TEMPLATES = {}
     yield
@@ -95,6 +99,9 @@ def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_glob`.
         """
         return ["file1.yaml", "file2.yaml", "file3.yaml"]
 
@@ -105,6 +112,9 @@ def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
             file: Test parameter `file`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_open_impl`.
         """
         if file == "file1.yaml":
             return ensure_eager_tensor(mock_open(read_data=yaml.dump(mock_data1))())

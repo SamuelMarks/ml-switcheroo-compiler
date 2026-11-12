@@ -61,12 +61,12 @@ def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrSca
     """Compute Concatenated ReLU.
 
     Args:
-        features (TensorOrScalar): The features parameter.
-        axis (TensorOrScalar): The axis parameter.
-        name (TensorOrScalar): The name parameter.
+        features (TensorOrScalar): Input `features` argument (features).
+        axis (TensorOrScalar): Input `axis` argument (axis).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     negative = get_op("Negative")()
 
@@ -79,13 +79,13 @@ def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None
     """Solves isotonic regression problems.
 
     Args:
-        y (TensorOrScalar): The y parameter.
-        sample_weights (TensorOrScalar): The sample_weights parameter.
-        increasing (TensorOrScalar): The increasing parameter.
-        name (TensorOrScalar): The name parameter.
+        y (TensorOrScalar): Input `y` argument (y).
+        sample_weights (TensorOrScalar): Input `sample_weights` argument (sample weights).
+        increasing (TensorOrScalar): Input `increasing` argument (increasing).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -110,10 +110,10 @@ def softplus(x: Tensor) -> Tensor:
     """Softplus activation.
 
     Args:
-        x (Tensor): The x parameter.
+        x (Tensor): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.unary import exp, log1p
 
@@ -134,7 +134,7 @@ class Softmax(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -152,13 +152,13 @@ def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: 
     """Softmax activation.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        axis (int): The axis parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        axis (int): Input `axis` argument (axis).
         *args (TensorOrScalar): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -185,7 +185,7 @@ class LogSoftmax(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -203,13 +203,13 @@ def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwar
     """LogSoftmax activation.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        axis (int): The axis parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        axis (int): Input `axis` argument (axis).
         *args (TensorOrScalar): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -236,7 +236,7 @@ class Sigmoid(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -254,12 +254,12 @@ def sigmoid(x: Tensor | str, *args: int | float | str | None, **kwargs: int | fl
     """Sigmoid activation.
 
     Args:
-        x (Tensor | str): The x parameter.
+        x (Tensor | str): Input `x` argument (x).
         *args (int | float | str | None): Positional args.
         **kwargs (int | float | str | None): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -286,7 +286,7 @@ class OneHot(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes  # noqa: F401
 
@@ -304,13 +304,13 @@ def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs
     """OneHot encoding.
 
     Args:
-        indices (TensorOrScalar): The indices parameter.
-        depth (int): The depth parameter.
+        indices (TensorOrScalar): Input `indices` argument (indices).
+        depth (int): Input `depth` argument (depth).
         *args (TensorOrScalar): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -344,7 +344,7 @@ class Rrelu(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -362,12 +362,12 @@ def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
     """Rrelu activation.
 
     Args:
-        x (TensorOrScalar): The x parameter.
+        x (TensorOrScalar): Input `x` argument (x).
         *args (TensorOrScalar): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -445,7 +445,7 @@ def hard_silu(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -460,7 +460,7 @@ def hard_swish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -475,7 +475,7 @@ def mish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -490,7 +490,7 @@ def squareplus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

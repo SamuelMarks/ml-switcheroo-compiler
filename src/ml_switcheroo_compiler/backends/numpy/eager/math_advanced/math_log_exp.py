@@ -18,12 +18,12 @@ def _np_xlogy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np xlogy operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _xlogy(*args, **kwargs)
 
@@ -33,14 +33,14 @@ def _np_logsumexp(backend_module: BackendModuleProtocol, a: EagerValue, axis: Ea
     """Evaluate _np_logsumexp logic eagerly backed by NumPy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        axis (EagerValue): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        axis (EagerValue): Input `axis` argument (axis).
+        keepdims (bool): Input `keepdims` argument (keepdims).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -60,12 +60,12 @@ def _np_log1p2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np log1p2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.log1p(*args, **kwargs)
 
@@ -75,7 +75,7 @@ def _np_expand_dims_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Unsqueeze via expand_dims.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -89,12 +89,12 @@ def _np_log_softmax(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np log softmax operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     a = _get_np_arg(args, 0)
     if a is None:

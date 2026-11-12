@@ -130,6 +130,9 @@ def test_eager_vmap_nested() -> None:
 
             Args:
                 t: Test parameter `t`.
+
+            Returns:
+                Tensor: Computed output value from `double`.
             """
             return add(t, t)
 
@@ -154,6 +157,9 @@ def test_eager_vmap_grad() -> None:
 
             Args:
                 t: Test parameter `t`.
+
+            Returns:
+                Tensor: Computed output value from `loss_fn`.
             """
             return multiply(t, t)
 
@@ -179,6 +185,9 @@ def test_eager_grad_vmap() -> None:
 
             Args:
                 t: Test parameter `t`.
+
+            Returns:
+                Tensor: Computed output value from `f`.
             """
             return multiply(t, t)
 
@@ -189,6 +198,9 @@ def test_eager_grad_vmap() -> None:
 
             Args:
                 t: Test parameter `t`.
+
+            Returns:
+                Tensor: Computed output value from `total_loss`.
             """
             return ensure_tensor_obj(ensure_callable(reduce_sum)(ensure_callable(v_f)(t)))
 

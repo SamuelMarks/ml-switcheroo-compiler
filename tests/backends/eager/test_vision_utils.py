@@ -127,6 +127,9 @@ def test_collinear_check_and_perspective_matrix() -> None:
 
             Args:
                 a: Test parameter `a`.
+
+            Returns:
+                EagerValue: Computed output value from `svd`.
             """
             return np.eye(8), np.zeros(8), np.eye(9)
 
@@ -349,6 +352,9 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
 
         Args:
             a: Test parameter `a`.
+
+        Returns:
+            tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `mock_svd`.
         """
         u, s, vh = ensure_callable(orig_svd)(a)
         vh_mod = vh.copy()

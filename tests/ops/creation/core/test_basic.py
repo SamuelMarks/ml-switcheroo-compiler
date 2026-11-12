@@ -16,7 +16,11 @@ class DummyItem:
     """Test class DummyItem."""
 
     def item(self) -> EagerValue:
-        """Test function item."""
+        """Test function item.
+
+        Returns:
+            EagerValue: Computed output value from `item`.
+        """
         return 5
 
 

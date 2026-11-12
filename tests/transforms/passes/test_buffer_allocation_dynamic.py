@@ -17,7 +17,11 @@ class DynamicNode(IRNode):
 
     @property
     def is_dynamic_shape(self) -> bool:
-        """Test function is_dynamic_shape."""
+        """Test function is_dynamic_shape.
+
+        Returns:
+            bool: Computed output value from `is_dynamic_shape`.
+        """
         return True
 
 

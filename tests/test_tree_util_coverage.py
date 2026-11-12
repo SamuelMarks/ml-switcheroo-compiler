@@ -164,9 +164,29 @@ def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTens
 
 def test_tree_util_and_ops_base_confirmation() -> None:
     """Confirm tree_util and ops.base full integration coverage."""
+    from collections import namedtuple
+
     _state: dict[str, EagerTensorProtocol] = {}
     _test_tree_util_and_ops_base_confirmation_part_1(_state)
     _test_tree_util_and_ops_base_confirmation_part_2(_state)
     _test_tree_util_and_ops_base_confirmation_part_3(_state)
     _test_tree_util_and_ops_base_confirmation_part_4(_state)
     assert len(_state) > 0
+
+    mixed_dict = ensure_eager_tensor({1: 10, "a": 20})
+    m_leaves, m_def = ensure_callable(tree_util_mod.tree_flatten)(mixed_dict)
+    assert m_leaves == [10, 20]
+    assert ensure_callable(tree_util_mod.tree_unflatten)(m_def, m_leaves) == {1: 10, "a": 20}
+
+    Pair = namedtuple("Pair", ["left", "right"])
+    nt_in = Pair(3, 7)
+    nt_leaves, nt_def = tree_util_mod.tree_flatten(ensure_eager_tensor(nt_in))
+    assert nt_leaves == [3, 7]
+    nt_out = tree_util_mod.tree_unflatten(nt_def, [30, 70])
+    assert nt_out == Pair(30, 70)
+    assert type(nt_out).__name__ == "Pair"
+
+    assert tree_util_mod.tree_map(lambda a, b: ensure_eager_tensor(a) + ensure_eager_tensor(b), [1, 2], [10, 20]) == [11, 22]
+    outer_td = tree_util_mod.tree_structure([0, 0])
+    inner_td = tree_util_mod.tree_structure({"x": 0, "y": 0})
+    assert tree_util_mod.tree_transpose(outer_td, inner_td, [{"x": 1, "y": 2}, {"x": 3, "y": 4}]) == {"x": [1, 3], "y": [2, 4]}

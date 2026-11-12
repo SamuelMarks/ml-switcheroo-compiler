@@ -24,6 +24,9 @@ class _DummyBadShape:
 
         Raises:
             TypeError: Simulated invalid dimension.
+
+        Returns:
+            int: Computed output value from `__next__`.
         """
         raise TypeError("Not iterable dimension")
 
@@ -50,6 +53,9 @@ def test_shape_debugger_exhaustive() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `model_with_shape`.
         """
         return x
 
@@ -76,6 +82,9 @@ def test_shape_debugger_exhaustive() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `model_raising`.
         """
         raise RuntimeError("Model execution failed")
 

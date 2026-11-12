@@ -37,8 +37,8 @@ def eye(
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
-        n (int): The n parameter.
-        m (Optional[int]): The m parameter.
+        n (int): Input `n` argument (n).
+        m (Optional[int]): Input `m` argument (m).
         k (int): Index of the diagonal.
         dtype (Optional[DType]): The data type
         device (Optional[Device]): The device to store the tensor on.
@@ -71,7 +71,7 @@ def identity(
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
-        n (int): The n parameter.
+        n (int): Input `n` argument (n).
         dtype (Optional[DType]): The data type
         device (Optional[Device]): The device to store the tensor on.
 
@@ -85,13 +85,13 @@ def _diag_eager(input: Tensor, diagonal: int, device: TensorOrScalar, dtype: Ten
     """Compute the diag eager tensor operation.
 
     Args:
-        input (Tensor): The input parameter.
-        diagonal (int): The diagonal parameter.
-        device (TensorOrScalar): The device parameter.
-        dtype (TensorOrScalar): The dtype parameter.
+        input (Tensor): Input `input` argument (input).
+        diagonal (int): Input `diagonal` argument (diagonal).
+        device (TensorOrScalar): Input `device` argument (device).
+        dtype (TensorOrScalar): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     data = get_active_backend().execute_op("Diag", extract_data(input), k=diagonal)
     shape = extract_shape(data)
@@ -104,15 +104,15 @@ def diag(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:
-        input (Tensor): The input parameter.
-        diagonal (int): The diagonal parameter.
+        input (Tensor): Input `input` argument (input).
+        diagonal (int): Input `diagonal` argument (diagonal).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
 
     Raises:
-        RuntimeError: An exception.
-        ValueError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     raw_in: TensorOrScalar = input
     device = extract_device(raw_in, None)

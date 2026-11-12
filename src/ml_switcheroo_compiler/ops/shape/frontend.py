@@ -34,11 +34,11 @@ def expand_dims(a: TensorOrScalar, axis: int) -> TensorOrScalar:
     """Expand dimensions.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        axis (int): The axis parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("ExpandDims", extract_data(a), axis=axis)
@@ -69,14 +69,14 @@ def argpartition(a: TensorOrScalar, kth: TensorOrScalar, axis: int = -1, kind: s
     """Perform an indirect partition along the given axis.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        kth (TensorOrScalar): The kth parameter.
-        axis (int): The axis parameter.
-        kind (str): The kind parameter.
-        order (TensorOrScalar): The order parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        kth (TensorOrScalar): Input `kth` argument (kth).
+        axis (int): Input `axis` argument (axis).
+        kind (str): Input `kind` argument (kind).
+        order (TensorOrScalar): Input `order` argument (order).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Argpartition", extract_data(a), kth, axis=axis, kind=kind, order=order)
@@ -94,14 +94,14 @@ def partition(a: TensorOrScalar, kth: TensorOrScalar, axis: int = -1, kind: str 
     """Return a partitioned copy of an array.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        kth (TensorOrScalar): The kth parameter.
-        axis (int): The axis parameter.
-        kind (str): The kind parameter.
-        order (TensorOrScalar): The order parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        kth (TensorOrScalar): Input `kth` argument (kth).
+        axis (int): Input `axis` argument (axis).
+        kind (str): Input `kind` argument (kind).
+        order (TensorOrScalar): Input `order` argument (order).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Partition", extract_data(a), kth, axis=axis, kind=kind, order=order)
@@ -123,13 +123,13 @@ def compress(condition: TensorOrScalar, a: TensorOrScalar, axis: TensorOrScalar 
     """Return selected slices of an array along given axis.
 
     Args:
-        condition (TensorOrScalar): The condition parameter.
-        a (TensorOrScalar): The a parameter.
-        axis (int): The axis parameter.
-        out (TensorOrScalar): The out parameter.
+        condition (TensorOrScalar): Input `condition` argument (condition).
+        a (TensorOrScalar): Input `a` argument (a).
+        axis (int): Input `axis` argument (axis).
+        out (TensorOrScalar): Input `out` argument (out).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Compress", condition, extract_data(a), axis=axis, out=out)
@@ -151,13 +151,13 @@ def insert(arr: TensorOrScalar, obj: TensorOrScalar, values: TensorOrScalar, axi
     """Insert values along the given axis before the given indices.
 
     Args:
-        arr (TensorOrScalar): The arr parameter.
-        obj (TensorOrScalar): The obj parameter.
-        values (TensorOrScalar): The values parameter.
-        axis (int): The axis parameter.
+        arr (TensorOrScalar): Input `arr` argument (arr).
+        obj (TensorOrScalar): Input `obj` argument (obj).
+        values (TensorOrScalar): Input `values` argument (values).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Insert", extract_data(arr), obj, extract_data(values), axis=axis)
@@ -172,12 +172,12 @@ def fill_diagonal(a: TensorOrScalar, val: TensorOrScalar, wrap: bool = False) ->
     """Fill the main diagonal of the given array of any dimensionality.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        val (TensorOrScalar): The val parameter.
-        wrap (bool): The wrap parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        val (TensorOrScalar): Input `val` argument (val).
+        wrap (bool): Input `wrap` argument (wrap).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("FillDiagonal", extract_data(a), extract_data(val), wrap=wrap)
@@ -192,12 +192,12 @@ def moveaxis(a: TensorOrScalar, source: TensorOrScalar, destination: TensorOrSca
     """Move axes of a tensor.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        source (TensorOrScalar): The source parameter.
-        destination (TensorOrScalar): The destination parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        source (TensorOrScalar): Input `source` argument (source).
+        destination (TensorOrScalar): Input `destination` argument (destination).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Moveaxis", extract_data(a), source=source, destination=destination)
@@ -213,11 +213,11 @@ def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tenso
     """Permute dimensions of a tensor.
 
     Args:
-        a (Tensor): The a parameter.
-        dims (tuple[int, ...] | list[int] | None): The dims parameter.
+        a (Tensor): Input `a` argument (a).
+        dims (tuple[int, ...] | list[int] | None): Input `dims` argument (dims).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Permute", extract_data(a), dims=dims)
@@ -233,12 +233,12 @@ def swapaxes(a: TensorOrScalar, axis1: int, axis2: int) -> TensorOrScalar:
     """Interchange two axes of an array.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        axis1 (int): The axis1 parameter.
-        axis2 (int): The axis2 parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        axis1 (int): Input `axis1` argument (axis1).
+        axis2 (int): Input `axis2` argument (axis2).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Swapaxes", extract_data(a), axis1=axis1, axis2=axis2)
@@ -254,12 +254,12 @@ def roll(a: TensorOrScalar, shift: TensorOrScalar, axis: TensorOrScalar = None) 
     """Roll array elements along a given axis.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        shift (TensorOrScalar): The shift parameter.
-        axis (TensorOrScalar): The axis parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        shift (TensorOrScalar): Input `shift` argument (shift).
+        axis (TensorOrScalar): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Roll", extract_data(a), shift=shift, axis=axis)
@@ -275,10 +275,10 @@ def atleast_1d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 1d.
 
     Args:
-        a (TensorOrScalar): The a parameter.
+        a (TensorOrScalar): Input `a` argument (a).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Atleast1d", extract_data(a))
@@ -294,10 +294,10 @@ def atleast_2d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 2d.
 
     Args:
-        a (TensorOrScalar): The a parameter.
+        a (TensorOrScalar): Input `a` argument (a).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Atleast2d", extract_data(a))
@@ -313,10 +313,10 @@ def atleast_3d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 3d.
 
     Args:
-        a (TensorOrScalar): The a parameter.
+        a (TensorOrScalar): Input `a` argument (a).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Atleast3d", extract_data(a))
@@ -332,11 +332,11 @@ def _get_squeeze_shape(a: TensorOrScalar, axis: TensorOrScalar) -> tuple[int, ..
     """Compute the get squeeze shape tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
-        axis (int | tuple[int, ...] | list[int] | None): The axis parameter.
+        a (Tensor): Input `a` argument (a).
+        axis (int | tuple[int, ...] | list[int] | None): Input `axis` argument (axis).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     shape = list(extract_shape(a))
     if axis is None:
@@ -350,11 +350,11 @@ def squeeze(a: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
     """Squeeze dimensions of a tensor.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        axis (TensorOrScalar): The axis parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        axis (TensorOrScalar): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Squeeze", extract_data(a), axis=axis)
@@ -369,11 +369,11 @@ def diagflat(v: TensorOrScalar, k: int = 0) -> TensorOrScalar:
     """Create a two-dimensional array with the flattened input as a diagonal.
 
     Args:
-        v (TensorOrScalar): The v parameter.
-        k (int): The k parameter.
+        v (TensorOrScalar): Input `v` argument (v).
+        k (int): Input `k` argument (k).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Diagflat", extract_data(v), k=k)
@@ -388,10 +388,10 @@ def block(arrays: TensorOrScalar) -> TensorOrScalar:
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
-        arrays (TensorOrScalar): The arrays parameter.
+        arrays (TensorOrScalar): Input `arrays` argument (arrays).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Block", arrays)
@@ -406,12 +406,12 @@ def delete(arr: TensorOrScalar, obj: TensorOrScalar, axis: TensorOrScalar = None
     """Return a new array with sub-arrays along an axis deleted.
 
     Args:
-        arr (TensorOrScalar): The arr parameter.
-        obj (TensorOrScalar): The obj parameter.
-        axis (int): The axis parameter.
+        arr (TensorOrScalar): Input `arr` argument (arr).
+        obj (TensorOrScalar): Input `obj` argument (obj).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Delete", extract_data(arr), obj, axis=axis)
@@ -426,11 +426,11 @@ def diag_indices(n: int, ndim: int = 2) -> TensorOrScalar:
     """Return the indices to access the main diagonal of an array.
 
     Args:
-        n (int): The n parameter.
-        ndim (int): The ndim parameter.
+        n (int): Input `n` argument (n).
+        ndim (int): Input `ndim` argument (ndim).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
@@ -458,10 +458,10 @@ def diag_indices_from(arr: TensorOrScalar) -> TensorOrScalar:
     """Return the indices to access the main diagonal of an n-dimensional array.
 
     Args:
-        arr (TensorOrScalar): The arr parameter.
+        arr (TensorOrScalar): Input `arr` argument (arr).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
@@ -492,11 +492,11 @@ def size(input: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the number of elements in a tensor.
 
     Args:
-        input (TensorOrScalar): The input parameter.
+        input (TensorOrScalar): Input `input` argument (input).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Size", extract_data(input), **kwargs)
@@ -511,11 +511,11 @@ def reshape(a: Tensor, newshape: int | tuple[int, ...] | list[int]) -> Tensor:
     """Reshape a tensor.
 
     Args:
-        a (Tensor): The a parameter.
-        newshape (int | tuple[int, ...] | list[int]): The newshape parameter.
+        a (Tensor): Input `a` argument (a).
+        newshape (int | tuple[int, ...] | list[int]): Input `newshape` argument (newshape).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Reshape", extract_data(a), newshape=newshape)
@@ -531,11 +531,11 @@ def flip(m: Tensor, axis: int | tuple[int, ...] | list[int] | None = None) -> Te
     """Reverse the order of elements in an array along the given axis.
 
     Args:
-        m (Tensor): The m parameter.
-        axis (int | tuple[int, ...] | list[int] | None): The axis parameter.
+        m (Tensor): Input `m` argument (m).
+        axis (int | tuple[int, ...] | list[int] | None): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Flip", extract_data(m), axis=axis)
@@ -549,10 +549,10 @@ def fliplr(m: TensorOrScalar) -> TensorOrScalar:
     """Flip array in the left/right direction.
 
     Args:
-        m (TensorOrScalar): The m parameter.
+        m (TensorOrScalar): Input `m` argument (m).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Fliplr", extract_data(m))
@@ -566,10 +566,10 @@ def flipud(m: TensorOrScalar) -> TensorOrScalar:
     """Flip array in the up/down direction.
 
     Args:
-        m (TensorOrScalar): The m parameter.
+        m (TensorOrScalar): Input `m` argument (m).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Flipud", extract_data(m))

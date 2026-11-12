@@ -67,11 +67,19 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
             self.name: str = name
 
         def numpy(self) -> int:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                int: Computed output value from `numpy`.
+            """
             return 1
 
         def tolist(self) -> int:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                int: Computed output value from `tolist`.
+            """
             return 1
 
     class FakeModel:
@@ -83,7 +91,11 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
         ema_variables: list[FakeWeight] = [FakeWeight("ema")]
 
         def get_config(self) -> dict[str, int]:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                dict[str, int]: Computed output value from `get_config`.
+            """
             return {"c": 1}
 
     _state.update(ensure_tensor_dict({"FakeModel": FakeModel, "FakeWeight": FakeWeight}))

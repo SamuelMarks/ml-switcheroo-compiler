@@ -594,7 +594,11 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
         """Test class FailArrayObj."""
 
         def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `__array__`.
+            """
             raise TypeError("fail")
 
     assert bool(ensure_callable(shares_buffer)(ensure_callable(FailArrayObj)(), ensure_callable(np.array)([1]))) is False

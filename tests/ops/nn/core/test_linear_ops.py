@@ -31,6 +31,9 @@ def test_linear_ops_coverage() -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_matmul`.
         """
         return "mm"
 
@@ -39,6 +42,9 @@ def test_linear_ops_coverage() -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_add`.
         """
         return "add"
 
@@ -62,6 +68,9 @@ def test_linear_ops_coverage() -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_einsum`.
         """
         return "es"
 

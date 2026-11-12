@@ -65,6 +65,9 @@ def test_normalization_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return "normed"
 

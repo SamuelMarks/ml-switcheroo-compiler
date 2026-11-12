@@ -21,10 +21,10 @@ class EinsumLexer:
         """Compute the parse equation sides tensor operation.
 
         Args:
-        equation (str): The equation parameter.
+        equation (str): Input `equation` argument (equation).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         equation = equation.replace(" ", "")
         if "->" in equation:
@@ -48,11 +48,11 @@ class EinsumValidator:
         """Validate input subscripts against shapes.
 
         Args:
-            in_subs (str): The in_subs parameter.
-            shapes (list): The shapes parameter.
+            in_subs (str): Input `in_subs` argument (in subs).
+            shapes (list): Input `shapes` argument (shapes).
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         in_parts = in_subs.split(",")
         if len(in_parts) != len(shapes):
@@ -71,7 +71,7 @@ class ParsedEquationPart(pydantic.BaseModel):
         """Validate that the string length matches the shape length.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if len(self.chars) != len(self.shape):
             raise ValueError(f"Shape {self.shape} cannot match subscript {self.chars}")
@@ -80,7 +80,7 @@ class ParsedEquationPart(pydantic.BaseModel):
         """Validate that the string only contains alphabetic characters.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if not re.match(r"^[a-zA-Z]*$", self.chars):
             raise ValueError(f"Invalid characters in einsum subscript: {self.chars}")
@@ -89,7 +89,7 @@ class ParsedEquationPart(pydantic.BaseModel):
         """Process the characters and dimensions to update the axis map.
 
         Args:
-            axis_map (dict): The axis_map parameter.
+            axis_map (dict): Input `axis_map` argument (axis map).
         """
         # Isolate the logic that identifies and handles duplicate dimension labels
         for char, dim in zip(self.chars, self.shape):
@@ -101,12 +101,12 @@ class ParsedEquationPart(pydantic.BaseModel):
         """Check for dimension mismatches, handling duplicates gracefully if matching.
 
         Args:
-            axis_map (dict): The axis_map parameter.
-            char (str): The char parameter.
-            dim (int): The dim parameter.
+            axis_map (dict): Input `axis_map` argument (axis map).
+            char (str): Input `char` argument (char).
+            dim (int): Input `dim` argument (dim).
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if char in axis_map and axis_map[char] != dim and axis_map[char] != 1 and dim != 1:
             raise ValueError(f"Dimension mismatch for axis {char}")
@@ -120,11 +120,11 @@ class EinsumPlanner:
         """Compute the validate ellipsis count tensor operation.
 
         Args:
-            part (str): The part parameter.
-            shape (tuple): The shape parameter.
+            part (str): Input `part` argument (part).
+            shape (tuple): Input `shape` argument (shape).
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if part.count("...") > 1:
             raise ValueError(f"Shape {shape} cannot match subscript {part}")
@@ -134,17 +134,17 @@ class EinsumPlanner:
         """Compute the count hidden dims tensor operation.
 
         Args:
-            left_len (int): The left_len parameter.
-            right_len (int): The right_len parameter.
-            shape_len (int): The shape_len parameter.
-            part (str): The part parameter.
-            shape (tuple): The shape parameter.
+            left_len (int): Input `left_len` argument (left len).
+            right_len (int): Input `right_len` argument (right len).
+            shape_len (int): Input `shape_len` argument (shape len).
+            part (str): Input `part` argument (part).
+            shape (tuple): Input `shape` argument (shape).
 
         Returns:
-            int: Result.
+            int: Computed `int` output.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         num_named = left_len + right_len
         num_bcast = shape_len - num_named
@@ -157,14 +157,14 @@ class EinsumPlanner:
         """Compute the combine broadcast shapes tensor operation.
 
         Args:
-            broadcast_shape (Optional): The broadcast_shape parameter.
-            bcast_dims (tuple): The bcast_dims parameter.
+            broadcast_shape (Optional): Input `broadcast_shape` argument (broadcast shape).
+            bcast_dims (tuple): Input `bcast_dims` argument (bcast dims).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if broadcast_shape is None:
             return bcast_dims
@@ -180,12 +180,12 @@ class EinsumPlanner:
         """Compute the handle ellipsis tensor operation.
 
         Args:
-        part (str): The part parameter.
-        shape (tuple[int, ...]): The shape parameter.
-        broadcast_shape (tuple[int, ...]): The broadcast_shape parameter.
+        part (str): Input `part` argument (part).
+        shape (tuple[int, ...]): Input `shape` argument (shape).
+        broadcast_shape (tuple[int, ...]): Input `broadcast_shape` argument (broadcast shape).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         EinsumPlanner._validate_ellipsis_count(part, shape)
         parts_str = part.split("...")
@@ -206,9 +206,9 @@ class EinsumPlanner:
         """Compute the parse named part tensor operation.
 
         Args:
-            part (str): The part parameter.
-            shape (tuple): The shape parameter.
-            axis_map (dict): The axis_map parameter.
+            part (str): Input `part` argument (part).
+            shape (tuple): Input `shape` argument (shape).
+            axis_map (dict): Input `axis_map` argument (axis map).
         """
         parsed_part = ParsedEquationPart(chars=part, shape=shape)
         parsed_part.validate_length()
@@ -225,13 +225,13 @@ class EinsumPlanner:
         """Compute the parse ellipsis part tensor operation.
 
         Args:
-            part (str): The part parameter.
-            shape (tuple): The shape parameter.
-            axis_map (dict): The axis_map parameter.
-            broadcast_shape (Optional): The broadcast_shape parameter.
+            part (str): Input `part` argument (part).
+            shape (tuple): Input `shape` argument (shape).
+            axis_map (dict): Input `axis_map` argument (axis map).
+            broadcast_shape (Optional): Input `broadcast_shape` argument (broadcast shape).
 
         Returns:
-            Optional: Result.
+            Optional: Computed `Optional` output.
         """
         part_chars, named_shape, new_broadcast_shape = EinsumPlanner._handle_ellipsis(part, shape, broadcast_shape)
         EinsumPlanner._parse_named_part(part_chars, named_shape, axis_map)
@@ -242,11 +242,11 @@ class EinsumPlanner:
         """Compute the build axis size map tensor operation.
 
         Args:
-        in_subs (str): The in_subs parameter.
-        shapes (list[tuple[int, ...]]): The shapes parameter.
+        in_subs (str): Input `in_subs` argument (in subs).
+        shapes (list[tuple[int, ...]]): Input `shapes` argument (shapes).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
@@ -269,12 +269,12 @@ class EinsumPlanner:
         """Compute the compute output shape with ellipsis tensor operation.
 
         Args:
-            parts (list): The parts parameter.
-            axis_map (dict): The axis_map parameter.
-            broadcast_shape (Optional): The broadcast_shape parameter.
+            parts (list): Input `parts` argument (parts).
+            axis_map (dict): Input `axis_map` argument (axis map).
+            broadcast_shape (Optional): Input `broadcast_shape` argument (broadcast shape).
 
         Returns:
-            list: Result.
+            list: Computed `list` output.
         """
         out_shape: list[int] = []
         for char in parts[0]:
@@ -294,11 +294,11 @@ class EinsumPlanner:
         """Compute the resolve chars tensor operation.
 
         Args:
-        out_sub (str): The out_sub parameter.
-        axis_map (dict[str, int]): The axis_map parameter.
+        out_sub (str): Input `out_sub` argument (out sub).
+        axis_map (dict[str, int]): Input `axis_map` argument (axis map).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         out_shape = []
         for char in out_sub:
@@ -316,15 +316,15 @@ class EinsumPlanner:
         """Compute the compute output shape tensor operation.
 
         Args:
-            out_sub (str): The out_sub parameter.
-            axis_map (dict): The axis_map parameter.
-            broadcast_shape (Optional): The broadcast_shape parameter.
+            out_sub (str): Input `out_sub` argument (out sub).
+            axis_map (dict): Input `axis_map` argument (axis map).
+            broadcast_shape (Optional): Input `broadcast_shape` argument (broadcast shape).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if out_sub.count("...") > 1:
             raise ValueError("Multiple ellipses in output subscript")
@@ -346,10 +346,10 @@ class EinsumEquationParser:
         """Compute the parse equation sides tensor operation.
 
         Args:
-            equation (str): The equation parameter.
+            equation (str): Input `equation` argument (equation).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         return EinsumLexer.parse_equation_sides(equation)
 
@@ -358,11 +358,11 @@ class EinsumEquationParser:
         """Compute the build axis size map tensor operation.
 
         Args:
-            in_subs (str): The in_subs parameter.
-            shapes (list): The shapes parameter.
+            in_subs (str): Input `in_subs` argument (in subs).
+            shapes (list): Input `shapes` argument (shapes).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         EinsumValidator.validate_inputs(in_subs, shapes)
         return EinsumPlanner.build_axis_size_map(in_subs, shapes)
@@ -372,11 +372,11 @@ class EinsumEquationParser:
         """Compute the resolve chars tensor operation.
 
         Args:
-            out_sub (str): The out_sub parameter.
-            axis_map (dict): The axis_map parameter.
+            out_sub (str): Input `out_sub` argument (out sub).
+            axis_map (dict): Input `axis_map` argument (axis map).
 
         Returns:
-            list: Result.
+            list: Computed `list` output.
         """
         out_shape = []
         for char in out_sub:
@@ -394,12 +394,12 @@ class EinsumEquationParser:
         """Compute the compute output shape tensor operation.
 
         Args:
-            out_sub (str): The out_sub parameter.
-            axis_map (dict): The axis_map parameter.
-            broadcast_shape (Optional): The broadcast_shape parameter.
+            out_sub (str): Input `out_sub` argument (out sub).
+            axis_map (dict): Input `axis_map` argument (axis map).
+            broadcast_shape (Optional): Input `broadcast_shape` argument (broadcast shape).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         return EinsumPlanner.compute_output_shape(out_sub, axis_map, broadcast_shape)
 
@@ -408,11 +408,11 @@ class EinsumEquationParser:
         """Parse equation and infer output shape.
 
         Args:
-        equation (str): The equation parameter.
-        shapes (list[tuple[int, ...]]): The shapes parameter.
+        equation (str): Input `equation` argument (equation).
+        shapes (list[tuple[int, ...]]): Input `shapes` argument (shapes).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         in_subs, out_sub = EinsumLexer.parse_equation_sides(equation)
         EinsumValidator.validate_inputs(in_subs, shapes)
@@ -435,14 +435,14 @@ class Einsum(OpDef):
         """Compute the extract equation tensor operation.
 
         Args:
-            args (tuple): The args parameter.
-            kwargs (dict): The kwargs parameter.
+            args (tuple): Input `args` argument (args).
+            kwargs (dict): Input `kwargs` argument (kwargs).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         equation = kwargs.get("equation", kwargs.get("subscripts"))
         if isinstance(equation, str):
@@ -456,10 +456,10 @@ class Einsum(OpDef):
         """Compute the extract shapes tensor operation.
 
         Args:
-        args (TensorOrScalar): The args parameter.
+        args (TensorOrScalar): Input `args` argument (args).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shapes: list[tuple[int, ...]] = []
         for arg in ensure_eager_list(args):
@@ -484,7 +484,7 @@ class Einsum(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         equation, remaining_args = self._extract_equation(args, kwargs)
         shapes = self._extract_shapes(remaining_args)

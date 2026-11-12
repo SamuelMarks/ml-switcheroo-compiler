@@ -37,21 +37,33 @@ def test_core_assertions_exhaustive() -> None:
         """Test class WithNumpy."""
 
         def numpy(self) -> list[int]:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                list[int]: Computed output value from `numpy`.
+            """
             return [1, 1]
 
     class WithAll:
         """Test class WithAll."""
 
         def all(self) -> bool:
-            """Test function all."""
+            """Test function all.
+
+            Returns:
+                bool: Computed output value from `all`.
+            """
             return True
 
     class WithAllFalse:
         """Test class WithAllFalse."""
 
         def all(self) -> bool:
-            """Test function all."""
+            """Test function all.
+
+            Returns:
+                bool: Computed output value from `all`.
+            """
             return False
 
     assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(WithNumpy)())) is True
@@ -62,11 +74,19 @@ def test_core_assertions_exhaustive() -> None:
         """Test class ValueErrorBool."""
 
         def __bool__(self) -> bool:
-            """Test function __bool__."""
+            """Test function __bool__.
+
+            Returns:
+                bool: Computed output value from `__bool__`.
+            """
             raise ValueError("Boolean value ambiguous")
 
         def __iter__(self) -> EagerValue:
-            """Test function __iter__."""
+            """Test function __iter__.
+
+            Returns:
+                EagerValue: Computed output value from `__iter__`.
+            """
             return ensure_eager_tensor(iter([True, True]))
 
     assert bool(ensure_callable(asst_mod._evaluate_single_condition)(ensure_callable(ValueErrorBool)())) is True

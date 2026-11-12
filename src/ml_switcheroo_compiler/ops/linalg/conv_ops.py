@@ -110,7 +110,7 @@ class ConvGeneralDilatedLocal(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape if args else ()
 
@@ -129,7 +129,7 @@ class ConvGeneralDilatedPatches(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape if args else ()
 
@@ -148,7 +148,7 @@ class ConvWithGeneralPadding(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape if args else ()
 
@@ -167,7 +167,7 @@ class ConvTransposeShapeTuple(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -182,12 +182,12 @@ class ConvTranspose(OpDef):
         """Infer shape.
 
         Args:
-            lhs (EagerTensorProtocol): The lhs parameter.
-            rhs (EagerTensorProtocol): The rhs parameter.
+            lhs (EagerTensorProtocol): Input `lhs` argument (lhs).
+            rhs (EagerTensorProtocol): Input `rhs` argument (rhs).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Assuming NHWC and HWIO or NWC and WIO
         strides = kwargs.get("strides", 1)

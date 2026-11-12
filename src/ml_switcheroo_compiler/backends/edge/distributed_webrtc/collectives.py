@@ -637,8 +637,8 @@ async def ring_reduce_scatter(
         """Apply elementwise reduction between two chunks.
 
         Args:
-            a: The a parameter.
-            b: The b parameter.
+            a: Input `a` argument (a).
+            b: Input `b` argument (b).
 
         Returns:
             EagerValue: Computed result.

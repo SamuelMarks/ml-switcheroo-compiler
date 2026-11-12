@@ -34,7 +34,7 @@ repos:
     - --config-file
     - pyproject.toml
     entry: mypy
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^(src/ml_switcheroo_compiler|scripts|tests)/.*\.py$
     id: mypy
     language: system
     name: mypy
@@ -43,7 +43,7 @@ repos:
     - python
   repo: local
 - hooks:
-  - entry: pytest -n auto --dist loadfile -x --cov=src/ml_switcheroo_compiler --cov-branch --cov-fail-under=100
+  - entry: pytest -n auto --dist loadfile -x --cov=src/ml_switcheroo_compiler --cov=scripts --cov-branch --cov-fail-under=100
     files: \.py$
     id: pytest-coverage
     language: system
@@ -66,19 +66,19 @@ repos:
     name: Generate Module Exports
     pass_filenames: false
   - entry: python3 scripts/lint_numpy_leak.py
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^(src/ml_switcheroo_compiler|scripts)/.*\.py$
     id: numpy-leak-check
     language: system
     name: Check for NumPy Leaks
     pass_filenames: false
   - entry: python3 scripts/lint_dynamic_numpy.py
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^(src/ml_switcheroo_compiler|scripts)/.*\.py$
     id: dynamic-numpy-import-check
     language: system
     name: Guard Against Dynamic NumPy Imports Outside NumPy Backend
     pass_filenames: false
   - entry: python3 scripts/lint_dependencies.py
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^(src/ml_switcheroo_compiler|scripts)/.*\.py$
     id: dependency-isolation-check
     language: system
     name: Check Dependency Isolation
@@ -101,11 +101,17 @@ repos:
     language: system
     name: Check Tautological Assertions and Bare Pass
     pass_filenames: false
-  - entry: interrogate -c pyproject.toml src/ml_switcheroo_compiler scripts
-    files: ^(src/ml_switcheroo_compiler|scripts)/.*\.py$
+  - entry: interrogate -c pyproject.toml src/ml_switcheroo_compiler scripts tests
+    files: ^(src/ml_switcheroo_compiler|scripts|tests)/.*\.py$
     id: interrogate-docs
     language: system
     name: Check Docstring Coverage
+    pass_filenames: false
+  - entry: python3 scripts/check_docs.py
+    files: ^(src/ml_switcheroo_compiler|scripts|tests)/.*\.py$
+    id: check-docs
+    language: system
+    name: Check Granular AST Docstring Coverage
     pass_filenames: false
   repo: local
 - hooks:

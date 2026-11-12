@@ -219,6 +219,9 @@ def test_webgpu_webrtc_emitters() -> None:
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_no_top`.
             """
             if "webrtc_topology.yaml" in path:
                 return False
@@ -233,6 +236,9 @@ def test_webgpu_webrtc_emitters() -> None:
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_no_col`.
             """
             if "webrtc_collectives.yaml" in path:
                 return False

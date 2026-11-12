@@ -116,6 +116,9 @@ def test_assertions_coverage() -> None:
 
             Raises:
                 ValueError: Always raised.
+
+            Returns:
+                bool: Computed output value from `__bool__`.
             """
             raise ValueError("ambiguous truth value")
 

@@ -64,12 +64,12 @@ def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) 
     """Execute the eager cond eager operation on the active backend array.
 
     Args:
-        pred (Tensor): The pred parameter.
-        true_fn (TensorOrScalar): The true_fn parameter.
-        false_fn (TensorOrScalar): The false_fn parameter.
+        pred (Tensor): Input `pred` argument (pred).
+        true_fn (TensorOrScalar): Input `true_fn` argument (true fn).
+        false_fn (TensorOrScalar): Input `false_fn` argument (false fn).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if bool(pred.data):
         return invoke_callable(true_fn)
@@ -84,12 +84,12 @@ def while_loop_eager(
     """Execute the eager while loop eager operation on the active backend array.
 
     Args:
-        cond_fn (Callable[[_StateT], bool | Tensor]): The cond_fn parameter.
-        body_fn (Callable[[_StateT], _StateT]): The body_fn parameter.
-        init_val (_StateT): The init_val parameter.
+        cond_fn (Callable[[_StateT], bool | Tensor]): Input `cond_fn` argument (cond fn).
+        body_fn (Callable[[_StateT], _StateT]): Input `body_fn` argument (body fn).
+        init_val (_StateT): Input `init_val` argument (init val).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     val = init_val
     res = cond_fn(val)
@@ -108,12 +108,12 @@ def _stack_scan_outputs(
     """Execute the eager stack scan outputs operation on the active backend array.
 
     Args:
-        ys (list): The ys parameter.
-        init (TensorOrScalar): The init parameter.
-        last_y (TensorOrScalar): The last_y parameter.
+        ys (list): Input `ys` argument (ys).
+        init (TensorOrScalar): Input `init` argument (init).
+        last_y (TensorOrScalar): Input `last_y` argument (last y).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if len(ys) > 0 and isinstance(ys[0], tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
@@ -142,13 +142,13 @@ def scan_eager(
     """Execute the eager scan eager operation on the active backend array.
 
     Args:
-        f (TensorOrScalar): The f parameter.
-        init (TensorOrScalar): The init parameter.
-        xs (TensorOrScalar): The xs parameter.
-        length (int | None): The length parameter.
+        f (TensorOrScalar): Input `f` argument (f).
+        init (TensorOrScalar): Input `init` argument (init).
+        xs (TensorOrScalar): Input `xs` argument (xs).
+        length (int | None): Input `length` argument (length).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     fn_callable = f
     carry: TensorOrScalar = init
@@ -169,10 +169,10 @@ def _map_fn_eager_get_length(elems: Tensor | None) -> int:
     """Execute the eager map fn eager get length operation on the active backend array.
 
     Args:
-        elems (Tensor): The elems parameter.
+        elems (Tensor): Input `elems` argument (elems).
 
     Returns:
-        int: Result.
+        int: Computed `int` output.
     """
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
@@ -181,12 +181,12 @@ def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> lis
     """Execute the eager map fn eager execute operation on the active backend array.
 
     Args:
-        fn (TensorOrScalar): The fn parameter.
-        elems (Tensor): The elems parameter.
-        length (int): The length parameter.
+        fn (TensorOrScalar): Input `fn` argument (fn).
+        elems (Tensor): Input `elems` argument (elems).
+        length (int): Input `length` argument (length).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     fn_callable = fn
     ys: list[TensorOrScalar] = []
@@ -201,12 +201,12 @@ def _map_fn_eager_stack(ys: TensorOrScalar, elems: Tensor, dtype: DType | None) 
     """Execute the eager map fn eager stack operation on the active backend array.
 
     Args:
-        ys (list): The ys parameter.
-        elems (Tensor): The elems parameter.
-        dtype (DType | None): The dtype parameter.
+        ys (list): Input `ys` argument (ys).
+        elems (Tensor): Input `elems` argument (elems).
+        dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     ys_list = ys if isinstance(ys, (list, tuple)) else _ensure_cf_list(ys)
     if len(ys_list) > 0 and isinstance(ys_list[0], tuple):
@@ -222,12 +222,12 @@ def map_fn_eager(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) 
     """Execute the eager map fn eager operation on the active backend array.
 
     Args:
-        fn (TensorOrScalar): The fn parameter.
-        elems (Tensor): The elems parameter.
-        dtype (DType | None): The dtype parameter.
+        fn (TensorOrScalar): Input `fn` argument (fn).
+        elems (Tensor): Input `elems` argument (elems).
+        dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     length = _map_fn_eager_get_length(elems)
     ys = _map_fn_eager_execute(fn, elems, length)
@@ -238,11 +238,11 @@ def pmap_eager(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrSc
     """Execute the eager pmap eager operation on the active backend array.
 
     Args:
-        func (Callable): The func parameter.
-        axis_name (str | None): The axis_name parameter.
+        func (Callable): Input `func` argument (func).
+        axis_name (str | None): Input `axis_name` argument (axis name).
 
     Returns:
-        Callable: Result.
+        Callable: Computed `Callable` output.
     """
     del axis_name
 
@@ -253,7 +253,7 @@ def pmap_eager(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrSc
             *args (TensorOrScalar): Positional args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return invoke_callable(vmap(func), *args)
 
@@ -264,10 +264,10 @@ def stop_gradient_eager(x: _StateT) -> _StateT:
     """Execute the eager stop gradient eager operation on the active backend array.
 
     Args:
-        x (_StateT): The x parameter.
+        x (_StateT): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return x
 
@@ -276,7 +276,7 @@ def assert_value_eager(condition: TensorOrScalar, message: str = "") -> None:
     """Execute the eager assert value eager operation on the active backend array.
 
     Args:
-        condition (TensorOrScalar): The condition parameter.
-        message (str): The message parameter.
+        condition (TensorOrScalar): Input `condition` argument (condition).
+        message (str): Input `message` argument (message).
     """
     record_assertion(condition, message)

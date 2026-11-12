@@ -27,11 +27,11 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: EagerValue) -> Eage
     """Execute the eager calc same padding operation on the active backend array.
 
     Args:
-        operand_ndim (int): The operand_ndim parameter.
-        window_dimensions (list): The window_dimensions parameter.
+        operand_ndim (int): Input `operand_ndim` argument (operand ndim).
+        window_dimensions (list): Input `window_dimensions` argument (window dimensions).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     from ml_switcheroo_compiler.backends.eager_registry import ensure_int_list
 
@@ -45,12 +45,12 @@ def _calculate_padding_for_window(padding: str | list[tuple[int, int]], operand_
     """Execute the eager calculate padding for window operation on the active backend array.
 
     Args:
-        padding (typing.Union[str, list[tuple[int, int]]]): The padding parameter.
-        operand_ndim (int): The operand_ndim parameter.
-        window_dimensions (list): The window_dimensions parameter.
+        padding (typing.Union[str, list[tuple[int, int]]]): Input `padding` argument (padding).
+        operand_ndim (int): Input `operand_ndim` argument (operand ndim).
+        window_dimensions (list): Input `window_dimensions` argument (window dimensions).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     if isinstance(padding, str):
         if padding == "SAME":
@@ -63,11 +63,11 @@ def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np
     """Execute the eager create sliding window view operation on the active backend array.
 
     Args:
-        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The operand parameter.
-        config (WindowConfig): The config parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `operand` argument (operand).
+        config (WindowConfig): Input `config` argument (config).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     window_dimensions = config.window_dimensions
     window_strides = config.window_strides or [1] * len(window_dimensions)
@@ -95,12 +95,12 @@ def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.float6
     """Execute the eager apply base dilation operation on the active backend array.
 
     Args:
-        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The operand parameter.
-        base_dilation (typing.Optional[list[int]]): The base_dilation parameter.
-        init_value (EagerValue): The init_value parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `operand` argument (operand).
+        base_dilation (typing.Optional[list[int]]): Input `base_dilation` argument (base dilation).
+        init_value (EagerValue): Input `init_value` argument (init value).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if base_dilation is None or not any(d > 1 for d in base_dilation):
         return operand
@@ -115,12 +115,12 @@ def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int,
     """Execute the eager top k operation on the active backend array.
 
     Args:
-        x (EagerValue): The x parameter.
-        k (int): The k parameter.
-        axis (int): The axis parameter.
+        x (EagerValue): Input `x` argument (x).
+        k (int): Input `k` argument (k).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     idx = ensure_ndarray(get_backend_member(np, "argsort")(x, axis=axis))
     ndim_val = ensure_int(get_backend_member(x, "ndim"))
@@ -137,16 +137,16 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
     """Evaluate.
 
     Args:
-        operand (EagerValue): The operand parameter.
-        init_value (EagerValue): The init_value parameter.
-        computation (str): The computation parameter.
-        config (WindowConfig): The config parameter.
+        operand (EagerValue): Input `operand` argument (operand).
+        init_value (EagerValue): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        config (WindowConfig): Input `config` argument (config).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     operand_arr = np.asarray(operand)
     if not operand_arr.shape:
@@ -182,12 +182,12 @@ def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = Fa
     """Execute the eager logsumexp operation on the active backend array.
 
     Args:
-        x (EagerValue): The x parameter.
-        axis (EagerValue): The axis parameter.
-        keepdims (EagerValue): The keepdims parameter.
+        x (EagerValue): Input `x` argument (x).
+        axis (EagerValue): Input `axis` argument (axis).
+        keepdims (EagerValue): Input `keepdims` argument (keepdims).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     xmax = get_backend_member(np, "max")(x, axis=axis, keepdims=True)
     return ensure_eager_tensor(get_backend_member(np, "log")(get_backend_member(np, "sum")(get_backend_member(np, "exp")(ensure_eager_tensor(x) - xmax), axis=axis, keepdims=keepdims)) + (get_backend_member(np, "squeeze")(xmax) if not keepdims else xmax))
@@ -201,12 +201,12 @@ def _segment_sum(
     """Execute the eager segment sum operation on the active backend array.
 
     Args:
-        data (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The data parameter.
-        segment_ids (np.ndarray[tuple[int, ...], np.dtype[np.int64]]): The segment_ids parameter.
-        num_segments (int | None): The num_segments parameter.
+        data (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `data` argument (data).
+        segment_ids (np.ndarray[tuple[int, ...], np.dtype[np.int64]]): Input `segment_ids` argument (segment ids).
+        num_segments (int | None): Input `num_segments` argument (num segments).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if num_segments is None:
         num_segments = int(np.max(segment_ids)) + 1
@@ -221,14 +221,14 @@ def _np_nms(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
     """Execute the eager np nms operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        boxes (EagerValue): The boxes parameter.
-        scores (EagerValue): The scores parameter.
-        max_output_size (EagerValue): The max_output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        boxes (EagerValue): Input `boxes` argument (boxes).
+        scores (EagerValue): Input `scores` argument (scores).
+        max_output_size (EagerValue): Input `max_output_size` argument (max output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs)
 
@@ -238,12 +238,12 @@ def _np_trapezoidal_integral(backend_module: BackendModuleProtocol, y: EagerValu
     """Execute the eager np trapezoidal integral operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        y (EagerValue): The y parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        y (EagerValue): Input `y` argument (y).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
@@ -259,13 +259,13 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, labels: EagerVal
     """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        labels (EagerValue): The labels parameter.
-        predictions (EagerValue): The predictions parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        labels (EagerValue): Input `labels` argument (labels).
+        predictions (EagerValue): Input `predictions` argument (predictions).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
@@ -282,12 +282,12 @@ def _np_cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np cummax operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -303,12 +303,12 @@ def _np_cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np cummin operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -324,12 +324,12 @@ def _np_cumprod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np cumprod operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
@@ -342,12 +342,12 @@ def _np_cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np cumlogsumexp operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -361,13 +361,13 @@ def _np_approx_max_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """Execute the eager np approx max k operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -392,13 +392,13 @@ def _np_approx_min_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """Execute the eager np approx min k operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -433,13 +433,13 @@ def _np_top_k(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     """Execute the eager np top k operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     k_arg = args[0] if len(args) > 0 else kwargs.get("k", 1)
     k = _get_k_val(k_arg)

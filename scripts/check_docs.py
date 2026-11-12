@@ -150,13 +150,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Execute the documentation coverage check CLI.
 
     Args:
-        argv (Sequence[str] | None): Optional CLI arguments; defaults to `("src/ml_switcheroo_compiler", "scripts")`.
+        argv (Sequence[str] | None): Optional CLI arguments; defaults to `("src/ml_switcheroo_compiler", "scripts", "tests")`.
 
     Returns:
         int: Process exit code (0 when 100% compliant, 1 otherwise).
     """
     raw_args = list(argv) if argv is not None else sys.argv[1:]
-    targets: Sequence[str] = raw_args if raw_args else ("src/ml_switcheroo_compiler", "scripts")
+    targets: Sequence[str] = raw_args if raw_args else ("src/ml_switcheroo_compiler", "scripts", "tests")
     all_violations: list[str] = []
     for target in targets:
         all_violations.extend(check_directory(str(target)))

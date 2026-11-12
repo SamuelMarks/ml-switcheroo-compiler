@@ -597,9 +597,9 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: type[BaseGen
     """Execute evaluate if node for compiler processing.
 
     Args:
-        node (LogicalNode): The node parameter.
-        env (Environment): The env parameter.
-        backend (type[BaseGenerator]): The backend parameter.
+        node (LogicalNode): Input `node` argument (node).
+        env (Environment): Input `env` argument (env).
+        backend (type[BaseGenerator]): Input `backend` argument (backend).
     """
     cond_val = env.get(node.inputs[0])
     is_true = _eval_truthy(cond_val)
@@ -622,9 +622,9 @@ def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: type[BaseG
     """Execute evaluate loop node for compiler processing.
 
     Args:
-        node (LogicalNode): The node parameter.
-        env (Environment): The env parameter.
-        backend (type[BaseGenerator]): The backend parameter.
+        node (LogicalNode): Input `node` argument (node).
+        env (Environment): Input `env` argument (env).
+        backend (type[BaseGenerator]): Input `backend` argument (backend).
     """
     cond_graph: TensorOrScalar = node.subgraphs.get("cond") or node.attributes.get("cond")
     body_graph: TensorOrScalar = node.subgraphs.get("body") or node.attributes.get("body")

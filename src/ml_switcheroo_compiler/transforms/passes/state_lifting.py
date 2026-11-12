@@ -44,7 +44,7 @@ class _StateContainerCallableProtocol(typing.Protocol):
             **kwargs (StateEntry): Keyword arguments.
 
         Returns:
-            StateEntry: Result.
+            StateEntry: Computed `StateEntry` output.
         """
         ...
 
@@ -540,8 +540,8 @@ def _get_node_items(block: LogicalGraph | _BlockNodesProtocol) -> Iterable[tuple
     """
     if not isinstance(block, _BlockNodesProtocol):
         return []
-    nodes: list[LogicalNode] | dict[str, LogicalNode] = block.nodes
-    if isinstance(nodes, dict):
+    nodes: list[LogicalNode] | Mapping[str, LogicalNode] = block.nodes
+    if isinstance(nodes, Mapping):
         return list(nodes.items())
     return [(n.id, n) for n in nodes]
 

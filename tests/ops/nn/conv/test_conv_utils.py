@@ -63,6 +63,9 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
 
     Args:
         data: Test parameter `data`.
+
+    Returns:
+        EagerValue: Computed output value from `create_eager_tensor`.
     """
     return ensure_callable(Tensor)(
         data,
@@ -112,6 +115,9 @@ def test_conv_utils_eager_and_trace_coverage() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             _ = (args, kwargs)
             return "dummy"

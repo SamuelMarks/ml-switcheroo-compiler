@@ -337,11 +337,18 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
 
             Args:
                 env: Test parameter `env`.
+
+            Returns:
+                int: Computed output value from `eval`.
             """
             raise RuntimeError("Eval failed")
 
         def __int__(self) -> int:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                int: Computed output value from `__int__`.
+            """
             return 32
 
     n_valid_str = IRNode(id="n1", op_type="Input", shape_metadata=["B", "Seq"])

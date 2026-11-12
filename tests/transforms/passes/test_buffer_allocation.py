@@ -83,6 +83,9 @@ def test_buffer_allocation_dynamic() -> None:
 
             Args:
                 n: Test parameter `n`.
+
+            Returns:
+                EagerValue: Computed output value from `get_memory_cost`.
             """
             return 256
 
@@ -97,6 +100,9 @@ def test_buffer_allocation_dynamic() -> None:
 
             Args:
                 n: Test parameter `n`.
+
+            Returns:
+                EagerValue: Computed output value from `get_memory_cost`.
             """
             return "symbolic"
 
@@ -111,6 +117,9 @@ def test_buffer_allocation_dynamic() -> None:
 
             Args:
                 n: Test parameter `n`.
+
+            Returns:
+                EagerValue: Computed output value from `get_memory_cost`.
             """
             return 128.5
 

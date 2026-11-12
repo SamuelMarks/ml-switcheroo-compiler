@@ -49,7 +49,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture
 def mock_prepare() -> Iterator[EagerValue]:
-    """Test function mock_prepare."""
+    """Test function mock_prepare.
+
+    Yields:
+        EagerValue: Yielded test context or value from `mock_prepare`.
+    """
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._prepare_eager_transform") as m:
         ctx = MagicMock()
         ctx.np_mod = np

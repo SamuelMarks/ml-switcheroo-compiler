@@ -26,6 +26,9 @@ except ValueError:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             cotangent: Test parameter `cotangent`.
+
+        Returns:
+            EagerValue: Computed output value from `_expand_vjp`.
         """
         import uuid
 
@@ -49,6 +52,9 @@ except ValueError:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             cotangent: Test parameter `cotangent`.
+
+        Returns:
+            EagerValue: Computed output value from `_squeeze_vjp`.
         """
         import uuid
 
@@ -70,6 +76,9 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     Args:
         val: Test parameter `val`.
         shape: Test parameter `shape`.
+
+    Returns:
+        EagerValue: Computed output value from `make_tensor`.
     """
     val = np.array(val, dtype=np.float32)
     if shape is None:
@@ -85,6 +94,9 @@ def test_shape_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_reshape`.
         """
         return dispatch_op("Reshape", x, newshape=(4,))
 
@@ -93,6 +105,9 @@ def test_shape_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_transpose`.
         """
         return dispatch_op("Transpose", x)
 
@@ -101,6 +116,9 @@ def test_shape_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_expand`.
         """
         return dispatch_op("ExpandDims", x, axis=0)
 
@@ -109,6 +127,9 @@ def test_shape_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_squeeze`.
         """
         return dispatch_op("Squeeze", x, axis=0)
 
@@ -140,6 +161,9 @@ def test_nn_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_relu`.
         """
         return dispatch_op("Relu", x)
 
@@ -148,6 +172,9 @@ def test_nn_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_sigmoid`.
         """
         return dispatch_op("Sigmoid", x)
 
@@ -156,6 +183,9 @@ def test_nn_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_softmax`.
         """
         return dispatch_op("Softmax", x, axis=-1)
 

@@ -32,7 +32,11 @@ mock_pkg.__spec__ = MagicMock()
 
 @pytest.fixture(autouse=True, scope="module")
 def _cleanup_mlx_modules() -> Iterator[None]:
-    """Setup and restore eager.mx and sys.modules for test module execution."""
+    """Setup and restore eager.mx and sys.modules for test module execution.
+
+    Yields:
+        None: Yielded test context or value from `_cleanup_mlx_modules`.
+    """
     orig_eager_mx = ensure_eager_tensor(ensure_eager_tensor(eager).mx)
     ensure_mutable(eager).mx = ensure_eager_tensor(mock_mx)
     if not _has_real_mlx:
@@ -440,7 +444,11 @@ def test_mlx_cum_ops_dtype_fallbacks() -> None:
         value = "float16"
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "float16"
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="real_dtype"):

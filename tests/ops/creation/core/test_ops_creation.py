@@ -181,6 +181,9 @@ def test_creation_frontend_basic_internal_funcs() -> None:
             Args:
                 obj: Test parameter `obj`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             if dtype == "bad_dtype":
                 raise TypeError("bad dtype")
@@ -226,11 +229,18 @@ def _test_creation_frontend_basic_tensor_inputs_part_1(_state: dict[str, EagerTe
 
             Args:
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `astype`.
             """
             return ensure_eager_tensor(self)
 
         def __array__(self) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return np.ones((2, 2))
 
     t = ensure_callable(Tensor)(ensure_callable(DummyData)(), tc)
@@ -315,7 +325,11 @@ def test_creation_frontend_basic_unpack_shape() -> None:
             """Test class Data."""
 
             def item(self) -> EagerValue:
-                """Test function item."""
+                """Test function item.
+
+                Returns:
+                    EagerValue: Computed output value from `item`.
+                """
                 return 5
 
         data = Data()
@@ -328,8 +342,8 @@ def test_creation_frontend_basic_full_eager() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.ops.creation.frontend_basic import _full_eager
 
-    ensure_callable(_full_eager)((2, 2), 5, DType.Float32, None)
-    assert callable(test_creation_frontend_basic_full_eager)
+    out = ensure_callable(_full_eager)((2, 2), 5, DType.Float32, None)
+    assert ensure_eager_tensor(out).shape == (2, 2)
 
 
 def test_creation_frontend_basic_eager_backends() -> None:
@@ -351,6 +365,9 @@ def test_creation_frontend_basic_eager_backends() -> None:
                 op_name: Test parameter `op_name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return np.ones((2, 2))
 
@@ -456,6 +473,9 @@ def test_creation_frontend_basic_misc() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.ones((2, 2))
 
@@ -493,7 +513,11 @@ def test_creation_frontend_basic_extract_fill() -> None:
             """Test class Data."""
 
             def item(self) -> EagerValue:
-                """Test function item."""
+                """Test function item.
+
+                Returns:
+                    EagerValue: Computed output value from `item`.
+                """
                 return 5
 
         data = Data()
@@ -530,6 +554,9 @@ def test_creation_frontend_basic_like_funcs_str_dtype() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.ones((2, 2))
 
@@ -548,11 +575,18 @@ def test_creation_frontend_basic_like_funcs_str_dtype() -> None:
 
                 Args:
                     dtype: Test parameter `dtype`.
+
+                Returns:
+                    EagerValue: Computed output value from `astype`.
                 """
                 return ensure_eager_tensor(self)
 
             def __array__(self) -> EagerValue:
-                """Test function __array__."""
+                """Test function __array__.
+
+                Returns:
+                    EagerValue: Computed output value from `__array__`.
+                """
                 return np.ones((2, 2))
 
         t = ensure_callable(Tensor)(ensure_callable(DummyData)(), tc)
@@ -596,7 +630,11 @@ def test_creation_frontend_basic_unpack_shape_elif_item() -> None:
         """Test class DummyItem2."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 5
 
     assert ensure_callable(_unpack_shape)((ensure_callable(DummyItem2)(),)) == (5,)

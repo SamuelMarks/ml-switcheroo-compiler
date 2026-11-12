@@ -1,4 +1,4 @@
-"""Module random_gamma_p.py."""
+"""Compiler `random gamma p` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -14,6 +14,6 @@ def random_gamma_p(*args: Tensor | float | int | str, **kwargs: Tensor | float |
         **kwargs (Tensor | float | int | str): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return _dispatch_random("random_gamma_p", *args, **kwargs)

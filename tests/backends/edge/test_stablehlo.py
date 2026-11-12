@@ -685,6 +685,9 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            bool: Computed output value from `mock_exists`.
         """
         if "stablehlo_schema.yaml" in p:
             return False

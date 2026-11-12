@@ -68,6 +68,9 @@ class MockBackend:
             op_name: Test parameter `op_name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `execute_op`.
         """
         if op_name == "StringSplit":
             return (np.zeros(()), np.zeros(()))
@@ -78,6 +81,9 @@ class MockBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `array`.
         """
         return np.array(x)
 
@@ -100,6 +106,9 @@ def eager_mode(request: EagerValue, monkeypatch: EagerValue) -> EagerValue:
     Args:
         request: Test parameter `request`.
         monkeypatch: Test parameter `monkeypatch`.
+
+    Returns:
+        EagerValue: Computed output value from `eager_mode`.
     """
     ensure_callable(ensure_eager_tensor(ensure_eager_tensor(monkeypatch).setattr))(config, "eager_mode", ensure_eager_tensor(ensure_eager_tensor(request).param))
     ensure_callable(ensure_eager_tensor(ensure_eager_tensor(monkeypatch).setattr))(global_tracing_state, "is_tracing", not ensure_eager_tensor(ensure_eager_tensor(request).param))
@@ -124,6 +133,9 @@ def test_sparse_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTen
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return ()
 
@@ -187,6 +199,9 @@ def test_text_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTenso
 
             Args:
                 inputs: Test parameter `inputs`.
+
+            Returns:
+                EagerValue: Computed output value from `extract_proxy_inputs`.
             """
             return (["dummy_id"], None, None)
 
@@ -243,6 +258,9 @@ def test_text_ops(eager_mode: EagerTensorProtocol, mock_backend: EagerTensorProt
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return args[0] if args else None
 

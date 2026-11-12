@@ -28,6 +28,9 @@ def test_checkpoint_equivalence() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         y = ops.multiply(x, x)
         z = ops.multiply(y, x)
@@ -53,6 +56,9 @@ def test_checkpoint_memory_usage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         for _ in range(5):
             x = ops.multiply(x, x)
@@ -97,6 +103,9 @@ def test_checkpoint_eager_mode() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.multiply(x, x)
 

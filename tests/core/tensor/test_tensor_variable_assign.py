@@ -102,7 +102,11 @@ def test_parameter_index() -> None:
         """Test class MockData."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return 42
 
     param = ensure_callable(Parameter)(ensure_callable(MockData)(), t_cfg)

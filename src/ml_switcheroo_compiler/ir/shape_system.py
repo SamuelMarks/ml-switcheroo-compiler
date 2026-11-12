@@ -2394,8 +2394,8 @@ def _get_matmul_dims(
     """Extract matrix multiplication dimensions (m, k_a, k_b, n).
 
     Args:
-        shape_a (ShapeType): The shape_a parameter.
-        shape_b (ShapeType): The shape_b parameter.
+        shape_a (ShapeType): Input `shape_a` argument (shape a).
+        shape_b (ShapeType): Input `shape_b` argument (shape b).
 
     Returns:
         tuple[Union[int, str, SymNode, SymInt], ...]: (m_dim, k_dim_a, k_dim_b, n_dim).
@@ -2411,7 +2411,7 @@ def _get_batch_dims(shape: ShapeType) -> ShapeType:
     """Extract batch dimensions from shape.
 
     Args:
-        shape (ShapeType): The shape parameter.
+        shape (ShapeType): Input `shape` argument (shape).
 
     Returns:
         ShapeType: Batch dimensions.

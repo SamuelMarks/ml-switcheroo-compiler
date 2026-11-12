@@ -28,7 +28,11 @@ def test_h5_branches() -> None:
         """Test class FakeTensor1."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return np.array([1, 2])
 
     class FakeTensor2:
@@ -41,7 +45,11 @@ def test_h5_branches() -> None:
                 """Test class D."""
 
                 def numpy(self) -> EagerValue:
-                    """Test function numpy."""
+                    """Test function numpy.
+
+                    Returns:
+                        EagerValue: Computed output value from `numpy`.
+                    """
                     return np.array([3, 4])
 
             self.data = D()
@@ -50,7 +58,11 @@ def test_h5_branches() -> None:
         """Test class FakeTensor3."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [5, 6]
 
     weights = {"t1": FakeTensor1(), "t2": FakeTensor2(), "t3": FakeTensor3()}
@@ -88,6 +100,9 @@ def test_h5_backend_branches() -> None:
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                EagerValue: Computed output value from `load_h5`.
             """
             return {"a": 1}
 

@@ -1,4 +1,4 @@
-"""Module generalized_normal.py."""
+"""Compiler `generalized normal` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -14,6 +14,6 @@ def generalized_normal(*args: Tensor | float | int | str, **kwargs: Tensor | flo
         **kwargs (Tensor | float | int | str): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return _dispatch_random("generalized_normal", *args, **kwargs)

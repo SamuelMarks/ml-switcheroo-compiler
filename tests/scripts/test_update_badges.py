@@ -260,9 +260,9 @@ def test_get_doc_coverage_exception_in_file() -> None:
 
 def test_update_readme_no_file() -> None:
     """Verify `update_readme` returns early when `README.md` does not exist."""
-    with patch("os.path.exists", return_value=False):
+    with patch("os.path.exists", return_value=False), patch("builtins.open") as mock_open_fn:
         update_readme()
-    assert callable(test_update_readme_no_file)
+        mock_open_fn.assert_not_called()
 
 
 def test_update_readme_success() -> None:
@@ -316,6 +316,6 @@ def test_main_block() -> None:
     import sys
 
     with patch.object(sys, "argv", ["update_badges.py"]):
-        with patch("os.path.exists", return_value=False):
+        with patch("os.path.exists", return_value=False), patch("builtins.open") as mock_open_fn:
             runpy.run_module("scripts.update_badges", run_name="__main__")
-    assert callable(test_main_block)
+            mock_open_fn.assert_not_called()

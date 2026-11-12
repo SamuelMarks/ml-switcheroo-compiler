@@ -35,6 +35,9 @@ def test_conv_frontend_cov() -> None:
                 op_name: Test parameter `op_name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return np.ones((2, 2, 2))
 
@@ -44,6 +47,9 @@ def test_conv_frontend_cov() -> None:
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return data
 
@@ -116,6 +122,9 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return types.SimpleNamespace(shape=(1, 1))
 

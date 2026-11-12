@@ -234,20 +234,23 @@ def test_shape_misc_coverage() -> None:
     from tests.testing_utils import get_test_members
 
     sm_members = get_test_members(sm)
+    inferred_count = 0
     for op_name in ops:
         if op_name in sm_members:
             cls = ensure_callable(sm_members[op_name])
             inst = ensure_eager_tensor(cls())
-            ensure_callable(inst.infer_shape)()
+            s0 = ensure_callable(inst.infer_shape)()
+            assert s0 is not None
+            inferred_count += 1
 
             class DummyShape:
                 """Test class DummyShape."""
 
                 shape = (1,)
 
-            ensure_callable(inst.infer_shape)(DummyShape())
-            try:
-                ensure_callable(inst.infer_shape)(DummyShape(), DummyShape())
-            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-    assert callable(test_shape_misc_coverage)
+            s1 = ensure_callable(inst.infer_shape)(DummyShape())
+            assert s1 is not None
+            if op_name in ("Intersect1d", "Setdiff1d", "Setxor1d", "Union1d", "Searchsorted", "Compress", "Extract"):
+                s2 = ensure_callable(inst.infer_shape)(DummyShape(), DummyShape())
+                assert s2 is not None
+    assert inferred_count >= 20

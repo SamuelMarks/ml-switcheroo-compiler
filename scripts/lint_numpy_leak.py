@@ -29,6 +29,8 @@ def _scan_file_for_np_refs(filepath: str) -> list[str]:
             hits.append(f"{filepath}:{i + 1}: {code_line}")
         if re.search(r"\b(_np_mod|_scipy_mod|numpy_mod)\b", code_line):
             hits.append(f"{filepath}:{i + 1}: {code_line}")
+        if re.search(r"(?:BackendRegistry\.get|get_backend)\(\s*['\"]numpy['\"]\s*\)", code_line):
+            hits.append(f"{filepath}:{i + 1}: {code_line}")
     return hits
 
 

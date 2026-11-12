@@ -53,8 +53,19 @@ def test_unpack_x_y_sample_weight() -> None:
 
 
 def test_split_dataset() -> None:
-    """Test split."""
-    assert ensure_callable(split_dataset)(1, 0.5) == (1, 1)
+    """Verify `split_dataset` produces disjoint subsets, preserves target alignment, and validates `left_size`."""
+    ds = NumpyDataset([10, 20, 30, 40], y=[1, 2, 3, 4], config=BatchConfig(batch_size=1, shuffle=False, seed=7))
+    left_ds, right_ds = split_dataset(ds, left_size=0.5, shuffle=False)
+    assert left_ds.x == [10, 20] and left_ds.y == [1, 2]
+    assert right_ds.x == [30, 40] and right_ds.y == [3, 4]
+
+    ds_no_y = NumpyDataset([10, 20, 30, 40], config=BatchConfig(batch_size=2, shuffle=False, seed=7))
+    shuf_l, shuf_r = split_dataset(ds_no_y, left_size=0.25, shuffle=True)
+    assert len(shuf_l.x) == 1 and len(shuf_r.x) == 3
+    assert set(ensure_eager_tensor(shuf_l.x)) | set(ensure_eager_tensor(shuf_r.x)) == {10, 20, 30, 40}
+
+    with pytest.raises(ValueError, match="left_size"):
+        split_dataset(ds, left_size=1.5)
 
 
 def test_pad_sequences() -> None:

@@ -20,7 +20,7 @@ class Finfo(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -39,7 +39,7 @@ class Iinfo(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -58,7 +58,7 @@ class GetPrintoptions(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -77,7 +77,7 @@ class Isscalar(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -96,7 +96,7 @@ class Iterable(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -115,7 +115,7 @@ class PromoteTypes(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -134,7 +134,7 @@ class ResultType(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -147,7 +147,7 @@ def iinfo(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -162,7 +162,7 @@ def isscalar(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -177,7 +177,7 @@ def iterable(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -192,7 +192,7 @@ def promote_types(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSc
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -207,7 +207,7 @@ def result_type(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -222,7 +222,7 @@ def get_printoptions(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

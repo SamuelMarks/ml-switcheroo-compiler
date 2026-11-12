@@ -65,6 +65,9 @@ def test_shape_inference_strategy_base() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                tuple[int | None, ...] | list[tuple[int | None, ...]] | None: Computed output value from `__call__`.
             """
             _ = ensure_callable(super().__call__)(*args, **kwargs)
             return None

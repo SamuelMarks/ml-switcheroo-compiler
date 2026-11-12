@@ -146,7 +146,11 @@ def test_gather_eager() -> None:
             self.data = data
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return self.data
 
     t_x = MockTensor(x)
@@ -179,7 +183,11 @@ def test_stack_eager() -> None:
             self.data = data
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return self.data
 
     t_a = MockTensor(a)

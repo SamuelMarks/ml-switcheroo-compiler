@@ -59,6 +59,9 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
         Args:
             name: Test parameter `name`.
             package: Test parameter `package`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_find_spec`.
         """
         if name == "mlx":
             return None

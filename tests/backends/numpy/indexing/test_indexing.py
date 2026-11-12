@@ -63,7 +63,11 @@ def test_dynamic_update_slice() -> None:
             self.data = val
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return self.data
 
     start_indices_mock = [MockItem(1), MockItem(1)]
@@ -243,7 +247,11 @@ def test_gather_eager() -> None:
             self.data = data
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return self.data
 
     t_x = MockTensor(x)
@@ -283,7 +291,11 @@ def test_stack_eager() -> None:
             self.data = data
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return self.data
 
     t_a = MockTensor(a)
@@ -300,7 +312,11 @@ def test_dynamic_update_slice_with_item() -> None:
         """Test class MockItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1
 
     x = np.zeros((3, 3))

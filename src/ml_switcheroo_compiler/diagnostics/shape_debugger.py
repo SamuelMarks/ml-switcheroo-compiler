@@ -56,11 +56,11 @@ def debug_shapes(
     """Trace the execution of a model function to debug and document tensor shapes.
 
     Args:
-        model_func (Callable[[Tensor], Tensor | tuple[int, ...] | None]): The model_func parameter.
-        input_shape (tuple[int, ...]): The input_shape parameter.
+        model_func (Callable[[Tensor], Tensor | tuple[int, ...] | None]): Input `model_func` argument (model func).
+        input_shape (tuple[int, ...]): Input `input_shape` argument (input shape).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     _load_formatters()
     fmt = _FORMATTERS.get("markdown_table", {})
@@ -90,10 +90,10 @@ def to_graphviz(graph: LogicalGraph) -> str:
     """Convert a logical IR graph into a Graphviz DOT format string.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
+        graph (LogicalGraph): Input `graph` argument (graph).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     _load_formatters()
     fmt = _FORMATTERS.get("graphviz", {})
@@ -115,10 +115,10 @@ def to_html(graph: LogicalGraph) -> str:
     """Convert a logical IR graph into an HTML visualization.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
+        graph (LogicalGraph): Input `graph` argument (graph).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     _load_formatters()
     fmt = _FORMATTERS.get("html", {})

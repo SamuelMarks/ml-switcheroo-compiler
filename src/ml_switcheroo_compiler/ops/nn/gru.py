@@ -26,12 +26,12 @@ def _compute_gru_gates(x_parts: TensorOrScalar, r_parts: TensorOrScalar, state: 
     """Compute the compute gru gates tensor operation.
 
     Args:
-        x_parts (tuple): The x_parts parameter.
-        r_parts (tuple): The r_parts parameter.
-        state (Tensor): The state parameter.
+        x_parts (tuple): Input `x_parts` argument (x parts).
+        r_parts (tuple): Input `r_parts` argument (r parts).
+        state (Tensor): Input `state` argument (state).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     x_seq = [ensure_tensor(t) for t in ensure_eager_list(x_parts)]
     r_seq = [ensure_tensor(t) for t in ensure_eager_list(r_parts)]
@@ -53,14 +53,14 @@ def gru_cell(
     """Fused GRU cell math.
 
     Args:
-        inputs (Tensor): The inputs parameter.
-        state (Tensor): The state parameter.
-        kernel (Tensor): The kernel parameter.
-        recurrent_kernel (Tensor): The recurrent_kernel parameter.
-        bias (Optional): The bias parameter.
+        inputs (Tensor): Input `inputs` argument (inputs).
+        state (Tensor): Input `state` argument (state).
+        kernel (Tensor): Input `kernel` argument (kernel).
+        recurrent_kernel (Tensor): Input `recurrent_kernel` argument (recurrent kernel).
+        bias (Optional): Input `bias` argument (bias).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     matrix_x = matmul(inputs, kernel)
     if bias is not None:
@@ -89,7 +89,7 @@ class Gru(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0] if args else ()
 
@@ -102,7 +102,7 @@ def gru(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -118,10 +118,10 @@ def _sigmoid(x: Tensor) -> Tensor:
     """Compute the sigmoid tensor operation.
 
     Args:
-        x (Tensor): The x parameter.
+        x (Tensor): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 

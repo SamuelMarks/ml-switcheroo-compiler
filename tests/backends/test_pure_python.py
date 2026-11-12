@@ -55,6 +55,15 @@ def test_pure_python_tensor_basic_ops() -> None:
 
     assert t1.sum() == 6.0
 
+    from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+
+    with pytest.raises(ShapeMismatchError):
+        _ = t1 + PurePythonTensor([1.0, 2.0])
+
+    malformed = PurePythonTensor(1.0, shape=(3,))
+    with pytest.raises(ShapeMismatchError):
+        _ = t1 + malformed
+
 
 def test_pure_python_tensor_elementwise_functions() -> None:
     """Verify unary math functions on PurePythonTensor."""

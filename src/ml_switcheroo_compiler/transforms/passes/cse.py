@@ -96,7 +96,7 @@ def cse_pass(graph: IRGraph) -> bool:
     """In-place Common Subexpression Elimination (CSE) via structural hashing.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         bool: True if any common subexpressions were eliminated.

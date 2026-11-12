@@ -171,6 +171,9 @@ def test_grad_api_features() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `aux_fn`.
         """
         return x, "aux_info"
 

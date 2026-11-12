@@ -10,11 +10,7 @@ _ERROR_TEMPLATES: dict[str, str] = {}
 
 
 def _load_error_templates() -> None:
-    """Load error templates from yaml.
-
-    Returns:
-        None: Result.
-    """
+    """Populate the in-memory error message template cache from `error_messages.yaml`."""
     global _ERROR_TEMPLATES
     if not _ERROR_TEMPLATES:
         yaml_path = os.path.join(os.path.dirname(__file__), "error_messages.yaml")
@@ -38,12 +34,12 @@ class CompilerError(RuntimeError):
         """Initialize the base compiler exception.
 
         Args:
-            message: The explicit message.
-            node_id: Optional node ID associated with the error.
-            op_type: Optional operation type.
-            backend_target: Optional backend target.
-            trace_context: Optional trace context.
-            **kwargs: Values to inject into predefined error templates.
+            message (str): Explicit human-readable diagnostic message.
+            node_id (str | None): Optional IR node identifier associated with the error.
+            op_type (str | None): Optional canonical IR operation type.
+            backend_target (str | None): Optional target backend identifier.
+            trace_context (str | None): Optional source or graph tracing context.
+            **kwargs (str | int | float | bool | None): Placeholder values injected into `error_messages.yaml` templates.
         """
         _load_error_templates()
         template = _ERROR_TEMPLATES.get(type(self).__name__) or _ERROR_TEMPLATES.get("SwitcherooError")

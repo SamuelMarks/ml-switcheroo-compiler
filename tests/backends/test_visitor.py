@@ -35,6 +35,9 @@ class DummyGenerator:
 
         Args:
             node: Test parameter `node`.
+
+        Returns:
+            EagerValue: Computed output value from `emit_constant`.
         """
         return "42.0"
 
@@ -44,6 +47,9 @@ class DummyGenerator:
         Args:
             id: Test parameter `id`.
             prefix: Test parameter `prefix`.
+
+        Returns:
+            EagerValue: Computed output value from `assign_var_name`.
         """
         return f"{prefix}_1"
 
@@ -84,6 +90,9 @@ class DummyGenerator:
             node: Test parameter `node`.
             invars: Test parameter `invars`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `visit`.
         """
         return "visited"
 

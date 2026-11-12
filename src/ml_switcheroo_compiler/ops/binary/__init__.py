@@ -102,11 +102,11 @@ def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
     """Divide no nan.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        y (TensorOrScalar): The y parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        y (TensorOrScalar): Input `y` argument (y).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     from ml_switcheroo_compiler.core.tensor import ensure_tensor
     from ml_switcheroo_compiler.ops.creation import zeros_like
@@ -120,11 +120,11 @@ def polar(abs: TensorOrScalar, angle: TensorOrScalar) -> TensorOrScalar:
     """Polar.
 
     Args:
-        abs (TensorOrScalar): The abs parameter.
-        angle (TensorOrScalar): The angle parameter.
+        abs (TensorOrScalar): Input `abs` argument (abs).
+        angle (TensorOrScalar): Input `angle` argument (angle).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -136,10 +136,10 @@ def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
     """View as complex.
 
     Args:
-        x (TensorOrScalar): The x parameter.
+        x (TensorOrScalar): Input `x` argument (x).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -151,10 +151,10 @@ def view_as_real(x: TensorOrScalar) -> TensorOrScalar:
     """View as real.
 
     Args:
-        x (TensorOrScalar): The x parameter.
+        x (TensorOrScalar): Input `x` argument (x).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 

@@ -33,7 +33,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _reset_spmd_rules_fixture() -> Iterator[None]:
-    """Ensure _SPMD_RULES is always cleared before and after each test."""
+    """Ensure _SPMD_RULES is always cleared before and after each test.
+
+    Yields:
+        None: Yielded test context or value from `_reset_spmd_rules_fixture`.
+    """
     from ml_switcheroo_compiler.transforms.passes import spmd
 
     spmd._SPMD_RULES = None
@@ -75,7 +79,11 @@ def test_get_spmd_rules_yaml_fallback() -> None:
     spmd_mod._SPMD_RULES = None
 
     def mock_exists(self: EagerValue) -> EagerValue:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Returns:
+            EagerValue: Computed output value from `mock_exists`.
+        """
         if ensure_eager_tensor(ensure_eager_tensor(self).name) == "spmd_mappings":
             return False
         if ensure_eager_tensor(ensure_eager_tensor(self).name) == "spmd_mappings.yaml":
@@ -307,7 +315,11 @@ def test_spmd_load_rules_branches() -> None:
             self.path = path
 
         def exists(self) -> EagerValue:
-            """Test function exists."""
+            """Test function exists.
+
+            Returns:
+                EagerValue: Computed output value from `exists`.
+            """
             return True
 
         def __truediv__(self, other: EagerValue) -> EagerValue:
@@ -315,6 +327,9 @@ def test_spmd_load_rules_branches() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__truediv__`.
             """
             return ensure_eager_tensor(self.path) / ensure_eager_tensor(other)
 

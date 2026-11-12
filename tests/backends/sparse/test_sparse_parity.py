@@ -213,6 +213,9 @@ def test_sparse_profiler_and_memory_metrics() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             return ensure_eager_tensor(self)
 
@@ -348,6 +351,9 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `fake_sparse_import`.
         """
         if name == "sparse":
             raise ImportError("no sparse module")

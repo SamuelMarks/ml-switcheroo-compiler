@@ -146,6 +146,9 @@ def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> N
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `mock_exists`.
         """
         if path.endswith("distributed_topology.yaml"):
             return False

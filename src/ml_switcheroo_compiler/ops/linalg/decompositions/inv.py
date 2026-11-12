@@ -81,10 +81,10 @@ def inv(input: Tensor) -> TensorOrScalar:
     """Compute the multiplicative inverse of a square matrix.
 
     Args:
-        input (Tensor): The input parameter.
+        input (Tensor): Input `input` argument (input).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -122,11 +122,11 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> TensorOrScalar:
     """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
-        input (Tensor): The input parameter.
-        rcond (float): The rcond parameter.
+        input (Tensor): Input `input` argument (input).
+        rcond (float): Input `rcond` argument (rcond).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -141,11 +141,11 @@ def tri_inv(a: Tensor, lower: bool = False) -> TensorOrScalar:
     """Compute the inverse of a triangular matrix.
 
     Args:
-        a (Tensor): The a parameter.
-        lower (bool): The lower parameter.
+        a (Tensor): Input `a` argument (a).
+        lower (bool): Input `lower` argument (lower).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

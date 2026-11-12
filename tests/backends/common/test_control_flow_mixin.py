@@ -15,7 +15,11 @@ class DummyGenerator:
     """Test class DummyGenerator."""
 
     def get_fallback_prefix(self) -> EagerValue:
-        """Test function get_fallback_prefix."""
+        """Test function get_fallback_prefix.
+
+        Returns:
+            EagerValue: Computed output value from `get_fallback_prefix`.
+        """
         return "bk"
 
 
@@ -76,7 +80,11 @@ def test_control_flow_mixin_advanced() -> None:
             self.formatter = type("Formatter", (), {"indent_level": 0})()
 
         def get_fallback_prefix(self) -> EagerValue:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                EagerValue: Computed output value from `get_fallback_prefix`.
+            """
             return "bk"
 
         def add_line(self, line: EagerValue) -> None:
@@ -99,7 +107,11 @@ def test_control_flow_mixin_advanced() -> None:
 
     # Create dummy IRGraph with dummy nodes
     def make_graph() -> EagerValue:
-        """Test function make_graph."""
+        """Test function make_graph.
+
+        Returns:
+            EagerValue: Computed output value from `make_graph`.
+        """
         g = IRGraph()
         n = LogicalNode(id="dummy_out", op_type="Identity", inputs=["x"])
         ensure_mutable(g).nodes = ensure_eager_tensor([n])

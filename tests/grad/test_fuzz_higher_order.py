@@ -50,6 +50,9 @@ def test_hvp_polynomial_vs_finite_difference(val: float) -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.multiply(x, ops.multiply(x, x))
 
@@ -88,6 +91,9 @@ def test_hvp_trigonometric_vs_finite_difference(val: float) -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.sin(x)
 
@@ -123,6 +129,9 @@ def test_hvp_exponential_vs_analytical(val: float) -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.exp(x)
 
@@ -145,6 +154,9 @@ def test_hessian_matrix_analytical() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         x2 = ops.multiply(x, x)
         return ops.multiply(x2, x2)

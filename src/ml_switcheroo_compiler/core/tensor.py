@@ -273,7 +273,7 @@ class ArrayAt:
         """Add value at indices.
 
         Args:
-            value (TensorOrScalar): The value parameter.
+            value (TensorOrScalar): Input `value` argument (value).
 
         Returns:
             Tensor: Updated tensor.
@@ -284,7 +284,7 @@ class ArrayAt:
         """Multiply value at indices.
 
         Args:
-            value (TensorOrScalar): The value parameter.
+            value (TensorOrScalar): Input `value` argument (value).
 
         Returns:
             Tensor: Updated tensor.
@@ -295,7 +295,7 @@ class ArrayAt:
         """Set value at indices.
 
         Args:
-            value (TensorOrScalar): The value parameter.
+            value (TensorOrScalar): Input `value` argument (value).
 
         Returns:
             Tensor: Updated tensor.
@@ -306,7 +306,7 @@ class ArrayAt:
         """Maximum value at indices.
 
         Args:
-            value (TensorOrScalar): The value parameter.
+            value (TensorOrScalar): Input `value` argument (value).
 
         Returns:
             Tensor: Updated tensor.
@@ -317,7 +317,7 @@ class ArrayAt:
         """Minimum value at indices.
 
         Args:
-            value (TensorOrScalar): The value parameter.
+            value (TensorOrScalar): Input `value` argument (value).
 
         Returns:
             Tensor: Updated tensor.
@@ -340,7 +340,7 @@ class ArrayAtIndexer:
         """Get ArrayAt for indices.
 
         Args:
-            indices (TensorOrScalar): The indices parameter.
+            indices (TensorOrScalar): Input `indices` argument (indices).
 
         Returns:
             ArrayAt: Indexed updater helper.
@@ -469,7 +469,7 @@ class Tensor(
             """Parse dimension.
 
             Args:
-                s (int | str | SymNode | TensorOrScalar): The s parameter.
+                s (int | str | SymNode | TensorOrScalar): Input `s` argument (s).
 
             Returns:
                 Union[int, str, SymNode]: Result dimension.

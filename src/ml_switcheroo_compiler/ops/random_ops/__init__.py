@@ -24,7 +24,7 @@ class Binomial(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0] if args else ()
 
@@ -662,12 +662,12 @@ class categorical(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -682,12 +682,12 @@ class dirichlet(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -702,12 +702,12 @@ class binomial(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -722,12 +722,12 @@ class truncated_normal(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -742,12 +742,12 @@ class permutation(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -762,11 +762,11 @@ class choice(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)

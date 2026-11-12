@@ -200,13 +200,13 @@ _load_declarative_promotion_lattice()
 
 
 def _clamp_x64(dtype: DType) -> DType:
-    """Clamps x64 types to x32 if jax_enable_x64 is false.
+    """Downcast 64-bit scalar data types to 32-bit equivalents when 64-bit precision is disabled.
 
     Args:
-        dtype (DType): The dtype parameter.
+        dtype (DType): Candidate promoted tensor data type.
 
     Returns:
-        DType: Result.
+        DType: Unchanged 64-bit `dtype` when x64 mode is enabled, or its 32-bit counterpart otherwise.
     """
     if config.jax_enable_x64:
         return dtype
@@ -219,17 +219,17 @@ def _clamp_x64(dtype: DType) -> DType:
 
 
 def promote_types(dtype1: DType, dtype2: DType) -> DType:
-    """Determine the resulting DType when operating on two tensors of dtype1 and dtype2.
+    """Determine the promoted `DType` according to the compiler promotion lattice.
 
     Args:
-        dtype1 (DType): The dtype1 parameter.
-        dtype2 (DType): The dtype2 parameter.
+        dtype1 (DType): First operand data type.
+        dtype2 (DType): Second operand data type.
 
     Returns:
-        DType: Result.
+        DType: Promoted result data type after applying precision configuration rules.
 
     Raises:
-        DTypePromotionError: An exception.
+        DTypePromotionError: If `dtype1` and `dtype2` have no valid common promotion target.
     """
     if dtype1 == dtype2 and type(dtype1) is not str and type(dtype2) is not str:
         return _clamp_x64(dtype1)

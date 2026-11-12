@@ -13,12 +13,12 @@ def _np_sparse_bincount(backend_module: BackendModuleProtocol, x: EagerValue, **
     """Implement sparse bincount in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return np.bincount(np.asarray(x).astype(int).flatten())
 
@@ -28,12 +28,12 @@ def _np_sparse_reduce_max(backend_module: BackendModuleProtocol, x: EagerValue, 
     """Implement sparse reduce max in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.max(np.asarray(x)))
 
@@ -43,12 +43,12 @@ def _np_sparse_reduce_sum(backend_module: BackendModuleProtocol, x: EagerValue, 
     """Implement sparse reduce sum in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.sum(np.asarray(x)))
 
@@ -58,14 +58,14 @@ def _np_sparse_segment_mean(backend_module: BackendModuleProtocol, data: EagerVa
     """Implement sparse segment mean in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        indices (EagerValue): The indices parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        indices (EagerValue): Input `indices` argument (indices).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.mean(np.asarray(data)))
 
@@ -75,14 +75,14 @@ def _np_sparse_segment_sqrt_n(backend_module: BackendModuleProtocol, data: Eager
     """Implement sparse segment sqrt n in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        indices (EagerValue): The indices parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        indices (EagerValue): Input `indices` argument (indices).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.sum(np.asarray(data)) / np.sqrt(max(1, np.asarray(segment_ids).size)))
 
@@ -92,14 +92,14 @@ def _np_sparse_segment_sum(backend_module: BackendModuleProtocol, data: EagerVal
     """Implement sparse segment sum in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        indices (EagerValue): The indices parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        indices (EagerValue): Input `indices` argument (indices).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.sum(np.asarray(data)))
 
@@ -129,12 +129,12 @@ def _np_ragged_dot(backend_module: BackendModuleProtocol, a: EagerValue, b: Eage
     """Implement ragged dot in Numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        b (EagerValue): The b parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        b (EagerValue): Input `b` argument (b).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(np.dot(np.asarray(a), np.asarray(b)))

@@ -57,10 +57,10 @@ def _sigmoid(x: Tensor) -> Tensor:
     """Compute the sigmoid tensor operation.
 
     Args:
-        x (Tensor): The x parameter.
+        x (Tensor): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 

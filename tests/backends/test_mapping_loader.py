@@ -48,6 +48,9 @@ def test_load_backend_mappings_cache_and_paths() -> None:
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            bool: Computed output value from `fake_exists`.
         """
         return True
 
@@ -144,6 +147,67 @@ def test_resolve_custom_code() -> None:
     # Invalid code
     assert _resolve_custom_code("lambda invalid syntax", None) is None
 
+    # Comprehensive _safe_expr_eval AST coverage (varargs, kwargs, defaults, slices, comprehensions, operators, security guards)
+    from ml_switcheroo_compiler.backends._safe_expr_eval import evaluate_safe_expression
+
+    fn_full = ensure_callable(evaluate_safe_expression("lambda a, b=2, *xs, **kw: [a + b + len(xs) + kw.get('c', 0) for i in range(2)]", {}))
+    assert fn_full(1) == [3, 3]
+    assert fn_full(a=1, b=4, c=5) == [10, 10]
+    assert fn_full(1, 2, 9, 8) == [5, 5]
+
+    fn_plain = ensure_callable(evaluate_safe_expression("lambda x: (x[0:2], [1, 2], +x[0], -x[0], not False, True and False, False or True, 1 if x[0] == 1 else 0)", {}))
+    assert fn_plain([1, 2, 3]) == ([1, 2], [1, 2], 1, -1, True, False, True, 1)
+    assert fn_plain([5, 2, 3])[-1] == 0
+
+    fn_ops = ensure_callable(evaluate_safe_expression("lambda a, b: (a - b, a * b, a / b, a // b, a % b, a ** b, a != b, a < b, a <= b, a > b, a >= b)", {}))
+    assert fn_ops(6, 2) == (4, 12, 3.0, 3, 0, 36, True, False, False, True, True)
+
+    fn_star = ensure_callable(evaluate_safe_expression("lambda f, xs, kw: f(*xs, s=1, **kw)", {}))
+    assert fn_star(lambda p, q, r=0, s=0: p + q + r + s, [3, 4], {"r": 5}) == 13
+
+    fn_gen = ensure_callable(evaluate_safe_expression("lambda n: tuple(i * 2 for i in range(n))", {}))
+    assert fn_gen(3) == (0, 2, 4)
+
+    fn_builtins = ensure_callable(
+        evaluate_safe_expression(
+            "lambda x: (bool(x), int(x), float(x), str(x), abs(-x), list((1, 2)), sum([1, 2, 3]), max([1, 5, 2]), min(4, 2, 9), list(range(1, 5, 2)), slice(1, 3))",
+            {},
+        )
+    )
+    assert fn_builtins(3) == (True, 3, 3.0, "3", 3, [1, 2], 6, 5, 2, [1, 3], slice(1, 3))
+
+    class _PubHolder:
+        """Public attribute holder for safe hasattr/getattr verification."""
+
+        val = 11
+
+    holder = _PubHolder()
+    fn_attr = ensure_callable(evaluate_safe_expression("lambda h: h.val if hasattr(h, 'val') and not hasattr(h, '_secret') else 0", {}))
+    assert fn_attr(ensure_eager_tensor(holder)) == 11
+
+    with pytest.raises(TypeError, match="Missing required argument"):
+        fn_plain()
+    with pytest.raises(TypeError, match="Too many positional arguments"):
+        fn_plain([1], [2])
+    with pytest.raises(TypeError, match="Unexpected keyword arguments"):
+        fn_plain([1], extra=9)
+    with pytest.raises(NameError, match="Disallowed private identifier"):
+        evaluate_safe_expression("_secret", {})
+    with pytest.raises(NameError, match="Unbound identifier"):
+        evaluate_safe_expression("unknown_symbol", {})
+    with pytest.raises(ValueError, match="Disallowed private attribute"):
+        ensure_callable(evaluate_safe_expression("lambda h: h._priv", {}))(ensure_eager_tensor(holder))
+    with pytest.raises(ValueError, match="Unsupported binary operator"):
+        evaluate_safe_expression("1 << 2", {})
+    with pytest.raises(ValueError, match="Unsupported unary operator"):
+        evaluate_safe_expression("~1", {})
+    with pytest.raises(ValueError, match="Unsupported comparison operator"):
+        evaluate_safe_expression("1 is 1", {})
+    with pytest.raises(ValueError, match="Unsupported comprehension structure"):
+        evaluate_safe_expression("[x for x in [1, 2] if x > 1]", {})
+    with pytest.raises(ValueError, match="Unsupported AST expression node"):
+        evaluate_safe_expression("{1: 2}", {})
+
 
 def test_resolve_by_import() -> None:
     """Test _resolve_by_import success and failure."""
@@ -160,7 +224,11 @@ def test_resolve_from_backend_module() -> None:
         """Test class SubMod."""
 
         def my_target(self) -> int:
-            """Test function my_target."""
+            """Test function my_target.
+
+            Returns:
+                int: Computed output value from `my_target`.
+            """
             return 42
 
     class ParentMod:
@@ -197,7 +265,11 @@ def test_resolve_from_backend_module() -> None:
         """Test class MockDaskMod."""
 
         def my_sum(self) -> str:
-            """Test function my_sum."""
+            """Test function my_sum.
+
+            Returns:
+                str: Computed output value from `my_sum`.
+            """
             return "dask_sum"
 
     dask_mod = MockDaskMod()
@@ -225,7 +297,11 @@ def test_resolve_target_api() -> None:
 
     # backend_module has dotted attribute directly via setattr (line 200 with backend_module)
     def dummy_func() -> EagerValue:
-        """Return dummy constant 777."""
+        """Return dummy constant 777.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_func`.
+        """
         return 777
 
     dummy = type("Dummy", (), {"special.pkg.func": staticmethod(dummy_func)})()
@@ -237,7 +313,11 @@ def test_resolve_target_api() -> None:
         """Test class MockBackend."""
 
         def my_func(self) -> int:
-            """Test function my_func."""
+            """Test function my_func.
+
+            Returns:
+                int: Computed output value from `my_func`.
+            """
             return 5
 
     res3 = resolve_target_api("some.prefix.my_func", backend_module=ensure_eager_tensor(MockBackend()))
@@ -248,7 +328,11 @@ def test_resolve_target_api() -> None:
         """Test class InnerMod."""
 
         def target(self) -> int:
-            """Test function target."""
+            """Test function target.
+
+            Returns:
+                int: Computed output value from `target`.
+            """
             return 999
 
     class OuterMod:
@@ -331,6 +415,9 @@ def test_dispatch_eager_op() -> None:
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                int: Computed output value from `do_method`.
             """
             return val * 10
 

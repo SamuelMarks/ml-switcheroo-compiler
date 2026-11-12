@@ -92,7 +92,7 @@ def test_distributed_initialize_timeout() -> None:
                 MockListener.return_value = mock_listener_instance
                 mock_client.side_effect = ConnectionRefusedError
                 set_np_distributed_context(world_size=2, rank=1, port=39501)
-    assert callable(test_distributed_initialize_timeout)
+                assert mock_client.called
 
 
 def test_distributed_shutdown_no_conn() -> None:
@@ -126,8 +126,8 @@ def test_ipc_timeout() -> None:
         """
         pass
 
-    _exchange_ipc_data_worker(1, 2, np.array([1]), 0.001, 0.001)
-    assert callable(test_ipc_timeout)
+    _out = _exchange_ipc_data_worker(1, 2, np.array([1]), 0.001, 0.001)
+    assert len(ensure_eager_tensor(_out)) == 2
 
 
 def test_ipc_worker_retry_then_success() -> None:
@@ -157,7 +157,11 @@ def test_ipc_worker_retry_then_success() -> None:
             self.mock = MagicMock()
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return self.mock
 
         def __exit__(self, *args: EagerValue) -> None:

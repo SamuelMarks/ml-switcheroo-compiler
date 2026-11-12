@@ -39,10 +39,12 @@ def test_reductions_frontend_coverage_brute() -> None:
     _tracer.start_tracing()
     data = Tensor(ProxyTensor(id="data_id", shape=(5,)), TensorConfig((5,), DType.Float32, Device("cpu")))
     segment_ids = Tensor(ProxyTensor(id="segment_id", shape=(5,)), TensorConfig((5,), DType.Int32, Device("cpu")))
-    segment_sum(data, segment_ids)
+    seg_out = segment_sum(data, segment_ids)
+    assert seg_out is not None
+    assert _tracer.active_graph is not None
+    assert len(_tracer.active_graph.nodes) >= 1
     _tracer.stop_tracing()
     config.eager_mode = True
-    assert callable(test_reductions_frontend_coverage_brute)
 
 
 def test_remaining_segment_ops() -> None:
@@ -67,8 +69,9 @@ def test_remaining_segment_ops() -> None:
         unsorted_segment_sum(data, segment_ids, 2)
         approx_max_k(data, 2)
         approx_min_k(data, 2)
+        assert _tracer.active_graph is not None
+        assert len(_tracer.active_graph.nodes) == 12
         _tracer.stop_tracing()
-    assert callable(test_remaining_segment_ops)
 
 
 def _test_reductions_frontend_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -109,6 +112,9 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
                     op_type: Test parameter `op_type`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 if kwargs.get("return_indices", False) or op_type == "FractionalMaxPool3d":
                     return (np.zeros_like(args[0]), np.zeros_like(args[0]).astype(np.int64))
@@ -119,6 +125,9 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return x
 
@@ -238,6 +247,9 @@ def test_segment_exact_shapes(mocker: EagerTensorProtocol) -> None:
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name

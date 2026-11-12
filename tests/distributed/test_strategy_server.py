@@ -67,6 +67,9 @@ def _test_strategy_server_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `set_not_running`.
             """
             ensure_mutable(server)._running = ensure_eager_tensor(False)
             return b""
@@ -101,6 +104,9 @@ def _test_strategy_server_part_3(_state: dict[str, EagerTensorProtocol]) -> None
 
             Args:
                 size: Test parameter `size`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_recv`.
             """
             if size == 4:
                 ensure_mutable(server)._running = ensure_eager_tensor(False)
@@ -142,6 +148,9 @@ def _test_strategy_server_part_4(_state: dict[str, EagerTensorProtocol]) -> None
 
             Args:
                 size: Test parameter `size`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_recv`.
             """
             if size == 4:
                 ensure_mutable(server)._running = ensure_eager_tensor(False)
@@ -196,6 +205,9 @@ def _test_strategy_server_part_5(_state: dict[str, EagerTensorProtocol]) -> None
 
                 Args:
                     size: Test parameter `size`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:
@@ -259,6 +271,9 @@ def _test_strategy_server_part_6(_state: dict[str, EagerTensorProtocol]) -> None
 
                 Args:
                     size: Test parameter `size`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:
@@ -393,6 +408,9 @@ def _test_strategy_server_part_9(_state: dict[str, EagerTensorProtocol]) -> None
 
                 Args:
                     size: Test parameter `size`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:
@@ -452,6 +470,9 @@ def _test_strategy_server_part_11(_state: dict[str, EagerTensorProtocol]) -> Non
 
                 Args:
                     size: Test parameter `size`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:

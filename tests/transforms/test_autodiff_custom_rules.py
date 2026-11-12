@@ -102,11 +102,6 @@ def test_jvps() -> None:
     assert _assoc_scan_jvp(g, n4, ["t1", "t2"]) == ""
 
 
-def test_jvp_nulls() -> None:
-    """Placeholder for null tests."""
-    assert callable(test_jvp_nulls)
-
-
 def test_checkpoint_vjp() -> None:
     """Test checkpoint_vjp with subgraph."""
     from unittest.mock import patch
@@ -224,6 +219,9 @@ def test_checkpoint_vjp_with_fun() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `sample_fn`.
         """
         return x
 
@@ -463,6 +461,9 @@ def test_custom_jvp_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `sample_fn`.
         """
         return x
 

@@ -37,6 +37,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `intersect1d`.
             """
             return "intersect1d_val"
 
@@ -46,6 +49,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `union1d`.
             """
             return "union1d_val"
 
@@ -55,6 +61,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `unique`.
             """
             return "unique_val"
 
@@ -64,6 +73,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `uniqueall`.
             """
             return "uniqueall_val"
 
@@ -73,6 +85,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `uniquecounts`.
             """
             return "uniquecounts_val"
 
@@ -82,6 +97,9 @@ def test_math_set_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `uniquevalues`.
             """
             return "uniquevalues_val"
 

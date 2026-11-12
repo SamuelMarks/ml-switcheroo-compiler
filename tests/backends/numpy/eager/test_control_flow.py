@@ -22,6 +22,9 @@ def test_np_associative_scan() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `fn`.
         """
         return ensure_eager_tensor(a) + ensure_eager_tensor(b)
 

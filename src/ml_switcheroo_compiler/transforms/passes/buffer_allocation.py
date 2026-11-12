@@ -157,8 +157,8 @@ def _compute_liveness(graph: IRGraph, sorted_nodes: list[IRNode]) -> dict[str, i
     """Compute last-use timesteps for all nodes in the graph.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        sorted_nodes (list[IRNode]): The sorted_nodes parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        sorted_nodes (list[IRNode]): Input `sorted_nodes` argument (sorted nodes).
 
     Returns:
         dict[str, int]: Resulting map of node ID to last use timestep.

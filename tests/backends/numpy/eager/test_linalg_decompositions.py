@@ -52,6 +52,9 @@ class DummyBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `asarray`.
         """
         return np.asarray(x)
 
@@ -61,6 +64,9 @@ class DummyBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `array`.
         """
         return np.array(x)
 
@@ -70,6 +76,9 @@ class DummyBackend:
 
         Args:
             shape: Test parameter `shape`.
+
+        Returns:
+            EagerValue: Computed output value from `zeros`.
         """
         return ensure_callable(np.zeros)(shape)
 
@@ -80,6 +89,9 @@ class DummyBackend:
         Args:
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            EagerValue: Computed output value from `ones`.
         """
         return ensure_callable(np.ones)(shape, dtype=dtype)
 
@@ -90,6 +102,9 @@ class DummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `cross`.
         """
         return ensure_callable(np.cross)(*args, **kwargs)
 
@@ -135,6 +150,7 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (A, b, vals) = (_state["A"], _state["b"], _state["vals"])
     assert vals.shape == (3,)
     assert ensure_eager_tensor(_np_qr(ensure_mod(DummyBackend()), A))[0].shape == (2, 2)
@@ -155,7 +171,7 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
             try:
                 func(DummyBackend(), A)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
     (p, _lower, u) = ensure_callable(_np_lu)(ensure_callable(DummyBackend)(), A)
     (lu, piv) = ensure_callable(_np_lu_factor)(ensure_callable(DummyBackend)(), A)
     assert ensure_eager_tensor(_np_lu_solve(ensure_mod(DummyBackend()), lu, piv, b)).shape == (2,)

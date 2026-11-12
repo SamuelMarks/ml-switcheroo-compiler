@@ -231,7 +231,7 @@ class Polar(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape, args[0].shape
 
@@ -248,7 +248,7 @@ class TridiagonalSolve(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[3].shape
 
@@ -257,10 +257,10 @@ def lu(a: Tensor) -> TensorOrScalar:
     """Compute the LU decomposition of a matrix.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -279,11 +279,11 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> TensorOrScalar:
     """Solve an equation system, a x = b, given the LU factorization of a.
 
     Args:
-        lu_and_piv (tuple): The lu_and_piv parameter.
-        b (Tensor): The b parameter.
+        lu_and_piv (tuple): Input `lu_and_piv` argument (lu and piv).
+        b (Tensor): Input `b` argument (b).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     lu, piv = lu_and_piv
     if config.eager_mode:
@@ -299,11 +299,11 @@ def polar(a: Tensor, side: str = "right") -> TensorOrScalar:
     """Compute the polar decomposition of a matrix.
 
     Args:
-        a (Tensor): The a parameter.
-        side (str): The side parameter.
+        a (Tensor): Input `a` argument (a).
+        side (str): Input `side` argument (side).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -321,13 +321,13 @@ def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOrS
     """Solves a tridiagonal linear system.
 
     Args:
-        dl (Tensor): The dl parameter.
-        d (Tensor): The d parameter.
-        du (Tensor): The du parameter.
-        b (Tensor): The b parameter.
+        dl (Tensor): Input `dl` argument (dl).
+        d (Tensor): Input `d` argument (d).
+        du (Tensor): Input `du` argument (du).
+        b (Tensor): Input `b` argument (b).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -348,13 +348,13 @@ class TridiagonalMatmul(OpDef):
         """Infer shape.
 
         Args:
-            dl (EagerTensorProtocol): The dl parameter.
-            d (EagerTensorProtocol): The d parameter.
-            du (EagerTensorProtocol): The du parameter.
-            b (EagerTensorProtocol): The b parameter.
+            dl (EagerTensorProtocol): Input `dl` argument (dl).
+            d (EagerTensorProtocol): Input `d` argument (d).
+            du (EagerTensorProtocol): Input `du` argument (du).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return b.shape

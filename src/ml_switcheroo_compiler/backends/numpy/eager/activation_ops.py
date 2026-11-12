@@ -25,7 +25,7 @@ def _np_relu(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(backend_module.maximum(x, 0.0))
 
@@ -42,11 +42,11 @@ def _np_elu(
     Args:
         backend_module (ModuleType): The backend module.
         x (np.ndarray): Input array.
-        alpha (float): The alpha parameter.
+        alpha (float): Input `alpha` argument (alpha).
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0)))
 
@@ -63,11 +63,11 @@ def _np_celu(
     Args:
         backend_module (ModuleType): The backend module.
         x (np.ndarray): Input array.
-        alpha (float): The alpha parameter.
+        alpha (float): Input `alpha` argument (alpha).
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0)))
 
@@ -86,7 +86,7 @@ def _np_softplus(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0))
 
@@ -105,7 +105,7 @@ def _np_softsign(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(x / (1.0 + backend_module.abs(x)))
 
@@ -124,7 +124,7 @@ def _np_mish(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     softplus_x = backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
     return ensure_ndarray(x * backend_module.tanh(softplus_x))
@@ -144,6 +144,6 @@ def _np_log_sigmoid(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(-backend_module.log1p(backend_module.exp(-x)))

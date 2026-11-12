@@ -11,12 +11,12 @@ def _np_sin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np sin operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.sin(*args, **kwargs)
 
@@ -26,12 +26,12 @@ def _np_cos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np cos operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.cos(*args, **kwargs)
 
@@ -41,12 +41,12 @@ def _np_acos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np acos operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arccos(*args, **kwargs)
 
@@ -56,12 +56,12 @@ def _np_acosh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np acosh operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arccosh(*args, **kwargs)
 
@@ -71,12 +71,12 @@ def _np_asin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np asin operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arcsin(*args, **kwargs)
 
@@ -86,12 +86,12 @@ def _np_asinh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np asinh operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arcsinh(*args, **kwargs)
 
@@ -101,12 +101,12 @@ def _np_atan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np atan operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arctan(*args, **kwargs)
 
@@ -116,12 +116,12 @@ def _np_atanh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np atanh operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arctanh(*args, **kwargs)
 
@@ -131,12 +131,12 @@ def _np_atan2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np atan2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.arctan2(*args, **kwargs)
 
@@ -146,12 +146,12 @@ def _np_deg2rad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np deg2rad operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.deg2rad(*args, **kwargs)
 
@@ -161,11 +161,11 @@ def _np_rad2deg(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np rad2deg operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.rad2deg(*args, **kwargs)

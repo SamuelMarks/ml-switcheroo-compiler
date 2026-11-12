@@ -112,7 +112,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Init.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         super().__init__(graph)
         self.visitors.extend(
@@ -130,8 +130,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Save a dictionary of arrays to GGUF format.
 
         Args:
-            file (str): The file parameter.
-            arrays (dict): The arrays parameter.
+            file (str): Input `file` argument (file).
+            arrays (dict): Input `arrays` argument (arrays).
             metadata (Optional[dict]): Optional metadata dictionary.
         """
         import mlx.core as mx
@@ -148,7 +148,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Set the default stream.
 
         Args:
-            stream (EagerValue): The stream parameter.
+            stream (EagerValue): Input `stream` argument (stream).
         """
         import mlx.core as mx
 
@@ -160,7 +160,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Set the memory limit.
 
         Args:
-            limit (int): The limit parameter.
+            limit (int): Input `limit` argument (limit).
         """
         import mlx.core as mx
 
@@ -172,7 +172,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Set the wired limit.
 
         Args:
-            limit (int): The limit parameter.
+            limit (int): Input `limit` argument (limit).
         """
         import mlx.core as mx
 
@@ -191,7 +191,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Get the fallback prefix for generic operations.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return "mx"
 
@@ -199,8 +199,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Execute emit constant assignment for compiler processing.
 
         Args:
-            var_name (str): The var_name parameter.
-            val_repr (str): The val_repr parameter.
+            var_name (str): Input `var_name` argument (var name).
+            val_repr (str): Input `val_repr` argument (val repr).
         """
         self.add_line(f"{var_name} = mx.array({val_repr})")
 
@@ -229,13 +229,13 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Load.
 
         Args:
-        filepath (str): The filepath parameter.
-        allow_pickle (bool): The allow_pickle parameter.
-        fix_imports (bool): The fix_imports parameter.
-        encoding (str): The encoding parameter.
+        filepath (str): Input `filepath` argument (filepath).
+        allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+        fix_imports (bool): Input `fix_imports` argument (fix imports).
+        encoding (str): Input `encoding` argument (encoding).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         import mlx.core as mx
 
@@ -247,10 +247,10 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Save.
 
         Args:
-            file (str): The file parameter.
-            arr (EagerValue): The arr parameter.
-            allow_pickle (bool): The allow_pickle parameter.
-            fix_imports (bool): The fix_imports parameter.
+            file (str): Input `file` argument (file).
+            arr (EagerValue): Input `arr` argument (arr).
+            allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+            fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
         import mlx.core as mx
 
@@ -261,7 +261,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Savez.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """
@@ -276,7 +276,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Savez compressed.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """

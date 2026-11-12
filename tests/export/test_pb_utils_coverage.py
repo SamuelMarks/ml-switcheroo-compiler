@@ -21,6 +21,9 @@ class _DummyBadShape:
 
         Raises:
             TypeError: Simulated invalid dimension.
+
+        Returns:
+            int: Computed output value from `__next__`.
         """
         raise TypeError("Not iterable dimension")
 

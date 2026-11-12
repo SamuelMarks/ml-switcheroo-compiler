@@ -25,6 +25,9 @@ def test_gru_extras() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             return ensure_eager_tensor(self)
 
@@ -33,6 +36,9 @@ def test_gru_extras() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__mul__`.
             """
             return ensure_eager_tensor(self)
 
@@ -41,6 +47,9 @@ def test_gru_extras() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__sub__`.
             """
             return ensure_eager_tensor(self)
 
@@ -49,6 +58,9 @@ def test_gru_extras() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__rsub__`.
             """
             return ensure_eager_tensor(self)
 

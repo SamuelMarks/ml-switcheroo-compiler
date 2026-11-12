@@ -124,11 +124,11 @@ def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
     """Compute the resolve vmap axis tensor operation.
 
     Args:
-        in_axes (int | tuple[int, ...]): The in_axes parameter.
-        i (int): The i parameter.
+        in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
+        i (int): Input `i` argument (i).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
@@ -137,11 +137,11 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
     """Compute the compute vmap shape tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
-        axis (int | None): The axis parameter.
+        a (Tensor): Input `a` argument (a).
+        axis (int | None): Input `axis` argument (axis).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if axis is not None and len(a.shape) > 0:
         return tuple(s for j, s in enumerate(a.shape) if j != axis)
@@ -152,11 +152,11 @@ def _create_vmap_symbolic_args(args: Sequence[TensorOrScalar] | TensorOrScalar, 
     """Compute the create vmap symbolic args tensor operation.
 
     Args:
-        args (Sequence[TensorOrScalar] | TensorOrScalar): The args parameter.
-        in_axes (int | tuple[int, ...]): The in_axes parameter.
+        args (Sequence[TensorOrScalar] | TensorOrScalar): Input `args` argument (args).
+        in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
 
     Returns:
-        list[TensorOrScalar]: Result.
+        list[TensorOrScalar]: Computed `list[TensorOrScalar]` output.
     """
     args_seq: Sequence[TensorOrScalar] = args if isinstance(args, (list, tuple)) else ensure_eager_list(args)
     symbolic_args: list[TensorOrScalar] = []
@@ -205,13 +205,13 @@ def _trace_vmap(
     """Compute the trace vmap tensor operation.
 
     Args:
-        func (TensorOrScalar): The func parameter.
-        in_axes (int | tuple[int, ...]): The in_axes parameter.
-        out_axes (int | tuple[int, ...]): The out_axes parameter.
-        args (Sequence[TensorOrScalar]): The args parameter.
+        func (TensorOrScalar): Input `func` argument (func).
+        in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
+        out_axes (int | tuple[int, ...]): Input `out_axes` argument (out axes).
+        args (Sequence[TensorOrScalar]): Input `args` argument (args).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
     body_graph = _trace_function(func, tuple(symbolic_args), "vmap_body")
@@ -242,12 +242,12 @@ def vmap(
     """Create a vectorized version of a function mapped over specified axes.
 
     Args:
-        func (Callable): The func parameter.
-        in_axes (int | tuple[int, ...]): The in_axes parameter.
-        out_axes (int | tuple[int, ...]): The out_axes parameter.
+        func (Callable): Input `func` argument (func).
+        in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
+        out_axes (int | tuple[int, ...]): Input `out_axes` argument (out axes).
 
     Returns:
-        Callable: Result.
+        Callable: Computed `Callable` output.
     """
 
     def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
@@ -257,7 +257,7 @@ def vmap(
             *args (TensorOrScalar): Positional args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if config.eager_mode:
             return _eager_vmap(func, in_axes, out_axes, args)

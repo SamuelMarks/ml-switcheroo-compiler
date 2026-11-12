@@ -30,6 +30,9 @@ def test_frontend_pool_eager() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             if args[0] in ("FractionalMaxPool3D", "AdaptiveMaxPool3D"):
                 if kwargs.get("return_indices", True):
@@ -43,6 +46,9 @@ def test_frontend_pool_eager() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.array(x)
 

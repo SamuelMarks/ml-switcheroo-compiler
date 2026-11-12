@@ -26,10 +26,10 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -49,7 +49,7 @@ def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> Eage
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor, indices, updates = (
         ensure_eager_tensor(args[0]),
@@ -70,7 +70,7 @@ def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> Eage
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor, indices, updates = (
         ensure_eager_tensor(args[0]),
@@ -91,7 +91,7 @@ def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> E
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_eager_tensor(args[0]).clone().index_put_(tuple(ensure_eager_tensor(args[1]).unbind(-1)), args[2]))
 
@@ -104,7 +104,7 @@ def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> Eage
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_eager_tensor(args[0]).clone().index_put_(tuple(ensure_eager_tensor(args[1]).unbind(-1)), args[2], accumulate=True))
 
@@ -117,7 +117,7 @@ def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerVa
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     w = ensure_eager_tensor(args[0])
     num_iters = kwargs.get("num_iters", 1)
@@ -144,7 +144,7 @@ def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_eager_tensor(args[0]).expand(kwargs["shape"]))
 
@@ -153,8 +153,8 @@ def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager execute one hot operation on the active backend array.
 
     Args:
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -186,7 +186,7 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor = args[0]
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -214,7 +214,7 @@ def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_mod(torch).cummax(*args, **kwargs)[0])
 
@@ -227,7 +227,7 @@ def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_mod(torch).cummin(*args, **kwargs)[0])
 
@@ -240,7 +240,7 @@ def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_mod(torch).logcumsumexp(*args, **kwargs))
 
@@ -253,7 +253,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import torch
 
@@ -338,7 +338,7 @@ def _torch_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
     return ensure_eager_tensor(ensure_mod(torch).var(*args, **kwargs))
@@ -352,7 +352,7 @@ def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
@@ -478,15 +478,15 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
     Args:
         cls (type): The class.
-        op_type (str): The op_type parameter.
+        op_type (str): Input `op_type` argument (op type).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        BackendNotSupportedError: An exception.
+        BackendNotSupportedError: If invalid inputs or unsupported runtime conditions trigger `BackendNotSupportedError`.
     """
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
 

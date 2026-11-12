@@ -59,6 +59,9 @@ def test_value_and_grad_has_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x, x
 
@@ -77,6 +80,9 @@ def test_value_and_grad_no_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
@@ -95,6 +101,9 @@ def test_value_and_grad_basic() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(2.0)
 
@@ -113,6 +122,9 @@ def test_value_and_grad_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3.0)
 
@@ -132,6 +144,9 @@ def test_jacrev_basic() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(x)
 
@@ -148,6 +163,9 @@ def test_jacfwd() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(x)
 
@@ -168,6 +186,9 @@ def test_jacrev() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(x)
 
@@ -188,6 +209,9 @@ def test_hessian() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
 
@@ -206,6 +230,9 @@ def test_custom_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2.0)
 
@@ -214,6 +241,9 @@ def test_custom_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fwd`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2.0), x
 
@@ -223,6 +253,9 @@ def test_custom_vjp() -> None:
         Args:
             res: Test parameter `res`.
             g: Test parameter `g`.
+
+        Returns:
+            EagerValue: Computed output value from `bwd`.
         """
         return (ensure_eager_tensor(g) * ensure_eager_tensor(2.0),)
 
@@ -257,6 +290,9 @@ def test_greater_jvp_vjp() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) > ensure_eager_tensor(y)
 
@@ -282,6 +318,9 @@ def test_checkpoint_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -299,6 +338,9 @@ def test_checkpoint_not_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -315,6 +357,9 @@ def test_checkpoint_infer_dtype() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
@@ -344,6 +389,9 @@ def test_grad_and_value_has_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(x), x
 

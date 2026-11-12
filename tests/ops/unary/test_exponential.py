@@ -26,5 +26,5 @@ def test_nan_to_num_call(mocker: EagerTensorProtocol) -> None:
     sys.modules["ml_switcheroo_compiler.ops.base"] = sys.modules["ml_switcheroo_compiler.ops.base"]
     mocker.patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="result")
     mocker.patch("ml_switcheroo_compiler.ops.base.dispatch_op", return_value="result", create=True)
-    op(x=Tensor([1], TensorConfig((1,), "float32", "cpu")), copy=True)
-    assert callable(test_nan_to_num_call)
+    out = op(x=Tensor([1], TensorConfig((1,), "float32", "cpu")), copy=True)
+    assert out == "result"

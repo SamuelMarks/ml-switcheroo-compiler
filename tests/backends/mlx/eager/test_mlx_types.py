@@ -27,6 +27,9 @@ def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return "array_" + str(data)
 

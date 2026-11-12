@@ -14,15 +14,15 @@ def _np_dropout2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np dropout2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x = args[0]
     p = kwargs.get("p", 0.5)
@@ -45,12 +45,12 @@ def _np_block_masked_mm(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np block masked mm operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 

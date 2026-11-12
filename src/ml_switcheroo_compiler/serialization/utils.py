@@ -234,7 +234,7 @@ def _extract_numpy_weights(weights: dict[str, TensorLike]) -> dict[str, TensorLi
     """Extract numpy weights.
 
     Args:
-        weights (dict[str, TensorLike]): The weights parameter.
+        weights (dict[str, TensorLike]): Input `weights` argument (weights).
 
     Returns:
         dict[str, TensorLike]: Extracted weights dictionary.
@@ -260,7 +260,7 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
     """Convert tensor to numpy array.
 
     Args:
-        tensor (TensorLike): The tensor parameter.
+        tensor (TensorLike): Input `tensor` argument (tensor).
 
     Returns:
         TensorLike: Converted array.
@@ -280,7 +280,7 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
     """Concatenate numpy arrays.
 
     Args:
-        arrays (list[TensorLike]): The arrays parameter.
+        arrays (list[TensorLike]): Input `arrays` argument (arrays).
 
     Returns:
         TensorLike: Concatenated array.
@@ -296,7 +296,7 @@ def is_numpy_array(array: TensorOrScalar) -> bool:
     """Check if array is a numpy array.
 
     Args:
-        array (TensorOrScalar): The array parameter.
+        array (TensorOrScalar): Input `array` argument (array).
 
     Returns:
         bool: True if array is a numpy array or array-like.
@@ -308,7 +308,7 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
     """Map DType to numpy descr string.
 
     Args:
-        dtype (TensorOrScalar): The dtype parameter.
+        dtype (TensorOrScalar): Input `dtype` argument (dtype).
 
     Returns:
         str: NumPy descriptor string.
@@ -416,6 +416,8 @@ def _get_data_bytes(tensor: TensorOrScalar | _EvalMethodProtocol | _NumpyMethodP
         return _extract_arr_bytes(ensure_callable(get_backend_member(tensor, "numpy"))())
     if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
         return _extract_arr_bytes(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))())
+    if has_backend_member(tensor, "tobytes"):
+        return _ensure_util_bytes(ensure_callable(get_backend_member(tensor, "tobytes"))())
     return b""
 
 
@@ -423,7 +425,7 @@ def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     """Convert a tensor to npy bytes.
 
     Args:
-        tensor (TensorOrScalar): The tensor parameter.
+        tensor (TensorOrScalar): Input `tensor` argument (tensor).
 
     Returns:
         bytes: Serialized `.npy` byte stream.
@@ -438,7 +440,7 @@ def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     major, minor = 1, 0
     shape_str = f"({shape[0]},)" if len(shape) == 1 else str(shape)
 
-    dict_str = "{'descr': '" + dtype_str + "', 'fortran_order': False, 'shape': " + shape_str + "}, "
+    dict_str = "{'descr': '" + dtype_str + "', 'fortran_order': False, 'shape': " + shape_str + ", }"
     dict_str += " " * (16 - (len(dict_str) + 10) % 16) + "\n"
 
     header = magic + struct.pack("<BBH", major, minor, len(dict_str)) + dict_str.encode("ascii")
@@ -449,7 +451,7 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
     """Get npz bytes.
 
     Args:
-        weights (TensorOrScalar): The weights parameter.
+        weights (TensorOrScalar): Input `weights` argument (weights).
 
     Returns:
         bytes: Serialized `.npz` archive bytes.
@@ -486,26 +488,56 @@ def _is_npz_files(val: TensorOrScalar) -> typing.TypeGuard[_NpzFilesProtocol]:
     return has_backend_member(val, "files")
 
 
+def _decode_npy_payload(raw_npy: bytes) -> TensorLike:
+    """Decode a `.npy` v1.0 byte payload into a flat or nested float/int list using pure Python.
+
+    Args:
+        raw_npy (bytes): Raw `.npy` file bytes starting with the NUMPY magic header.
+
+    Returns:
+        TensorLike: Decoded numeric scalar or list.
+    """
+    import ast
+    import struct
+
+    hdr_len = struct.unpack_from("<H", raw_npy, 8)[0]
+    hdr_dict = ast.literal_eval(raw_npy[10 : 10 + hdr_len].decode("latin1").strip())
+    descr = str(hdr_dict.get("descr", "<f4"))
+    payload = raw_npy[10 + hdr_len :]
+    fmt_map = {"<f8": ("d", 8), "<f4": ("f", 4), "<i8": ("q", 8), "<i4": ("i", 4), "|b1": ("?", 1)}
+    code, item_sz = fmt_map.get(descr, ("f", 4))
+    count = len(payload) // item_sz if item_sz > 0 else 0
+    vals = list(struct.unpack(f"<{count}{code}", payload[: count * item_sz])) if count > 0 else []
+    return _ensure_util_tensor(vals)
+
+
 def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
     """Parse npz file.
 
     Args:
-        file_obj (str | bytes | TensorLike): The file_obj parameter.
+        file_obj (str | bytes | TensorLike): Input `file_obj` argument (file obj).
 
     Returns:
-        dict[str, TensorLike]: Result.
+        dict[str, TensorLike]: Computed `dict[str, TensorLike]` output.
     """
     import io
+    import os
+    import zipfile
 
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     try:
-        np_mod = BackendRegistry.get("numpy").get_module()
+        active_be: TensorOrScalar = get_active_backend()
         target = io.BytesIO(file_obj) if isinstance(file_obj, (bytes, bytearray)) else file_obj
-        with np_mod.load(target) as data:
-            raw_data: TensorOrScalar = data
-            files_list = raw_data.files if _is_npz_files(raw_data) else ()
-            return {k: _ensure_util_tensor(data)[k] for k in files_list}
+        if has_backend_member(active_be, "get_module"):
+            active_mod = ensure_callable(get_backend_member(active_be, "get_module"))()
+            with ensure_callable(get_backend_member(active_mod, "load"))(target) as data:
+                raw_data: TensorOrScalar = data
+                files_list = raw_data.files if _is_npz_files(raw_data) else ()
+                return {k: _ensure_util_tensor(data)[k] for k in files_list}
+        assert isinstance(target, (str, os.PathLike, io.BytesIO))
+        with zipfile.ZipFile(target, "r") as zf:
+            return {name[:-4] if name.endswith(".npy") else name: _decode_npy_payload(zf.read(name)) for name in zf.namelist()}
     except Exception:
         return {}
 
@@ -526,10 +558,10 @@ def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
     """Load weights from a .npz file object.
 
     Args:
-        file_obj (str | bytes | TensorLike): The file_obj parameter.
+        file_obj (str | bytes | TensorLike): Input `file_obj` argument (file obj).
 
     Returns:
-        list[TensorLike]: Result.
+        list[TensorLike]: Computed `list[TensorLike]` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 

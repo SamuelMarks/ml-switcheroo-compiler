@@ -15,7 +15,7 @@ class ZerosModule(typing.Protocol):
         """Create zeros.
 
         Args:
-            shape: The shape parameter.
+            shape: Input `shape` argument (shape).
 
         Returns:
             Union[tuple[str, tuple[int, ...]], tuple[int, ...]]: Computed result.
@@ -34,8 +34,8 @@ class ArrayModule(typing.Protocol):
         """Create array.
 
         Args:
-            data: The data parameter.
-            dtype: The dtype parameter.
+            data: Input `data` argument (data).
+            dtype: Input `dtype` argument (dtype).
 
         Returns:
             Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str], Union[str, type, None]], list[int], list[float]]: Computed result.
@@ -53,7 +53,7 @@ class AsArrayModule(typing.Protocol):
         """Create asarray.
 
         Args:
-            data: The data parameter.
+            data: Input `data` argument (data).
 
         Returns:
             Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str]], list[int], list[float]]: Computed result.
@@ -84,11 +84,11 @@ def generic_zeros(
     """Provide generic zeros.
 
     Args:
-        mod (ZerosModule): The module parameter.
-        shape (tuple[int, ...]): The shape parameter.
+        mod (ZerosModule): Input `module` argument (module).
+        shape (tuple[int, ...]): Input `shape` argument (shape).
 
     Returns:
-        tuple[str, tuple[int, ...]] | tuple[int, ...]: Result.
+        tuple[str, tuple[int, ...]] | tuple[int, ...]: Computed `tuple[str, tuple[int, ...]] | tuple[int, ...]` output.
     """
     return mod.zeros(shape)
 
@@ -101,12 +101,12 @@ def generic_array(
     """Provide generic array.
 
     Args:
-        mod (ArrayModule): The module parameter.
-        data (InputData): The data parameter.
-        dtype (Union[str, type, None]): The dtype parameter.
+        mod (ArrayModule): Input `module` argument (module).
+        data (InputData): Input `data` argument (data).
+        dtype (Union[str, type, None]): Input `dtype` argument (dtype).
 
     Returns:
-        ArrayResult: Result.
+        ArrayResult: Computed `ArrayResult` output.
     """
     if dtype is not None:
         return mod.array(data, dtype=dtype)
@@ -120,11 +120,11 @@ def generic_asarray(
     """Provide generic asarray.
 
     Args:
-        mod (AsArrayModule): The module parameter.
-        data (InputData): The data parameter.
+        mod (AsArrayModule): Input `module` argument (module).
+        data (InputData): Input `data` argument (data).
 
     Returns:
-        tuple[str, InputData] | list[int] | list[float]: Result.
+        tuple[str, InputData] | list[int] | list[float]: Computed `tuple[str, InputData] | list[int] | list[float]` output.
     """
     return mod.asarray(data)
 
@@ -136,10 +136,10 @@ def generic_item(
     """Provide generic item.
 
     Args:
-        mod (ZerosModule | ArrayModule | AsArrayModule | None): The module parameter.
-        data (HasItem): The data parameter.
+        mod (ZerosModule | ArrayModule | AsArrayModule | None): Input `module` argument (module).
+        data (HasItem): Input `data` argument (data).
 
     Returns:
-        float: Result.
+        float: Computed `float` output.
     """
     return float(data.item())

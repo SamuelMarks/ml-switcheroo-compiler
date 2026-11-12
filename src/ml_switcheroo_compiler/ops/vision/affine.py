@@ -168,13 +168,13 @@ def random_zoom(
     """Randomly zoom images.
 
     Args:
-        images (Tensor): The images parameter.
-        height_factor (tuple[float, float] | float): The height_factor parameter.
-        width_factor (tuple[float, float] | float | None): The width_factor parameter.
+        images (Tensor): Input `images` argument (images).
+        height_factor (tuple[float, float] | float): Input `height_factor` argument (height factor).
+        width_factor (tuple[float, float] | float | None): Input `width_factor` argument (width factor).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if global_config.eager_mode:
         backend = get_active_backend()
@@ -376,12 +376,12 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
-        theta (Tensor): The theta parameter.
-        size (tuple): The size parameter.
-        align_corners (bool): The align_corners parameter.
+        theta (Tensor): Input `theta` argument (theta).
+        size (tuple): Input `size` argument (size).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -400,14 +400,14 @@ def grid_sample(
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
-        input (Tensor): The input parameter.
-        grid (Tensor): The grid parameter.
-        mode (str): The mode parameter.
-        padding_mode (str): The padding_mode parameter.
-        align_corners (bool): The align_corners parameter.
+        input (Tensor): Input `input` argument (input).
+        grid (Tensor): Input `grid` argument (grid).
+        mode (str): Input `mode` argument (mode).
+        padding_mode (str): Input `padding_mode` argument (padding mode).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -439,12 +439,12 @@ class AffineGenerator(OpDef):
         """Infer shape.
 
         Args:
-        inputs (EagerTensorProtocol): The inputs parameter.
+        inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
         *args (EagerTensorProtocol): Positional args.
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_1
@@ -460,12 +460,12 @@ class AffineGrid(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_2: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_2
@@ -481,12 +481,12 @@ class AffineTransform(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_3: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_3
@@ -502,12 +502,12 @@ class PerspectiveTransform(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_4: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_4

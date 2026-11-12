@@ -21,6 +21,9 @@ def test_foreign_call_introspection() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[int, int, int]: Computed output value from `my_complex_func`.
         """
         return (1, 2, 3)
 
@@ -34,7 +37,11 @@ def test_foreign_call_introspection() -> None:
 
     # Test AST parsing
     def ast_func() -> EagerValue:
-        """Mock ast func."""
+        """Mock ast func.
+
+        Returns:
+            EagerValue: Computed output value from `ast_func`.
+        """
         return (10, 20)
 
     assert fc.infer_shape(ast_func) == (10, 20)
@@ -44,7 +51,11 @@ def test_foreign_call_introspection() -> None:
         """Mock."""
 
         def __call__(self) -> EagerValue:
-            """Call."""
+            """Call.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
+            """
             return {"a": (2, 3), "b": (4, 5)}
 
     assert fc.infer_shape(ensure_eager_tensor(ComplexCallable())) == ()
@@ -173,20 +184,32 @@ def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTens
     fc = _state["fc"]
 
     def non_int_tuple() -> tuple[str, str]:
-        """Mock."""
+        """Mock.
+
+        Returns:
+            tuple[str, str]: Computed output value from `non_int_tuple`.
+        """
         return ("a", "b")
 
     assert fc.infer_shape(non_int_tuple) == ()
 
     # Return string AST
     def ast_str_return() -> EagerValue:
-        """Mock."""
+        """Mock.
+
+        Returns:
+            EagerValue: Computed output value from `ast_str_return`.
+        """
         return ("a", "b")
 
     assert fc.infer_shape(ast_str_return) == ()
 
     def ast_int_return() -> EagerValue:
-        """Mock."""
+        """Mock.
+
+        Returns:
+            EagerValue: Computed output value from `ast_int_return`.
+        """
         return 1
 
     assert fc.infer_shape(ast_int_return) == ()
@@ -238,7 +261,11 @@ def test_foreign_call_inspect_signature() -> None:
         """Mock callable."""
 
         def __call__(self) -> tuple[int, int]:
-            """Call."""
+            """Call.
+
+            Returns:
+                tuple[int, int]: Computed output value from `__call__`.
+            """
             return (0, 0)
 
     MyCallable.__call__.__annotations__["return"] = tuple[int, int]
@@ -266,7 +293,11 @@ def test_foreign_call_ast_tuple_mismatch() -> None:
     fc = ForeignCall()
 
     def my_func() -> EagerValue:
-        """Mock."""
+        """Mock.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
+        """
         return (1, "not int")
 
     assert fc.infer_shape(my_func) == ()

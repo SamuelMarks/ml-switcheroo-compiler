@@ -14,12 +14,12 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager allclose operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     a = args[0]
     b = args[1]
@@ -31,10 +31,10 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         """Execute the eager val operation on the active backend array.
 
         Args:
-        x: The x parameter.
+        x: Input `x` argument (x).
 
         Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
         """
         x_data = get_backend_member(x, "data", x)
         if has_backend_member(x_data, "item") and callable(get_backend_member(x_data, "item")):
@@ -54,13 +54,13 @@ def _array_equiv(backend_module: BackendModuleProtocol, a1: EagerValue, a2: Eage
     """Execute the eager array equiv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        a1: The a1 parameter.
-        a2: The a2 parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        a1: Input `a1` argument (a1).
+        a2: Input `a2` argument (a2).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return get_backend_member(backend_module, "allclose")(a1, a2) if has_backend_member(backend_module, "allclose") else True
 
@@ -70,10 +70,10 @@ def _assert(backend_module: BackendModuleProtocol, condition: EagerValue, data: 
     """Execute the eager assert operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        condition: The condition parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        condition: Input `condition` argument (condition).
         data: Optional tensor data or sequence to summarize upon assertion failure.
-        summarize (int): The summarize parameter.
+        summarize (int): Input `summarize` argument (summarize).
         **kwargs: Keyword args (e.g. node_id, message).
 
     Returns:
@@ -101,12 +101,12 @@ def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager promotetypes operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "promote_types")(*args, **kwargs))
 
@@ -116,11 +116,11 @@ def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager resulttype operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "result_type")(*args, **kwargs))

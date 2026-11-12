@@ -22,6 +22,9 @@ def test_custom_linear_solve_fallback() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 

@@ -19,7 +19,11 @@ class DummyGenerator:
         self.lines = ensure_eager_tensor([])
 
     def get_fallback_prefix(self) -> EagerValue:
-        """Test function get_fallback_prefix."""
+        """Test function get_fallback_prefix.
+
+        Returns:
+            EagerValue: Computed output value from `get_fallback_prefix`.
+        """
         return "bk"
 
     def add_line(self, line: EagerValue) -> None:
@@ -39,7 +43,11 @@ class DummyGeneratorDotted:
         self.lines = ensure_eager_tensor([])
 
     def get_fallback_prefix(self) -> EagerValue:
-        """Test function get_fallback_prefix."""
+        """Test function get_fallback_prefix.
+
+        Returns:
+            EagerValue: Computed output value from `get_fallback_prefix`.
+        """
         return "np."
 
     def add_line(self, line: EagerValue) -> None:
@@ -59,7 +67,11 @@ class DummyGeneratorMlx:
         self.lines = ensure_eager_tensor([])
 
     def get_fallback_prefix(self) -> EagerValue:
-        """Test function get_fallback_prefix."""
+        """Test function get_fallback_prefix.
+
+        Returns:
+            EagerValue: Computed output value from `get_fallback_prefix`.
+        """
         return "mlx"
 
     def add_line(self, line: EagerValue) -> None:

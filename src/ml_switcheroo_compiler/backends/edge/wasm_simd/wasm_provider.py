@@ -59,7 +59,7 @@ def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str,
     """Load yaml.
 
     Args:
-        file_name: The file_name parameter.
+        file_name: Input `file_name` argument (file name).
 
     Returns:
         dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]: Computed result.
@@ -76,7 +76,7 @@ def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[s
     """Load all yaml files in a directory.
 
     Args:
-        dir_name: The dir_name parameter.
+        dir_name: Input `dir_name` argument (dir name).
 
     Returns:
         dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]: Computed result.
@@ -128,7 +128,7 @@ def get_js_orchestration_template(name: str) -> str:
     """Get js template.
 
     Args:
-        name: The name parameter.
+        name: Input `name` argument (name).
 
     Returns:
         str: Computed result.

@@ -14,15 +14,15 @@ def _np_sort_key_val(backend_module: BackendModuleProtocol, keys: EagerValue, va
     """Execute the eager np sort key val operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        keys (EagerValue): The keys parameter.
-        values (EagerValue): The values parameter.
-        axis (int): The axis parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        keys (EagerValue): Input `keys` argument (keys).
+        values (EagerValue): Input `values` argument (values).
+        axis (int): Input `axis` argument (axis).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     keys_arr = np.asarray(keys)
     values_arr = np.asarray(values)
@@ -37,12 +37,12 @@ def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Partition op.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "partition")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
@@ -52,12 +52,12 @@ def _np_percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Percentile op.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "percentile")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
@@ -67,12 +67,12 @@ def _np_quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Quantile op.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "quantile")(get_backend_member(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
@@ -82,12 +82,12 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Compute unique op.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "unique")(get_backend_member(np, "asarray")(args[0]), *args[1:], **kwargs))
 
@@ -97,12 +97,12 @@ def _np_argsort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np argsort operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.argsort(*args, **kwargs)
 
@@ -112,12 +112,12 @@ def _np_sort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np sort operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     is_stable = kwargs.pop("is_stable", True)
     kwargs["kind"] = "stable" if is_stable else "quicksort"
@@ -129,12 +129,12 @@ def _np_top_k(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np top k operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(_top_k)(*args, **kwargs)
 
@@ -144,13 +144,13 @@ def _np_search_sorted(backend_module: BackendModuleProtocol, x: EagerValue, v: E
     """Execute the eager np search sorted operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        v (EagerValue): The v parameter.
-        side (str): The side parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        v (EagerValue): Input `v` argument (v).
+        side (str): Input `side` argument (side).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.searchsorted(x, v, side=side)
 
@@ -160,12 +160,12 @@ def _np_setdiff1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np setdiff1d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.setdiff1d(*args, **kwargs)
 
@@ -175,12 +175,12 @@ def _np_setxor1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np setxor1d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.setxor1d(*args, **kwargs)
 
@@ -190,11 +190,11 @@ def _np_sort_complex(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np sort complex operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.sort_complex(*args, **kwargs)

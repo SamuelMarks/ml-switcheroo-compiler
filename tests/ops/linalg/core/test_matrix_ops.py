@@ -78,7 +78,8 @@ def test_matrix_ops_tracing(mock_emit: EagerTensorProtocol) -> None:
     ensure_callable(mod.svdvals)(a)
     ensure_callable(mod.diagonal)(a)
     ensure_callable(mod.cond)(a)
-    assert callable(test_matrix_ops_tracing)
+    assert isinstance(mock_emit, MagicMock) and mock_emit.call_count >= 15
+    global_tracing_state.is_tracing = False
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.matrix_ops.get_active_backend")
@@ -114,6 +115,7 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
     ensure_callable(mod.svdvals)(a)
     ensure_callable(mod.diagonal)(a)
     ensure_callable(mod.cond)(a)
+    assert mock_backend.execute_op.call_count >= 15
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -121,7 +123,7 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     global_tracing_state.active_graph = IRGraph()
-    assert callable(test_matrix_ops_eager)
+    global_tracing_state.is_tracing = False
 
 
 def test_matrix_ops_opdefs() -> None:

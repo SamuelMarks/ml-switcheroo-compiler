@@ -16,7 +16,7 @@ def _np_append(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Append values to the end of an array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -30,7 +30,7 @@ def _np_argwhere(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Find the indices of array elements that are non-zero, grouped by element.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -44,7 +44,7 @@ def _np_choose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Construct an array from an index array and a list of arrays to choose from.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -58,7 +58,7 @@ def _np_column_stack(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -72,7 +72,7 @@ def _np_compress(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Return selected slices of an array along given axis.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -86,7 +86,7 @@ def _np_delete_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Delete via delete.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -100,7 +100,7 @@ def _np_extract_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement Extract via extract.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -114,7 +114,7 @@ def _np_flatnonzero_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Flatnonzero via flatnonzero.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -128,7 +128,7 @@ def _np_flip_op_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement Flip via flip.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -142,7 +142,7 @@ def _np_fliplr_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Fliplr via fliplr.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -156,7 +156,7 @@ def _np_flipud_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Flipud via flipud.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -170,7 +170,7 @@ def _np_flip_reverse_(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Implement Reverse via flip.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -184,7 +184,7 @@ def _np_insert_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Insert via insert.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -198,7 +198,7 @@ def _np_nonzero_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement Nonzero via nonzero.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -212,7 +212,7 @@ def _np_resize_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Resize via resize.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -226,12 +226,12 @@ def _np_extractpatchesoptions(backend_module: BackendModuleProtocol, *args: Eage
     """Implement ExtractPatchesOptions.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.vision.bbox import ExtractPatchesOptions
 
@@ -243,12 +243,12 @@ def _np_tensorarraystack(backend_module: BackendModuleProtocol, *args: EagerValu
     """Implement TensorArrayStack.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     handle = args[0]
     return backend_module.stack(handle)

@@ -14,12 +14,12 @@ def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager intersect1d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "intersect1d")(*args, **kwargs))
 
@@ -29,12 +29,12 @@ def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np union1d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "union1d", get_backend_member(backend_module, "union1d", None))
     if func is not None:
@@ -47,12 +47,12 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np unique operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "unique", get_backend_member(backend_module, "unique", None))
     if func is not None:
@@ -65,12 +65,12 @@ def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np uniqueall operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "uniqueall", get_backend_member(backend_module, "uniqueall", None))
     if func is not None:
@@ -92,12 +92,12 @@ def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np uniquecounts operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "uniquecounts", get_backend_member(backend_module, "uniquecounts", None))
     if func is not None:
@@ -117,12 +117,12 @@ def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np uniquevalues operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "uniquevalues", get_backend_member(backend_module, "uniquevalues", None))
     if func is not None:

@@ -32,6 +32,9 @@ def test_execute_op() -> None:
         Args:
             np_mod: Test parameter `np_mod`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_global`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(1)
 
@@ -138,6 +141,9 @@ def test_equal() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                bool: Computed output value from `__eq__`.
             """
             return True
 

@@ -37,6 +37,9 @@ class DummyDa:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `add`.
         """
         return "add_res"
 
@@ -52,6 +55,9 @@ def test_dask_eager_execute_op() -> None:
             module: Test parameter `module`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eager`.
         """
         return "dummy_eager_res"
 

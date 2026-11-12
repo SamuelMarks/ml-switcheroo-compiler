@@ -51,9 +51,9 @@ def emit_webrtc_op(op_type: str, local_tensor_var: str, op_id: str) -> str:
     """Emit WebRTC collective operation JavaScript string.
 
     Args:
-        op_type: The op_type parameter.
-        local_tensor_var: The local_tensor_var parameter.
-        op_id: The op_id parameter.
+        op_type: Input `op_type` argument (op type).
+        local_tensor_var: Input `local_tensor_var` argument (local tensor var).
+        op_id: Input `op_id` argument (op id).
 
     Returns:
         str: Computed result.

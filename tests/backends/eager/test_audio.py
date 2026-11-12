@@ -200,7 +200,11 @@ def test_tensor_conversion_helpers() -> None:
             self.arr = arr
 
         def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `numpy`.
+            """
             return self.arr
 
     raw_arr = np.array([1.0, 2.0, 3.0], dtype=np.float32)

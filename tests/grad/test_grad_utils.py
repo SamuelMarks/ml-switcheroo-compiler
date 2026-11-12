@@ -51,6 +51,9 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return val
 
@@ -89,12 +92,20 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
 
         @property
         def requires_grad(self) -> bool:
-            """Test function requires_grad."""
+            """Test function requires_grad.
+
+            Returns:
+                bool: Computed output value from `requires_grad`.
+            """
             return True
 
         @property
         def trainable(self) -> EagerValue:
-            """Test function trainable."""
+            """Test function trainable.
+
+            Returns:
+                EagerValue: Computed output value from `trainable`.
+            """
             return False
 
     class DummyTensor2(Tensor):
@@ -102,12 +113,20 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
 
         @property
         def requires_grad(self) -> bool:
-            """Test function requires_grad."""
+            """Test function requires_grad.
+
+            Returns:
+                bool: Computed output value from `requires_grad`.
+            """
             return False
 
         @property
         def trainable(self) -> EagerValue:
-            """Test function trainable."""
+            """Test function trainable.
+
+            Returns:
+                EagerValue: Computed output value from `trainable`.
+            """
             return True
 
     t = DummyTensor1(None, TensorConfig((), DType.Float32, None))
@@ -120,7 +139,11 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
 
         @property
         def requires_grad(self) -> bool:
-            """Test function requires_grad."""
+            """Test function requires_grad.
+
+            Returns:
+                bool: Computed output value from `requires_grad`.
+            """
             return True
 
     class DummyDataNotInGraph:
@@ -167,6 +190,9 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return val
 

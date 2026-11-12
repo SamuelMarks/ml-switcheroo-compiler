@@ -19,11 +19,11 @@ def _apply_causal_mask(backend_module: BackendModuleProtocol, scores: EagerValue
     """Apply a causal mask to attention scores.
 
     Args:
-        backend_module: The backend_module parameter.
-        scores: The scores parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        scores: Input `scores` argument (scores).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if has_backend_member(backend_module, "triu") and has_backend_member(backend_module, "ones") and has_backend_member(backend_module, "where"):
         causal_mask = get_backend_member(backend_module, "triu")(get_backend_member(backend_module, "ones")(ensure_eager_tensor(scores).shape[-2:]), 1)
@@ -36,12 +36,12 @@ def _geometric(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager geometric operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(get_backend_member(backend_module, "random", backend_module), "geometric")(*args, **kwargs))
 
@@ -51,12 +51,12 @@ def _indices(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager indices operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "indices")(*args, **kwargs))
 
@@ -66,12 +66,12 @@ def _maskindices(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager maskindices operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_callable(get_backend_member(backend_module, "mask_indices"))(*args, **kwargs)
 
@@ -81,12 +81,12 @@ def _tri(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager tri operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "tri")(*args, **kwargs))
 
@@ -96,12 +96,12 @@ def _tril(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager tril operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "tril")(*args, **kwargs))
 
@@ -111,12 +111,12 @@ def _trimzeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager trimzeros operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "trim_zeros")(*args, **kwargs))
 
@@ -126,12 +126,12 @@ def _triu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager triu operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "triu")(*args, **kwargs))
 
@@ -141,12 +141,12 @@ def _fill_diagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager fill diagonal operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fill_diagonal", None)
     if func:
@@ -163,15 +163,15 @@ def _np_bandpart(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np bandpart operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     func = get_backend_member(backend_module, "bandpart", None)
     if func is not None:
@@ -185,12 +185,12 @@ def _np_geometric(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np geometric operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "geometric", None)
     if func is not None:
@@ -203,12 +203,12 @@ def _np_triangular(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np triangular operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "triangular", None)
     if func is not None:
@@ -221,12 +221,12 @@ def _np_tridiagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np tridiagonal operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tridiagonal", None)
     if func is not None:
@@ -239,12 +239,12 @@ def _np_trilindices(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np trilindices operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "trilindices", None)
     if func is not None:
@@ -257,12 +257,12 @@ def _np_trilindicesfrom(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np trilindicesfrom operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "trilindicesfrom", None)
     if func is not None:
@@ -275,12 +275,12 @@ def _np_trimzeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np trimzeros operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "trimzeros", None)
     if func is not None:
@@ -293,12 +293,12 @@ def _np_triuindices(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np triuindices operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "triuindices", None)
     if func is not None:
@@ -311,12 +311,12 @@ def _np_triuindicesfrom(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np triuindicesfrom operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "triuindicesfrom", None)
     if func is not None:

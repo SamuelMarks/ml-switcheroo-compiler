@@ -663,6 +663,9 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state: dict[
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            bool: Computed output value from `mock_exists`.
         """
         if "ml_switcheroo_compiler" in p and "snapshots" in p:
             return False
@@ -689,6 +692,9 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            list[str]: Computed output value from `mock_listdir`.
         """
         if "ml-ecosystem-snapshots" in p and "snapshots" in p:
             return ["torch_v1.0.json"]
@@ -709,6 +715,9 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            list[str]: Computed output value from `mock_listdir_cache`.
         """
         if ".cache" in p and "ml_ecosystem_snapshots" in p:
             return ["torch_v1.0.json"]
@@ -752,6 +761,9 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state: dict[
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            str: Computed output value from `mock_expanduser`.
         """
         if ".cache" in path:
             return fake_cache_dir
@@ -866,6 +878,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state: dict
 
             Args:
                 p: Test parameter `p`.
+
+            Returns:
+                str: Computed output value from `mock_expanduser`.
             """
             if "ml_switcheroo_compiler" in p:
                 return str(compiler_cache)
@@ -897,6 +912,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict
 
             Args:
                 p: Test parameter `p`.
+
+            Returns:
+                bool: Computed output value from `mock_default_dir_exists`.
             """
             if ".cache" in p:
                 return False
@@ -909,6 +927,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict
 
             Args:
                 p: Test parameter `p`.
+
+            Returns:
+                list[str]: Computed output value from `mock_default_dir_listdir`.
             """
             if "ml-ecosystem-snapshots" in p and "snapshots" in p:
                 return ["torch.json"]
@@ -955,6 +976,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict
             Args:
                 key: Test parameter `key`.
                 default: Test parameter `default`.
+
+            Returns:
+                EagerValue: Computed output value from `get`.
             """
             if key == "kind":
                 # Clear the caller's curr_sig if possible or return POSITIONAL_ONLY when seen_pos_or_kw is True
@@ -986,6 +1010,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict
             Args:
                 key: Test parameter `key`.
                 default: Test parameter `default`.
+
+            Returns:
+                EagerValue: Computed output value from `get`.
             """
             if key == "kind":
                 self.target_list.clear()
@@ -1018,6 +1045,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state: dict
             Args:
                 key: Test parameter `key`.
                 default: Test parameter `default`.
+
+            Returns:
+                EagerValue: Computed output value from `get`.
             """
             if key == "kind":
                 frame = inspect.currentframe()
@@ -1148,6 +1178,9 @@ def test_snapshot_grounding_ecosystem_importlib_and_cache(tmp_path: pytest.TempP
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            str: Computed output value from `mock_expanduser`.
         """
         if "ml_ecosystem_snapshots" in p:
             return str(cache_dir)
@@ -1482,6 +1515,9 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
 
             Args:
                 fw: Test parameter `fw`.
+
+            Returns:
+                bool: Computed output value from `_discover_target_files`.
             """
             return True
 
@@ -1502,6 +1538,9 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
 
             Args:
                 fw: Test parameter `fw`.
+
+            Returns:
+                bool: Computed output value from `_discover_target_files`.
             """
             return False
 
@@ -1536,6 +1575,9 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
 
             Args:
                 fw: Test parameter `fw`.
+
+            Returns:
+                dict[str, EagerTensorProtocol]: Computed output value from `load_target`.
             """
             raise RuntimeError("discover failed")
 
@@ -1558,6 +1600,9 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
 
             Args:
                 fw: Test parameter `fw`.
+
+            Returns:
+                dict[str, EagerTensorProtocol]: Computed output value from `load_target`.
             """
             return {"loaded_sym": dummy_ref_empty}
 
@@ -1615,7 +1660,11 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
         """Test class BadModelDump."""
 
         def model_dump(self) -> str:
-            """Test function model_dump."""
+            """Test function model_dump.
+
+            Returns:
+                str: Computed output value from `model_dump`.
+            """
             return "not_a_dict"
 
     assert ensure_callable(_param_to_dict)(ensure_callable(BadModelDump)()) == {}
@@ -1654,6 +1703,9 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
         Args:
             name: Test parameter `name`.
             pkg: Test parameter `pkg`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import_ge_fail`.
         """
         if "grounding.engine" in name:
             raise RuntimeError("GroundingEngine init failure")
@@ -1691,6 +1743,9 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
                 fw: Test parameter `fw`.
                 cand: Test parameter `cand`.
                 max_distance: Test parameter `max_distance`.
+
+            Returns:
+                str: Computed output value from `suggest_closest_symbol`.
             """
             return "suggested_symbol"
 

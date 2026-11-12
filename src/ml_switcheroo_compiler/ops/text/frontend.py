@@ -214,11 +214,11 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
     """Compute the string split eager tensor operation.
 
     Args:
-        input_tensor (Tensor): The input_tensor parameter.
-        delimiter (str): The delimiter parameter.
+        input_tensor (Tensor): Input `input_tensor` argument (input tensor).
+        delimiter (str): Input `delimiter` argument (delimiter).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     backend = get_active_backend()
     tokens, lengths = ensure_tensor_pair(backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
@@ -240,14 +240,14 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
     """Compute the string split trace tensor operation.
 
     Args:
-        input_tensor (Tensor): The input_tensor parameter.
-        delimiter (str): The delimiter parameter.
+        input_tensor (Tensor): Input `input_tensor` argument (input tensor).
+        delimiter (str): Input `delimiter` argument (delimiter).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     if not global_tracing_state.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
@@ -457,10 +457,10 @@ def _as_string_config_to_dict(conf: AsStringConfig | None) -> dict[str, TensorOr
     """Convert AsStringConfig to a dictionary.
 
     Args:
-        conf (Optional[AsStringConfig]): The conf parameter.
+        conf (Optional[AsStringConfig]): Input `conf` argument (conf).
 
     Returns:
-            dict[str, TensorOrScalar]: Result.
+            dict[str, TensorOrScalar]: Computed `dict[str, TensorOrScalar]` output.
     """
     conf = conf if conf is not None else AsStringConfig()
     return {

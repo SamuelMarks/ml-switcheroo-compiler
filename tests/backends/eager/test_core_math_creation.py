@@ -39,6 +39,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `fromfunction`.
             """
             return "fromfunction_res"
 
@@ -48,6 +51,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `from_dlpack`.
             """
             return "from_dlpack_res"
 
@@ -57,6 +63,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `fromiter`.
             """
             return "fromiter_res"
 
@@ -66,6 +75,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `frompyfunc`.
             """
             return "frompyfunc_res"
 
@@ -75,6 +87,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `geomspace`.
             """
             return "geomspace_res"
 
@@ -84,6 +99,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `mgrid`.
             """
             return "mgrid_res"
 
@@ -93,6 +111,9 @@ def test_math_creation_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `ogrid`.
             """
             return "ogrid_res"
 

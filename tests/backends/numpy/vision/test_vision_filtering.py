@@ -36,8 +36,8 @@ def test_np_median_filter() -> None:
 
 def test_np_sharpen() -> None:
     """Test function test_np_sharpen."""
-    _np_sharpen(ensure_eager_tensor(np), np.ones((2, 2)))
-    assert callable(test_np_sharpen)
+    _out = _np_sharpen(ensure_eager_tensor(np), np.ones((2, 2)))
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2, 2) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [[1.0, 1.0], [1.0, 1.0]], atol=1e-3))
 
 
 def test_gaussian_blur_cov() -> None:

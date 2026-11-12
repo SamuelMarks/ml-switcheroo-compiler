@@ -141,8 +141,10 @@ def _resolve_custom_code(custom_code: str, backend_module: AttributeValue | None
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     try:
-        return ensure_eager_tensor(eval(custom_code, local_env))
-    except Exception:
+        from ml_switcheroo_compiler.backends._safe_expr_eval import evaluate_safe_expression
+
+        return evaluate_safe_expression(custom_code, local_env)
+    except (SyntaxError, ValueError, TypeError, NameError, AttributeError, KeyError):
         return None
 
 

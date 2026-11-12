@@ -16,13 +16,13 @@ def _np_rsqrt(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     """Execute the eager np rsqrt operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     with np.errstate(divide="ignore", invalid="ignore"):
         return ensure_eager_tensor(1.0 / get_backend_member(np, "sqrt")(x))
@@ -33,7 +33,7 @@ def _np_trace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Return the sum along diagonals of the array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -47,12 +47,12 @@ def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np vander operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "vander")(np.asarray(args[0]), *args[1:], **kwargs))
 
@@ -62,7 +62,7 @@ def _np_linalg_cholesky_(backend_module: BackendModuleProtocol, *args: EagerValu
     """Implement Cholesky via linalg.cholesky.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -76,7 +76,7 @@ def _np_linalg_det_(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Implement Det via linalg.det.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -90,7 +90,7 @@ def _np_linalg_svd_(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Implement Svd via linalg.svd.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -104,7 +104,7 @@ def _np_linalg_inv_(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Implement Inv via linalg.inv.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -118,7 +118,7 @@ def _np_linalg_pinv_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Pinv via linalg.pinv.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -132,12 +132,12 @@ def _np_customlinearsolve(backend_module: BackendModuleProtocol, *args: EagerVal
     """Implement CustomLinearSolve.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if callable(args[0]):
         solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
@@ -152,12 +152,12 @@ def _np_linearoperatorinversion(backend_module: BackendModuleProtocol, *args: Ea
     """Implement LinearOperatorInversion.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorInversion
 
@@ -169,12 +169,12 @@ def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Implement Vecdot.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x = args[0]
     y = args[1]

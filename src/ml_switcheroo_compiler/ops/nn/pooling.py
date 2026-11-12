@@ -220,17 +220,17 @@ def pool1d(
     """Apply a 1D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The operand parameter.
-        window_shape (int): The window_shape parameter.
-        strides (int | None): The strides parameter.
-        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
-        pool_mode (str): The pool_mode parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        window_shape (int): Input `window_shape` argument (window shape).
+        strides (int | None): Input `strides` argument (strides).
+        padding (str | tuple[tuple[int, int], ...]): Input `padding` argument (padding).
+        pool_mode (str): Input `pool_mode` argument (pool mode).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     shape = (window_shape,)
     stride = (strides,) if strides is not None else None
@@ -251,17 +251,17 @@ def pool2d(
     """Apply a 2D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The operand parameter.
-        window_shape (tuple[int, int]): The window_shape parameter.
-        strides (tuple[int, int] | None): The strides parameter.
-        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
-        pool_mode (str): The pool_mode parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        window_shape (tuple[int, int]): Input `window_shape` argument (window shape).
+        strides (tuple[int, int] | None): Input `strides` argument (strides).
+        padding (str | tuple[tuple[int, int], ...]): Input `padding` argument (padding).
+        pool_mode (str): Input `pool_mode` argument (pool mode).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if pool_mode == "max":
         return max_pool(operand, window_shape, strides, padding)
@@ -280,17 +280,17 @@ def pool3d(
     """Apply a 3D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The operand parameter.
-        window_shape (tuple[int, int, int]): The window_shape parameter.
-        strides (tuple[int, int, int] | None): The strides parameter.
-        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
-        pool_mode (str): The pool_mode parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        window_shape (tuple[int, int, int]): Input `window_shape` argument (window shape).
+        strides (tuple[int, int, int] | None): Input `strides` argument (strides).
+        padding (str | tuple[tuple[int, int], ...]): Input `padding` argument (padding).
+        pool_mode (str): Input `pool_mode` argument (pool mode).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if pool_mode == "max":
         return max_pool(operand, window_shape, strides, padding)

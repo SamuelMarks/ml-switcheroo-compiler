@@ -82,7 +82,11 @@ def _test_mlx_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
         data = [1]
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1]
 
     import numpy as np
@@ -134,11 +138,19 @@ def _test_mlx_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         """Test class ItemMock."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1
 
         def __int__(self) -> EagerValue:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                EagerValue: Computed output value from `__int__`.
+            """
             return 1
 
     class DataMock:

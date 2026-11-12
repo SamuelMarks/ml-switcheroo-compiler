@@ -63,6 +63,9 @@ def test_accumulate_gradients(mocker: EagerTensorProtocol) -> None:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             adj: Test parameter `adj`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_vjp`.
         """
         return ["da", "db"]
 
@@ -137,6 +140,9 @@ def test_grad(mocker: EagerTensorProtocol) -> None:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             adj: Test parameter `adj`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_vjp`.
         """
         return ["da", "db"]
 
@@ -170,6 +176,9 @@ def test_invoke_jvp_rule() -> None:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             tangent: Test parameter `tangent`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_jvp`.
         """
         return "res"
 

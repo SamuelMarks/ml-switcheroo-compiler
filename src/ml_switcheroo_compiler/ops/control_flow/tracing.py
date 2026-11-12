@@ -84,9 +84,9 @@ def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar
     """Emit a symbolic `If` control-flow node for `cond`.
 
     Args:
-        pred (Tensor): The pred parameter.
-        true_fn (TensorOrScalar): The true_fn parameter.
-        false_fn (TensorOrScalar): The false_fn parameter.
+        pred (Tensor): Input `pred` argument (pred).
+        true_fn (TensorOrScalar): Input `true_fn` argument (true fn).
+        false_fn (TensorOrScalar): Input `false_fn` argument (false fn).
 
     Returns:
         TensorOrScalar: Traced output tensor.
@@ -122,9 +122,9 @@ def while_loop_tracing(
     """Emit a symbolic `Loop` node for `while_loop`.
 
     Args:
-        cond_fn (Callable[[_StateT], bool | Tensor]): The cond_fn parameter.
-        body_fn (Callable[[_StateT], _StateT]): The body_fn parameter.
-        init_val (_StateT): The init_val parameter.
+        cond_fn (Callable[[_StateT], bool | Tensor]): Input `cond_fn` argument (cond fn).
+        body_fn (Callable[[_StateT], _StateT]): Input `body_fn` argument (body fn).
+        init_val (_StateT): Input `init_val` argument (init val).
 
     Returns:
         _StateT: Traced loop state output.
@@ -160,7 +160,7 @@ def _flatten_inputs(obj: TensorOrScalar) -> list[str]:
     """Flatten nested tensor arguments into a list of node IDs.
 
     Args:
-        obj (TensorOrScalar): The obj parameter.
+        obj (TensorOrScalar): Input `obj` argument (obj).
 
     Returns:
         list[str]: Flattened node IDs.
@@ -184,10 +184,10 @@ def scan_tracing(
     """Emit a symbolic `Scan` node for `scan`.
 
     Args:
-        f (TensorOrScalar): The f parameter.
-        init (TensorOrScalar): The init parameter.
-        xs (TensorOrScalar): The xs parameter.
-        length (int | None): The length parameter.
+        f (TensorOrScalar): Input `f` argument (f).
+        init (TensorOrScalar): Input `init` argument (init).
+        xs (TensorOrScalar): Input `xs` argument (xs).
+        length (int | None): Input `length` argument (length).
 
     Returns:
         TensorOrScalar: Tuple of `(carry, stacked_outputs)`.
@@ -230,9 +230,9 @@ def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None
     """Emit a symbolic `Map` node for `map_fn`.
 
     Args:
-        fn (TensorOrScalar): The fn parameter.
-        elems (Tensor): The elems parameter.
-        dtype (DType | None): The dtype parameter.
+        fn (TensorOrScalar): Input `fn` argument (fn).
+        elems (Tensor): Input `elems` argument (elems).
+        dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
         TensorOrScalar: Mapped output tensor.
@@ -268,8 +268,8 @@ def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOr
     """Create a symbolic `Pmap` wrapper for `func`.
 
     Args:
-        func (TensorOrScalar): The func parameter.
-        axis_name (str | None): The axis_name parameter.
+        func (TensorOrScalar): Input `func` argument (func).
+        axis_name (str | None): Input `axis_name` argument (axis name).
 
     Returns:
         TensorOrScalar: Wrapped parallel-map callable.
@@ -324,10 +324,10 @@ def stop_gradient_tracing(x: _StateT) -> _StateT:
     """Compute the stop gradient tracing tensor operation.
 
     Args:
-        x (_StateT): The x parameter.
+        x (_StateT): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if not global_tracing_state.is_tracing:
         return x
@@ -349,11 +349,11 @@ def assert_value_tracing(condition: TensorOrScalar, message: str = "") -> None:
     """Compute the assert value tracing tensor operation.
 
     Args:
-        condition (TensorOrScalar): The condition parameter.
-        message (str): The message parameter.
+        condition (TensorOrScalar): Input `condition` argument (condition).
+        message (str): Input `message` argument (message).
 
     Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
     """
     if not global_tracing_state.is_tracing:
         record_assertion(condition, message)

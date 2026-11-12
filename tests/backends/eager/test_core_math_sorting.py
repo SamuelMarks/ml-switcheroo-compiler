@@ -42,6 +42,9 @@ def test_math_sort_coverage() -> None:
             Args:
                 a: Test parameter `a`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                str: Computed output value from `argsort`.
             """
             return f"argsort_{axis}"
 
@@ -51,6 +54,9 @@ def test_math_sort_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `lexsort`.
             """
             return "lexsort_val"
 
@@ -60,6 +66,9 @@ def test_math_sort_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `searchsorted`.
             """
             return "searchsorted_val"
 
@@ -69,6 +78,9 @@ def test_math_sort_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `sort_complex`.
             """
             return "sort_complex_val"
 
@@ -103,6 +115,9 @@ def test_math_sorting_coverage() -> None:
             Args:
                 a: Test parameter `a`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                str: Computed output value from `argsort`.
             """
             return f"argpartition_{axis}"
 
@@ -126,6 +141,9 @@ def test_math_sorting_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `median`.
             """
             return "median_val"
 
@@ -135,6 +153,9 @@ def test_math_sorting_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `percentile`.
             """
             return "percentile_val"
 
@@ -144,6 +165,9 @@ def test_math_sorting_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `quantile`.
             """
             return "quantile_val"
 
@@ -163,6 +187,9 @@ def test_math_sorting_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `partition`.
             """
             return "partition_val"
 

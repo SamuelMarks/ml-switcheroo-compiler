@@ -66,14 +66,14 @@ def _validate_split_axis(input: TensorOrScalar, axis: int) -> TensorOrScalar:  #
     """Validate the split axis against the input tensor shape.
 
     Args:
-        input (Tensor): The input parameter.
-        axis (int): The axis parameter.
+        input (Tensor): Input `input` argument (input).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        int: Result.
+        int: Computed `int` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if not isinstance(input, ShapeProtocol) or input.shape is None:
         return axis
@@ -91,13 +91,13 @@ def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: i
     """Handle splitting when an integer split_size_or_sections is provided.
 
     Args:
-        input (Tensor): The input parameter.
-        split_size (int): The split_size parameter.
-        axis (int): The axis parameter.
-        num_splits (int): The num_splits parameter.
+        input (Tensor): Input `input` argument (input).
+        split_size (int): Input `split_size` argument (split size).
+        axis (int): Input `axis` argument (axis).
+        num_splits (int): Input `num_splits` argument (num splits).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -133,13 +133,13 @@ def _split_sections(  # pylint: disable=too-many-locals
     """Handle splitting when a sequence of sections is provided.
 
     Args:
-        input (Tensor): The input parameter.
-        sections (Sequence): The sections parameter.
-        axis (int): The axis parameter.
-        num_splits (int): The num_splits parameter.
+        input (Tensor): Input `input` argument (input).
+        sections (Sequence): Input `sections` argument (sections).
+        axis (int): Input `axis` argument (axis).
+        num_splits (int): Input `num_splits` argument (num splits).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -174,12 +174,12 @@ def split(
     """Split the input tensor into multiple sub-tensors.
 
     Args:
-        input (Tensor): The input parameter.
-        split_size_or_sections (int | Sequence[int]): The split_size_or_sections parameter.
-        axis (int): The axis parameter.
+        input (Tensor): Input `input` argument (input).
+        split_size_or_sections (int | Sequence[int]): Input `split_size_or_sections` argument (split size or sections).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     valid_axis = _validate_split_axis(input, axis)
     num_splits = _calculate_num_splits(input, split_size_or_sections, ensure_int(valid_axis))
@@ -193,11 +193,11 @@ def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
     """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
-        input (Tensor): The input parameter.
-        axis (int): The axis parameter.
+        input (Tensor): Input `input` argument (input).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend: TensorOrScalar = get_active_backend()
@@ -237,12 +237,12 @@ def array_split(
     """Split an array into multiple sub-arrays.
 
     Args:
-        ary (Tensor): The ary parameter.
-        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
-        axis (int): The axis parameter.
+        ary (Tensor): Input `ary` argument (ary).
+        indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -263,11 +263,11 @@ def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """Split an array into multiple sub-arrays vertically (row-wise).
 
     Args:
-        ary (Tensor): The ary parameter.
-        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
+        ary (Tensor): Input `ary` argument (ary).
+        indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -302,11 +302,11 @@ def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """Split an array into multiple sub-arrays horizontally (column-wise).
 
     Args:
-        ary (Tensor): The ary parameter.
-        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
+        ary (Tensor): Input `ary` argument (ary).
+        indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -339,11 +339,11 @@ def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     """Split array into multiple sub-arrays along the 3rd axis (depth).
 
     Args:
-        ary (Tensor): The ary parameter.
-        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
+        ary (Tensor): Input `ary` argument (ary).
+        indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
-        Sequence: Result.
+        Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -405,7 +405,7 @@ class Unstack(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         input_shape = extract_shape(args[0])
         ax = int(ensure_int(kwargs.get("axis", 0)))

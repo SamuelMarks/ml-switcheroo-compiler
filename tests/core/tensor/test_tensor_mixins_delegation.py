@@ -21,6 +21,9 @@ def make_tensor(data: EagerValue) -> EagerValue:
 
     Args:
         data: Test parameter `data`.
+
+    Returns:
+        EagerValue: Computed output value from `make_tensor`.
     """
     cfg = TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=())
     return Tensor(data, cfg)
@@ -32,12 +35,10 @@ def test_numpy_conversion_fallback() -> None:
     original_numpy = sys.modules.get("numpy")
     ensure_eager_tensor(sys.modules)["numpy"] = None
     try:
-        ensure_eager_tensor(ensure_eager_tensor(t).numpy)()
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        with pytest.raises((ImportError, ModuleNotFoundError, RuntimeError)):
+            ensure_eager_tensor(ensure_eager_tensor(t).numpy)()
     finally:
         ensure_eager_tensor(sys.modules)["numpy"] = original_numpy
-    assert callable(test_numpy_conversion_fallback)
 
 
 def test_exception_in_asarray() -> None:
@@ -47,7 +48,11 @@ def test_exception_in_asarray() -> None:
         """Test class BadData."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1.0]
 
         def __array__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
@@ -79,6 +84,9 @@ def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
             """
             return ensure_callable(int)(x)
 
@@ -86,7 +94,11 @@ def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
         """Test class FakeTensor."""
 
         def eval(self) -> Tensor:
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                Tensor: Computed output value from `eval`.
+            """
             return ensure_tensor_obj(5)
 
     t = FakeTensor(1.0, TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=()))

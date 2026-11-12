@@ -17,7 +17,7 @@ def get_shared_ast_visitors(generator: BaseGenerator) -> list[CommonASTVisitor]:
     """Return a list of shared AST visitors.
 
     Args:
-        generator: The generator parameter.
+        generator: Input `generator` argument (generator).
 
     Returns:
         list[CommonASTVisitor]: A list of instantiated AST visitors.

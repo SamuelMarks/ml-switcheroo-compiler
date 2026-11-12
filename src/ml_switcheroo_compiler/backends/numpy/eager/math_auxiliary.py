@@ -13,14 +13,14 @@ def _np_constant_of_shape(backend_module: BackendModuleProtocol, shape: EagerVal
     """Execute the eager np constant of shape operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        shape (EagerValue): The shape parameter.
-        value (EagerValue): The value parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        shape (EagerValue): Input `shape` argument (shape).
+        value (EagerValue): Input `value` argument (value).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.full(shape, value)
 
@@ -30,12 +30,12 @@ def _np_reduce_window(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np reduce window operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(_reduce_window)(*args, **kwargs)
 
@@ -45,12 +45,12 @@ def _np_test_eager_op(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np test eager op operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.array([1, 2, 3], dtype=backend_module.float32)
 
@@ -60,12 +60,12 @@ def _np_unknown(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np unknown operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return 0.0
 
@@ -75,12 +75,12 @@ def _np_rand(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np rand operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     dtype = kwargs.get("dtype", get_backend_member(backend_module, "float32", None))
     dtype_str = str(dtype).split(".")[-1]
@@ -98,12 +98,12 @@ def _np_is_non_decreasing(backend_module: BackendModuleProtocol, x: EagerValue, 
     """IsNonDecreasing.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
@@ -116,12 +116,12 @@ def _np_is_strictly_increasing(backend_module: BackendModuleProtocol, x: EagerVa
     """IsStrictlyIncreasing.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
@@ -134,14 +134,14 @@ def _np_l2_normalize(backend_module: BackendModuleProtocol, x: EagerValue, axis:
     """L2Normalize.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axis (int): The axis parameter.
-        epsilon (float): The epsilon parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axis (int): Input `axis` argument (axis).
+        epsilon (float): Input `epsilon` argument (epsilon).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     square_sum = backend_module.sum(backend_module.square(x), axis=axis, keepdims=True)
     x_inv_norm = backend_module.divide(1.0, backend_module.sqrt(backend_module.maximum(square_sum, epsilon)))
@@ -153,14 +153,14 @@ def _np_reduce_euclidean_norm(backend_module: BackendModuleProtocol, x: EagerVal
     """ReduceEuclideanNorm.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axis (EagerValue): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axis (EagerValue): Input `axis` argument (axis).
+        keepdims (bool): Input `keepdims` argument (keepdims).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.sqrt(backend_module.sum(backend_module.square(x), axis=axis, keepdims=keepdims))
 
@@ -170,14 +170,14 @@ def _clamp(np: BackendModuleProtocol, min_val: EagerValue, x: EagerValue, max_va
     """Clamp wrapper.
 
     Args:
-        np (ModuleType): The np parameter.
-        min_val (EagerValue): The min_val parameter.
-        x (EagerValue): The x parameter.
-        max_val (EagerValue): The max_val parameter.
+        np (ModuleType): Input `np` argument (np).
+        min_val (EagerValue): Input `min_val` argument (min val).
+        x (EagerValue): Input `x` argument (x).
+        max_val (EagerValue): Input `max_val` argument (max val).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return np.clip(x, min_val, max_val)
 
@@ -187,14 +187,14 @@ def _logspace(np: BackendModuleProtocol, start: EagerValue, stop: EagerValue, *a
     """Logspace wrapper.
 
     Args:
-        np (ModuleType): The np parameter.
-        start (EagerValue): The start parameter.
-        stop (EagerValue): The stop parameter.
+        np (ModuleType): Input `np` argument (np).
+        start (EagerValue): Input `start` argument (start).
+        stop (EagerValue): Input `stop` argument (stop).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if args and type(args[0]).__name__ == "SpaceConfig":
         c = args[0]
@@ -207,15 +207,15 @@ def _np_frombuffer(backend_module: BackendModuleProtocol, buffer: EagerValue, dt
     """Execute the eager np frombuffer operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        buffer (EagerValue): The buffer parameter.
-        dtype (str): The dtype parameter.
-        count (int): The count parameter.
-        offset (int): The offset parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        buffer (EagerValue): Input `buffer` argument (buffer).
+        dtype (str): Input `dtype` argument (dtype).
+        count (int): Input `count` argument (count).
+        offset (int): Input `offset` argument (offset).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.frombuffer(buffer, dtype=dtype, count=count, offset=offset)
 
@@ -225,13 +225,13 @@ def _np_dtype_op(backend_module: BackendModuleProtocol, value: EagerValue, *args
     """DType.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        value (EagerValue): The value parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        value (EagerValue): Input `value` argument (value).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(value, str):
         return DType(value)
@@ -245,12 +245,12 @@ def _eager_Gradient(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager eager Gradient operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs))
 
@@ -260,12 +260,12 @@ def _eager_I0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager eager I0 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs))
 
@@ -275,11 +275,11 @@ def _eager_BroadcastedIota(backend_module: BackendModuleProtocol, *args: EagerVa
     """Execute the eager eager BroadcastedIota operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1]))

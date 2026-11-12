@@ -13,13 +13,13 @@ def _argsort(backend_module: BackendModuleProtocol, a: EagerValue, axis: int = -
     """Execute the eager argsort operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        a: The a parameter.
-        axis (int): The axis parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        a: Input `a` argument (a).
+        axis (int): Input `axis` argument (axis).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "argsort")(a, axis=axis))
 
@@ -29,12 +29,12 @@ def _lexsort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager lexsort operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "lexsort")(*args, **kwargs))
 
@@ -44,12 +44,12 @@ def _searchsorted(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager searchsorted operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "searchsorted")(*args, **kwargs))
 
@@ -59,11 +59,11 @@ def _sortcomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager sortcomplex operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "sort_complex")(*args, **kwargs))

@@ -222,6 +222,9 @@ def _test_pooling_brute_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return (np.array([0.0]), np.array([0]))
 
@@ -230,6 +233,9 @@ def _test_pooling_brute_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return x
 

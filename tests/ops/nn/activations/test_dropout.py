@@ -65,6 +65,9 @@ def test_dropout_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `dummy_emit`.
             """
             return "emitted"
 

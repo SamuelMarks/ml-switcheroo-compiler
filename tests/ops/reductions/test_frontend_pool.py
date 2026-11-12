@@ -50,8 +50,8 @@ def test_frontend_pool_edge_cases() -> None:
         ensure_callable(fractional_max_pool3d)(t2d, output_size=[1, 1, 1])
         ensure_callable(adaptive_avg_pool3d)(t2d, output_size=[1, 1, 1])
         ensure_callable(adaptive_max_pool3d)(t2d, output_size=[1, 1, 1])
+        assert len(graph.nodes) == 6
 
     finally:
         global_tracing_state.is_tracing = False
         global_tracing_state.active_graph = None
-    assert callable(test_frontend_pool_edge_cases)

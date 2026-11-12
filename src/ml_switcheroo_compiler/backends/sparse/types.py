@@ -20,9 +20,11 @@ def _resolve_sp_attr(self: EagerValue, name: str) -> EagerTensorProtocol:
         EagerTensorProtocol: Resolved attribute.
     """
     del self
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
-    return get_backend_member(BackendRegistry.get("numpy").get_module(), name)
+    active = get_active_backend()
+    target = BackendRegistry.get("pure_python") if active.__name__ == "SparseCodeGenerator" else active
+    return get_backend_member(target.get_module(), name)
 
 
 _SparseBackendProxy = ensure_callable(type)("_SparseBackendProxy", (), {"_" + "_getattr_" + "_": _resolve_sp_attr})

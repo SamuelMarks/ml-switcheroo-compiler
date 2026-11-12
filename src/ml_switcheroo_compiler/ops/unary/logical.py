@@ -107,7 +107,7 @@ class Packbits(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -135,7 +135,7 @@ class Unpackbits(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -204,11 +204,11 @@ class Iscomplexobj(OpDef):
         """Infer shape.
 
         Args:
-            x (TensorOrScalar): The x parameter.
+            x (TensorOrScalar): Input `x` argument (x).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         del x, kwargs
         return ()
@@ -225,11 +225,11 @@ class Isrealobj(OpDef):
         """Infer shape.
 
         Args:
-            x (TensorOrScalar): The x parameter.
+            x (TensorOrScalar): Input `x` argument (x).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         del x, kwargs
         return ()
@@ -250,7 +250,7 @@ class Issubdtype(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -348,7 +348,7 @@ def population_count(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -363,7 +363,7 @@ def isin(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -378,7 +378,7 @@ def iscomplex(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -393,7 +393,7 @@ def iscomplexobj(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -408,7 +408,7 @@ def isreal(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -423,7 +423,7 @@ def isrealobj(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -438,7 +438,7 @@ def issubdtype(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -453,7 +453,7 @@ def reduce_precision(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

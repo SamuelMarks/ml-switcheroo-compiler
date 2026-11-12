@@ -9,6 +9,7 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.errors import AutodiffError
 from ml_switcheroo_compiler.core.shape import (
     TensorOrScalar,
     TypedVariadicCallable,
@@ -476,7 +477,9 @@ def jvp(
             sym_res = _symbolic_jvp(fun, primals_tuple, tangents_tuple)
             if isinstance(sym_res, tuple) and len(sym_res) == 2:
                 return sym_res[0], sym_res[1]
-        except Exception:
+        except AutodiffError:
+            raise
+        except (TypeError, ValueError, RuntimeError):
             pass
 
     primal_out = invoke_callable(fun, *primals_tuple)
@@ -488,16 +491,18 @@ def jvp(
         if _is_addable_operand(raw_p):
             try:
                 perturbed.append(_ensure_grad_tensor(p) + _ensure_grad_tensor(t) * eps)
-            except Exception:
-                perturbed.append(p)
+            except (TypeError, ValueError, RuntimeError, ArithmeticError) as exc:
+                msg = f"Failed to perturb primal operand during JVP evaluation: {exc}"
+                raise AutodiffError(msg) from exc
         else:
             perturbed.append(p)
 
     out_eps = invoke_callable(fun, *perturbed)
     try:
         tangent_out: GradValue = (_ensure_grad_tensor(out_eps) - _ensure_grad_tensor(primal_out)) / eps
-    except Exception:
-        tangent_out = primal_out
+    except (TypeError, ValueError, RuntimeError, ArithmeticError) as exc:
+        msg = f"Failed to compute directional derivative tangent in JVP: {exc}"
+        raise AutodiffError(msg) from exc
     return primal_out, tangent_out
 
 

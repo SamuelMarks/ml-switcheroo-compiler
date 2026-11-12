@@ -356,6 +356,9 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_primary`.
             """
             if path.endswith("/standard_workloads.yaml"):
                 return False
@@ -370,6 +373,9 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_fallback`.
             """
             if path.endswith("/standard_workloads.yaml") or path.endswith("/workloads.yaml"):
                 return False
@@ -384,6 +390,9 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_none`.
             """
             if any(path.endswith("/" + name) for name in ("standard_workloads.yaml", "workloads.yaml", "model_workloads.yaml")):
                 return False
@@ -455,6 +464,9 @@ def _test_config_models_loaders_part_6(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                bool: Computed output value from `mock_exists_no_bp`.
             """
             if path.endswith("/backend_profiles.yaml"):
                 return False

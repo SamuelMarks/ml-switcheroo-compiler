@@ -457,7 +457,11 @@ def test_awkward_types_coverage_branches() -> None:
         """Dummy object with nested to_list structure."""
 
         def to_list(self) -> list[list[float]]:
-            """Return nested 2D list."""
+            """Return nested 2D list.
+
+            Returns:
+                list[list[float]]: Computed output value from `to_list`.
+            """
             return [[123.45]]
 
     assert ensure_callable(ak_types.item)(ensure_callable(NestedToListItem)()) == 123.45
@@ -467,7 +471,11 @@ def test_awkward_types_coverage_branches() -> None:
         """Dummy object implementing item method."""
 
         def item(self) -> float:
-            """Return scalar float."""
+            """Return scalar float.
+
+            Returns:
+                float: Computed output value from `item`.
+            """
             return 42.5
 
     assert ensure_callable(ak_types.item)(ensure_callable(ItemHolder)()) == 42.5

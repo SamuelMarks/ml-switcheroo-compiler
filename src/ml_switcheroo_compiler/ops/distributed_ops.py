@@ -21,12 +21,12 @@ def shard_tensor(tensor: Tensor, device_mesh: TensorOrScalar, layout: TensorOrSc
     """Shard a tensor across devices.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        device_mesh (TensorOrScalar): The device_mesh parameter.
-        layout (TensorOrScalar): The layout parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        device_mesh (TensorOrScalar): Input `device_mesh` argument (device mesh).
+        layout (TensorOrScalar): Input `layout` argument (layout).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -50,11 +50,11 @@ class ShardTensor(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -63,11 +63,11 @@ def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """NCCL all-reduce.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        op_type (str): The op_type parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        op_type (str): Input `op_type` argument (op type).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -87,11 +87,11 @@ class NcclAllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -100,11 +100,11 @@ def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Tensor
     """Hierarchical copy all-reduce.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        op_type (str): The op_type parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        op_type (str): Input `op_type` argument (op type).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -124,11 +124,11 @@ class HierarchicalCopyAllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -137,11 +137,11 @@ def broadcast(tensor: Tensor, root_rank: int = 0) -> TensorOrScalar:
     """Broadcast.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        root_rank (int): The root_rank parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        root_rank (int): Input `root_rank` argument (root rank).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -160,11 +160,11 @@ class Broadcast(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -173,11 +173,11 @@ def all_gather(tensor: Tensor, axis: int = 0) -> TensorOrScalar:
     """All-gather.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        axis (int): The axis parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -196,11 +196,11 @@ class AllGather(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(extract_shape(tensor))
         world_size = int(ensure_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
@@ -214,12 +214,12 @@ def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> TensorOr
     """Reduce.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        root_rank (int): The root_rank parameter.
-        op_type (str): The op_type parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        root_rank (int): Input `root_rank` argument (root rank).
+        op_type (str): Input `op_type` argument (op type).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -243,11 +243,11 @@ class Reduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -256,11 +256,11 @@ def all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """Provide generic SPMD AllReduce.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        op_type (str): The op_type parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        op_type (str): Input `op_type` argument (op type).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -280,11 +280,11 @@ class AllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(tensor)
 
@@ -293,12 +293,12 @@ def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Tenso
     """Provide generic SPMD ReduceScatter.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        op_type (str): The op_type parameter.
-        axis (int): The axis parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        op_type (str): Input `op_type` argument (op type).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -318,11 +318,11 @@ class ReduceScatter(OpDef):
         """Infer shape.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(extract_shape(tensor))
         world_size = int(ensure_int(kwargs.get("world_size", kwargs.get("num_shards", 1))))
@@ -366,7 +366,7 @@ class AllToAll(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_arg_shapes(args)
 
@@ -385,7 +385,7 @@ class BroadcastArrays(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_arg_shapes(args)
 
@@ -404,7 +404,7 @@ class BroadcastTo(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if "shape" in kwargs:
             return kwargs["shape"]
@@ -425,7 +425,7 @@ class BroadcastToRank(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         rank = kwargs.get("rank", 1)
         raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
@@ -449,7 +449,7 @@ class BroadcastedIota(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_arg_shapes(args)
 
@@ -468,7 +468,7 @@ class Pbroadcast(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_arg_shapes(args)
 
@@ -481,7 +481,7 @@ def all_to_all(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("AllToAll", *args, **kwargs)
@@ -496,7 +496,7 @@ def broadcast_arrays(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastArrays", *args, **kwargs)
@@ -511,7 +511,7 @@ def broadcast_to(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastTo", *args, **kwargs)
@@ -526,7 +526,7 @@ def broadcast_to_rank(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastToRank", *args, **kwargs)
@@ -541,7 +541,7 @@ def broadcasted_iota(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastedIota", *args, **kwargs)
@@ -556,7 +556,7 @@ def pbroadcast(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("Pbroadcast", *args, **kwargs)
@@ -577,7 +577,7 @@ class Pmax(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         return extract_shape(x)
@@ -597,7 +597,7 @@ class Pmin(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         return extract_shape(x)
@@ -617,7 +617,7 @@ class Outfeed(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -636,7 +636,7 @@ class Pshuffle(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         return extract_shape(x)
@@ -656,7 +656,7 @@ class Pswapaxes(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         shape = list(extract_shape(x))
@@ -687,7 +687,7 @@ class Ppermute(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         return extract_shape(x)
@@ -707,7 +707,7 @@ class PsumScatter(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else None
         scatter_dimension = int(ensure_int(kwargs.get("scatter_dimension", 0)))
@@ -730,7 +730,7 @@ def outfeed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -745,7 +745,7 @@ def pmax(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -760,7 +760,7 @@ def pmin(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -775,7 +775,7 @@ def ppermute(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -790,7 +790,7 @@ def pshuffle(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -805,7 +805,7 @@ def psum_scatter(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -820,7 +820,7 @@ def pswapaxes(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -867,9 +867,9 @@ def send(tensor: TensorOrScalar, dst_rank: int, tag: int = 0) -> TensorOrScalar:
     """Send tensor to destination rank.
 
     Args:
-        tensor: The tensor parameter.
-        dst_rank: The dst_rank parameter.
-        tag: The tag parameter.
+        tensor: Input `tensor` argument (tensor).
+        dst_rank: Input `dst_rank` argument (dst rank).
+        tag: Input `tag` argument (tag).
 
     Returns:
         TensorOrScalar: Computed result.
@@ -883,10 +883,10 @@ def recv(shape: TensorOrScalar, dtype: str, src_rank: int, tag: int = 0) -> Tens
     """Receive tensor from source rank.
 
     Args:
-        shape: The shape parameter.
-        dtype: The dtype parameter.
-        src_rank: The src_rank parameter.
-        tag: The tag parameter.
+        shape: Input `shape` argument (shape).
+        dtype: Input `dtype` argument (dtype).
+        src_rank: Input `src_rank` argument (src rank).
+        tag: Input `tag` argument (tag).
 
     Returns:
         TensorOrScalar: Computed result.

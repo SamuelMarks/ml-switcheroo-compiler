@@ -164,6 +164,7 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
         generator_mod: Test parameter `generator_mod`.
         mock_b: Test parameter `mock_b`.
     """
+    handled_errors = 0
     if has_backend_member(mod, "eager_registry"):
         for _op, func in ensure_eager_tensor(ensure_eager_tensor(mod).eager_registry)._registry.items():
             if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
@@ -172,13 +173,13 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
                 try:
                     func(*call_args)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
+                    handled_errors += 1
     if generator_mod is not None and has_backend_member(generator_mod, "generator_registry"):
         for _op, func in ensure_eager_tensor(generator_mod).generator_registry._registry.items():
             try:
                 func(MagicMock(), MagicMock(), MagicMock(), MagicMock())
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
 
 
 def _exercise_types_mod(types_mod: EagerValue) -> None:
@@ -187,6 +188,7 @@ def _exercise_types_mod(types_mod: EagerValue) -> None:
     Args:
         types_mod: Test parameter `types_mod`.
     """
+    handled_errors = 0
     if types_mod is None:
         return
     from tests.testing_utils import get_test_members
@@ -196,11 +198,12 @@ def _exercise_types_mod(types_mod: EagerValue) -> None:
             try:
                 ensure_callable(fn)("float32")
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
 
 
 def test_backends_brute_force() -> None:
     """Test the correctness and edge cases of the backends brute force functionality."""
+    handled_errors = 0
     mock_b = MagicMock()
     modules = [
         (mod_cupy, gen_cupy, typ_cupy),
@@ -223,12 +226,13 @@ def test_backends_brute_force() -> None:
         try:
             fn_call()
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_backends_brute_force)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_numpy_math_misc() -> None:
     """Test function test_numpy_math_misc."""
+    handled_errors = 0
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
     from tests.testing_utils import get_test_members
 
@@ -238,24 +242,25 @@ def test_numpy_math_misc() -> None:
             try:
                 func(MagicMock(), MagicMock(), MagicMock())
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func([1.0], [2.0])
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func([1.0])
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(MagicMock())
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-    assert callable(test_numpy_math_misc)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_eager_core_math_ops_brute() -> None:
     """Test function test_eager_core_math_ops_brute."""
+    handled_errors = 0
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     mock_b = MagicMock()
@@ -266,25 +271,25 @@ def test_eager_core_math_ops_brute() -> None:
         try:
             func(mock_b, MagicMock())
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             func(mock_b, MagicMock(), MagicMock())
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             func(mock_b, 1.0)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             func(mock_b, 1.0, 2.0)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             func(mock_b, [1.0])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             func(mock_b, [1.0], [2.0])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_eager_core_math_ops_brute)
+            handled_errors += 1
+    assert handled_errors >= 1

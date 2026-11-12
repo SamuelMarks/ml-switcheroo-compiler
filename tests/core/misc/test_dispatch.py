@@ -26,6 +26,9 @@ def test_dispatch() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `func`.
             """
             return "res"
 

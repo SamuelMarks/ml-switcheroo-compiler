@@ -50,5 +50,5 @@ def test_custom_coverage() -> None:
         pass
 
     mod._np_descriptive(ensure_eager_tensor(DummyBk()), np.array([1.0]))
-    mod._np_distributions(ensure_mod(DummyBk()), np.array([1.0]))
-    assert callable(test_custom_coverage)
+    _out = mod._np_distributions(ensure_mod(DummyBk()), np.array([1.0]))
+    assert type(_out).__name__ == "dict"

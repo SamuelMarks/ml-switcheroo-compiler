@@ -24,6 +24,9 @@ def test_evaluation_strategy_base() -> None:
 
             Args:
                 ctx: Test parameter `ctx`.
+
+            Returns:
+                EagerValue: Computed output value from `evaluate`.
             """
             return ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).evaluate))(ctx)
 

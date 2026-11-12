@@ -1,4 +1,4 @@
-"""Module transformations.py."""
+"""Random sequence permutation, categorical choice, and axis-wise shuffle primitives."""
 
 from __future__ import annotations
 

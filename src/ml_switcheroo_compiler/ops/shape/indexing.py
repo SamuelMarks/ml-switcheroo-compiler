@@ -328,7 +328,7 @@ class Extract(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Typically returns a 1D tensor of elements satisfying a condition.
         return (None,)
@@ -488,14 +488,14 @@ class DynamicSliceInDim(OpDef):
         """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): The operand parameter.
-            start_index (EagerTensorProtocol): The start_index parameter.
-            slice_size (int): The slice_size parameter.
-            axis (int): The axis parameter.
+            operand (EagerTensorProtocol): Input `operand` argument (operand).
+            start_index (EagerTensorProtocol): Input `start_index` argument (start index).
+            slice_size (int): Input `slice_size` argument (slice size).
+            axis (int): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(extract_shape(operand))
         if shape:
@@ -513,14 +513,14 @@ class DynamicUpdateSliceInDim(OpDef):
         """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): The operand parameter.
-            update (EagerTensorProtocol): The update parameter.
-            start_index (EagerTensorProtocol): The start_index parameter.
-            axis (int): The axis parameter.
+            operand (EagerTensorProtocol): Input `operand` argument (operand).
+            update (EagerTensorProtocol): Input `update` argument (update).
+            start_index (EagerTensorProtocol): Input `start_index` argument (start index).
+            axis (int): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_2: TensorOrScalar = extract_shape(operand)
         return _typed_ret_2
@@ -536,14 +536,14 @@ class DynamicIndexInDim(OpDef):
         """Infers the output shape for the dynamic index in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): The operand parameter.
-            index (EagerTensorProtocol): The index parameter.
-            axis (int): The axis parameter.
-            keepdims (bool): The keepdims parameter.
+            operand (EagerTensorProtocol): Input `operand` argument (operand).
+            index (EagerTensorProtocol): Input `index` argument (index).
+            axis (int): Input `axis` argument (axis).
+            keepdims (bool): Input `keepdims` argument (keepdims).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(extract_shape(operand))
         if shape:
@@ -564,14 +564,14 @@ class DynamicUpdateIndexInDim(OpDef):
         """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): The operand parameter.
-            update (EagerTensorProtocol): The update parameter.
-            index (EagerTensorProtocol): The index parameter.
-            axis (int): The axis parameter.
+            operand (EagerTensorProtocol): Input `operand` argument (operand).
+            update (EagerTensorProtocol): Input `update` argument (update).
+            index (EagerTensorProtocol): Input `index` argument (index).
+            axis (int): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_3: TensorOrScalar = extract_shape(operand)
         return _typed_ret_3

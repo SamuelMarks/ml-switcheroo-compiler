@@ -18,8 +18,8 @@ def _np_population_count(backend_module: BackendModuleProtocol, x: EagerValue, *
     """Count the number of set bits in the binary representation of each element.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -34,7 +34,7 @@ def _np_get_printoptions_(backend_module: BackendModuleProtocol, *args: EagerVal
     """Implement GetPrintoptions via get_printoptions.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -48,12 +48,12 @@ def _np_affineconfig(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement AffineConfig.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return kwargs
 
@@ -63,12 +63,12 @@ def _np_blurconfig(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement BlurConfig.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
@@ -80,12 +80,12 @@ def _np_customroot(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement CustomRoot.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     f = args[0]
     initial_guess = args[1]
@@ -100,12 +100,12 @@ def _np_elasticconfig(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Implement ElasticConfig.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
@@ -117,12 +117,12 @@ def _np_linearoperator(backend_module: BackendModuleProtocol, *args: EagerValue,
     """Implement LinearOperator.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperator
 
@@ -134,12 +134,12 @@ def _np_linearoperatoradjoint(backend_module: BackendModuleProtocol, *args: Eage
     """Implement LinearOperatorAdjoint.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorAdjoint
 
@@ -151,12 +151,12 @@ def _np_linearoperatorcirculant(backend_module: BackendModuleProtocol, *args: Ea
     """Implement LinearOperatorCirculant.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant
 
@@ -168,12 +168,12 @@ def _np_linearoperatorcirculant2d(backend_module: BackendModuleProtocol, *args: 
     """Implement LinearOperatorCirculant2D.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant2D
 
@@ -185,12 +185,12 @@ def _np_linearoperatorcirculant3d(backend_module: BackendModuleProtocol, *args: 
     """Implement LinearOperatorCirculant3D.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant3D
 
@@ -202,12 +202,12 @@ def _np_linearoperatorcomposition(backend_module: BackendModuleProtocol, *args: 
     """Implement LinearOperatorComposition.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorComposition
 
@@ -219,12 +219,12 @@ def _np_linearoperatorhouseholder(backend_module: BackendModuleProtocol, *args: 
     """Implement LinearOperatorHouseholder.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorHouseholder
 
@@ -236,12 +236,12 @@ def _np_linearoperatorkronecker(backend_module: BackendModuleProtocol, *args: Ea
     """Implement LinearOperatorKronecker.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorKronecker
 
@@ -253,12 +253,12 @@ def _np_linearoperatorlowrankupdate(backend_module: BackendModuleProtocol, *args
     """Implement LinearOperatorLowRankUpdate.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorLowRankUpdate
 
@@ -270,12 +270,12 @@ def _np_linearoperatortoeplitz(backend_module: BackendModuleProtocol, *args: Eag
     """Implement LinearOperatorToeplitz.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorToeplitz
 
@@ -287,12 +287,12 @@ def _np_perspectiveconfig(backend_module: BackendModuleProtocol, *args: EagerVal
     """Implement PerspectiveConfig.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
@@ -304,12 +304,12 @@ def _np_rawmatmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Implement RawMatMul.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[int, ...]: Result.
+        tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if has_backend_member(backend_module, "rawmatmul"):
         return ensure_eager_tensor(backend_module.rawmatmul(*args, **kwargs))
@@ -321,12 +321,12 @@ def _np_rawmerge(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement RawMerge.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     inputs = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else args
     return (inputs[0], np.array(0, dtype=np.int32)) if inputs else (None, np.array(-1, dtype=np.int32))
@@ -337,12 +337,12 @@ def _np_rawop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Implement RawOp.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return args[0] if args else None
 
@@ -352,12 +352,12 @@ def _np_rawswitch(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Implement RawSwitch.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     data = args[0]
     pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
@@ -371,12 +371,12 @@ def _np_scanop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Implement ScanOp.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     (fn, elems, acc, has_acc) = _parse_scanop_args(args, kwargs)
     if not callable(fn) or elems is None:
@@ -400,12 +400,12 @@ def _np_switchop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement SwitchOp.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     data = args[0]
     pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
@@ -419,12 +419,12 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     """Implement TensorArrayRead.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     handle = args[0]
     index = args[1]
@@ -436,12 +436,12 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
     """Implement TensorArrayWrite.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
 
@@ -460,12 +460,12 @@ def _np_tensorconfig(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement TensorConfig.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 

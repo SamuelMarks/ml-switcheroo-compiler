@@ -27,6 +27,9 @@ def test_value_and_grad_wrt_vars() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_fun`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -45,7 +48,11 @@ def test_get_inputs_dict() -> None:
 
         @property
         def data(self) -> EagerValue:
-            """Test function data."""
+            """Test function data.
+
+            Returns:
+                EagerValue: Computed output value from `data`.
+            """
             m = MagicMock()
             m.id = "my_node"
             m.concrete_value = 5.0
@@ -83,6 +90,9 @@ def test_compute_grad_and_value_argnums() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `fun`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(y)
 

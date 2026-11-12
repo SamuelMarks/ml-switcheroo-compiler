@@ -23,6 +23,9 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     Args:
         val: Test parameter `val`.
         shape: Test parameter `shape`.
+
+    Returns:
+        EagerValue: Computed output value from `make_tensor`.
     """
     val = np.array(val, dtype=np.float32)
     if shape is None:
@@ -39,6 +42,9 @@ def test_vjp_shape_dtype_inference() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return dispatch_op("Multiply", x, y)
 

@@ -82,6 +82,9 @@ def test_tensor_conversion() -> None:
 
             Args:
                 s: Test parameter `s`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
             import numpy as np
 
@@ -93,6 +96,9 @@ def test_tensor_conversion() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
             """
             return 42.0
 
@@ -116,7 +122,11 @@ def test_tensor_conversion() -> None:
             raise Exception("no")
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1]
 
     t3 = ensure_callable(DummyTensor)((1,), DType.Float32, "cpu", True, data=ensure_callable(BadData)())
@@ -146,6 +156,9 @@ def test_tensor_indexing() -> None:
             Args:
                 x: Test parameter `x`.
                 idx: Test parameter `idx`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return (x, idx)
 
@@ -192,6 +205,9 @@ def test_tensor_conversion_tracing() -> None:
 
             Args:
                 s: Test parameter `s`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
             import numpy as np
 
@@ -265,12 +281,20 @@ def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> No
 
         @property
         def data(self) -> EagerValue:
-            """Test function data."""
+            """Test function data.
+
+            Returns:
+                EagerValue: Computed output value from `data`.
+            """
             return self._data
 
         def eval(self) -> Tensor:
             # It expects to evaluate to the underlying tensor or array for conversion
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                Tensor: Computed output value from `eval`.
+            """
             return ensure_tensor_obj(self._data)
 
     m = MockMixin(np.array([1, 2]))

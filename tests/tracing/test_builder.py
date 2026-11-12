@@ -36,7 +36,11 @@ def test_builder_extract_proxy() -> None:
         """Test class FakeData2."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [[1, 2], [3, 4]]
 
     class FakeTensor2:
@@ -122,7 +126,11 @@ def test_builder_extract_constant() -> None:
 
         @property
         def shape(self) -> EagerValue:
-            """Test function shape."""
+            """Test function shape.
+
+            Returns:
+                EagerValue: Computed output value from `shape`.
+            """
             _typed_ret_1: EagerValue = ensure_eager_tensor(self.data).shape
             return _typed_ret_1
 
@@ -228,7 +236,11 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             pass
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [42]
 
     (ids, shapes, first) = ensure_callable(TracingNodeBuilder.extract_proxy_inputs)((ensure_callable(DummyNotTensor)(),))

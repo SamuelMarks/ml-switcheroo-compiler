@@ -35,6 +35,9 @@ class DummyCp:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `add`.
         """
         return "add_res"
 
@@ -44,6 +47,9 @@ class DummyCp:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_test_op`.
         """
         return "test_res"
 
@@ -59,6 +65,9 @@ def test_cupy_eager_execute_op() -> None:
             module: Test parameter `module`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eager`.
         """
         return "dummy_eager_res"
 
@@ -131,7 +140,9 @@ def test_cupy_types() -> None:
 
 
 def test_cupy_eager_execute_op_fallback_to_numpy_registry() -> None:
-    """Test function test_cupy_eager_execute_op_fallback_to_numpy_registry."""
+    """Verify CuPy execute_op dispatches registered global eager handlers."""
+    from ml_switcheroo_compiler.backends.cupy.eager import execute_op
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     def dummy_eager(module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function dummy_eager.
@@ -140,10 +151,15 @@ def test_cupy_eager_execute_op_fallback_to_numpy_registry() -> None:
             module: Test parameter `module`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eager`.
         """
         return "dummy_eager_numpy_fallback"
 
-    assert callable(test_cupy_eager_execute_op_fallback_to_numpy_registry)
+    with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", DummyCp()):
+        with patch.object(global_eager_registry, "get", return_value=dummy_eager):
+            assert ensure_callable(execute_op)(None, "_DummyTestOp", 1) == "dummy_eager_numpy_fallback"
 
 
 def test_cupy_eager_op_mapping() -> None:

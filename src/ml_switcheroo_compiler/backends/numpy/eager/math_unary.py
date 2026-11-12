@@ -13,12 +13,12 @@ def _np_exp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np exp operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.exp(*args, **kwargs)
 
@@ -28,12 +28,12 @@ def _np_log(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np log operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.log(*args, **kwargs)
 
@@ -43,12 +43,12 @@ def _np_log1p(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np log1p operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.log1p(*args, **kwargs)
 
@@ -58,12 +58,12 @@ def _np_round(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np round operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.round(*args, **kwargs)
 
@@ -73,12 +73,12 @@ def _np_erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np erf operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import math
 
@@ -95,12 +95,12 @@ def _np_erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np erfc operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import math
 
@@ -117,12 +117,12 @@ def _np_erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np erfinv operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import scipy.special as sc
 
@@ -134,12 +134,12 @@ def _np_igamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np igamma operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import scipy.special as sc
 
@@ -153,12 +153,12 @@ def _np_igammac(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np igammac operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import scipy.special as sc
 
@@ -172,12 +172,12 @@ def _np_bitwise_not(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np bitwise not operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.bitwise_not(*args, **kwargs)
 
@@ -187,12 +187,12 @@ def _np_angle(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: Ea
     """Execute the eager np angle operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "angle")(x))
 
@@ -202,12 +202,12 @@ def _np_expm1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np expm1 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.expm1(*args, **kwargs)
 
@@ -217,12 +217,12 @@ def _np_log10(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np log10 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.log10(*args, **kwargs)
 
@@ -232,12 +232,12 @@ def _np_log2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np log2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.log2(*args, **kwargs)
 
@@ -247,12 +247,12 @@ def _np_exp2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np exp2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.exp2(*args, **kwargs)
 
@@ -262,12 +262,12 @@ def _np_signbit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np signbit operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.signbit(*args, **kwargs)
 
@@ -277,12 +277,12 @@ def _np_isnan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np isnan operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.isnan(*args, **kwargs)
 
@@ -292,12 +292,12 @@ def _np_isinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np isinf operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.isinf(*args, **kwargs)
 
@@ -307,11 +307,11 @@ def _np_isfinite(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np isfinite operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.isfinite(*args, **kwargs)

@@ -18,15 +18,15 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> TensorOrScalar:
     """Sobol sequence generator.
 
     Args:
-        dim (int): The dim parameter.
-        num_results (int): The num_results parameter.
-        skip (int): The skip parameter.
+        dim (int): Input `dim` argument (dim).
+        num_results (int): Input `num_results` argument (num results).
+        skip (int): Input `skip` argument (skip).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     dtype = DType("float32")
     out_shape = (num_results, dim)

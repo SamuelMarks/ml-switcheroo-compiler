@@ -108,3 +108,30 @@ def test_tangent_nodes() -> None:
     nt = NoTangent("t2")
     assert nt.op_type == "NoTangent"
     assert isinstance(nt, LogicalNode)
+
+
+def test_ir_core_narrowing_helpers() -> None:
+    """Verify `ensure_graph`, `as_opt_graph`, `ensure_attrs`, `ensure_attr_val`, `as_node_list`, and `as_opt_pspec`."""
+    from ml_switcheroo_ir import PartitionSpec
+
+    from ml_switcheroo_compiler.ir.core import (
+        as_node_list,
+        as_opt_graph,
+        as_opt_pspec,
+        ensure_attr_val,
+        ensure_attrs,
+        ensure_graph,
+    )
+
+    g = LogicalGraph(name="g_helper")
+    n = LogicalNode(id="n_helper", op_type="Relu")
+    ps = PartitionSpec(("data",))
+
+    assert ensure_graph(g) is g
+    assert as_opt_graph(g) is g
+    assert as_opt_graph(None) is None
+    assert ensure_attrs({"k": 1}) == {"k": 1}
+    assert ensure_attr_val(42) == 42
+    assert as_node_list([n]) == [n]
+    assert as_opt_pspec(ps) is ps
+    assert as_opt_pspec(None) is None

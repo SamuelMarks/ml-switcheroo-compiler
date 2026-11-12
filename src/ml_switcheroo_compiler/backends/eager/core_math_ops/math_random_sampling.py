@@ -14,12 +14,12 @@ def _pshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager pshuffle operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if has_backend_member(backend_module, "lax") and has_backend_member(get_backend_member(backend_module, "lax"), "pshuffle"):
         return ensure_eager_tensor(get_backend_member(backend_module, "lax").pshuffle(*args, **kwargs))
@@ -31,12 +31,12 @@ def _np_gumbel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np gumbel operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "gumbel", get_backend_member(backend_module, "gumbel", None))
     if func is not None:
@@ -49,12 +49,12 @@ def _np_rnguniform(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np rnguniform operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "rnguniform", get_backend_member(backend_module, "rnguniform", None))
     if func is not None:
@@ -67,12 +67,12 @@ def _np_wald(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np wald operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "wald", get_backend_member(backend_module, "wald", None))
     if func is not None:

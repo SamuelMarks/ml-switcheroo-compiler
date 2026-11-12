@@ -51,7 +51,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ensure_callable(generic_zeros)(jnp, shape))
 
@@ -65,7 +65,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         dtype: Dtype.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ensure_callable(generic_array)(jnp, data, dtype))
 
@@ -78,7 +78,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: Data.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ensure_callable(generic_asarray)(jnp, data))
 
@@ -91,6 +91,6 @@ def item(cls: type, data: EagerValue) -> float:
         data: Data.
 
     Returns:
-        float: Result.
+        float: Computed `float` output.
     """
     return ensure_float(ensure_callable(generic_item)(jnp, data))

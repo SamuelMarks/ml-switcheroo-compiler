@@ -174,13 +174,13 @@ def fractional_max_pool3d(
     """Fractional max pooling 3D.
 
     Args:
-        operand (Tensor): The operand parameter.
-        output_size (tuple): The output_size parameter.
-        output_ratio (tuple): The output_ratio parameter.
-        random_samples (Tensor): The random_samples parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        output_size (tuple): Input `output_size` argument (output size).
+        output_ratio (tuple): Input `output_ratio` argument (output ratio).
+        random_samples (Tensor): Input `random_samples` argument (random samples).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     out_shape = list(operand.shape)
     if len(out_shape) >= 3:

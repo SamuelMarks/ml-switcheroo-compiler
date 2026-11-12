@@ -30,7 +30,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ensure_callable(generic_zeros)(mx, shape))
 
@@ -44,7 +44,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         dtype: Dtype.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     del cls
     actual_dtype = get_backend_member(mx, dtype) if isinstance(dtype, str) and has_backend_member(mx, dtype) else dtype
@@ -59,7 +59,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: Data.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if has_backend_member(mx, "asarray"):
         return ensure_eager_tensor(ensure_callable(generic_asarray)(mx, data))
@@ -74,6 +74,6 @@ def item(cls: type, data: EagerValue) -> float:
         data: Data.
 
     Returns:
-        float: Result.
+        float: Computed `float` output.
     """
     return ensure_float(ensure_callable(generic_item)(mx, data))

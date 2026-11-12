@@ -67,6 +67,9 @@ def test_infer_op_shape() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                tuple[int, ...]: Computed output value from `infer_shape`.
             """
             return (1, 2)
 
@@ -93,6 +96,9 @@ def test_determine_node_shape() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                tuple[int, ...]: Computed output value from `infer_shape`.
             """
             raise ValueError("boom")
 
@@ -119,6 +125,9 @@ def test_shape_inference_pass() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                tuple[int, ...]: Computed output value from `infer_shape`.
             """
             return (2, 2)
 

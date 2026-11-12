@@ -143,6 +143,9 @@ def test_registry_remaining() -> None:
             Args:
                 prefix: Test parameter `prefix`.
                 op_name: Test parameter `op_name`.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator_mapping`.
             """
             op = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(self.operations).get))(op_name, {})
             if not op:

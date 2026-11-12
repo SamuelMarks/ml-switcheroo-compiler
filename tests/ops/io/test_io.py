@@ -357,6 +357,9 @@ def test_numpy_io_eager_and_format_fallback() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "executed"
 

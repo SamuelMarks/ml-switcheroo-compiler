@@ -50,7 +50,11 @@ def test_serialization_primitives_and_custom_objects() -> None:
             self.units = units
 
         def get_config(self) -> dict[str, EagerValue]:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                dict[str, EagerValue]: Computed output value from `get_config`.
+            """
             return {"units": self.units}
 
         @classmethod
@@ -59,6 +63,9 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
             Args:
                 cfg: Test parameter `cfg`.
+
+            Returns:
+                CustomDense: Computed output value from `from_config`.
             """
             from ml_switcheroo_compiler.backends.eager_registry import ensure_int
 
@@ -87,7 +94,11 @@ def test_serialization_primitives_and_custom_objects() -> None:
             self.rate = rate
 
         def get_config(self) -> dict[str, EagerValue]:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                dict[str, EagerValue]: Computed output value from `get_config`.
+            """
             return {"rate": self.rate}
 
     with custom_object_scope({"ScopedLayer": ScopedLayer}):
@@ -119,7 +130,11 @@ def test_universal_model_loader_and_save_model() -> None:
                 self.weights = [np.array([1.0, 2.0], dtype=np.float32)]
 
             def get_config(self) -> dict[str, EagerValue]:
-                """Test function get_config."""
+                """Test function get_config.
+
+                Returns:
+                    dict[str, EagerValue]: Computed output value from `get_config`.
+                """
                 return {"architecture": "linear", "hidden_dim": 128}
 
         m = DummyModel()
@@ -165,7 +180,11 @@ def test_saved_model_and_fingerprinting() -> None:
             """Test class MockGraphModel."""
 
             def get_config(self) -> dict[str, EagerValue]:
-                """Test function get_config."""
+                """Test function get_config.
+
+                Returns:
+                    dict[str, EagerValue]: Computed output value from `get_config`.
+                """
                 return {"op": "Add", "inputs": ["x", "y"]}
 
         sm = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
@@ -288,7 +307,11 @@ def test_file_handler() -> None:
         """Test class DummyGraph."""
 
         def to_json(self) -> EagerValue:
-            """Test function to_json."""
+            """Test function to_json.
+
+            Returns:
+                EagerValue: Computed output value from `to_json`.
+            """
             return "{}"
 
     assert ensure_callable(graph_to_json)(ensure_callable(DummyGraph)()) == "{}"

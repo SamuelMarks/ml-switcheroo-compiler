@@ -16,12 +16,12 @@ def _np_linearoperatorpermutation(backend_module: BackendModuleProtocol, *args: 
     """Implement LinearOperatorPermutation.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorPermutation
 
@@ -33,15 +33,15 @@ def _np_sobolsample(backend_module: BackendModuleProtocol, dim: int, num_results
     """Implement SobolSample eagerly.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        dim (int): The dim parameter.
-        num_results (int): The num_results parameter.
-        skip (int): The skip parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        dim (int): Input `dim` argument (dim).
+        num_results (int): Input `num_results` argument (num results).
+        skip (int): Input `skip` argument (skip).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -54,12 +54,12 @@ def _np_randomcategorical(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np randomcategorical operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     logits = backend_module.asarray(args[0])
     num_samples = args[1] if len(args) > 1 else kwargs.get("num_samples", 1)
@@ -71,12 +71,12 @@ def _np_randompermutation(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np randompermutation operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -91,12 +91,12 @@ def _np_randomtruncatednormal(backend_module: BackendModuleProtocol, *args: Eage
     """Execute the eager np randomtruncatednormal operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
@@ -107,12 +107,12 @@ def _np_randombernoulli(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np randombernoulli operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)

@@ -120,7 +120,7 @@ def _graph_hash(graph: IRGraph) -> str:
     """Compute a deterministic hash representing graph nodes and edges.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         str: MD5 hash digest of the serialized graph structure.

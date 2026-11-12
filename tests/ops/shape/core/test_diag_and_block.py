@@ -24,6 +24,9 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
     Args:
         data: Test parameter `data`.
         shape: Test parameter `shape`.
+
+    Returns:
+        Tensor: Computed output value from `_t`.
     """
     return ensure_tensor_obj(ensure_callable(Tensor)(data, ensure_callable(TensorConfig)(shape, "float32", "cpu")))
 

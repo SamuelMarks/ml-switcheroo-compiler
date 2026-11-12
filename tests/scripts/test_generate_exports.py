@@ -37,6 +37,9 @@ def _mock_mod_import(mod_obj: EagerValue) -> TypedVariadicCallable[EagerValue]:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_imp`.
         """
         if name in ("subprocess", "scripts", "scripts.generate_exports", "ast", "os", "sys", "tempfile", "builtins"):
             return ensure_callable(_real_import)(name, *args, **kwargs)
@@ -124,6 +127,9 @@ def test_process_file_no_src_dir(tmp_path: Path) -> None:
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            str: Computed output value from `fake_abs`.
         """
         if p == "src":
             return "/tmp/src"
@@ -150,6 +156,9 @@ def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            str: Computed output value from `fake_abspath`.
         """
         if p == "src":
             return str(tmp_path / "src")
@@ -179,6 +188,9 @@ def setup_mock_src(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
         Args:
             p: Test parameter `p`.
+
+        Returns:
+            str: Computed output value from `fake_abspath`.
         """
         if p == "src":
             return str(src)
@@ -557,6 +569,9 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
         Args:
             node: Test parameter `node`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_walk`.
         """
         nodes = list(original_walk(node))
         for n in nodes:
@@ -690,6 +705,6 @@ def test_main_block(capsys: pytest.CaptureFixture[str]) -> None:
     with patch.object(sys, "argv", ["generate_exports.py"]):
         with patch("scripts.generate_exports.generate_init"):
             with patch("scripts.generate_exports.process_file"):
-                with patch("glob.glob", return_value=[]):
+                with patch("glob.glob", return_value=[]) as mock_glob:
                     runpy.run_path("scripts/generate_exports.py", run_name="__main__")
-    assert callable(test_main_block)
+                    assert mock_glob.called

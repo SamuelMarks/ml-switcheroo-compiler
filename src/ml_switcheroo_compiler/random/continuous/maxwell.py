@@ -1,4 +1,4 @@
-"""Module maxwell.py."""
+"""Compiler `maxwell` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -14,6 +14,6 @@ def maxwell(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | 
         **kwargs (Tensor | float | int | str): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return _dispatch_random("maxwell", *args, **kwargs)

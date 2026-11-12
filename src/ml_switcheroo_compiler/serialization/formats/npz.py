@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
-from ml_switcheroo_compiler.serialization.utils import parse_npz
+from ml_switcheroo_compiler.serialization.utils import _tensor_to_npy_bytes, parse_npz
 
 
 class _LoadNpzBackendProtocol(typing.Protocol):
@@ -105,6 +105,11 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         if _is_save_npz_backend(backend):
             backend.save_npz(weights_np, filepath)
             return
-        np_mod = registry.BackendRegistry.get("numpy").get_module()
+        import zipfile
+
         assert isinstance(weights_np, Mapping)
-        np_mod.savez(filepath, **{str(k): v for k, v in weights_np.items()})
+        with zipfile.ZipFile(filepath, "w", compression=zipfile.ZIP_STORED) as zf:
+            for k, v in weights_np.items():
+                k_str = str(k)
+                entry_name = k_str if k_str.endswith(".npy") else f"{k_str}.npy"
+                zf.writestr(entry_name, _tensor_to_npy_bytes(v))

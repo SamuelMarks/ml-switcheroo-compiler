@@ -252,6 +252,9 @@ def test_constant_folding_exceptions_and_fallback() -> None:
             node: Test parameter `node`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `mock_eval`.
         """
         _ = (args, kwargs)
         if node.id == "n_err":

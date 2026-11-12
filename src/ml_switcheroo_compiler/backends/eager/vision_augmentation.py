@@ -1,4 +1,4 @@
-"""Module vision_augmentation.py."""
+"""Compiler `vision augmentation` operations and primitives for the `eager` subsystem."""
 
 from __future__ import annotations
 
@@ -79,13 +79,13 @@ def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: st
     """Apply a random flip transformation to a batch of images eagerly.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        mode (str): The mode parameter.
-        seed: The seed parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        images: Input `images` argument (images).
+        mode (str): Input `mode` argument (mode).
+        seed: Input `seed` argument (seed).
 
     Returns:
-            VisionArray: Result.
+            VisionArray: Computed `VisionArray` output.
     """
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -246,13 +246,13 @@ def random_crop_eager(backend_module: VisionArray, images: VisionArray, size: tu
     """Execute a random spatial crop on a batch of images eagerly.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        size (tuple): The size parameter.
-        seed: The seed parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        images: Input `images` argument (images).
+        size (tuple): Input `size` argument (size).
+        seed: Input `seed` argument (seed).
 
     Returns:
-            VisionArray: Result.
+            VisionArray: Computed `VisionArray` output.
     """
     return (0, 0)
 

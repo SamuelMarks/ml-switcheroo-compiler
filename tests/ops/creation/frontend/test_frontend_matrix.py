@@ -30,6 +30,9 @@ def test_frontend_matrix() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
 
             class T:

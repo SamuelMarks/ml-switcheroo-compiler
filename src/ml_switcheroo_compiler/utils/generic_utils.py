@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import random
 import sys
@@ -165,22 +166,19 @@ class ProgbarConfig(pydantic.BaseModel):
 
 
 def set_random_seed(seed: int) -> None:
-    """Set global compiler, reference backend, and Python stdlib random seeds.
+    """Set global compiler, active backend, and Python stdlib random seeds.
 
     Args:
         seed (int): Integer PRNG seed value.
     """
-    config.seed = seed
-    try:
-        from ml_switcheroo_compiler.backends.numpy.utils import set_numpy_seed
+    from ml_switcheroo_compiler.backends.protocols import ensure_callable, get_backend_member, has_backend_member
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        set_numpy_seed(seed)
-    except (ImportError, AttributeError):
-        _ = None
-    try:
-        random.seed(seed)
-    except ImportError:
-        _ = None
+    config.seed = seed
+    random.seed(seed)
+    backend = get_active_backend()
+    if has_backend_member(backend, "seed"):
+        ensure_callable(get_backend_member(backend, "seed"))(seed)
 
 
 def _validate_cache(fpath: str) -> bool:
@@ -211,8 +209,24 @@ def _download_remote_file(origin: str, fpath: str) -> None:
         raise RuntimeError(f"URL fetch failure on {origin}: {e} -- Please check your internet connection.") from e
 
 
+def _validate_archive_member_path(datadir: str, member_name: str) -> None:
+    """Verify an archive member extracts strictly within `datadir`.
+
+    Args:
+        datadir (str): Destination extraction directory.
+        member_name (str): Relative archive member path.
+
+    Raises:
+        ValueError: If `member_name` escapes `datadir` via `..` or absolute paths.
+    """
+    base_dir = os.path.abspath(datadir)
+    target_path = os.path.abspath(os.path.join(base_dir, member_name))
+    if os.path.commonpath([base_dir, target_path]) != base_dir:
+        raise ValueError(f"Unsafe archive member path traversal detected: {member_name}")
+
+
 def _extract_archive(fpath: str, datadir: str) -> None:
-    """Extract a `.tar.gz`, `.tgz`, `.tar`, or `.zip` archive into `datadir`.
+    """Extract a `.tar.gz`, `.tgz`, `.tar`, or `.zip` archive safely into `datadir`.
 
     Args:
         fpath (str): Path to the archive file.
@@ -220,13 +234,49 @@ def _extract_archive(fpath: str, datadir: str) -> None:
     """
     if fpath.endswith(".tar.gz") or fpath.endswith(".tgz"):
         with tarfile.open(fpath, "r:gz") as archive:
+            for member in archive.getmembers():
+                _validate_archive_member_path(datadir, member.name)
             archive.extractall(datadir)
     elif fpath.endswith(".tar"):
         with tarfile.open(fpath, "r:") as archive:
+            for member in archive.getmembers():
+                _validate_archive_member_path(datadir, member.name)
             archive.extractall(datadir)
     elif fpath.endswith(".zip"):
         with zipfile.ZipFile(fpath, "r") as archive:
+            for name in archive.namelist():
+                _validate_archive_member_path(datadir, name)
             archive.extractall(datadir)
+
+
+def _verify_file_hash(fpath: str, hash_cfg: HashConfig) -> None:
+    """Verify cryptographic digest of `fpath` against `hash_cfg` when configured.
+
+    Args:
+        fpath (str): Path to downloaded local file.
+        hash_cfg (HashConfig): Expected hash digest and algorithm configuration.
+
+    Raises:
+        ValueError: If the computed file digest does not match the expected hash.
+    """
+    expected = hash_cfg.file_hash if hash_cfg.file_hash is not None else hash_cfg.md5_hash
+    if expected is None:
+        return
+    algo = hash_cfg.hash_algorithm.lower()
+    if algo == "auto":
+        algo = "md5" if (hash_cfg.md5_hash is not None or len(expected) == 32) else "sha256"
+    hasher = hashlib.md5() if algo == "md5" else hashlib.sha256()
+    with open(fpath, "rb") as fh:
+        while True:
+            chunk = fh.read(65536)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    actual = hasher.hexdigest()
+    if actual.lower() != expected.lower():
+        if os.path.exists(fpath):
+            os.remove(fpath)
+        raise ValueError(f"File hash mismatch for {fpath}: expected {expected}, got {actual}")
 
 
 def get_file(
@@ -259,9 +309,11 @@ def get_file(
     fpath = os.path.join(datadir, fname)
 
     if _validate_cache(fpath):
+        _verify_file_hash(fpath, conf.hash_config)
         return fpath
 
     _download_remote_file(origin, fpath)
+    _verify_file_hash(fpath, conf.hash_config)
 
     if untar or extract:
         _extract_archive(fpath, datadir)
@@ -640,9 +692,9 @@ class bounding_boxes:
         Raises:
             ValueError: If box shape or coordinate format is invalid.
         """
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend_mod = BackendRegistry.get("numpy").get_module()
+        backend_mod = get_active_backend().get_module()
 
         cls.validate_format(source)
         cls.validate_format(target)

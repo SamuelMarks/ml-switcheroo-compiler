@@ -84,6 +84,9 @@ def test_linear_algebra_vjp_rules() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            Tensor: Computed output value from `f_matmul`.
         """
         return ensure_tensor_obj(dispatch_op("MatMul", a, b))
 
@@ -102,6 +105,9 @@ def test_linear_algebra_vjp_rules() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f_transpose`.
         """
         return ensure_tensor_obj(dispatch_op("Transpose", x))
 
@@ -117,6 +123,9 @@ def test_linear_algebra_vjp_rules() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            Tensor: Computed output value from `f_dot`.
         """
         return ensure_tensor_obj(dispatch_op("Dot", a, b))
 
@@ -143,6 +152,9 @@ def test_activation_vjp_rules() -> None:
             Args:
                 t: Test parameter `t`.
                 op_name: Test parameter `op_name`.
+
+            Returns:
+                Tensor: Computed output value from `f_act`.
             """
             return ensure_tensor_obj(dispatch_op(op_name, t))
 
@@ -165,6 +177,9 @@ def test_reduction_vjp_rules() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            Tensor: Computed output value from `f_sum`.
         """
         return ensure_tensor_obj(dispatch_op("ReduceSum", t))
 
@@ -180,6 +195,9 @@ def test_reduction_vjp_rules() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            Tensor: Computed output value from `f_mean`.
         """
         return ensure_tensor_obj(dispatch_op("ReduceMean", t))
 
@@ -204,6 +222,9 @@ def test_loss_functions_vjp() -> None:
                 p: Test parameter `p`.
                 t: Test parameter `t`.
                 name: Test parameter `name`.
+
+            Returns:
+                Tensor: Computed output value from `f_loss`.
             """
             return ensure_tensor_obj(dispatch_op(name, p, t))
 
@@ -227,6 +248,9 @@ def test_normalization_and_spatial_vjp() -> None:
             inp: Test parameter `inp`.
             g: Test parameter `g`.
             b: Test parameter `b`.
+
+        Returns:
+            Tensor: Computed output value from `f_ln`.
         """
         return ensure_tensor_obj(dispatch_op("LayerNorm", inp, g, b))
 
@@ -246,6 +270,9 @@ def test_jvp_linear_algebra_and_activations() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            Tensor: Computed output value from `f_sig`.
         """
         return ensure_tensor_obj(dispatch_op("Sigmoid", t))
 
@@ -360,6 +387,9 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
                 g: Test parameter `g`.
                 n: Test parameter `n`.
                 t: Test parameter `t`.
+
+            Returns:
+                str: Computed output value from `_dummy_jvp`.
             """
             del g, n, t
             return "ok"
@@ -377,6 +407,9 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
                     g: Test parameter `g`.
                     n: Test parameter `n`.
                     t: Test parameter `t`.
+
+                Returns:
+                    str: Computed output value from `_dummy_jvp_dup`.
                 """
                 del g, n, t
                 return "err"
@@ -395,6 +428,9 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
                 g: Test parameter `g`.
                 n: Test parameter `n`.
                 c: Test parameter `c`.
+
+            Returns:
+                tuple[str, ...]: Computed output value from `_dummy_vjp`.
             """
             del g, n, c
             return ("ok",)
@@ -412,6 +448,9 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
                     g: Test parameter `g`.
                     n: Test parameter `n`.
                     c: Test parameter `c`.
+
+                Returns:
+                    tuple[str, ...]: Computed output value from `_dummy_vjp_dup`.
                 """
                 del g, n, c
                 return ("err",)
@@ -471,6 +510,9 @@ def test_erf_and_outer_finite_difference_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f_erf`.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -492,6 +534,9 @@ def test_erf_and_outer_finite_difference_grad() -> None:
 
         Args:
             u_in: Test parameter `u_in`.
+
+        Returns:
+            Tensor: Computed output value from `f_outer`.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -633,6 +678,9 @@ def test_declarative_rematerialization_policies() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f`.
         """
         return x
 

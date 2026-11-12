@@ -28,6 +28,9 @@ def test_householder_product_fallback() -> None:
             Args:
                 v: Test parameter `v`.
                 tau: Test parameter `tau`.
+
+            Returns:
+                EagerValue: Computed output value from `householder_product`.
             """
             return v
 

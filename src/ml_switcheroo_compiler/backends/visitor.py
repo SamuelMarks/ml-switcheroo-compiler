@@ -87,7 +87,7 @@ class CodeGeneratorVisitor:
         """Execute handle compute node for compiler processing.
 
         Args:
-            node (IRNode): The node parameter.
+            node (IRNode): Input `node` argument (node).
         """
         var_name = self.generator.assign_var_name(node.id)
         input_vars = resolve_input_vars(node, self.generator.var_names)

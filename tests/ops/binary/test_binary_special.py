@@ -45,6 +45,9 @@ def test_binary_special() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `evaluate`.
             """
             return "eager_eval"
 
@@ -69,6 +72,9 @@ def test_binary_special() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `floor_divide`.
             """
             return "fd"
 
@@ -78,6 +84,9 @@ def test_binary_special() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `remainder`.
             """
             return "r"
 

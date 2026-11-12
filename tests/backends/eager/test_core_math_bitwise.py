@@ -51,6 +51,9 @@ def test_math_bitwise_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `packbits`.
             """
             return "packed"
 
@@ -77,6 +80,9 @@ def test_math_bitwise_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `unpackbits`.
             """
             return "unpacked"
 

@@ -26,13 +26,13 @@ def _np_fft3d(backend_module: BackendModuleProtocol, a: EagerValue, config: FFTC
     """Execute the eager np fft3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -43,13 +43,13 @@ def _np_ifft3d(backend_module: BackendModuleProtocol, a: EagerValue, config: FFT
     """Execute the eager np ifft3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -60,13 +60,13 @@ def _np_rfft2d(backend_module: BackendModuleProtocol, a: EagerValue, config: FFT
     """Execute the eager np rfft2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -77,13 +77,13 @@ def _np_rfft3d(backend_module: BackendModuleProtocol, a: EagerValue, config: FFT
     """Execute the eager np rfft3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -94,13 +94,13 @@ def _np_irfft2d(backend_module: BackendModuleProtocol, a: EagerValue, config: FF
     """Execute the eager np irfft2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -111,13 +111,13 @@ def _np_irfft3d(backend_module: BackendModuleProtocol, a: EagerValue, config: FF
     """Execute the eager np irfft3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -128,13 +128,13 @@ def _np_fftnd(backend_module: BackendModuleProtocol, a: EagerValue, config: FFTC
     """Execute the eager np fftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -145,13 +145,13 @@ def _np_ifftnd(backend_module: BackendModuleProtocol, a: EagerValue, config: FFT
     """Execute the eager np ifftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -162,13 +162,13 @@ def _np_rfftnd(backend_module: BackendModuleProtocol, a: EagerValue, config: FFT
     """Execute the eager np rfftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -179,13 +179,13 @@ def _np_irfftnd(backend_module: BackendModuleProtocol, a: EagerValue, config: FF
     """Execute the eager np irfftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        a (EagerValue): The a parameter.
-        config (FFTConfig): The config parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        a (EagerValue): Input `a` argument (a).
+        config (FFTConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -196,13 +196,13 @@ def _np_window_hann(backend_module: BackendModuleProtocol, length: int, *args: E
     """Execute the eager np window hann operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        length (int): The length parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        length (int): Input `length` argument (length).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.hanning(length)
 
@@ -212,13 +212,13 @@ def _np_window_hamming(backend_module: BackendModuleProtocol, length: int, *args
     """Execute the eager np window hamming operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        length (int): The length parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        length (int): Input `length` argument (length).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.hamming(length)
 
@@ -228,18 +228,18 @@ def _np_stft(backend_module: BackendModuleProtocol, x: EagerValue, nfft: int, no
     """Execute the eager np stft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        nfft (int): The nfft parameter.
-        noverlap (int): The noverlap parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        nfft (int): Input `nfft` argument (nfft).
+        noverlap (int): Input `noverlap` argument (noverlap).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x_arr: EagerTensorProtocol = backend_module.asarray(x)
     step: int = nfft - noverlap
@@ -258,18 +258,18 @@ def _np_istft(backend_module: BackendModuleProtocol, x: EagerValue, nfft: int, n
     """Execute the eager np istft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        nfft (int): The nfft parameter.
-        noverlap (int): The noverlap parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        nfft (int): Input `nfft` argument (nfft).
+        noverlap (int): Input `noverlap` argument (noverlap).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x_arr: EagerTensorProtocol = backend_module.asarray(x)
     step: int = nfft - noverlap

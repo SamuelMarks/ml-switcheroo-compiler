@@ -89,6 +89,9 @@ def test_control_flow_utils() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fn`.
         """
         return x
 

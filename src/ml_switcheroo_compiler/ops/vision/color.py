@@ -176,12 +176,12 @@ def solarize(images: Tensor, threshold: float = 0.5, value_range: TensorOrScalar
     """Solarize images (invert all pixel values above a threshold).
 
     Args:
-        images (Tensor): The images parameter.
-        threshold (float): The threshold parameter.
-        value_range (tuple): The value_range parameter.
+        images (Tensor): Input `images` argument (images).
+        threshold (float): Input `threshold` argument (threshold).
+        value_range (tuple): Input `value_range` argument (value range).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -199,11 +199,11 @@ def invert(images: Tensor, value_range: TensorOrScalar = (0, 255)) -> TensorOrSc
     """Invert image pixels.
 
     Args:
-        images (Tensor): The images parameter.
-        value_range (tuple): The value_range parameter.
+        images (Tensor): Input `images` argument (images).
+        value_range (tuple): Input `value_range` argument (value range).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -286,11 +286,11 @@ def auto_contrast(images: Tensor, value_range: TensorOrScalar = (0, 255)) -> Ten
     """AutoContrast operation.
 
     Args:
-        images (Tensor): The images parameter.
-        value_range (tuple): The value_range parameter.
+        images (Tensor): Input `images` argument (images).
+        value_range (tuple): Input `value_range` argument (value range).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -371,10 +371,10 @@ def rgb_to_yiq(images: Tensor) -> TensorOrScalar:
     """Convert one or more images from RGB to YIQ.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -390,10 +390,10 @@ def yiq_to_rgb(images: Tensor) -> TensorOrScalar:
     """Convert one or more images from YIQ to RGB.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -409,10 +409,10 @@ def rgb_to_yuv(images: Tensor) -> TensorOrScalar:
     """Convert one or more images from RGB to YUV.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -428,10 +428,10 @@ def yuv_to_rgb(images: Tensor) -> TensorOrScalar:
     """Convert one or more images from YUV to RGB.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -453,12 +453,12 @@ class AdjustBrightness(OpDef):
         """Infer shape.
 
         Args:
-        images (EagerTensorProtocol): The images parameter.
+        images (EagerTensorProtocol): Input `images` argument (images).
         *args (EagerTensorProtocol): Positional args.
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(images)
         return _typed_ret_1
@@ -474,12 +474,12 @@ class AdjustContrast(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_2: TensorOrScalar = extract_shape(images)
         return _typed_ret_2
@@ -495,12 +495,12 @@ class AdjustHue(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_3: TensorOrScalar = extract_shape(images)
         return _typed_ret_3
@@ -516,12 +516,12 @@ class AdjustSaturation(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_4: TensorOrScalar = extract_shape(images)
         return _typed_ret_4
@@ -537,12 +537,12 @@ class AugMix(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_5: TensorOrScalar = extract_shape(images)
         return _typed_ret_5
@@ -558,12 +558,12 @@ class AutoContrast(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_6: TensorOrScalar = extract_shape(images)
         return _typed_ret_6
@@ -579,12 +579,12 @@ class Equalization(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_7: TensorOrScalar = extract_shape(images)
         return _typed_ret_7
@@ -600,12 +600,12 @@ class Invert(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_8: TensorOrScalar = extract_shape(images)
         return _typed_ret_8
@@ -621,12 +621,12 @@ class Posterize(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_9: TensorOrScalar = extract_shape(images)
         return _typed_ret_9
@@ -642,12 +642,12 @@ class RgbToGrayscale(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         s = list(extract_shape(images))
         if len(s) > 0:
@@ -669,12 +669,12 @@ class Solarize(OpDef):
         """Infer shape.
 
         Args:
-            images (EagerTensorProtocol): The images parameter.
+            images (EagerTensorProtocol): Input `images` argument (images).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_10: TensorOrScalar = extract_shape(images)
         return _typed_ret_10

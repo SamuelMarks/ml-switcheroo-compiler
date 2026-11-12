@@ -55,7 +55,11 @@ def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) ->
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "int32"
 
     dtype_obj = NonStrDtype()
@@ -96,7 +100,11 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "float64"
 
     dtype_obj = NonStrDtype()
@@ -119,7 +127,11 @@ def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorPr
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "float64"
 
     NonStrDtype()
@@ -152,15 +164,27 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
         """Test class MockMXMap."""
 
         def multiply(self) -> EagerValue:
-            """Test function multiply."""
+            """Test function multiply.
+
+            Returns:
+                EagerValue: Computed output value from `multiply`.
+            """
             return "mul"
 
         def subtract(self) -> EagerValue:
-            """Test function subtract."""
+            """Test function subtract.
+
+            Returns:
+                EagerValue: Computed output value from `subtract`.
+            """
             return "sub"
 
         def divide(self) -> EagerValue:
-            """Test function divide."""
+            """Test function divide.
+
+            Returns:
+                EagerValue: Computed output value from `divide`.
+            """
             return "div"
 
     import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
@@ -189,7 +213,11 @@ def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtoco
         """Test class MockMXLinalg."""
 
         def my_linalg_func(self) -> EagerValue:
-            """Test function my_linalg_func."""
+            """Test function my_linalg_func.
+
+            Returns:
+                EagerValue: Computed output value from `my_linalg_func`.
+            """
             return "linalg"
 
     class MockMXMain:
@@ -236,6 +264,9 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
 
             Args:
                 key: Test parameter `key`.
+
+            Returns:
+                EagerValue: Computed output value from `__getitem__`.
             """
             return 0
 
@@ -248,6 +279,9 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
             Args:
                 shape: Test parameter `shape`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
 
             class DummyRes:
@@ -283,7 +317,11 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
         """Test class DummyShapeList."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1, 2]
 
     class MockMXReshape:
@@ -295,6 +333,9 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             Args:
                 x: Test parameter `x`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `reshape`.
             """
             return shape
 
@@ -312,6 +353,9 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             Args:
                 shape: Test parameter `shape`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
             return dtype
 
@@ -338,6 +382,9 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `nan_to_num`.
             """
             return kwargs
 
@@ -351,7 +398,11 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
             """Test class DummyData."""
 
             def item(self) -> EagerValue:
-                """Test function item."""
+                """Test function item.
+
+                Returns:
+                    EagerValue: Computed output value from `item`.
+                """
                 return 1.0
 
         data = DummyData()

@@ -549,6 +549,9 @@ def test_math_string_io_sparsemapvalues() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.array(x)
 
@@ -571,6 +574,9 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `sparsedensematmul`.
             """
             return "hit_bk"
 

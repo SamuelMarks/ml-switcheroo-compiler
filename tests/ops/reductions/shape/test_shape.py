@@ -104,6 +104,9 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return "pool"
 
@@ -113,6 +116,9 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return ()
 
@@ -169,6 +175,9 @@ def test_frontend_pool_coverage() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             if op == "FractionalMaxPool3D" or (op == "AdaptiveMaxPool3D" and kwargs.get("return_indices")):
                 return (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2)))
@@ -182,6 +191,9 @@ def test_frontend_pool_coverage() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.array(x)
 
@@ -287,6 +299,9 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return "shape"
 
@@ -296,6 +311,9 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return ()
 
@@ -393,6 +411,9 @@ def test_shape_frontend_coverage() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return self.res
 
@@ -402,6 +423,9 @@ def test_shape_frontend_coverage() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.array(x)
 
@@ -410,6 +434,9 @@ def test_shape_frontend_coverage() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
             """
             return ensure_eager_tensor(ensure_eager_tensor(x).item)() if has_backend_member(x, "item") else x
 

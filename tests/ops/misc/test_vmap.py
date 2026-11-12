@@ -49,12 +49,15 @@ def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
     vmapped = vmap(my_func, in_axes=0, out_axes=0)
-    ensure_callable(vmapped)(t)
-    assert callable(test_vmap_eager)
+    out = ensure_callable(vmapped)(t)
+    assert out == t
 
 
 def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
@@ -75,6 +78,9 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
@@ -95,6 +101,9 @@ def test_vmap_not_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
@@ -115,6 +124,9 @@ def test_vmap_eager_impl(mocker: EagerTensorProtocol) -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `func`.
         """
         return x
 
@@ -136,11 +148,19 @@ class MockData:
         self.id = "mock_id"
 
     def __array__(self) -> EagerValue:
-        """Test function __array__."""
+        """Test function __array__.
+
+        Returns:
+            EagerValue: Computed output value from `__array__`.
+        """
         return np.zeros((2, 3))
 
     def tolist(self) -> EagerValue:
-        """Test function tolist."""
+        """Test function tolist.
+
+        Returns:
+            EagerValue: Computed output value from `tolist`.
+        """
         return []
 
 
@@ -161,6 +181,9 @@ def test_vmap_eager_execute() -> None:
                 name: Test parameter `name`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
 
             class R:
@@ -179,6 +202,9 @@ def test_vmap_eager_execute() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 
@@ -226,6 +252,9 @@ def test_vmap_trace() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_func`.
         """
         return x
 

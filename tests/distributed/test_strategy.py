@@ -36,7 +36,11 @@ if typing.TYPE_CHECKING:
 
 
 def _make_graph() -> EagerValue:
-    """Test function _make_graph."""
+    """Test function _make_graph.
+
+    Returns:
+        EagerValue: Computed output value from `_make_graph`.
+    """
     graph = IRGraph()
     for i in range(5):
         node = IRNode(id=f"node_{i}", op_type="Add", inputs=[f"node_{i - 1}"] if i > 0 else [], attributes={})
@@ -354,13 +358,6 @@ def test_server_early_return() -> None:
     assert isinstance(server4, Server)
 
 
-def test_slurm_empty_nodes() -> None:
-    """Test function test_slurm_empty_nodes."""
-    with patch.dict("os.environ", {"SLURM_JOB_NODELIST": "node1"}):
-        pass
-    assert callable(test_slurm_empty_nodes)
-
-
 def test_data_parallel_sync_gradients_with_consumer() -> None:
     """Test function test_data_parallel_sync_gradients_with_consumer."""
     from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy
@@ -419,6 +416,9 @@ def test_server_run_unknown_action_and_send_action() -> None:
 
             Args:
                 size: Test parameter `size`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_recv_ping`.
             """
             if size == 4:
                 server._running = False
@@ -458,6 +458,9 @@ def test_server_run_unknown_action_and_send_action() -> None:
 
                 Args:
                     size: Test parameter `size`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:
@@ -489,6 +492,9 @@ def test_server_run_unknown_action_and_send_action() -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `toggle_not_ready`.
         """
         server._running = False
         return ([], [], [])

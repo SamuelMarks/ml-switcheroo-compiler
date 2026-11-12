@@ -6,6 +6,9 @@ import logging
 import typing
 from collections.abc import Callable
 
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import LogicalGraph as IRGraph
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerCallableProtocol as EagerCallableProtocol,
@@ -388,6 +391,27 @@ class BackendRegistry:
                 except ImportError:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return cls._registry.copy()
+
+    @classmethod
+    def emit_stateful_class(
+        cls,
+        target_framework: str,
+        graph: IRGraph,
+        class_name: str = "LoweredModule",
+    ) -> str:
+        """Emit a stateful object-oriented class definition for `target_framework`.
+
+        Args:
+            target_framework (str): Target backend framework identifier.
+            graph (IRGraph): Functional IR graph to emit.
+            class_name (str): Name of the generated stateful class.
+
+        Returns:
+            str: Generated Python source code for the stateful class.
+        """
+        from ml_switcheroo_compiler.backends._stateful_emitters import emit_backend_stateful_class
+
+        return emit_backend_stateful_class(target_framework, graph, class_name=class_name)
 
 
 def get_active_backend() -> type[BaseGenerator]:

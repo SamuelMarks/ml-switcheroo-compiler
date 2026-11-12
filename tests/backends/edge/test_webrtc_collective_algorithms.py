@@ -102,12 +102,20 @@ class BiPipeChannel:
         await self.send_queue.put(data)
 
     async def recv(self) -> bytes:
-        """Receive by pulling from recv queue."""
+        """Receive by pulling from recv queue.
+
+        Returns:
+            bytes: Computed output value from `recv`.
+        """
         return await self.recv_queue.get()
 
 
 def make_bipipe_pair() -> tuple[BiPipeChannel, BiPipeChannel]:
-    """Create a complementary pair of bidirectional pipe channels."""
+    """Create a complementary pair of bidirectional pipe channels.
+
+    Returns:
+        tuple[BiPipeChannel, BiPipeChannel]: Computed output value from `make_bipipe_pair`.
+    """
     q_a2b: asyncio.Queue[bytes] = asyncio.Queue()
     q_b2a: asyncio.Queue[bytes] = asyncio.Queue()
     return BiPipeChannel(q_a2b, q_b2a), BiPipeChannel(q_b2a, q_a2b)
@@ -118,6 +126,9 @@ def create_interconnected_mesh(world_size: int) -> list[list[BiPipeChannel | Non
 
     Args:
         world_size: Test parameter `world_size`.
+
+    Returns:
+        list[list[BiPipeChannel | None]]: Computed output value from `create_interconnected_mesh`.
     """
     conns: list[list[BiPipeChannel | None]] = [[None for _ in range(world_size)] for _ in range(world_size)]
     for i in range(world_size):
@@ -148,7 +159,11 @@ async def _test_stream_event_handlers_and_messages_part_1(_state: dict[str, Eage
         """Test class ToBytesObj."""
 
         def tobytes(self) -> bytes:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                bytes: Computed output value from `tobytes`.
+            """
             return b"tobytes_msg"
 
     ensure_callable(stream._on_message)(ensure_callable(ToBytesObj)())
@@ -178,7 +193,11 @@ async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, Eage
         """Test class CallableAmount."""
 
         def bufferedAmount(self) -> int:
-            """Test function bufferedAmount."""
+            """Test function bufferedAmount.
+
+            Returns:
+                int: Computed output value from `bufferedAmount`.
+            """
             return 42
 
     stream_cb = ensure_callable(WebRTCDataChannelStream)(ensure_callable(CallableAmount)())
@@ -227,6 +246,9 @@ async def _test_stream_event_handlers_and_messages_part_3(_state: dict[str, Eage
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `send`.
             """
 
             async def _coro() -> None:
@@ -274,10 +296,18 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, Eage
         """Test class SyncRecvChannel."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
 
             async def _r() -> EagerValue:
-                """Test function _r."""
+                """Test function _r.
+
+                Returns:
+                    EagerValue: Computed output value from `_r`.
+                """
                 return b"from_recv"
 
             return ensure_eager_tensor(_r())
@@ -299,7 +329,11 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
         """Test class NonCoroRecvChannel."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return b"non_coro_bytes"
 
     st_noncoro = ensure_callable(WebRTCDataChannelStream)(ensure_callable(NonCoroRecvChannel)())
@@ -310,7 +344,11 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
         """Test class BytearrayRecvChannel."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return bytearray(b"bytearray_res")
 
     st_ba = ensure_callable(WebRTCDataChannelStream)(ensure_callable(BytearrayRecvChannel)())
@@ -348,6 +386,9 @@ async def _test_stream_event_handlers_and_messages_part_6(_state: dict[str, Eage
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `sendMessage`.
             """
 
             async def _c() -> None:
@@ -491,6 +532,9 @@ async def test_broadcast_collective() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank`.
         """
         local_t = tensor if r == 0 else np.zeros_like(tensor)
         return ensure_ndarray(await ensure_callable(broadcast)(local_t, root_rank=0, conns=mesh[r], rank=r))
@@ -531,6 +575,9 @@ async def test_ring_all_reduce_collective() -> None:
                 op_name: Test parameter `op_name`.
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_ring`.
             """
             return ensure_ndarray(await ensure_callable(ring_all_reduce)(ensure_eager_tensor(inp)[r], op_name, m[r], r))
 
@@ -564,6 +611,9 @@ async def test_all_reduce_direct_and_ring() -> None:
                 op_name: Test parameter `op_name`.
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_direct`.
             """
             return ensure_ndarray(await ensure_callable(all_reduce)(ensure_eager_tensor(inp)[r], op_name, m[r], r, algorithm="direct"))
 
@@ -589,6 +639,9 @@ async def test_all_reduce_direct_and_ring() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_ring_disp`.
         """
         return ensure_ndarray(await ensure_callable(all_reduce)(inputs_ring[r], "SUM", mesh_ring[r], r, algorithm="ring"))
 
@@ -622,6 +675,9 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_direct`.
         """
         return ensure_ndarray(await ensure_callable(all_gather)(inputs_3[r], axis=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
 
@@ -640,6 +696,9 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rd`.
         """
         return ensure_ndarray(await ensure_callable(all_gather)(inputs_2[r], axis=0, conns=mesh_rd[r], rank=r, algorithm="recursive_doubling"))
 
@@ -671,6 +730,9 @@ async def test_reduce_scatter_and_ring() -> None:
                 op_name: Test parameter `op_name`.
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_ring_op`.
             """
             return ensure_ndarray(await ensure_callable(reduce_scatter)(ensure_eager_tensor(inp)[r], op_name, scatter_dim=0, conns=m[r], rank=r, algorithm="ring"))
 
@@ -694,6 +756,9 @@ async def test_reduce_scatter_and_ring() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_dir_rs`.
         """
         return ensure_ndarray(await ensure_callable(reduce_scatter)(inputs[r], "SUM", scatter_dim=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
 
@@ -726,6 +791,9 @@ async def test_all_to_all_collective() -> None:
 
         Args:
             r: Test parameter `r`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_all_to_all`.
         """
         return ensure_ndarray(await ensure_callable(all_to_all)(inputs[r], scatter_dim=0, gather_dim=0, conns=mesh[r], rank=r))
 
@@ -772,6 +840,9 @@ def _test_dispatch_collective_and_registry_part_1(_state: dict[str, EagerTensorP
             op: Test parameter `op`.
             tensor: Test parameter `tensor`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `custom_disp`.
         """
         return ensure_ndarray(ensure_eager_tensor(tensor) * ensure_eager_tensor(100.0))
 

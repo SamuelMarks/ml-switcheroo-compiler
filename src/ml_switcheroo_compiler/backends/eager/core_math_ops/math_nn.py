@@ -18,12 +18,12 @@ def _activity_regularization(backend_module: BackendModuleProtocol, x: EagerValu
     """Execute the eager activity regularization operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        x: The x parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        x: Input `x` argument (x).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return x
 
@@ -364,13 +364,13 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
     """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     del kwargs
     if not has_backend_member(operand, "shape"):
@@ -399,13 +399,13 @@ def _adaptive_avg_pool2d(backend_module: BackendModuleProtocol, operand: EagerVa
     """Execute the eager adaptive avg pool2d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -415,13 +415,13 @@ def _adaptive_avg_pool3d(backend_module: BackendModuleProtocol, operand: EagerVa
     """Execute the eager adaptive avg pool3d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -431,12 +431,12 @@ def _alpha_dropout(backend_module: BackendModuleProtocol, x: EagerValue, **kwarg
     """Execute the eager alpha dropout operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        x: The x parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        x: Input `x` argument (x).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return x
 
@@ -446,12 +446,12 @@ def _np_fractionalavgpool(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np fractionalavgpool operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fractionalavgpool", get_backend_member(backend_module, "fractionalavgpool", None))
     if func is not None:

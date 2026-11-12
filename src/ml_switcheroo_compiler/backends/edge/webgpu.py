@@ -194,11 +194,11 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Execute num elements for compiler processing.
 
         Args:
-        self (TensorOrScalar): The self parameter.
-        shape (list[int]): The shape parameter.
+        self (TensorOrScalar): Input `self` argument (self).
+        shape (list[int]): Input `shape` argument (shape).
 
         Returns:
-        int: Result.
+        int: Computed `int` output.
         """
         n: int = 1
         for s in shape:
@@ -222,11 +222,11 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Generate N-dimensional coordinate-to-offset resolution.
 
         Args:
-            idx_var: The idx_var parameter.
-            shape: The shape parameter.
-            strides: The strides parameter.
-            out_var: The out_var parameter.
-            base_offset_words: The base_offset_words parameter.
+            idx_var: Input `idx_var` argument (idx var).
+            shape: Input `shape` argument (shape).
+            strides: Input `strides` argument (strides).
+            out_var: Input `out_var` argument (out var).
+            base_offset_words: Input `base_offset_words` argument (base offset words).
 
         Returns:
             list[str]: Computed result.
@@ -571,9 +571,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WebRTC AllReduce.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -588,9 +588,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WebRTC AllGather.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -605,9 +605,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WebRTC AllToAll.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -622,9 +622,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WebRTC ReduceScatter.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -639,9 +639,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WebRTC Broadcast.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -656,9 +656,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Generate WGSL loop constructs via YAML templates with dynamic subgraph lowering.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -733,9 +733,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Generate WGSL if/else block branching via YAML templates with dynamic subgraph lowering.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -795,9 +795,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Generate WGSL scan via YAML templates.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1357,9 +1357,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for LayerNorm.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1370,9 +1370,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for Trig (Sin/Cos).
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1383,9 +1383,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for ReduceSum.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1396,9 +1396,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for Conv2D.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1440,9 +1440,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for DepthwiseConv2D.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1487,9 +1487,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for Conv3D.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1546,9 +1546,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for MaxPool3D.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1605,9 +1605,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Emit WGSL for AvgPool3D.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node: Input `node` argument (node).
+            input_vars: Input `input_vars` argument (input vars).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[list[str], str, str, str]: Computed result.
@@ -1717,9 +1717,11 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         raw_inps = get_backend_member(self.graph, "inputs", []) or []
         wrt: list[str] = wrt_inputs if wrt_inputs is not None else ([str(x) for x in raw_inps] if isinstance(raw_inps, (list, tuple)) else [])
+        from collections.abc import Mapping
+
         bwd_graph: IRGraph = graph_grad(self.graph, wrt, loss_id)
         bwd_nodes = get_backend_member(bwd_graph, "nodes", {})
-        bwd_nodes_dict = bwd_nodes if isinstance(bwd_nodes, dict) else {}
+        bwd_nodes_dict = bwd_nodes if isinstance(bwd_nodes, Mapping) else {}
         bwd_graph.inputs = [nid for nid, n in bwd_nodes_dict.items() if ensure_str(get_backend_member(n, "op_type", "")) == "Input"]
 
         bwd_generator: WebGPUCodeGenerator = WebGPUCodeGenerator(bwd_graph)

@@ -89,7 +89,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         """Load safetensors weights.
 
         Args:
-            filepath (str): The filepath parameter.
+            filepath (str): Input `filepath` argument (filepath).
 
         Returns:
             dict[str, TensorLike]: Loaded weights dictionary.
@@ -132,8 +132,8 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         """Save safetensors weights.
 
         Args:
-            weights_np (TensorOrScalar): The weights_np parameter.
-            filepath (str): The filepath parameter.
+            weights_np (TensorOrScalar): Input `weights_np` argument (weights np).
+            filepath (str): Input `filepath` argument (filepath).
         """
         header = {}
         offset = 0

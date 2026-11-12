@@ -73,17 +73,11 @@ def test_keras_eager_coverage() -> None:
     import pytest
 
     with pytest.raises(Exception, match=".*"):
-        try:
-            try:
-                ensure_callable(execute_op)(None, "UnknownFakeOp", None)
-            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-        assert ensure_callable(zeros)(None, (2,)) is not None
-        assert ensure_callable(array)(None, [1, 2]) is not None
-        assert ensure_callable(asarray)(None, [3, 4]) is not None
-        assert ensure_callable(item)(None, ensure_callable(kops.array)([5])) == 5
+        ensure_callable(execute_op)(None, "UnknownFakeOp", None)
+    assert ensure_callable(zeros)(None, (2,)) is not None
+    assert ensure_callable(array)(None, [1, 2]) is not None
+    assert ensure_callable(asarray)(None, [3, 4]) is not None
+    assert ensure_callable(item)(None, ensure_callable(kops.array)([5])) == 5
 
 
 def test_mlx_generator_coverage() -> None:

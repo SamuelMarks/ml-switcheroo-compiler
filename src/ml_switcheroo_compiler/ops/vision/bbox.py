@@ -52,14 +52,14 @@ def crop_and_resize(
     """Extract crops from the input image tensor and resizes them.
 
     Args:
-        images (Tensor): The images parameter.
-        boxes (Tensor): The boxes parameter.
-        box_indices (Tensor): The box_indices parameter.
-        crop_size (tuple): The crop_size parameter.
+        images (Tensor): Input `images` argument (images).
+        boxes (Tensor): Input `boxes` argument (boxes).
+        box_indices (Tensor): Input `box_indices` argument (box indices).
+        crop_size (tuple): Input `crop_size` argument (crop size).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     method = kwargs.get("method", "bilinear")
     extrapolation_value = kwargs.get("extrapolation_value", 0.0)
@@ -96,13 +96,13 @@ def _extract_bounding_boxes_eager(
     """Compute the extract bounding boxes eager tensor operation.
 
     Args:
-        images (Tensor): The images parameter.
-        boxes (Tensor): The boxes parameter.
-        box_indices (Tensor): The box_indices parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        images (Tensor): Input `images` argument (images).
+        boxes (Tensor): Input `boxes` argument (boxes).
+        box_indices (Tensor): Input `box_indices` argument (box indices).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -127,14 +127,14 @@ def extract_bounding_boxes(
     """Extract crops from the input image tensor and resizes them.
 
     Args:
-        images (Tensor): The images parameter.
-        boxes (Tensor): The boxes parameter.
-        box_indices (Tensor): The box_indices parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        images (Tensor): Input `images` argument (images).
+        boxes (Tensor): Input `boxes` argument (boxes).
+        box_indices (Tensor): Input `box_indices` argument (box indices).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
         from ml_switcheroo_compiler.ops.configs import BBoxConfig
@@ -168,14 +168,14 @@ def crop(
     """Crops an image to a specified bounding box.
 
     Args:
-        images (Tensor): The images parameter.
-        offset_height (int): The offset_height parameter.
-        offset_width (int): The offset_width parameter.
-        target_height (int): The target_height parameter.
-        target_width (int): The target_width parameter.
+        images (Tensor): Input `images` argument (images).
+        offset_height (int): Input `offset_height` argument (offset height).
+        offset_width (int): Input `offset_width` argument (offset width).
+        target_height (int): Input `target_height` argument (target height).
+        target_width (int): Input `target_width` argument (target width).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -217,14 +217,14 @@ def pad_to_bounding_box(
     """Pad an image with zeros to the specified height and width.
 
     Args:
-        images (Tensor): The images parameter.
-        offset_height (int): The offset_height parameter.
-        offset_width (int): The offset_width parameter.
-        target_height (int): The target_height parameter.
-        target_width (int): The target_width parameter.
+        images (Tensor): Input `images` argument (images).
+        offset_height (int): Input `offset_height` argument (offset height).
+        offset_width (int): Input `offset_width` argument (offset width).
+        target_height (int): Input `target_height` argument (target height).
+        target_width (int): Input `target_width` argument (target width).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -265,13 +265,13 @@ def draw_bounding_boxes(
     """Draw bounding boxes on a batch of images.
 
     Args:
-        images (Tensor): The images parameter.
-        boxes (Tensor): The boxes parameter.
-        colors (Tensor | None): The colors parameter.
-        texts (list[str] | None): The texts parameter.
+        images (Tensor): Input `images` argument (images).
+        boxes (Tensor): Input `boxes` argument (boxes).
+        colors (Tensor | None): Input `colors` argument (colors).
+        texts (list[str] | None): Input `texts` argument (texts).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -452,12 +452,12 @@ class ExtractBoundingBoxes(OpDef):
         """Infer shape.
 
         Args:
-        inputs (EagerTensorProtocol): The inputs parameter.
+        inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
         *args (EagerTensorProtocol): Positional args.
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_1
@@ -473,12 +473,12 @@ class Iou(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_2: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_2
@@ -494,12 +494,12 @@ class Nms(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_3: TensorOrScalar = extract_shape(inputs)
         return _typed_ret_3

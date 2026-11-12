@@ -19,11 +19,11 @@ def matrix_power(input: Tensor, n: int) -> TensorOrScalar:
     """Raise a square matrix to the integer power `n`.
 
     Args:
-        input (Tensor): The input parameter.
-        n (int): The n parameter.
+        input (Tensor): Input `input` argument (input).
+        n (int): Input `n` argument (n).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -38,12 +38,12 @@ def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None
     """Compute the norm out shape tensor operation.
 
     Args:
-        x_shape (tuple[int, ...]): The x_shape parameter.
-        axis (int | tuple[int, ...] | None): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        x_shape (tuple[int, ...]): Input `x_shape` argument (x shape).
+        axis (int | tuple[int, ...] | None): Input `axis` argument (axis).
+        keepdims (bool): Input `keepdims` argument (keepdims).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if axis is None:
         return tuple(1 for _ in x_shape) if keepdims else ()
@@ -60,13 +60,13 @@ def norm(
     """Matrix or vector norm.
 
     Args:
-        x (Tensor): The x parameter.
-        ord (int | str | None): The ord parameter.
-        axis (int | tuple[int, ...] | None): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        x (Tensor): Input `x` argument (x).
+        ord (int | str | None): Input `ord` argument (ord).
+        axis (int | tuple[int, ...] | None): Input `axis` argument (axis).
+        keepdims (bool): Input `keepdims` argument (keepdims).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     out_shape = _norm_out_shape(x.shape, axis, keepdims)
 
@@ -85,10 +85,10 @@ def matrix_exponential(a: Tensor) -> TensorOrScalar:
     """Compute the matrix exponential tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -103,10 +103,10 @@ def matrix_exp(a: Tensor) -> TensorOrScalar:
     """Compute the matrix exp tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return matrix_exponential(a)
 
@@ -119,12 +119,12 @@ def _power_iteration_eager(
     """Execute power iteration eagerly.
 
     Args:
-        input (Tensor): The input parameter.
-        num_iters (int): The num_iters parameter.
-        u (Tensor | None): The u parameter.
+        input (Tensor): Input `input` argument (input).
+        num_iters (int): Input `num_iters` argument (num iters).
+        u (Tensor | None): Input `u` argument (u).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -156,12 +156,12 @@ def power_iteration(
     """Compute the dominant singular value and vectors using power iteration.
 
     Args:
-        input (Tensor): The input parameter.
-        num_iters (int): The num_iters parameter.
-        u (Tensor | None): The u parameter.
+        input (Tensor): Input `input` argument (input).
+        num_iters (int): Input `num_iters` argument (num iters).
+        u (Tensor | None): Input `u` argument (u).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         return _power_iteration_eager(input, num_iters, u)

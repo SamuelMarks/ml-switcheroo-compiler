@@ -122,6 +122,9 @@ def test_cuda_compiler_compile_native(tmp_path: Path) -> None:
         Args:
             cmd: Test parameter `cmd`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            MagicMock: Computed output value from `fake_run_success`.
         """
         out_path = cmd[cmd.index("-o") + 1]
         Path(out_path).write_text("// Simulated PTX content", encoding="utf-8")

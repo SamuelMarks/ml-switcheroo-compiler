@@ -96,7 +96,7 @@ def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
         Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator function.
@@ -106,10 +106,10 @@ def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
         """Execute decorator for compiler processing.
 
         Args:
-            func (VJPRuleCallable): The func parameter.
+            func (VJPRuleCallable): Input `func` argument (func).
 
         Returns:
-            VJPRuleCallable: Result.
+            VJPRuleCallable: Computed `VJPRuleCallable` output.
         """
         if op_name in _VJP_REGISTRY:
             msg = f"VJP for operation '{op_name}' is already registered."
@@ -127,13 +127,13 @@ def get_vjp(op_name: str) -> VJPRuleCallable:
     """Get the VJP rule.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
-        Callable: Result.
+        Callable: Computed `Callable` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if op_name in _VJP_REGISTRY:
         return _VJP_REGISTRY[op_name]
@@ -149,10 +149,10 @@ def has_vjp(op_name: str) -> bool:
     """Check if a rule is registered.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     if op_name in _VJP_REGISTRY:
         return True

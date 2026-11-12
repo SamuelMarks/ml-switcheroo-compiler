@@ -25,6 +25,9 @@ def test_cond_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
 
         def true_fn(x: EagerValue) -> EagerValue:
@@ -32,6 +35,9 @@ def test_cond_grad() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `true_fn`.
             """
             return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
 
@@ -40,6 +46,9 @@ def test_cond_grad() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `false_fn`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(x)
 
@@ -62,6 +71,9 @@ def test_while_loop_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
 
         def cond_fn(val: EagerValue) -> EagerValue:
@@ -69,6 +81,9 @@ def test_while_loop_grad() -> None:
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `cond_fn`.
             """
             return ensure_eager_tensor(ensure_eager_tensor(val)[0] < 10.0)
 
@@ -77,6 +92,9 @@ def test_while_loop_grad() -> None:
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `body_fn`.
             """
             return (ensure_eager_tensor(val)[0] + x,)
 

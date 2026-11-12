@@ -27,7 +27,6 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     timeseries_dataset_from_array,
     unpack_x_y_sample_weight,
 )
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -156,4 +155,6 @@ def test_pad_sequences() -> None:
 
 def test_split_dataset() -> None:
     """Test function test_split_dataset."""
-    assert ensure_callable(split_dataset)("ds") == ("ds", "ds")
+    left_ds, right_ds = split_dataset(NumpyDataset([10, 20, 30, 40]))
+    assert left_ds.x == [10, 20]
+    assert right_ds.x == [30, 40]

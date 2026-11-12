@@ -54,6 +54,9 @@ def test_eval_slice_call() -> None:
 
         Args:
             n: Test parameter `n`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eval`.
         """
         _typed_ret_1: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_1
@@ -82,6 +85,9 @@ def test_eval_array_call() -> None:
 
         Args:
             n: Test parameter `n`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eval`.
         """
         _typed_ret_2: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_2
@@ -120,6 +126,9 @@ def test_eval_call() -> None:
 
         Args:
             n: Test parameter `n`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eval`.
         """
         _typed_ret_3: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_3
@@ -171,6 +180,9 @@ def test_eval_unary_op() -> None:
 
         Args:
             n: Test parameter `n`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_eval`.
         """
         _typed_ret_4: EagerValue = ensure_eager_tensor(n).value
         return _typed_ret_4

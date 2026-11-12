@@ -1,4 +1,4 @@
-"""Module dirichlet.py."""
+"""Compiler `dirichlet` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -18,13 +18,13 @@ def dirichlet(
     """Sample dirichlet random values from a given key.
 
     Args:
-        key (Tensor | str): The key parameter.
-        alpha (Tensor | float): The alpha parameter.
-        shape (Sequence[int] | tuple[int, ...] | int | None): The shape parameter.
-        dtype (dtypes.DType | None): The dtype parameter.
+        key (Tensor | str): Input `key` argument (key).
+        alpha (Tensor | float): Input `alpha` argument (alpha).
+        shape (Sequence[int] | tuple[int, ...] | int | None): Input `shape` argument (shape).
+        dtype (dtypes.DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if shape is None:
         shape = ()

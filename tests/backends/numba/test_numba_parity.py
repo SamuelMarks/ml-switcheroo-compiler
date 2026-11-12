@@ -25,7 +25,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_numba_stub(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Provide a NumPy-backed numba stub when numba is not installed."""
+    """Provide a NumPy-backed numba stub when numba is not installed.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     import importlib.util
     import sys
     from unittest.mock import MagicMock
@@ -146,6 +150,9 @@ def test_numba_eager_dispatch_and_tensor_unwrap() -> None:
             mod: Test parameter `mod`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            str: Computed output value from `mock_nb_custom`.
         """
         del mod, args, kwargs
         return "custom_numba_res"
@@ -218,6 +225,9 @@ def test_numba_profiler_and_memory_metrics() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `fake_nb_import`.
         """
         if name == "numba":
             raise ImportError("no numba")

@@ -93,10 +93,10 @@ def set_default_stream(stream: TensorOrScalar) -> None:
     """Set the default stream for the active backend.
 
     Args:
-        stream (TensorOrScalar): The stream parameter.
+        stream (TensorOrScalar): Input `stream` argument (stream).
 
     Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
     """
     if core_config.backend == "mlx":
         try:
@@ -113,10 +113,10 @@ def set_memory_limit(limit: int) -> None:
     """Set the memory limit for the active backend.
 
     Args:
-        limit (int): The limit parameter.
+        limit (int): Input `limit` argument (limit).
 
     Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
     """
     if core_config.backend == "mlx":
         try:
@@ -133,10 +133,10 @@ def set_wired_limit(limit: int) -> None:
     """Set the wired memory limit for the active backend.
 
     Args:
-        limit (int): The limit parameter.
+        limit (int): Input `limit` argument (limit).
 
     Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
     """
     if core_config.backend == "mlx":
         try:

@@ -51,6 +51,9 @@ def test_np_all_reduce_threads() -> None:
             ctx: Test parameter `ctx`.
             tensor: Test parameter `tensor`.
             op: Test parameter `op`.
+
+        Returns:
+            EagerValue: Computed output value from `run_all_reduce`.
         """
         return ensure_eager_tensor(ensure_eager_tensor(ctx).all_reduce_ring)(tensor, op, np)
 
@@ -82,6 +85,9 @@ def test_all_gather_np_coverage9() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_all_gather`.
         """
         return [[2.0], [3.0]]
 
@@ -95,6 +101,9 @@ def test_all_gather_np_coverage9() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -107,6 +116,9 @@ def test_all_gather_np_coverage9() -> None:
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_eager_tensor(tensors)[0]
 
@@ -119,6 +131,9 @@ def test_all_gather_np_coverage9() -> None:
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_eager_tensor(tensors)[0]
 
@@ -129,6 +144,9 @@ def test_all_gather_np_coverage9() -> None:
                 arr: Test parameter `arr`.
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `array_split`.
             """
             return ensure_eager_tensor([arr]) * ensure_eager_tensor(indices)
 
@@ -138,6 +156,9 @@ def test_all_gather_np_coverage9() -> None:
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `concatenate`.
             """
             return ensure_eager_tensor(t)[0]
 
@@ -147,6 +168,9 @@ def test_all_gather_np_coverage9() -> None:
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `expand_dims`.
             """
             return t
 
@@ -226,6 +250,9 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) + ensure_eager_tensor(ensure_eager_tensor(other).val)))
 
@@ -234,6 +261,9 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__radd__`.
             """
             if other == 0:
                 return ensure_eager_tensor(self)
@@ -244,13 +274,20 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__mul__`.
             """
             if has_backend_member(other, "val"):
                 return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(ensure_eager_tensor(other).val)))
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(other)))
 
         def copy(self) -> EagerValue:
-            """Test function copy."""
+            """Test function copy.
+
+            Returns:
+                EagerValue: Computed output value from `copy`.
+            """
             return ensure_eager_tensor(ArrayMock(self.val))
 
     _state.update(ensure_tensor_dict({"ArrayMock": ArrayMock}))
@@ -269,6 +306,9 @@ def _test_all_gather_np_coverage10_part_3(_state: dict[str, EagerTensorProtocol]
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_all_gather`.
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
@@ -293,6 +333,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -305,6 +348,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(max)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -317,6 +363,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(min)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -327,6 +376,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 arr: Test parameter `arr`.
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `array_split`.
             """
             return ensure_eager_tensor([ensure_callable(ArrayMock)(ensure_eager_tensor(ensure_eager_tensor(arr).val) / ensure_eager_tensor(indices))]) * ensure_eager_tensor(indices)
 
@@ -336,6 +388,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `concatenate`.
             """
             return ensure_eager_tensor(t)[0]
 
@@ -345,6 +400,9 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `expand_dims`.
             """
             return t
 
@@ -459,6 +517,9 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) + ensure_eager_tensor(ensure_eager_tensor(other).val)))
 
@@ -467,6 +528,9 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__radd__`.
             """
             if other == 0:
                 return ensure_eager_tensor(self)
@@ -477,13 +541,20 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__mul__`.
             """
             if has_backend_member(other, "val"):
                 return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(ensure_eager_tensor(other).val)))
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(other)))
 
         def copy(self) -> EagerValue:
-            """Test function copy."""
+            """Test function copy.
+
+            Returns:
+                EagerValue: Computed output value from `copy`.
+            """
             return ensure_eager_tensor(ArrayMock(self.val))
 
     _state.update(ensure_tensor_dict({"ArrayMock": ArrayMock}))
@@ -502,6 +573,9 @@ def _test_all_gather_np_coverage11_part_3(_state: dict[str, EagerTensorProtocol]
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_all_gather`.
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
@@ -526,6 +600,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -538,6 +615,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(max)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -550,6 +630,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(min)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -560,6 +643,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 arr: Test parameter `arr`.
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `array_split`.
             """
             return ensure_eager_tensor([ensure_callable(ArrayMock)(ensure_eager_tensor(ensure_eager_tensor(arr).val) / ensure_eager_tensor(indices))]) * ensure_eager_tensor(indices)
 
@@ -569,6 +655,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `concatenate`.
             """
             return ensure_eager_tensor(t)[0]
 
@@ -578,6 +667,9 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `expand_dims`.
             """
             return t
 
@@ -688,6 +780,9 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) + ensure_eager_tensor(ensure_eager_tensor(other).val)))
 
@@ -696,6 +791,9 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__radd__`.
             """
             if other == 0:
                 return ensure_eager_tensor(self)
@@ -706,13 +804,20 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__mul__`.
             """
             if has_backend_member(other, "val"):
                 return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(ensure_eager_tensor(other).val)))
             return ensure_eager_tensor(ensure_callable(ArrayMock)(ensure_eager_tensor(self.val) * ensure_eager_tensor(other)))
 
         def copy(self) -> EagerValue:
-            """Test function copy."""
+            """Test function copy.
+
+            Returns:
+                EagerValue: Computed output value from `copy`.
+            """
             return ensure_eager_tensor(ArrayMock(self.val))
 
     _state.update(ensure_tensor_dict({"ArrayMock": ArrayMock}))
@@ -731,6 +836,9 @@ def _test_all_gather_np_coverage12_part_3(_state: dict[str, EagerTensorProtocol]
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_all_gather`.
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
@@ -755,6 +863,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -767,6 +878,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(max)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -779,6 +893,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
 
                 Args:
                     tensors: Test parameter `tensors`.
+
+                Returns:
+                    EagerValue: Computed output value from `reduce`.
                 """
                 return ensure_callable(ArrayMock)(ensure_callable(min)([ensure_eager_tensor(ensure_eager_tensor(x).val) for x in ensure_eager_tensor(tensors)]))
 
@@ -789,6 +906,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 arr: Test parameter `arr`.
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `array_split`.
             """
             return ensure_eager_tensor([ensure_callable(ArrayMock)(ensure_eager_tensor(ensure_eager_tensor(arr).val) / ensure_eager_tensor(indices))]) * ensure_eager_tensor(indices)
 
@@ -798,6 +918,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `concatenate`.
             """
             return ensure_eager_tensor(t)[0]
 
@@ -807,6 +930,9 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
             Args:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `expand_dims`.
             """
             return t
 

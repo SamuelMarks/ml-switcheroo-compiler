@@ -115,7 +115,7 @@ def get_peak_memory() -> int:
     """Get the peak memory usage of the device in bytes.
 
     Returns:
-        int: Result.
+        int: Computed `int` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -144,7 +144,7 @@ class DeviceContextOp(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(args[0])
 
@@ -161,7 +161,7 @@ class DeviceTransferOp(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(args[0])
 

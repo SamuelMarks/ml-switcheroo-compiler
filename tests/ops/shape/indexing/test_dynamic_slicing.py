@@ -152,6 +152,9 @@ def test_dynamic_slice_validation_and_shapes(mocker: EagerTensorProtocol) -> Non
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shape[op_name] = shape
         return op_name

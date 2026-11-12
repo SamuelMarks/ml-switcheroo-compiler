@@ -179,6 +179,9 @@ def test_scatter_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name

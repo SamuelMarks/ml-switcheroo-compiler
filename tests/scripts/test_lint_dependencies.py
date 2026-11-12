@@ -8,6 +8,8 @@ import sys
 import tempfile
 from unittest.mock import patch
 
+import pytest
+
 from scripts.lint_dependencies import _check_module_name, check_dependencies, main
 
 
@@ -23,6 +25,12 @@ def test_check_dependencies_clean() -> None:
             f.write("Some notes")
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0
+
+        eval_file: str = os.path.join(core_dir, "bad_eval.py")
+        with open(eval_file, "w", encoding="utf-8") as f:
+            f.write("x = eval('1 + 1')\n")
+        eval_violations: list[str] = check_dependencies(temp_dir)
+        assert any("Prohibited builtin 'eval()'" in v for v in eval_violations)
 
 
 def test_check_dependencies_violations() -> None:
@@ -134,8 +142,6 @@ def test_entrypoint_call() -> None:
     """Test direct module invocation entrypoint."""
     with patch.object(sys, "argv", ["lint_dependencies.py"]):
         with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):
-            try:
+            with pytest.raises(SystemExit) as exc_info:
                 runpy.run_path("scripts/lint_dependencies.py", run_name="__main__")
-            except SystemExit as e:
-                assert e.code == 0
-    assert callable(test_entrypoint_call)
+            assert exc_info.value.code == 0

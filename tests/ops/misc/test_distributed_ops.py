@@ -68,6 +68,9 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
                 __op: Test parameter `__op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
 
             class T:

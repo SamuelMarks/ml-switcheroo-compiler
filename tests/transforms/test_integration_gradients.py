@@ -24,6 +24,9 @@ def test_gradient_integration_across_backends() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(x) + ensure_eager_tensor(x) + ensure_eager_tensor(x)
 

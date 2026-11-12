@@ -60,7 +60,11 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             self.name = "int64"
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "int64"
 
     ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype2)())

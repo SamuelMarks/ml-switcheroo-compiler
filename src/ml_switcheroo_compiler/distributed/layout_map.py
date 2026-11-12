@@ -105,7 +105,7 @@ class LayoutMap:
         """Return representation.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"LayoutMap(size={len(self._map)})"
 

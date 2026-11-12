@@ -177,6 +177,9 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "masked"
 
@@ -186,6 +189,9 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `infer_shape`.
                 """
                 return ()
 

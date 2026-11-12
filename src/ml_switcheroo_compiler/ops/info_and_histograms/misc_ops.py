@@ -50,7 +50,7 @@ class Infeed(OpDef):
             **kwargs (MiscArg): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_val = kwargs.get("shape", ())
         return tuple(shape_val) if isinstance(shape_val, (tuple, list)) else ()
@@ -74,7 +74,7 @@ class Vectorize(OpDef):
             **kwargs (MiscArg): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -97,7 +97,7 @@ class AxisIndex(OpDef):
             **kwargs (MiscArg): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not args:
             return ()
@@ -115,7 +115,7 @@ def infeed(
         **kwargs (MiscArg): Keyword args.
 
     Returns:
-        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Result.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -133,7 +133,7 @@ def vectorize(
         **kwargs (MiscArg): Keyword args.
 
     Returns:
-        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Result.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

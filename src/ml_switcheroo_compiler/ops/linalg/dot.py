@@ -22,7 +22,7 @@ def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
         obj: Target tensor or shape sequence.
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     raw_obj: TensorOrScalar = obj
     return isinstance(raw_obj, ShapeProtocol) and bool(raw_obj.shape)
@@ -108,7 +108,7 @@ class DotGeneral(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -125,12 +125,12 @@ class DotGeneral(OpDef):
         """Compute the compute out shape tensor operation.
 
         Args:
-            lhs_shape (tuple): The lhs_shape parameter.
-            rhs_shape (tuple): The rhs_shape parameter.
-            dimension_numbers (tuple): The dimension_numbers parameter.
+            lhs_shape (tuple): Input `lhs_shape` argument (lhs shape).
+            rhs_shape (tuple): Input `rhs_shape` argument (rhs shape).
+            dimension_numbers (tuple): Input `dimension_numbers` argument (dimension numbers).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         dim_nums = ensure_eager_list(dimension_numbers)
         contracting, batch = ensure_eager_list(dim_nums[0]), ensure_eager_list(dim_nums[1])
@@ -210,11 +210,11 @@ def _compute_pdot_shape(lhs_shape: tuple[int, ...], rhs_shape: tuple[int, ...]) 
     """Compute the compute pdot shape tensor operation.
 
     Args:
-        lhs_shape (tuple): The lhs_shape parameter.
-        rhs_shape (tuple): The rhs_shape parameter.
+        lhs_shape (tuple): Input `lhs_shape` argument (lhs shape).
+        rhs_shape (tuple): Input `rhs_shape` argument (rhs shape).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if len(lhs_shape) == 1 and len(rhs_shape) == 1:
         return ()
@@ -243,7 +243,7 @@ class Pdot(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         del kwargs
         lhs = args[0]
@@ -261,7 +261,7 @@ def pdot(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

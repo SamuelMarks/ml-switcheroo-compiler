@@ -64,13 +64,13 @@ def _build_linalg_output_tensors(
     """Compute the build linalg output tensors tensor operation.
 
     Args:
-        out_ids (list[str]): The out_ids parameter.
-        out_shapes (Sequence): The out_shapes parameter.
-        out_dtypes (Sequence): The out_dtypes parameter.
-        device: The device parameter.
+        out_ids (list[str]): Input `out_ids` argument (out ids).
+        out_shapes (Sequence): Input `out_shapes` argument (out shapes).
+        out_dtypes (Sequence): Input `out_dtypes` argument (out dtypes).
+        device: Input `device` argument (device).
 
     Returns:
-        list[Tensor]: Result.
+        list[Tensor]: Computed `list[Tensor]` output.
     """
     tensors: list[Tensor] = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
@@ -91,17 +91,17 @@ def _emit_linalg_node(
     """Emit a linear algebra operation node to the tracing IR graph.
 
     Args:
-        op_type (str): The op_type parameter.
-        inputs (Sequence): The inputs parameter.
-        attrs (dict): The attrs parameter.
-        out_shapes (Sequence): The out_shapes parameter.
-        out_dtypes (Sequence): The out_dtypes parameter.
+        op_type (str): Input `op_type` argument (op type).
+        inputs (Sequence): Input `inputs` argument (inputs).
+        attrs (dict): Input `attrs` argument (attrs).
+        out_shapes (Sequence): Input `out_shapes` argument (out shapes).
+        out_dtypes (Sequence): Input `out_dtypes` argument (out dtypes).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."

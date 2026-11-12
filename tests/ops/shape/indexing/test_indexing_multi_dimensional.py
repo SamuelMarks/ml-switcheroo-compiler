@@ -62,7 +62,11 @@ def test_normalize_k() -> None:
         """Test class FakeItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 5
 
     assert ensure_callable(_normalize_k)(ensure_callable(FakeItem)()) == 5
@@ -71,7 +75,11 @@ def test_normalize_k() -> None:
         """Test class FakeArray."""
 
         def __array__(self) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return 7
 
     assert ensure_callable(_normalize_k)(ensure_callable(FakeArray)()) == 7
@@ -97,7 +105,11 @@ def test_argsort_infer_shape() -> None:
 
         @property
         def shape(self) -> EagerValue:
-            """Test function shape."""
+            """Test function shape.
+
+            Returns:
+                EagerValue: Computed output value from `shape`.
+            """
             return (2, 3)
 
     t1 = MockTuple((1, 2))

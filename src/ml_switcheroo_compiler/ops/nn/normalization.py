@@ -103,14 +103,14 @@ def local_response_normalization(
     """Local Response Normalization.
 
     Args:
-        operand (Tensor): The operand parameter.
-        depth_radius (int): The depth_radius parameter.
-        bias (float): The bias parameter.
-        alpha (float): The alpha parameter.
-        beta (float): The beta parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        depth_radius (int): Input `depth_radius` argument (depth radius).
+        bias (float): Input `bias` argument (bias).
+        alpha (float): Input `alpha` argument (alpha).
+        beta (float): Input `beta` argument (beta).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     rank = len(operand.shape)
     config = WindowConfig(
@@ -206,15 +206,15 @@ def batch_norm_with_global_normalization(
     """Batch normalization with global normalization.
 
     Args:
-        t (TensorOrScalar): The t parameter.
-        m (TensorOrScalar): The m parameter.
-        v (TensorOrScalar): The v parameter.
-        beta (TensorOrScalar): The beta parameter.
-        gamma (TensorOrScalar): The gamma parameter.
+        t (TensorOrScalar): Input `t` argument (t).
+        m (TensorOrScalar): Input `m` argument (m).
+        v (TensorOrScalar): Input `v` argument (v).
+        beta (TensorOrScalar): Input `beta` argument (beta).
+        gamma (TensorOrScalar): Input `gamma` argument (gamma).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     raw_cfg = kwargs.get("config")
     cfg = raw_cfg if isinstance(raw_cfg, BatchNormGlobalConfig) else BatchNormGlobalConfig()
@@ -236,12 +236,12 @@ def lrn(input: TensorOrScalar, config: LRNConfig | TensorOrScalar = None, name: 
     """Compute the lrn tensor operation.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        config (LRNConfig): The config parameter.
-        name (TensorOrScalar): The name parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        config (LRNConfig): Input `config` argument (config).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     cfg = config if isinstance(config, LRNConfig) else LRNConfig()
     return local_response_normalization(ensure_tensor(input), cfg.depth_radius, cfg.bias, cfg.alpha, cfg.beta)
@@ -256,14 +256,14 @@ def l2_normalize(
     """Normalize along dimension axis using an L2 norm.
 
     Args:
-        x (Tensor): The x parameter.
-        axis (int | Sequence[int] | None): The axis parameter.
-        epsilon (float): The epsilon parameter.
-        name (str | None): The name parameter.
-        axis (int | Sequence[int] | None): The axis parameter.
+        x (Tensor): Input `x` argument (x).
+        axis (int | Sequence[int] | None): Input `axis` argument (axis).
+        epsilon (float): Input `epsilon` argument (epsilon).
+        name (str | None): Input `name` argument (name).
+        axis (int | Sequence[int] | None): Input `axis` argument (axis).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     square_sum = sum(multiply(x, x), axis=axis, keepdims=True)
     x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
@@ -274,14 +274,14 @@ def moments(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = Non
     """Calculate the mean and variance of x.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        axes (TensorOrScalar): The axes parameter.
-        shift (TensorOrScalar): The shift parameter.
-        keepdims (TensorOrScalar): The keepdims parameter.
-        name (TensorOrScalar): The name parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        axes (TensorOrScalar): Input `axes` argument (axes).
+        shift (TensorOrScalar): Input `shift` argument (shift).
+        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
@@ -290,14 +290,14 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
-        counts (TensorOrScalar): The counts parameter.
-        mean_ss (TensorOrScalar): The mean_ss parameter.
-        variance_ss (TensorOrScalar): The variance_ss parameter.
-        shift (TensorOrScalar): The shift parameter.
-        name (TensorOrScalar): The name parameter.
+        counts (TensorOrScalar): Input `counts` argument (counts).
+        mean_ss (TensorOrScalar): Input `mean_ss` argument (mean ss).
+        variance_ss (TensorOrScalar): Input `variance_ss` argument (variance ss).
+        shift (TensorOrScalar): Input `shift` argument (shift).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -340,11 +340,11 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        axes (TensorOrScalar): The axes parameter.
-        shift (TensorOrScalar): The shift parameter.
-        keepdims (TensorOrScalar): The keepdims parameter.
-        name (TensorOrScalar): The name parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        axes (TensorOrScalar): Input `axes` argument (axes).
+        shift (TensorOrScalar): Input `shift` argument (shift).
+        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
         TensorOrScalar: Sufficient statistics tuple.
@@ -398,11 +398,11 @@ def weighted_moments(
     """Return the frequency-weighted mean and variance of x.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        axes (TensorOrScalar): The axes parameter.
-        frequency_weights (TensorOrScalar): The frequency_weights parameter.
-        name (TensorOrScalar): The name parameter.
-        keepdims (TensorOrScalar): The keepdims parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        axes (TensorOrScalar): Input `axes` argument (axes).
+        frequency_weights (TensorOrScalar): Input `frequency_weights` argument (frequency weights).
+        name (TensorOrScalar): Input `name` argument (name).
+        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
 
     Returns:
         TensorOrScalar: Weighted `(mean, variance)` tuple.
@@ -448,11 +448,11 @@ def zero_fraction(value: TensorOrScalar, name: TensorOrScalar = None) -> TensorO
     """Return the fraction of zeros in value.
 
     Args:
-        value (TensorOrScalar): The value parameter.
-        name (TensorOrScalar): The name parameter.
+        value (TensorOrScalar): Input `value` argument (value).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return Tensor(0.0, TensorConfig((), "float32", "cpu"))
 
@@ -505,17 +505,17 @@ def group_norm(
     """Group normalization.
 
     Args:
-        x (Tensor): The x parameter.
-        num_groups (int): The num_groups parameter.
-        scale (Optional): The scale parameter.
-        offset (Optional): The offset parameter.
-        epsilon (float): The epsilon parameter.
+        x (Tensor): Input `x` argument (x).
+        num_groups (int): Input `num_groups` argument (num groups).
+        scale (Optional): Input `scale` argument (scale).
+        offset (Optional): Input `offset` argument (offset).
+        epsilon (float): Input `epsilon` argument (epsilon).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     C = x.shape[1]
     if C % num_groups != 0:

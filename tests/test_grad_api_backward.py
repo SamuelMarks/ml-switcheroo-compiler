@@ -162,6 +162,9 @@ def test_custom_jvp_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fn`.
         """
         return x
 
@@ -170,6 +173,9 @@ def test_custom_jvp_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_vjp`.
         """
         return x
 
@@ -185,6 +191,9 @@ def test_custom_jvp_vjp() -> None:
         Args:
             t: Test parameter `t`.
             g: Test parameter `g`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_fwd`.
         """
         return t, g
 
@@ -194,6 +203,9 @@ def test_custom_jvp_vjp() -> None:
         Args:
             g: Test parameter `g`.
             g_in: Test parameter `g_in`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_bwd`.
         """
         return g, None
 
@@ -222,6 +234,9 @@ def test_ir_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 

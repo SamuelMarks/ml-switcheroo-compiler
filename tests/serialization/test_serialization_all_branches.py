@@ -57,6 +57,9 @@ def test_load_model_edge_branches() -> None:
 
             Args:
                 p: Test parameter `p`.
+
+            Returns:
+                EagerValue: Computed output value from `remove_and_load`.
             """
             if ensure_callable(os.path.exists)(p):
                 ensure_callable(os.remove)(p)
@@ -112,7 +115,11 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
         """Class with get_config method."""
 
         def get_config(self) -> dict[str, EagerValue]:
-            """Return config dictionary."""
+            """Return config dictionary.
+
+            Returns:
+                dict[str, EagerValue]: Computed output value from `get_config`.
+            """
             return {"inner_val": 42}
 
     # serialize_object with dict and list/tuple
@@ -172,7 +179,11 @@ def test_saved_model_topology_branches() -> None:
             """Test class ModelWithToJson."""
 
             def to_json(self) -> str:
-                """Test function to_json."""
+                """Test function to_json.
+
+                Returns:
+                    str: Computed output value from `to_json`.
+                """
                 return json.dumps({"class_name": "DenseModel"})
 
         sm2 = SavedModel(model=ensure_eager_tensor(ModelWithToJson()))
@@ -186,7 +197,11 @@ def test_saved_model_topology_branches() -> None:
             """Test class ModelWithGetConfig."""
 
             def get_config(self) -> dict[str, EagerValue]:
-                """Test function get_config."""
+                """Test function get_config.
+
+                Returns:
+                    dict[str, EagerValue]: Computed output value from `get_config`.
+                """
                 return {"class_name": "ConfigOnlyModel"}
 
         sm3 = SavedModel(model=ensure_eager_tensor(ModelWithGetConfig()))

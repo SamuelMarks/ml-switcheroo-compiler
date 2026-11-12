@@ -158,6 +158,9 @@ def test_rocm_compile_hip_to_code() -> None:
         Args:
             prog: Test parameter `prog`.
             size_ptr: Test parameter `size_ptr`.
+
+        Returns:
+            EagerValue: Computed output value from `get_code_size_side_effect`.
         """
         ensure_mutable(ensure_eager_tensor(size_ptr)._obj).value = ensure_eager_tensor(len(expected_code))
         return 0
@@ -170,6 +173,9 @@ def test_rocm_compile_hip_to_code() -> None:
         Args:
             prog: Test parameter `prog`.
             buf: Test parameter `buf`.
+
+        Returns:
+            EagerValue: Computed output value from `get_code_side_effect`.
         """
         ensure_mutable(buf).raw = ensure_eager_tensor(expected_code)
         return 0
@@ -193,6 +199,9 @@ def test_rocm_compile_hip_to_code() -> None:
         Args:
             prog: Test parameter `prog`.
             size_ptr: Test parameter `size_ptr`.
+
+        Returns:
+            EagerValue: Computed output value from `get_log_size_side_effect`.
         """
         ensure_mutable(ensure_eager_tensor(size_ptr)._obj).value = ensure_eager_tensor(64)
         return 0
@@ -205,6 +214,9 @@ def test_rocm_compile_hip_to_code() -> None:
         Args:
             prog: Test parameter `prog`.
             buf: Test parameter `buf`.
+
+        Returns:
+            EagerValue: Computed output value from `get_log_side_effect`.
         """
         ensure_mutable(buf).value = ensure_eager_tensor(b"syntax error in hip kernel")
         return 0

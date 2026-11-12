@@ -43,12 +43,12 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager erf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     x = ensure_eager_tensor(args[0])
@@ -74,12 +74,12 @@ def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager erfc operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     x = ensure_eager_tensor(args[0])
@@ -94,12 +94,12 @@ def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager erfinv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     x = ensure_eager_tensor(args[0])
@@ -118,12 +118,12 @@ def _bessel_i0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel i0 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselI0", "i0", backend_module, *args, **kwargs)
 
@@ -133,12 +133,12 @@ def _bessel_i0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager bessel i0e operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselI0e", "i0e", backend_module, *args, **kwargs)
 
@@ -148,12 +148,12 @@ def _bessel_i1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel i1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselI1", "i1", backend_module, *args, **kwargs)
 
@@ -163,12 +163,12 @@ def _bessel_i1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager bessel i1e operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselI1e", "i1e", backend_module, *args, **kwargs)
 
@@ -178,12 +178,12 @@ def _bessel_j0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel j0 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselJ0", "j0", backend_module, *args, **kwargs)
 
@@ -193,12 +193,12 @@ def _bessel_j1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel j1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselJ1", "j1", backend_module, *args, **kwargs)
 
@@ -208,12 +208,12 @@ def _bessel_jn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel jn operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselJn", "jv", backend_module, *args, **kwargs)
 
@@ -223,12 +223,12 @@ def _bessel_k0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel k0 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselK0", "k0", backend_module, *args, **kwargs)
 
@@ -238,12 +238,12 @@ def _bessel_k0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager bessel k0e operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselK0e", "k0e", backend_module, *args, **kwargs)
 
@@ -253,12 +253,12 @@ def _bessel_k1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel k1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselK1", "k1", backend_module, *args, **kwargs)
 
@@ -268,12 +268,12 @@ def _bessel_k1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager bessel k1e operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselK1e", "k1e", backend_module, *args, **kwargs)
 
@@ -283,12 +283,12 @@ def _bessel_y0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel y0 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselY0", "y0", backend_module, *args, **kwargs)
 
@@ -298,12 +298,12 @@ def _bessel_y1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager bessel y1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("BesselY1", "y1", backend_module, *args, **kwargs)
 
@@ -313,12 +313,12 @@ def _digamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager digamma operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Digamma", "digamma", backend_module, *args, **kwargs)
 
@@ -328,12 +328,12 @@ def _igammac(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager igammac operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Igammac", "gammaincc", backend_module, *args, **kwargs)
 
@@ -343,12 +343,12 @@ def _polygamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager polygamma operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Polygamma", "polygamma", backend_module, *args, **kwargs)
 
@@ -358,12 +358,12 @@ def _igamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager igamma operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Igamma", "gammainc", backend_module, *args, **kwargs)
 
@@ -373,12 +373,12 @@ def _gamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager gamma operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Gamma", "gamma", backend_module, *args, **kwargs)
 
@@ -388,11 +388,11 @@ def _np_modifiedbesseli1(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np modifiedbesseli1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("ModifiedBesselI1", "i1", backend_module, *args, **kwargs)

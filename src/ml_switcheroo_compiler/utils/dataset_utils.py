@@ -541,18 +541,34 @@ def split_dataset(
     left_size: float = 0.5,
     shuffle: bool = False,
 ) -> tuple[NumpyDataset, NumpyDataset]:
-    """Split a dataset into two subsets.
+    """Split a `NumpyDataset` into two disjoint `(left, right)` subsets.
 
     Args:
         dataset (NumpyDataset): Dataset to split.
-        left_size (float): Fraction of data in the left split.
-        shuffle (bool): Whether to shuffle before splitting.
+        left_size (float): Fraction of samples in `[0.0, 1.0]` assigned to the left split.
+        shuffle (bool): Whether to shuffle sample indices before splitting.
 
     Returns:
-        tuple[NumpyDataset, NumpyDataset]: Left and right dataset splits.
+        tuple[NumpyDataset, NumpyDataset]: Disjoint left and right dataset splits.
+
+    Raises:
+        ValueError: If `left_size` is outside `[0.0, 1.0]`.
     """
-    _ = (left_size, shuffle)
-    return dataset, dataset
+    if not (0.0 <= left_size <= 1.0):
+        raise ValueError(f"`left_size` must be within [0.0, 1.0], got {left_size}")
+    indices = list(range(len(dataset.x)))
+    if shuffle:
+        rng = random.Random(dataset.seed)
+        rng.shuffle(indices)
+    split_at = int(round(len(indices) * left_size))
+    left_idx = indices[:split_at]
+    right_idx = indices[split_at:]
+    left_x = [dataset.x[i] for i in left_idx]
+    right_x = [dataset.x[i] for i in right_idx]
+    left_y = [dataset.y[i] for i in left_idx] if dataset.y is not None else None
+    right_y = [dataset.y[i] for i in right_idx] if dataset.y is not None else None
+    split_cfg = BatchConfig(batch_size=dataset.batch_size, shuffle=False, seed=dataset.seed)
+    return NumpyDataset(left_x, left_y, config=split_cfg), NumpyDataset(right_x, right_y, config=split_cfg)
 
 
 def unpack_x_y_sample_weight(

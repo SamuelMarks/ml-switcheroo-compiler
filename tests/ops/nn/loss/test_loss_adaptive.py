@@ -68,6 +68,9 @@ def test_loss_extras() -> None:
 
                 Args:
                     args: Test parameter `args`.
+
+                Returns:
+                    EagerValue: Computed output value from `infer_shape`.
                 """
                 return ensure_eager_tensor(args[0]).shape if args else ()
 
@@ -114,6 +117,9 @@ def test_loss_extra_functions() -> None:
 
                 Args:
                     args: Test parameter `args`.
+
+                Returns:
+                    EagerValue: Computed output value from `infer_shape`.
                 """
                 return ensure_eager_tensor(args[0]).shape if args else ()
 

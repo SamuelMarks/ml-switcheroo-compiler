@@ -64,11 +64,11 @@ def _wrap_proxy_inputs(
     """Compute the wrap proxy inputs tensor operation.
 
     Args:
-        args (Sequence[TensorOrScalar]): The args parameter.
-        subgraph (LogicalGraph): The subgraph parameter.
+        args (Sequence[TensorOrScalar]): Input `args` argument (args).
+        subgraph (LogicalGraph): Input `subgraph` argument (subgraph).
 
     Returns:
-        tuple[list[str], list[TensorOrScalar]]: Result.
+        tuple[list[str], list[TensorOrScalar]]: Computed `tuple[list[str], list[TensorOrScalar]]` output.
     """
     proxy_args: list[TensorOrScalar] = []
     input_ids: list[str] = []
@@ -119,13 +119,13 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
     """Compute the get tensor ids tensor operation.
 
     Args:
-        obj (TensorOrScalar): The obj parameter.
+        obj (TensorOrScalar): Input `obj` argument (obj).
 
     Returns:
-        list[str]: Result.
+        list[str]: Computed `list[str]` output.
 
     Raises:
-        TypeError: An exception.
+        TypeError: If invalid inputs or unsupported runtime conditions trigger `TypeError`.
     """
     if isinstance(obj, Tensor):
         cur: Tensor = obj
@@ -151,11 +151,11 @@ def _process_trace_outputs(out: TensorOrScalar, subgraph: LogicalGraph) -> str:
     """Compute the process trace outputs tensor operation.
 
     Args:
-        out (TensorOrScalar): The out parameter.
-        subgraph (LogicalGraph): The subgraph parameter.
+        out (TensorOrScalar): Input `out` argument (out).
+        subgraph (LogicalGraph): Input `subgraph` argument (subgraph).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     out_ids = _get_tensor_ids(out)
 
@@ -174,12 +174,12 @@ def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: 
     """Trace a Python function's execution into a LogicalGraph.
 
     Args:
-        func (TensorOrScalar): The func parameter.
-        args (Sequence[TensorOrScalar]): The args parameter.
-        name (str): The name parameter.
+        func (TensorOrScalar): Input `func` argument (func).
+        args (Sequence[TensorOrScalar]): Input `args` argument (args).
+        name (str): Input `name` argument (name).
 
     Returns:
-        LogicalGraph: Result.
+        LogicalGraph: Computed `LogicalGraph` output.
     """
     from ml_switcheroo_compiler.core.config import config as compiler_config
 

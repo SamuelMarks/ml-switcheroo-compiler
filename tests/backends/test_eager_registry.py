@@ -26,6 +26,9 @@ def test_eager_registry() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `foo`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(1)
 
@@ -49,6 +52,9 @@ def test_eager_registry_fallback() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `gfoo`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(2)
 
@@ -138,6 +144,9 @@ def test_dynamic_fallback() -> None:
 
             Args:
                 args: Test parameter `args`.
+
+            Returns:
+                EagerValue: Computed output value from `my_op`.
             """
             return 42
 
@@ -152,6 +161,9 @@ def test_dynamic_fallback() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `my_backend_op`.
             """
             return 43
 
@@ -161,6 +173,9 @@ def test_dynamic_fallback() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `subtract`.
             """
             return 44
 
@@ -184,6 +199,9 @@ def test_custom_vjp_and_tuple() -> None:
         Args:
             res: Test parameter `res`.
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `my_bwd`.
         """
         return ensure_callable(sum)(args)
 

@@ -50,7 +50,8 @@ def test_tcp_dist_ctx_initialize_tree() -> None:
                 mock_listener.return_value.accept.return_value = "conn"
                 with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client"):
                     ctx.initialize()
-    assert callable(test_tcp_dist_ctx_initialize_tree)
+        assert ctx.world_size == 2
+        assert ctx.rank == 0
 
 
 def test_tcp_dist_ctx_all_reduce_ops() -> None:
@@ -112,9 +113,11 @@ def test_tcp_distributed_ops_dispatch() -> None:
             "ml_switcheroo_compiler.backends.numpy.eager.distributed.TCPDistributedContext.all_reduce_ring",
             return_value=np.array([3.0]),
         ):
-            _np_all_reduce(ensure_eager_tensor(np), np.array([1.0]), op_type="sum")
+            reduced = _np_all_reduce(ensure_eager_tensor(np), np.array([1.0]), op_type="sum")
+            assert np.allclose(np.asarray(ensure_eager_tensor(reduced)), np.array([3.0]))
 
-        _np_all_gather(ensure_eager_tensor(np), np.array([1.0]), axis=0)
+        gathered = _np_all_gather(ensure_eager_tensor(np), np.array([1.0]), axis=0)
+        assert np.asarray(ensure_eager_tensor(gathered)).shape == (2,)
         _np_broadcast(ensure_eager_tensor(np), np.array([1.0]), root_rank=1)
 
         for op in ["sum", "prod", "max", "min", "unknown"]:
@@ -122,5 +125,5 @@ def test_tcp_distributed_ops_dispatch() -> None:
             _np_reduce(ensure_eager_tensor(np), np.array([1.0]), root_rank=0, op_type=op)
 
         _np_all_to_all(ensure_eager_tensor(np), np.array([1.0, 2.0]))
-        _np_shard_tensor(ensure_eager_tensor(np), np.array([1.0]))
-    assert callable(test_tcp_distributed_ops_dispatch)
+        sharded = _np_shard_tensor(ensure_eager_tensor(np), np.array([1.0]))
+        assert np.asarray(ensure_eager_tensor(sharded)).shape == (1,)

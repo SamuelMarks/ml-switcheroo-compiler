@@ -38,7 +38,11 @@ class MockData:
 
 @pytest.fixture(autouse=True)
 def enable_tracing_mode() -> Iterator[None]:
-    """Test function enable_tracing_mode."""
+    """Test function enable_tracing_mode.
+
+    Yields:
+        None: Yielded test context or value from `enable_tracing_mode`.
+    """
     config.eager_mode = False
     global_tracing_state.start_tracing()
     yield
@@ -50,11 +54,19 @@ def test_cond_tracing() -> None:
     pred = ensure_callable(Tensor)(ensure_callable(MockData)("pred"), ensure_callable(TensorConfig)((), DType.Bool, ensure_callable(Device)("cpu")))
 
     def true_fn() -> EagerValue:
-        """Test function true_fn."""
+        """Test function true_fn.
+
+        Returns:
+            EagerValue: Computed output value from `true_fn`.
+        """
         return ensure_callable(Tensor)(ensure_callable(MockData)("t"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
     def false_fn() -> EagerValue:
-        """Test function false_fn."""
+        """Test function false_fn.
+
+        Returns:
+            EagerValue: Computed output value from `false_fn`.
+        """
         return ensure_callable(Tensor)(ensure_callable(MockData)("f"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
     res = ensure_callable(cond_tracing)(pred, true_fn, false_fn)
@@ -69,6 +81,9 @@ def test_while_loop_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cond_fn`.
         """
         return ensure_callable(Tensor)(ensure_callable(MockData)("c"), ensure_callable(TensorConfig)((), DType.Bool, ensure_callable(Device)("cpu")))
 
@@ -77,6 +92,9 @@ def test_while_loop_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `body_fn`.
         """
         return [ensure_callable(Tensor)(ensure_callable(MockData)("b"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))]
 
@@ -94,6 +112,9 @@ def test_scan_tracing() -> None:
         Args:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `scan_fn`.
         """
         new_carry = ensure_callable(Tensor)(ensure_callable(MockData)("nc"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
         return [new_carry], [new_carry]
@@ -114,6 +135,9 @@ def test_map_fn_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn`.
         """
         return ensure_callable(Tensor)(ensure_callable(MockData)("m"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
@@ -133,6 +157,9 @@ def test_pmap_tracing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn`.
         """
         return ensure_callable(Tensor)(ensure_callable(MockData)("p"), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
 
@@ -188,6 +215,9 @@ def test_while_loop_tensor_init() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `c`.
         """
         return x
 
@@ -196,6 +226,9 @@ def test_while_loop_tensor_init() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `b`.
         """
         return x
 
@@ -221,6 +254,9 @@ def test_pmap_tracing_other_args() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 

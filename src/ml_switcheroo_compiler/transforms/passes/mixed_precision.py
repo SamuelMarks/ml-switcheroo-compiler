@@ -16,13 +16,13 @@ def _cast_inputs(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dic
     """Cast inputs of the given node to the target dtype.
 
     Args:
-        node (IRNode): The node parameter.
-        graph (IRGraph): The graph parameter.
-        target_dtype (str): The target_dtype parameter.
-        new_nodes (dict[str, IRNode]): The new_nodes parameter.
+        node (IRNode): Input `node` argument (node).
+        graph (IRGraph): Input `graph` argument (graph).
+        target_dtype (str): Input `target_dtype` argument (target dtype).
+        new_nodes (dict[str, IRNode]): Input `new_nodes` argument (new nodes).
 
     Returns:
-        tuple[list[str], bool]: Result.
+        tuple[list[str], bool]: Computed `tuple[list[str], bool]` output.
     """
     new_inputs: list[str] = []
     modified: bool = False
@@ -51,13 +51,13 @@ def _process_node(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: di
     """Process a single node and cast it to the target dtype if needed.
 
     Args:
-        node (IRNode): The node parameter.
-        graph (IRGraph): The graph parameter.
-        target_dtype (str): The target_dtype parameter.
-        new_nodes (dict[str, IRNode]): The new_nodes parameter.
+        node (IRNode): Input `node` argument (node).
+        graph (IRGraph): Input `graph` argument (graph).
+        target_dtype (str): Input `target_dtype` argument (target dtype).
+        new_nodes (dict[str, IRNode]): Input `new_nodes` argument (new nodes).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     modified: bool = False
     new_inputs, inputs_modified = _cast_inputs(node, graph, target_dtype, new_nodes)
@@ -115,11 +115,11 @@ def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, s
     """Retrieve or create scaling constant nodes.
 
     Args:
-        new_nodes (dict[str, IRNode]): The new_nodes parameter.
-        scale (float): The scale parameter.
+        new_nodes (dict[str, IRNode]): Input `new_nodes` argument (new nodes).
+        scale (float): Input `scale` argument (scale).
 
     Returns:
-            tuple[str, str]: Result.
+            tuple[str, str]: Computed `tuple[str, str]` output.
     """
     scale_node_id: str = "loss_scale_factor"
     inv_scale_node_id: str = "loss_scale_inv_factor"
@@ -142,9 +142,9 @@ def _scale_inputs(grad_inputs: list[str], new_nodes: dict[str, IRNode], scale_no
     """Scale the given gradient inputs by the scale factor.
 
     Args:
-        grad_inputs (list[str]): The grad_inputs parameter.
-        new_nodes (dict[str, IRNode]): The new_nodes parameter.
-        scale_node_id (str): The scale_node_id parameter.
+        grad_inputs (list[str]): Input `grad_inputs` argument (grad inputs).
+        new_nodes (dict[str, IRNode]): Input `new_nodes` argument (new nodes).
+        scale_node_id (str): Input `scale_node_id` argument (scale node id).
     """
     for g_id in grad_inputs:
         mul_id: str = f"{g_id}_scaled"
@@ -164,12 +164,12 @@ def _unscale_outputs(graph: IRGraph, new_nodes: dict[str, IRNode], inv_scale_nod
     """Unscale the final outputs using the inverse scale factor.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        new_nodes (dict[str, IRNode]): The new_nodes parameter.
-        inv_scale_node_id (str): The inv_scale_node_id parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        new_nodes (dict[str, IRNode]): Input `new_nodes` argument (new nodes).
+        inv_scale_node_id (str): Input `inv_scale_node_id` argument (inv scale node id).
 
     Returns:
-        list[str]: Result.
+        list[str]: Computed `list[str]` output.
     """
     new_outputs: list[str] = []
     for out_id in graph.outputs:

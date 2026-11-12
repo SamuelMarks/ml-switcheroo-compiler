@@ -421,7 +421,11 @@ def test_cst_transpiler_advanced_transforms() -> None:
             self.module_path: list[str] = []
 
         def __bool__(self) -> bool:
-            """Test function __bool__."""
+            """Test function __bool__.
+
+            Returns:
+                bool: Computed output value from `__bool__`.
+            """
             if not self.checked:
                 self.checked = True
                 return True

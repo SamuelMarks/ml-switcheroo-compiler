@@ -14,12 +14,12 @@ def _acos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager acos operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arccos", get_backend_member(backend_module, "acos", None))
     if func is not None:
@@ -32,12 +32,12 @@ def _acosh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager acosh operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arccosh", get_backend_member(backend_module, "acosh", None))
     if func is not None:
@@ -50,12 +50,12 @@ def _asin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager asin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arcsin", get_backend_member(backend_module, "asin", None))
     if func is not None:
@@ -68,12 +68,12 @@ def _asinh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager asinh operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arcsinh", get_backend_member(backend_module, "asinh", None))
     if func is not None:
@@ -86,12 +86,12 @@ def _atan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager atan operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arctan", get_backend_member(backend_module, "atan", None))
     if func is not None:
@@ -104,12 +104,12 @@ def _atanh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager atanh operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arctanh", get_backend_member(backend_module, "atanh", None))
     if func is not None:
@@ -122,12 +122,12 @@ def _atan2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager atan2 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "arctan2", get_backend_member(backend_module, "atan2", None))
     if func is not None:
@@ -140,12 +140,12 @@ def _sinc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager sinc operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "sinc", None)
     if func is not None:
@@ -158,12 +158,12 @@ def _isin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager isin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "isin")(*args, **kwargs))
 
@@ -173,12 +173,12 @@ def _isinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager isinf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "isinf", None)
     if func:
@@ -192,12 +192,12 @@ def _isposinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager isposinf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "isposinf", None)
     if func:

@@ -20,7 +20,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def enable_eager_mode() -> Iterator[None]:
-    """Test function enable_eager_mode."""
+    """Test function enable_eager_mode.
+
+    Yields:
+        None: Yielded test context or value from `enable_eager_mode`.
+    """
     config.eager_mode = True
     yield
     config.eager_mode = False

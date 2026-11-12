@@ -36,6 +36,7 @@ def _test_advanced_indexing_coverage_part_2(_state: dict[str, EagerTensorProtoco
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (arg, arg_indices, arg_indices_nd, ops) = (_state["arg"], _state["arg_indices"], _state["arg_indices_nd"], _state["ops"])
     for op in ops:
         sig = inspect.signature(op)
@@ -57,11 +58,11 @@ def _test_advanced_indexing_coverage_part_2(_state: dict[str, EagerTensorProtoco
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(*args_to_pass[:-1])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
     _state.update(ensure_tensor_dict({"arg": arg, "arg_indices": arg_indices, "arg_indices_nd": arg_indices_nd}))
     _state.update(ensure_tensor_dict({"ops": ops}))
 

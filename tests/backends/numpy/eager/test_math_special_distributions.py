@@ -114,6 +114,9 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                FakeOp: Computed output value from `__new__`.
             """
             inst = super().__new__(cls)
             inst.hit = True
@@ -150,15 +153,6 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
     res6 = ensure_callable(numpy_eager_registry.get)("distributions")(np, ensure_callable(np.ones)((2, 2)))
     if isinstance(ensure_eager_tensor(res6), FakeOp):
         assert res6.hit
-
-
-def test_fallback_snippets_importerror(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_fallback_snippets_importerror.
-
-    Args:
-        monkeypatch: Test parameter `monkeypatch`.
-    """
-    assert callable(test_fallback_snippets_importerror)
 
 
 def test_custom_root_coverage() -> None:

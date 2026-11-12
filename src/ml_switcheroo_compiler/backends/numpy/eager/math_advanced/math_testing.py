@@ -16,12 +16,12 @@ def _np_piecewise(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np piecewise operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(get_backend_member(np, "piecewise")(np.asarray(args[0]), args[1], args[2], *args[3:], **kwargs))
 
@@ -31,7 +31,7 @@ def _np_promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Return the data type with the smallest size and smallest scalar kind to which both given types can be safely cast.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -45,7 +45,7 @@ def _np_apply_along_axis(backend_module: BackendModuleProtocol, *args: EagerValu
     """Apply a function to 1-D slices along the given axis.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -59,7 +59,7 @@ def _np_array_equiv_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement ArrayEquiv via array_equiv.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -73,7 +73,7 @@ def _np_broadcast_arrays_(backend_module: BackendModuleProtocol, *args: EagerVal
     """Implement BroadcastArrays via broadcast_arrays.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -87,7 +87,7 @@ def _np_can_cast_(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Implement CanCast via can_cast.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -101,7 +101,7 @@ def _np_histogram_(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement Histogram via histogram.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -115,7 +115,7 @@ def _np_histogram2d_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Histogram2d via histogram2d.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -129,7 +129,7 @@ def _np_histogram_bin_edges_(backend_module: BackendModuleProtocol, *args: Eager
     """Implement HistogramBinEdges via histogram_bin_edges.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -143,7 +143,7 @@ def _np_histogramdd_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Histogramdd via histogramdd.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -157,7 +157,7 @@ def _np_iscomplex_(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement Iscomplex via iscomplex.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -171,7 +171,7 @@ def _np_iscomplexobj_(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Implement Iscomplexobj via iscomplexobj.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -185,7 +185,7 @@ def _np_issubdtype_op_(backend_module: BackendModuleProtocol, *args: EagerValue,
     """Implement Isdtype via issubdtype.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -199,7 +199,7 @@ def _np_isreal_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Isreal via isreal.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -213,7 +213,7 @@ def _np_isrealobj_(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement Isrealobj via isrealobj.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -227,7 +227,7 @@ def _np_isscalar_(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Implement Isscalar via isscalar.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -241,7 +241,7 @@ def _np_issubdtype_issubdtype_(backend_module: BackendModuleProtocol, *args: Eag
     """Implement Issubdtype via issubdtype.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -255,7 +255,7 @@ def _np_result_type_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement ResultType via result_type.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -269,12 +269,12 @@ def _np_assertop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Implement AssertOp.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 

@@ -21,6 +21,9 @@ class DummyModule:
 
         Args:
             f: Test parameter `f`.
+
+        Returns:
+            EagerValue: Computed output value from `vectorize`.
         """
 
         def _f(x: EagerValue) -> EagerValue:
@@ -28,6 +31,9 @@ class DummyModule:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `_f`.
             """
             return [ensure_callable(f)(i) for i in ensure_eager_tensor(x)]
 

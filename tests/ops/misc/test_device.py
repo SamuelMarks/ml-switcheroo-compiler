@@ -36,7 +36,11 @@ def test_device() -> None:
             self.sync_called = True
 
         def get_peak_memory(self) -> EagerValue:
-            """Test function get_peak_memory."""
+            """Test function get_peak_memory.
+
+            Returns:
+                EagerValue: Computed output value from `get_peak_memory`.
+            """
             return 100
 
     class DummyArg:

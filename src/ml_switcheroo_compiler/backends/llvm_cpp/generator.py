@@ -147,9 +147,9 @@ class CppGenerator(BaseGenerator):
         """Initialize the C++ generator.
 
         Args:
-            graph (IRGraph | None): The graph parameter.
-            use_simd (bool): The use_simd parameter.
-            use_openmp (bool): The use_openmp parameter.
+            graph (IRGraph | None): Input `graph` argument (graph).
+            use_simd (bool): Input `use_simd` argument (use simd).
+            use_openmp (bool): Input `use_openmp` argument (use openmp).
             strict (bool): Whether to raise UnimplementedMathError on unsupported operations.
         """
         super().__init__(graph=ensure_graph(graph))
@@ -162,10 +162,10 @@ class CppGenerator(BaseGenerator):
         """Execute get shape for compiler processing.
 
         Args:
-            node (IRNode): The node parameter.
+            node (IRNode): Input `node` argument (node).
 
         Returns:
-            list[int]: Result.
+            list[int]: Computed `list[int]` output.
         """
         shape = get_backend_member(node, "shape_metadata", None)
         if not shape:
@@ -212,10 +212,10 @@ class CppGenerator(BaseGenerator):
         """Execute num elements for compiler processing.
 
         Args:
-            shape (list[int]): The shape parameter.
+            shape (list[int]): Input `shape` argument (shape).
 
         Returns:
-            int: Result.
+            int: Computed `int` output.
         """
         n: int = 1
         for s in shape:
@@ -226,10 +226,10 @@ class CppGenerator(BaseGenerator):
         """Execute get strides for compiler processing.
 
         Args:
-            shape (list[int]): The shape parameter.
+            shape (list[int]): Input `shape` argument (shape).
 
         Returns:
-            list[int]: Result.
+            list[int]: Computed `list[int]` output.
         """
         strides: list[int] = [1] * len(shape)
         for i in range(len(shape) - 2, -1, -1):
@@ -300,8 +300,8 @@ class CppGenerator(BaseGenerator):
         """Execute visit if op for compiler processing.
 
         Args:
-            node (IRNode): The node parameter.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            node (IRNode): Input `node` argument (node).
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -406,7 +406,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -458,8 +458,8 @@ class CppGenerator(BaseGenerator):
         """Generate Scan LLVM CPP.
 
         Args:
-            node: The node parameter.
-            graph_to_use: The graph_to_use parameter.
+            node: Input `node` argument (node).
+            graph_to_use: Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -481,8 +481,8 @@ class CppGenerator(BaseGenerator):
         """Generate Attention LLVM CPP.
 
         Args:
-            node: The node parameter.
-            graph_to_use: The graph_to_use parameter.
+            node: Input `node` argument (node).
+            graph_to_use: Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -503,7 +503,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -562,7 +562,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -614,7 +614,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -666,7 +666,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -698,7 +698,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -744,7 +744,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -772,7 +772,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -806,7 +806,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -843,7 +843,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -870,7 +870,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -898,7 +898,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
             is_global (bool): Whether this is a global max pooling operation.
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
@@ -951,7 +951,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
             is_global (bool): Whether this is a global average pooling operation.
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
@@ -1004,7 +1004,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1053,7 +1053,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1076,7 +1076,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1099,7 +1099,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1120,7 +1120,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1141,7 +1141,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1172,7 +1172,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1220,7 +1220,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
@@ -1274,7 +1274,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The IRNode.
-            graph_to_use (IRGraph | None): The graph_to_use parameter.
+            graph_to_use (IRGraph | None): Input `graph_to_use` argument (graph to use).
         """
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 

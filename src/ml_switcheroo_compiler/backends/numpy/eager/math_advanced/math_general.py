@@ -24,12 +24,12 @@ def _np_truncate_div(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """Execute the eager np truncate div operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     (x, y) = args[0], args[1]
     return ensure_eager_tensor(get_backend_member(np, "trunc")(get_backend_member(np, "divide")(x, y)))
@@ -40,12 +40,12 @@ def _np_truncate_mod(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """Execute the eager np truncate mod operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     (x, y) = args[0], args[1]
     return ensure_eager_tensor(get_backend_member(np, "fmod")(x, y))
@@ -56,12 +56,12 @@ def _np_betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Execute the eager np betainc operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     try:
         import scipy.special
@@ -76,7 +76,7 @@ def _np_trapz(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Integrate along the given axis using the composite trapezoidal rule.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -91,7 +91,7 @@ def _np_uint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """Cast or create an array as unsigned integers of default width.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -105,7 +105,7 @@ def _np_uint8(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Cast or create an array as 8-bit unsigned integers.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -119,7 +119,7 @@ def _np_unravelindex(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """Convert a flat index or array of flat indices into a tuple of coordinate arrays.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -133,7 +133,7 @@ def _np_unwrap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """Unwrap by changing deltas between values to 2*pi complement.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -147,7 +147,7 @@ def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Return a vectorized function which takes a nested sequence of Anys or numpy arrays as inputs.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -161,12 +161,12 @@ def _np_average(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Execute the eager np average operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "average")(*args, **kwargs))
 
@@ -176,7 +176,7 @@ def _np_block(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -190,7 +190,7 @@ def _np_atleast_1d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """Convert inputs to arrays with at least one dimension.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -204,7 +204,7 @@ def _np_atleast_2d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """View inputs as arrays with at least two dimensions.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -218,7 +218,7 @@ def _np_atleast_3d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """View inputs as arrays with at least three dimensions.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -232,7 +232,7 @@ def _np_apply_over_axes(backend_module: EagerValue, *args: EagerValue, **kwargs:
     """Apply a function repeatedly over multiple axes.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -246,7 +246,7 @@ def _np_corrcoef(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     """Return Pearson product-moment correlation coefficients.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -260,7 +260,7 @@ def _np_cov(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -274,7 +274,7 @@ def _np_array_repr_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     """Implement ArrayRepr via array_repr.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -288,7 +288,7 @@ def _np_array_str_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """Implement ArrayStr via array_str.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -302,7 +302,7 @@ def _np_diff_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Implement Diff via diff.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -316,7 +316,7 @@ def _np_digitize_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement Digitize via digitize.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -330,7 +330,7 @@ def _np_ediff1d_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     """Implement Ediff1d via ediff1d.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -344,7 +344,7 @@ def _np_einsum_path_(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """Implement EinsumPath via einsum_path.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -358,7 +358,7 @@ def _np_fabs_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Implement Fabs via fabs.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -372,7 +372,7 @@ def _np_interp_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Implement Interp via interp.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -386,7 +386,7 @@ def _np_iterable_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement Iterable via iterable.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -400,7 +400,7 @@ def _np_ix__(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """Implement Ix via ix_.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -414,7 +414,7 @@ def _np_kron_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Implement Kron via kron.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -428,7 +428,7 @@ def _np_load_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Implement Load via load.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -442,7 +442,7 @@ def _np_modf_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Implement Modf via modf.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -456,7 +456,7 @@ def _np_ravel_multi_index_(backend_module: EagerValue, *args: EagerValue, **kwar
     """Implement RavelMultiIndex via ravel_multi_index.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -470,7 +470,7 @@ def _np_trapz_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """Implement Trapezoid via trapz.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -488,12 +488,12 @@ def _np_callable(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     """Implement Callable.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if args:
         return callable(args[0])
@@ -505,15 +505,15 @@ def _np_debuginfs(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement DebugInfs.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x = args[0]
     if get_backend_member(backend_module, "any")(get_backend_member(backend_module, "isinf")(x)):
@@ -526,15 +526,15 @@ def _np_debugnans(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement DebugNans.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x = args[0]
     if get_backend_member(backend_module, "any")(get_backend_member(backend_module, "isnan")(x)):
@@ -546,12 +546,12 @@ def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_number
     """Execute the eager build dot general einsum str operation on the active backend array.
 
     Args:
-        lhs_ndim (int): The lhs_ndim parameter.
-        rhs_ndim (int): The rhs_ndim parameter.
-        dimension_numbers: The dimension_numbers parameter.
+        lhs_ndim (int): Input `lhs_ndim` argument (lhs ndim).
+        rhs_ndim (int): Input `rhs_ndim` argument (rhs ndim).
+        dimension_numbers: Input `dimension_numbers` argument (dimension numbers).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     lhs_cont, rhs_cont = dimension_numbers[0][0], dimension_numbers[0][1]
     lhs_batch, rhs_batch = dimension_numbers[1][0], dimension_numbers[1][1]
@@ -583,12 +583,12 @@ def _np_dotgeneral(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """Implement DotGeneral.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     (lhs, rhs) = (np.asarray(args[0]), np.asarray(args[1]))
     dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ()))) if has_backend_member(kwargs, "get") else (((-1,), (0,)), ((), ()))
@@ -601,12 +601,12 @@ def _np_raggeddot(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement RaggedDot.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "matmul")(args[0], args[1]))
 
@@ -616,12 +616,12 @@ def _np_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """Implement Tensor.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if not args and (not kwargs):
         return ensure_eager_tensor(get_backend_member(backend_module, "array")([]))
@@ -633,12 +633,12 @@ def _np_serialize_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs
     """Execute the eager np serialize tensor operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _np_serialize_tensor_camel(backend_module, *args, **kwargs)
 
@@ -648,12 +648,12 @@ def _np_key(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     """Execute the eager np key operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if len(args) > 0:
         return np.array([args[0], 0], dtype=np.uint32)
@@ -664,11 +664,11 @@ def _get_np_arg(arg: Sequence[EagerValue], i: int) -> np.ndarray[tuple[int, ...]
     """Get numpy arg.
 
     Args:
-        arg: The arg parameter.
-        i (int): The i parameter.
+        arg: Input `arg` argument (arg).
+        i (int): Input `i` argument (i).
 
     Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None: Result.
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None: Computed `np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None` output.
     """
     return np.asarray(arg[i]) if len(arg) > i else None
 
@@ -677,7 +677,7 @@ def _get_sc() -> EagerValue:
     """Execute the eager get sc operation on the active backend array.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     try:
         import scipy.special as sc
@@ -692,12 +692,12 @@ def _np_clip(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """Execute the eager np clip operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -712,12 +712,12 @@ def _np_one_hot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Execute the eager np one hot operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     indices = _get_np_arg(args, 0)
     depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None) if has_backend_member(kwargs, "get") else None
@@ -741,15 +741,15 @@ def _np_serialize_tensor_camel(backend_module: EagerValue, *args: EagerValue, **
     """Execute the eager np serialize tensor camel operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     import pickle
 
@@ -770,15 +770,15 @@ def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """Execute the eager np rem 2 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -801,15 +801,15 @@ def _np_descriptive_2(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     """Execute the eager np descriptive 2 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops

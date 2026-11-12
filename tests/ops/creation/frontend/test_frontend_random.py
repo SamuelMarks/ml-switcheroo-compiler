@@ -29,6 +29,9 @@ def test_frontend_random() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op
 

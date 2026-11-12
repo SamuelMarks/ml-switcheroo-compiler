@@ -1,4 +1,4 @@
-"""Module weibull_min.py."""
+"""Compiler `weibull min` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -14,6 +14,6 @@ def weibull_min(*args: Tensor | float | int | str, **kwargs: Tensor | float | in
         **kwargs (Tensor | float | int | str): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return _dispatch_random("weibull_min", *args, **kwargs)

@@ -93,19 +93,19 @@ def execute_op(
     *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-    """Execute the eager execute op operation on the active backend array.
+    """Dispatch and execute an eager operation on the NumPy backend.
 
     Args:
-        cls (type): Class.
-        op_type (str): The op_type parameter.
-        *args (EagerValue | np.ndarray): Positional args.
-        **kwargs (EagerValue | np.ndarray): Keyword args.
+        cls (type): Backend class receiving the operation dispatch.
+        op_type (str): Canonical IR operation name to execute.
+        *args (EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Positional tensor or scalar operands.
+        **kwargs (EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Keyword operation attributes.
 
     Returns:
-            tuple[int, ...]: Result.
+        EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Evaluated NumPy array or scalar result.
 
     Raises:
-        UnimplementedMathError: An exception.
+        UnimplementedMathError: If `op_type` is not registered and has no NumPy equivalent.
     """
     func_registry = numpy_eager_registry.get(op_type)
     if func_registry is not None:
@@ -154,12 +154,12 @@ def repeat(
     """Repeat.
 
     Args:
-        np_mod (EagerValue | np.ndarray): The np parameter.
+        np_mod (EagerValue | np.ndarray): Input `np` argument (np).
         *args (EagerValue | np.ndarray): Positional args.
         **kwargs (EagerValue | np.ndarray): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_ndarray(get_backend_member(np_mod, "repeat")(*args, **kwargs))
 
@@ -173,12 +173,12 @@ def searchsorted(
     """Searchsorted.
 
     Args:
-        np_mod (EagerValue | np.ndarray): The np parameter.
+        np_mod (EagerValue | np.ndarray): Input `np` argument (np).
         *args (EagerValue | np.ndarray): Positional args.
         **kwargs (EagerValue | np.ndarray): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_ndarray(get_backend_member(np_mod, "searchsorted")(*args, **kwargs))
 

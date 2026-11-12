@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
 
 def test_sparse_and_ragged_coverage() -> None:
     """Test function test_sparse_and_ragged_coverage."""
+    handled_errors = 0
     from tests.testing_utils import get_test_members
 
     ops = [ensure_callable(fn) for name, fn in get_test_members(sr).items() if name.startswith("_") and callable(fn)]
@@ -36,4 +37,4 @@ def test_sparse_and_ragged_coverage() -> None:
         try:
             op(*args_to_pass[:-1])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1

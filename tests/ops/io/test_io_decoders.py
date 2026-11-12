@@ -32,14 +32,6 @@ def test_gfile() -> None:
     assert "mtime" in stat
 
 
-def test_image_decoders() -> None:
-    """Test image decoders."""
-    pass
-    pass
-    pass
-    assert callable(test_image_decoders)
-
-
 def test_base64_ops() -> None:
     """Test function test_base64_ops."""
     from ml_switcheroo_compiler.core.config import config

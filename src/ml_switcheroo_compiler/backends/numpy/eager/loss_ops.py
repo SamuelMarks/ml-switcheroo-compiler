@@ -74,15 +74,15 @@ def _np_ctc_loss(backend_module: BackendModuleProtocol, labels: EagerValue, logi
     """Execute the eager np ctc loss operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        labels (EagerValue): The labels parameter.
-        logits (EagerValue): The logits parameter.
-        label_length (EagerValue): The label_length parameter.
-        logit_length (EagerValue): The logit_length parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        labels (EagerValue): Input `labels` argument (labels).
+        logits (EagerValue): Input `logits` argument (logits).
+        label_length (EagerValue): Input `label_length` argument (label length).
+        logit_length (EagerValue): Input `logit_length` argument (logit length).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     logits_arr = np.asarray(logits)
     labels_arr = np.asarray(labels)
@@ -126,12 +126,12 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np circle loss operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if len(args) < 2:
         return backend_module.zeros(1)
@@ -173,12 +173,12 @@ def _np_categorical_generalized_cross_entropy(backend_module: BackendModuleProto
     """Execute the eager np categorical generalized cross entropy operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if len(args) < 2:
         return backend_module.zeros(1)

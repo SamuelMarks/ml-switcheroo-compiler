@@ -45,6 +45,9 @@ def test_operator_fusion_extra_coverage() -> None:
             Args:
                 graph: Test parameter `graph`.
                 capture_map: Test parameter `capture_map`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             return {}
 
@@ -67,6 +70,9 @@ def test_operator_fusion_extra_coverage() -> None:
             Args:
                 graph: Test parameter `graph`.
                 capture_map: Test parameter `capture_map`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             # when matching A, we replace B as well, putting B in new_nodes
             n = IRNode("b_new", "ReplacedB")
@@ -105,6 +111,9 @@ def test_operator_fusion_extra_coverage() -> None:
             Args:
                 graph: Test parameter `graph`.
                 capture_map: Test parameter `capture_map`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             return {"e": IRNode("e", "NewExp")}
 
@@ -122,6 +131,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
             Args:
                 replacements: Test parameter `replacements`.
+
+            Returns:
+                bool: Computed output value from `is_fusion_valid`.
             """
             return False
 

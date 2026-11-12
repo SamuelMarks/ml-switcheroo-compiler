@@ -20,11 +20,11 @@ class BandPart(OpDef):
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): The input parameter.
+            input (EagerTensorProtocol): Input `input` argument (input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return input if isinstance(input, tuple) else None
 
@@ -40,11 +40,11 @@ class Diag(OpDef):
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): The input parameter.
+            input (EagerTensorProtocol): Input `input` argument (input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if isinstance(input, tuple):
             if len(input) == 1:
@@ -84,10 +84,10 @@ def _has_valid_shape(obj: TensorOrScalar) -> bool:
     """Compute the has valid shape tensor operation.
 
     Args:
-        obj (TensorOrScalar): The obj parameter.
+        obj (TensorOrScalar): Input `obj` argument (obj).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     return isinstance(obj, ShapeProtocol) and bool(obj.shape)
 
@@ -123,11 +123,11 @@ class Trace(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(a.shape)
         axis1 = kwargs.get("axis1", 0)
@@ -148,11 +148,11 @@ class MatrixRank(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -171,11 +171,11 @@ class MatrixTranspose(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -193,11 +193,11 @@ class Adjoint(OpDef):
         """Infer shape.
 
         Args:
-            matrix (EagerTensorProtocol): The matrix parameter.
+            matrix (EagerTensorProtocol): Input `matrix` argument (matrix).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(matrix.shape)
         if len(shape) >= 2:
@@ -219,7 +219,7 @@ class Diagonal(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -238,7 +238,7 @@ class EinsumPath(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Typically returns a tuple representing the path and a string representation.
         return ()
@@ -258,6 +258,6 @@ class MultiDot(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()

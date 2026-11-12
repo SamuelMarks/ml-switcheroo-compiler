@@ -27,7 +27,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    """Ensure optional profiler backend stubs are installed when packages are missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     install_profiler_backend_stubs(monkeypatch)
 
 
@@ -59,6 +63,9 @@ def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_get_backend`.
         """
 
         class MockBackend:
@@ -91,6 +98,9 @@ def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
             batch_size: Test parameter `batch_size`.
             num_iters: Test parameter `num_iters`.
             warmup_iters: Test parameter `warmup_iters`.
+
+        Returns:
+            dict[str, EagerValue]: Computed output value from `fast_run_single`.
         """
         return {"latencies": [10.0] * num_iters, "peak_memory_mb": 50.0}
 
@@ -129,7 +139,11 @@ def test_orchestrator_internal_run(monkeypatch: EagerTensorProtocol) -> None:
     counter = [0.0]
 
     def mock_perf_counter() -> float:
-        """Test function mock_perf_counter."""
+        """Test function mock_perf_counter.
+
+        Returns:
+            float: Computed output value from `mock_perf_counter`.
+        """
         val = counter[0]
         counter[0] += 0.005
         return val
@@ -141,6 +155,9 @@ def test_orchestrator_internal_run(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_get_backend`.
         """
 
         class MockBackend:
@@ -188,6 +205,9 @@ def test_orchestrator_zero_latency(monkeypatch: EagerTensorProtocol) -> None:
             batch_size: Test parameter `batch_size`.
             num_iters: Test parameter `num_iters`.
             warmup_iters: Test parameter `warmup_iters`.
+
+        Returns:
+            dict[str, EagerValue]: Computed output value from `fast_run_single`.
         """
         return {"latencies": [0.0] * num_iters, "peak_memory_mb": 50.0}
 
@@ -216,7 +236,11 @@ def test_orchestrator_internal_run_with_inputs(monkeypatch: EagerTensorProtocol)
     counter = [0.0]
 
     def mock_perf_counter() -> float:
-        """Test function mock_perf_counter."""
+        """Test function mock_perf_counter.
+
+        Returns:
+            float: Computed output value from `mock_perf_counter`.
+        """
         val = counter[0]
         counter[0] += 0.005
         return val
@@ -228,6 +252,9 @@ def test_orchestrator_internal_run_with_inputs(monkeypatch: EagerTensorProtocol)
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_get_backend`.
         """
 
         class MockBackend:
@@ -332,6 +359,9 @@ def test_orchestrator_profiler_import_error_fallback(monkeypatch: EagerTensorPro
         Args:
             name: Test parameter `name`.
             package: Test parameter `package`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import`.
         """
         if ensure_eager_tensor("ml_switcheroo_compiler.backends.pytorch.profiler") in ensure_eager_tensor(name):
             raise ImportError("Simulated missing profiler")

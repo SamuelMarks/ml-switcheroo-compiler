@@ -125,6 +125,9 @@ def test_llvm_cpp_generate_visit_methods() -> None:
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_get_template`.
         """
         if name == "if_op":
             return {"body": "if ({cond_var}.data[0] > 0.0f) {{\n{then_body}}} else {{\n{else_body}}}\n"}

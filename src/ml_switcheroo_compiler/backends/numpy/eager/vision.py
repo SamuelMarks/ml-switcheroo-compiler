@@ -129,11 +129,11 @@ def _compute_bilinear_weights(
     """Execute the eager compute bilinear weights operation on the active backend array.
 
     Args:
-        dy (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The dy parameter.
-        dx (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The dx parameter.
+        dy (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `dy` argument (dy).
+        dx (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `dx` argument (dx).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     wa = (1 - dy[:, None, None]) * (1 - dx[None, :, None])
     wb = (dy[:, None, None]) * (1 - dx[None, :, None])
@@ -146,11 +146,11 @@ def _apply_bilinear_interpolation(np: BackendModuleProtocol, cfg: InterpolationC
     """Apply bilinear interpolation.
 
     Args:
-        np (ModuleType): The np parameter.
-        cfg (InterpolationConfig): The cfg parameter.
+        np (ModuleType): Input `np` argument (np).
+        cfg (InterpolationConfig): Input `cfg` argument (cfg).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     y0 = np.floor(cfg.src_y).astype(np.int32)
     y1 = np.clip(y0 + 1, 0, cfg.H - 1)
@@ -173,13 +173,13 @@ def resize_bilinear(np_mod: BackendModuleProtocol, images: EagerValue, size: tup
     """Resize images using bilinear interpolation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        size (tuple): The size parameter.
-        align_corners (bool): The align_corners parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        size (tuple): Input `size` argument (size).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     images = np_mod.asarray(images)
     rank = len(get_backend_member(images, "shape"))
@@ -231,13 +231,13 @@ def resize_nearest(np_mod: BackendModuleProtocol, images: EagerValue, size: tupl
     """Resize images using nearest-neighbor interpolation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        size (tuple): The size parameter.
-        align_corners (bool): The align_corners parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        size (tuple): Input `size` argument (size).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     images = np_mod.asarray(images)
     rank = len(get_backend_member(images, "shape"))
@@ -260,13 +260,13 @@ def resize_bicubic(np_mod: BackendModuleProtocol, images: EagerValue, size: tupl
     """Resize images using bicubic interpolation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        size (tuple): The size parameter.
-        align_corners (bool): The align_corners parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        size (tuple): Input `size` argument (size).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return resize_bilinear(np_mod, images, size, align_corners)
 
@@ -276,13 +276,13 @@ def resize_lanczos3(np_mod: BackendModuleProtocol, images: EagerValue, size: tup
     """Resize images using Lanczos3 interpolation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        size (tuple): The size parameter.
-        align_corners (bool): The align_corners parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        size (tuple): Input `size` argument (size).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return resize_bilinear(np_mod, images, size, align_corners)
 
@@ -292,14 +292,14 @@ def random_flip_numpy(np_mod: BackendModuleProtocol, images: EagerValue, mode: E
     """Generate random flip.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        mode (str): The mode parameter.
-        seed (int): The seed parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        mode (str): Input `mode` argument (mode).
+        seed (int): Input `seed` argument (seed).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     np = np_mod
     x = np.asarray(images)
@@ -329,13 +329,13 @@ def _compute_rotation_coords(np: BackendModuleProtocol, H: int, W: int, angle: f
     """Execute the eager compute rotation coords operation on the active backend array.
 
     Args:
-        np (ModuleType): The np parameter.
-        H (int): The H parameter.
-        W (int): The W parameter.
-        angle (float): The angle parameter.
+        np (ModuleType): Input `np` argument (np).
+        H (int): Input `H` argument (H).
+        W (int): Input `W` argument (W).
+        angle (float): Input `angle` argument (angle).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     cos_a = np.cos(angle)
     sin_a = np.sin(angle)
@@ -414,11 +414,11 @@ def _compute_rotation_weights(
     """Execute the eager compute rotation weights operation on the active backend array.
 
     Args:
-        dx (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The dx parameter.
-        dy (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The dy parameter.
+        dx (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `dx` argument (dx).
+        dy (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Input `dy` argument (dy).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     wa = (1 - dy)[..., None] * (1 - dx)[..., None]
     wb = dy[..., None] * (1 - dx)[..., None]
@@ -431,11 +431,11 @@ def _interpolate_rotation(np: BackendModuleProtocol, cfg: RotationInterpolationC
     """Interpolate rotated image.
 
     Args:
-        np (ModuleType): The np parameter.
-        cfg (RotationInterpolationConfig): The cfg parameter.
+        np (ModuleType): Input `np` argument (np).
+        cfg (RotationInterpolationConfig): Input `cfg` argument (cfg).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     raw_h, raw_w, _ = get_backend_member(cfg.img, "shape")
     H, W = ensure_int(raw_h), ensure_int(raw_w)
@@ -460,14 +460,14 @@ def _apply_random_rotation_single(np: BackendModuleProtocol, img: EagerValue, an
     """Apply random rotation to a single image.
 
     Args:
-        np (ModuleType): The np parameter.
-        img (EagerValue): The img parameter.
-        angle (float): The angle parameter.
-        fill_mode (str): The fill_mode parameter.
-        fill_value (float): The fill_value parameter.
+        np (ModuleType): Input `np` argument (np).
+        img (EagerValue): Input `img` argument (img).
+        angle (float): Input `angle` argument (angle).
+        fill_mode (str): Input `fill_mode` argument (fill mode).
+        fill_value (float): Input `fill_value` argument (fill value).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     H, W, _ = ensure_int_list(get_backend_member(img, "shape"))
     src_x, src_y = ensure_tensor_pair(_compute_rotation_coords(np, H, W, angle))
@@ -490,14 +490,14 @@ def _apply_rotation_to_batch(np: BackendModuleProtocol, x: EagerValue, rng: Eage
     """Apply rotation to batch of images.
 
     Args:
-        np (ModuleType): The np parameter.
-        x (EagerValue): The x parameter.
-        rng (EagerValue): The rng parameter.
-        angles (tuple): The angles parameter.
-        options (TransformOptions): The options parameter.
+        np (ModuleType): Input `np` argument (np).
+        x (EagerValue): Input `x` argument (x).
+        rng (EagerValue): Input `rng` argument (rng).
+        angles (tuple): Input `angles` argument (angles).
+        options (TransformOptions): Input `options` argument (options).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     B = ensure_int(get_backend_member(x, "shape")[0])
     out = np.zeros_like(x)
@@ -518,14 +518,14 @@ def random_rotation_numpy(
     """Generate random rotation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
-        images (EagerValue): The images parameter.
-        factor (float): The factor parameter.
-        options (Optional): The options parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
+        images (EagerValue): Input `images` argument (images).
+        factor (float): Input `factor` argument (factor).
+        options (Optional): Input `options` argument (options).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     options = options or TransformOptions()
     np = np_mod

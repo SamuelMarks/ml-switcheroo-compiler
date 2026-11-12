@@ -15,11 +15,11 @@ def prng_key(backend_module: EagerValue, seed: int) -> RandVal:
     """Create a PRNGKey.
 
     Args:
-        backend_module: The backend_module parameter.
-        seed (int): The seed parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        seed (int): Input `seed` argument (seed).
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     if has_backend_member(backend_module, "array"):
         return ensure_eager_tensor(get_backend_member(backend_module, "array")([0, seed], dtype="uint32"))
@@ -31,12 +31,12 @@ def random_split(backend_module: EagerValue, key: EagerValue, num: int = 2) -> R
     """Split a PRNGKey.
 
     Args:
-        backend_module: The backend_module parameter.
-        key: The key parameter.
-        num (int): The num parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        key: Input `key` argument (key).
+        num (int): Input `num` argument (num).
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     import random
 
@@ -51,12 +51,12 @@ def random_fold_in(backend_module: EagerValue, key: EagerValue, data: int) -> Ra
     """Fold in data to a PRNGKey.
 
     Args:
-        backend_module: The backend_module parameter.
-        key: The key parameter.
-        data (int): The data parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        key: Input `key` argument (key).
+        data (int): Input `data` argument (data).
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     has_idx = isinstance(key, (list, tuple)) or has_backend_member(key, "shape")
     val0 = int(ensure_int_list(key)[0]) if has_idx else 0
@@ -72,12 +72,12 @@ def rand(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> RandV
     """Generate uniform random values.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     shape = ensure_eager_list(kwargs.get("shape", args if args else ()) if has_backend_member(kwargs, "get") else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
@@ -101,12 +101,12 @@ def randn(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> Rand
     """Generate normal random values.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     shape = ensure_eager_list(kwargs.get("shape", args if args else ()) if has_backend_member(kwargs, "get") else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
@@ -130,12 +130,12 @@ def randint(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> Ra
     """Generate integer random values.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            RandVal: Result.
+            RandVal: Computed `RandVal` output.
     """
     low = kwargs.get("low", args[0] if len(args) > 0 else 0) if has_backend_member(kwargs, "get") else 0
     high = kwargs.get("high", args[1] if len(args) > 1 else 10) if has_backend_member(kwargs, "get") else 10

@@ -58,6 +58,9 @@ def test_vmap_backend_without_asarray() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return np.array([2, 4])
 

@@ -127,15 +127,15 @@ class EagerExecutionMixin:
         """Execute zeros for compiler processing.
 
         Args:
-            shape (tuple[int, ...]): The shape parameter.
+            shape (tuple[int, ...]): Input `shape` argument (shape).
 
         Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
         return generic_zeros(mod, shape)
 
     @classmethod
@@ -143,16 +143,16 @@ class EagerExecutionMixin:
         """Execute array for compiler processing.
 
         Args:
-            data: The data parameter.
-            dtype: The dtype parameter.
+            data: Input `data` argument (data).
+            dtype: Input `dtype` argument (dtype).
 
         Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
         return ensure_eager_tensor(ensure_callable(generic_array)(mod, data, dtype))
 
     @classmethod
@@ -160,15 +160,15 @@ class EagerExecutionMixin:
         """Execute asarray for compiler processing.
 
         Args:
-            data: The data parameter.
+            data: Input `data` argument (data).
 
         Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
         return ensure_eager_tensor(ensure_callable(generic_asarray)(mod, data))
 
     @classmethod
@@ -176,13 +176,13 @@ class EagerExecutionMixin:
         """Execute item for compiler processing.
 
         Args:
-            data: The data parameter.
+            data: Input `data` argument (data).
 
         Returns:
-            float: Result.
+            float: Computed `float` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
         return ensure_float(ensure_callable(generic_item)(mod, data))

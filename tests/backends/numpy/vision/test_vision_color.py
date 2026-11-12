@@ -72,5 +72,5 @@ def test_numpy_vision_color_eager() -> None:
     _np_posterize(ensure_eager_tensor(np), img, bits=4)
     _np_rgb_to_grayscale(ensure_eager_tensor(np), img)
     _np_rgb_to_grayscale(ensure_eager_tensor(np), img, keepdim=True)
-    _np_solarize(ensure_eager_tensor(np), img, threshold=0.5)
-    assert callable(test_numpy_vision_color_eager)
+    _out = _np_solarize(ensure_eager_tensor(np), img, threshold=0.5)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2, 2, 3)

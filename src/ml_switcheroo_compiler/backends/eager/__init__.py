@@ -17,9 +17,10 @@ from .core_math_ops import (
     _segment_sum,
     _true_divide,
 )
-from .optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop  # noqa: F401
-from .random_ops import prng_key, rand, randint, randn, random_fold_in, random_split  # noqa: F401
+from .optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
+from .random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
 from .signal import gaussian_blur_eager, median_filter_eager
+from .types_utils import generic_array, generic_asarray, generic_item, generic_zeros
 from .vision_filtering import _extract_volume_patches, extract_bounding_boxes_eager, iou_eager, nms_eager
 from .vision_transforms import elastic_transform_eager, perspective_transform_eager, resize_eager
 
@@ -39,9 +40,17 @@ __all__ = [
     "_rfft",
     "_segment_sum",
     "_true_divide",
+    "apply_adagrad",
+    "apply_adam",
+    "apply_ftrl",
+    "apply_rmsprop",
     "elastic_transform_eager",
     "extract_bounding_boxes_eager",
     "gaussian_blur_eager",
+    "generic_array",
+    "generic_asarray",
+    "generic_item",
+    "generic_zeros",
     "iou_eager",
     "istft_eager",
     "median_filter_eager",
@@ -49,38 +58,11 @@ __all__ = [
     "mfcc_eager",
     "nms_eager",
     "perspective_transform_eager",
-    "resize_eager",
-]
-from .types_utils import generic_array as generic_array
-from .types_utils import generic_asarray as generic_asarray
-from .types_utils import generic_item as generic_item
-from .types_utils import generic_zeros as generic_zeros
-
-__all__ = [
-    "_allclose",
-    "_einsum",
-    "_erfinv",
-    "_extract_volume_patches",
-    "_fft",
-    "_fftn",
-    "_group_mean",
-    "_group_norm",
-    "_group_variance",
-    "_nan_to_num",
-    "_pmean",
-    "_psum",
-    "_rfft",
-    "_segment_sum",
-    "_true_divide",
-    "elastic_transform_eager",
-    "extract_bounding_boxes_eager",
-    "gaussian_blur_eager",
-    "iou_eager",
-    "istft_eager",
-    "median_filter_eager",
-    "mel_filterbank_eager",
-    "mfcc_eager",
-    "nms_eager",
-    "perspective_transform_eager",
+    "prng_key",
+    "rand",
+    "randint",
+    "randn",
+    "random_fold_in",
+    "random_split",
     "resize_eager",
 ]

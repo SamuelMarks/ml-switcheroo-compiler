@@ -49,6 +49,9 @@ def test_strategy_exhaustive_extra() -> None:
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_pull`.
             """
             return True
 
@@ -58,6 +61,9 @@ def test_strategy_exhaustive_extra() -> None:
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_push`.
             """
             return True
 
@@ -89,6 +95,9 @@ def test_strategy_exhaustive_extra() -> None:
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_sync`.
             """
             return True
 

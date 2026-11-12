@@ -51,6 +51,9 @@ def _test_math_trig_all_branches_part_1(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arccos`.
             """
             return "arccos_val"
 
@@ -65,6 +68,9 @@ def _test_math_trig_all_branches_part_1(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `acos`.
             """
             return "acos_val"
 
@@ -83,6 +89,9 @@ def _test_math_trig_all_branches_part_1(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arccosh`.
             """
             return "arccosh_val"
 
@@ -106,6 +115,9 @@ def _test_math_trig_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `acosh`.
             """
             return "acosh_val"
 
@@ -124,6 +136,9 @@ def _test_math_trig_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arcsin`.
             """
             return "arcsin_val"
 
@@ -138,6 +153,9 @@ def _test_math_trig_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `asin`.
             """
             return "asin_val"
 
@@ -165,6 +183,9 @@ def _test_math_trig_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arcsinh`.
             """
             return "arcsinh_val"
 
@@ -178,6 +199,9 @@ def _test_math_trig_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `asinh`.
             """
             return "asinh_val"
 
@@ -196,6 +220,9 @@ def _test_math_trig_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arctan`.
             """
             return "arctan_val"
 
@@ -220,6 +247,9 @@ def _test_math_trig_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `atan`.
             """
             return "atan_val"
 
@@ -238,6 +268,9 @@ def _test_math_trig_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arctanh`.
             """
             return "arctanh_val"
 
@@ -252,6 +285,9 @@ def _test_math_trig_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `atanh`.
             """
             return "atanh_val"
 
@@ -280,6 +316,9 @@ def _test_math_trig_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 y: Test parameter `y`.
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `arctan2`.
             """
             return "arctan2_val"
 
@@ -295,6 +334,9 @@ def _test_math_trig_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 y: Test parameter `y`.
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `atan2`.
             """
             return "atan2_val"
 
@@ -311,6 +353,9 @@ def _test_math_trig_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `sinc`.
             """
             return "sinc_val"
 
@@ -339,6 +384,9 @@ def _test_math_trig_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 element: Test parameter `element`.
                 test_elements: Test parameter `test_elements`.
+
+            Returns:
+                str: Computed output value from `isin`.
             """
             return "isin_val"
 
@@ -354,6 +402,9 @@ def _test_math_trig_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `isinf`.
             """
             return "isinf_direct"
 
@@ -371,6 +422,9 @@ def _test_math_trig_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `isposinf`.
             """
             return "isposinf_direct"
 

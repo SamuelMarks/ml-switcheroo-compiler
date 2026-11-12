@@ -61,6 +61,9 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
 
             Args:
                 tensor: Test parameter `tensor`.
+
+            Returns:
+                EagerValue: Computed output value from `all_sum`.
             """
 
             class DummyTensor:
@@ -74,6 +77,9 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
 
                     Args:
                         idx: Test parameter `idx`.
+
+                    Returns:
+                        EagerValue: Computed output value from `__getitem__`.
                     """
                     return "sliced"
 

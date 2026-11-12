@@ -58,18 +58,30 @@ def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str
     return op_cast(one_hot, dtype)
 
 
-def normalize(x: TensorOrScalar, axis: int = -1, order: int = 2) -> TensorOrScalar:
-    """Normalize a tensor along `axis` to unit L2 norm.
+def normalize(x: TensorOrScalar, axis: int = -1, order: int | float = 2) -> TensorOrScalar:
+    """Normalize a tensor along `axis` to unit L-p norm for arbitrary `order`.
 
     Args:
         x (TensorOrScalar): Input tensor to normalize.
         axis (int): Axis along which to compute the norm.
-        order (int): Norm order (default `2`).
+        order (int | float): Norm order (`0`, `1`, `2`, `float('inf')`, or general `p > 0`).
 
     Returns:
         TensorOrScalar: Normalized tensor of the same shape as `x`.
     """
-    _ = order
-    l2 = ops.sum(ops.square(x), axis=axis, keepdims=True)
-    l2 = ops.maximum(ops.sqrt(l2), 1e-12)
-    return ops.divide(x, l2)
+    if order == 2:
+        norm_val = ops.sqrt(ops.sum(ops.square(x), axis=axis, keepdims=True))
+    elif order == 1:
+        norm_val = ops.sum(ops.abs(x), axis=axis, keepdims=True)
+    elif order == 0:
+        op_cast = ops.cast
+        nonzero = op_cast(ops.not_equal(x, 0), "float32")
+        norm_val = ops.sum(nonzero, axis=axis, keepdims=True)
+    elif order == float("inf"):
+        norm_val = ops.max(ops.abs(x), axis=axis, keepdims=True)
+    else:
+        powered = ops.power(ops.abs(x), order)
+        summed = ops.sum(powered, axis=axis, keepdims=True)
+        norm_val = ops.power(summed, 1.0 / float(order))
+    denom = ops.maximum(norm_val, 1e-12)
+    return ops.divide(x, denom)

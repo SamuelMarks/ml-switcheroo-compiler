@@ -27,6 +27,9 @@ def test_gradient_hooks() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fun`.
         """
         y = ensure_eager_tensor(x) * ensure_eager_tensor(2.0)
 
@@ -36,6 +39,9 @@ def test_gradient_hooks() -> None:
 
             Args:
                 grad: Test parameter `grad`.
+
+            Returns:
+                EagerValue: Computed output value from `my_hook`.
             """
             return ensure_eager_tensor(grad) * ensure_eager_tensor(10.0)
 

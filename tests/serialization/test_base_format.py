@@ -23,6 +23,9 @@ def test_base_format() -> None:
 
             Args:
                 filepath: Test parameter `filepath`.
+
+            Returns:
+                dict[str, TensorLike]: Computed output value from `load`.
             """
             return ensure_tensor_dict(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).load))(filepath))
 
@@ -53,6 +56,9 @@ def test_base_format_coverage() -> None:
 
             Args:
                 filepath: Test parameter `filepath`.
+
+            Returns:
+                dict[str, TensorLike]: Computed output value from `load`.
             """
             return ensure_tensor_dict(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).load))(filepath))
 

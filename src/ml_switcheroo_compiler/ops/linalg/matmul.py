@@ -32,11 +32,11 @@ def matmul(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the matrix product of two tensors.
 
     Args:
-        input (Tensor): The input parameter.
-        other (Tensor): The other parameter.
+        input (Tensor): Input `input` argument (input).
+        other (Tensor): Input `other` argument (other).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -57,11 +57,11 @@ def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the dot product of two tensors.
 
     Args:
-        input (Tensor): The input parameter.
-        other (Tensor): The other parameter.
+        input (Tensor): Input `input` argument (input).
+        other (Tensor): Input `other` argument (other).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -85,11 +85,11 @@ def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the dot product of two vectors, conjugating the first argument.
 
     Args:
-        input (Tensor): The input parameter.
-        other (Tensor): The other parameter.
+        input (Tensor): Input `input` argument (input).
+        other (Tensor): Input `other` argument (other).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -113,11 +113,11 @@ def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the inner product of two tensors.
 
     Args:
-        input (Tensor): The input parameter.
-        other (Tensor): The other parameter.
+        input (Tensor): Input `input` argument (input).
+        other (Tensor): Input `other` argument (other).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -141,11 +141,11 @@ def outer(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the outer product of two vectors.
 
     Args:
-        input (Tensor): The input parameter.
-        other (Tensor): The other parameter.
+        input (Tensor): Input `input` argument (input).
+        other (Tensor): Input `other` argument (other).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -203,12 +203,12 @@ def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> Tensor
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        v (TensorOrScalar): The v parameter.
-        mode (str): The mode parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        v (TensorOrScalar): Input `v` argument (v).
+        mode (str): Input `mode` argument (mode).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op(
@@ -228,14 +228,14 @@ def matvec(a: TensorOrScalar, b: TensorOrScalar, transpose_a: TensorOrScalar = F
     """Matrix-vector multiplication.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        b (TensorOrScalar): The b parameter.
-        transpose_a (TensorOrScalar): The transpose_a parameter.
-        adjoint_a (TensorOrScalar): The adjoint_a parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        b (TensorOrScalar): Input `b` argument (b).
+        transpose_a (TensorOrScalar): Input `transpose_a` argument (transpose a).
+        adjoint_a (TensorOrScalar): Input `adjoint_a` argument (adjoint a).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return a
 
@@ -244,11 +244,11 @@ def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrSc
     """Compute the multi dot tensor operation.
 
     Args:
-        arrays (TensorOrScalar): The arrays parameter.
-        name (TensorOrScalar): The name parameter.
+        arrays (TensorOrScalar): Input `arrays` argument (arrays).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     arr_list = ensure_eager_list(arrays)
     first_arr = arr_list[0]
@@ -263,13 +263,13 @@ def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name
     """Compute the vecdot tensor operation.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        y (TensorOrScalar): The y parameter.
-        axis (TensorOrScalar): The axis parameter.
-        name (TensorOrScalar): The name parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        y (TensorOrScalar): Input `y` argument (y).
+        axis (TensorOrScalar): Input `axis` argument (axis).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -294,14 +294,14 @@ def addmm(
     """Perform a matrix multiplication of the matrices mat1 and mat2.
 
     Args:
-        beta (float | int): The beta parameter.
-        alpha (float | int): The alpha parameter.
-        input (Tensor): The input parameter.
-        mat1 (Tensor): The mat1 parameter.
-        mat2 (Tensor): The mat2 parameter.
+        beta (float | int): Input `beta` argument (beta).
+        alpha (float | int): Input `alpha` argument (alpha).
+        input (Tensor): Input `input` argument (input).
+        mat1 (Tensor): Input `mat1` argument (mat1).
+        mat2 (Tensor): Input `mat2` argument (mat2).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     mm_res = matmul(mat1, mat2)
     if alpha != 1.0:
@@ -323,12 +323,12 @@ class BlockMaskedMm(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             try:
@@ -359,13 +359,13 @@ def block_masked_mm(
     """Block masked matrix multiplication.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        block_size (int): The block_size parameter.
-        masks (dict[str, Tensor | None] | None): The masks parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        block_size (int): Input `block_size` argument (block size).
+        masks (dict[str, Tensor | None] | None): Input `masks` argument (masks).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     masks = masks or {}
 
@@ -406,14 +406,14 @@ class GatherMm(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
-            lhs_indices (TensorOrScalar): The lhs_indices parameter.
-            rhs_indices (TensorOrScalar): The rhs_indices parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
+            lhs_indices (TensorOrScalar): Input `lhs_indices` argument (lhs indices).
+            rhs_indices (TensorOrScalar): Input `rhs_indices` argument (rhs indices).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not (isinstance(a, tuple) and isinstance(b, tuple)):
             _typed_ret_3: TensorOrScalar = extract_shape(a)
@@ -433,13 +433,13 @@ def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: TensorOrScalar = N
     """Infer shape for gather_mm operation.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        lhs_indices (Tensor): The lhs_indices parameter.
-        rhs_indices (Tensor): The rhs_indices parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        lhs_indices (Tensor): Input `lhs_indices` argument (lhs indices).
+        rhs_indices (Tensor): Input `rhs_indices` argument (rhs indices).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     a_shape = extract_shape(a, (1, 1, 1))
     b_shape = extract_shape(b, (1, 1))
@@ -461,14 +461,14 @@ def gather_mm(
     """Gather matrix multiplication.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        lhs_indices (Tensor): The lhs_indices parameter.
-        rhs_indices (Tensor): The rhs_indices parameter.
-        sorted_indices (bool): The sorted_indices parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        lhs_indices (Tensor): Input `lhs_indices` argument (lhs indices).
+        rhs_indices (Tensor): Input `rhs_indices` argument (rhs indices).
+        sorted_indices (bool): Input `sorted_indices` argument (sorted indices).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     kwargs: dict[str, TensorOrScalar] = {"sorted_indices": sorted_indices}
     if config.eager_mode:
@@ -500,13 +500,13 @@ class SegmentedMm(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
-            segments (TensorOrScalar): The segments parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
+            segments (TensorOrScalar): Input `segments` argument (segments).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             if segments is not None and isinstance(segments, tuple):
@@ -520,12 +520,12 @@ def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> TensorOrScalar:
     """Segmented matrix multiplication.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        segments (Tensor): The segments parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        segments (Tensor): Input `segments` argument (segments).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()

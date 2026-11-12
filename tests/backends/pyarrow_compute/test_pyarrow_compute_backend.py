@@ -171,6 +171,9 @@ def test_pyarrow_compute_types() -> None:
 
             Raises:
                 TypeError: Explicit iteration failure.
+
+            Returns:
+                EagerValue: Computed output value from `__iter__`.
             """
             raise TypeError("cannot iterate")
 

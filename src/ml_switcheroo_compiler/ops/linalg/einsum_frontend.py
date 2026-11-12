@@ -24,10 +24,10 @@ def _validate_tensordot_axes(
     """Validate and extracts tensordot axes.
 
     Args:
-        axes (tuple): The axes parameter.
+        axes (tuple): Input `axes` argument (axes).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     return axes[0], axes[1]
 
@@ -36,11 +36,11 @@ def _get_tensordot_letters(len_a: int, len_b: int) -> tuple[list[str], list[str]
     """Map tensor dimensions to alphabetic characters.
 
     Args:
-        len_a (int): The len_a parameter.
-        len_b (int): The len_b parameter.
+        len_a (int): Input `len_a` argument (len a).
+        len_b (int): Input `len_b` argument (len b).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     a_letters = [alphabet[i] for i in range(len_a)]
@@ -52,12 +52,12 @@ def _get_tensordot_output_string(a_letters: list[str], b_letters: list[str], con
     """Generate the output string for tensordot einsum routing.
 
     Args:
-        a_letters (list[str]): The a_letters parameter.
-        b_letters (list[str]): The b_letters parameter.
-        contracted (set[str]): The contracted parameter.
+        a_letters (list[str]): Input `a_letters` argument (a letters).
+        b_letters (list[str]): Input `b_letters` argument (b letters).
+        contracted (set[str]): Input `contracted` argument (contracted).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     out_a = "".join([let for let in a_letters if let not in contracted])
     out_b = "".join([let for let in b_letters if let not in contracted])
@@ -68,13 +68,13 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     """Generate einsum notation strings for tensordot routing.
 
     Args:
-        shape_a (Sequence[int]): The shape_a parameter.
-        shape_b (Sequence[int]): The shape_b parameter.
-        axes_a (Sequence[int]): The axes_a parameter.
-        axes_b (Sequence[int]): The axes_b parameter.
+        shape_a (Sequence[int]): Input `shape_a` argument (shape a).
+        shape_b (Sequence[int]): Input `shape_b` argument (shape b).
+        axes_a (Sequence[int]): Input `axes_a` argument (axes a).
+        axes_b (Sequence[int]): Input `axes_b` argument (axes b).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if not shape_a and not shape_b:
         return "", "", ""
@@ -92,12 +92,12 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     """Compute the tensordot einsum routing tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        axes (tuple): The axes parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        axes (tuple): Input `axes` argument (axes).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     axes_a, axes_b = _validate_tensordot_axes(axes)
     a_str, b_str, out_str = _generate_tensordot_einsum_strings(a.shape, b.shape, axes_a, axes_b)
@@ -109,12 +109,12 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     """Compute the tensor dot product along specified axes.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        axes (int | tuple[Sequence[int], Sequence[int]]): The axes parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        axes (int | tuple[Sequence[int], Sequence[int]]): Input `axes` argument (axes).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if isinstance(axes, tuple) and len(a.shape) > MATRIX_RANK and len(b.shape) > MATRIX_RANK:
         return _tensordot_einsum_routing(a, b, axes)
@@ -131,11 +131,11 @@ def einsum(equation: str, *operands: Tensor) -> TensorOrScalar:
     """Evaluate the Einstein summation convention on the operands.
 
     Args:
-        equation (str): The equation parameter.
+        equation (str): Input `equation` argument (equation).
         *operands (Tensor): Positional args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -159,12 +159,12 @@ def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Seque
     """Compute the get remaining dims tensor operation.
 
     Args:
-        shape_len (int): The shape_len parameter.
-        contracting (Sequence[int]): The contracting parameter.
-        batch (Sequence[int]): The batch parameter.
+        shape_len (int): Input `shape_len` argument (shape len).
+        contracting (Sequence[int]): Input `contracting` argument (contracting).
+        batch (Sequence[int]): Input `batch` argument (batch).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     contract_set = set(contracting)
     batch_set = set(batch)
@@ -179,12 +179,12 @@ def _infer_dot_general_shape(
     """Compute the infer dot general shape tensor operation.
 
     Args:
-        lhs_shape (Sequence[int]): The lhs_shape parameter.
-        rhs_shape (Sequence[int]): The rhs_shape parameter.
-        dimension_numbers (tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]]): The dimension_numbers parameter.
+        lhs_shape (Sequence[int]): Input `lhs_shape` argument (lhs shape).
+        rhs_shape (Sequence[int]): Input `rhs_shape` argument (rhs shape).
+        dimension_numbers (tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]]): Input `dimension_numbers` argument (dimension numbers).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     contracting, batch = dimension_numbers
     lhs_contracting, rhs_contracting = contracting

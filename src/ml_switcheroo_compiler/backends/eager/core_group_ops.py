@@ -20,11 +20,11 @@ def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
     """Execute the eager get reduction axes operation on the active backend array.
 
     Args:
-        reshaped_dims (list[int]): The reshaped_dims parameter.
-        axis (int): The axis parameter.
+        reshaped_dims (list[int]): Input `reshaped_dims` argument (reshaped dims).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        tuple[int, ...]: Result.
+        tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
@@ -33,16 +33,16 @@ def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: Eag
     """Execute the eager invoke grouped op operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        op_name (str): The op_name parameter.
-        reshaped_x: The reshaped_x parameter.
-        reduction_axes (tuple[int, ...]): The reduction_axes parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        op_name (str): Input `op_name` argument (op name).
+        reshaped_x: Input `reshaped_x` argument (reshaped x).
+        reduction_axes (tuple[int, ...]): Input `reduction_axes` argument (reduction axes).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     mod = ensure_mod(backend_module)
     if op_name == "mean":
@@ -63,13 +63,13 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
     """Execute the eager apply grouped reduction operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        op_name (str): The op_name parameter.
-        x: The x parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        op_name (str): Input `op_name` argument (op name).
+        x: Input `x` argument (x).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = ensure_mod(backend_module)
     groups: int = kwargs["groups"]
@@ -92,12 +92,12 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Execute the eager group mean operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
@@ -110,12 +110,12 @@ def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     """Execute the eager group variance operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
@@ -127,13 +127,13 @@ def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: i
     """Apply affine transform scaling to normalized output.
 
     Args:
-        backend_module: The backend_module parameter.
-        out: The out parameter.
-        axis (int): The axis parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        out: Input `out` argument (out).
+        axis (int): Input `axis` argument (axis).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = ensure_mod(backend_module)
     weight = kwargs.get("weight")
@@ -158,11 +158,11 @@ def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, Eager
     """Execute the eager parse group norm args operation on the active backend array.
 
     Args:
-        args: The args parameter.
-        kwargs: The kwargs parameter.
+        args: Input `args` argument (args).
+        kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
-        tuple[object, int, Optional[object], Optional[object], int, float]: Result.
+        tuple[object, int, Optional[object], Optional[object], int, float]: Computed `tuple[object, int, Optional[object], Optional[object], int, float]` output.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
@@ -177,14 +177,14 @@ def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[i
     """Execute the eager compute group norm operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        x: The x parameter.
-        shape (list[int]): The shape parameter.
-        group_params (tuple[int, int]): The group_params parameter.
-        stats: The stats parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        x: Input `x` argument (x).
+        shape (list[int]): Input `shape` argument (shape).
+        group_params (tuple[int, int]): Input `group_params` argument (group params).
+        stats: Input `stats` argument (stats).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = ensure_mod(backend_module)
     axis, groups = group_params
@@ -202,12 +202,12 @@ def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """Execute the eager group norm operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
     shape: list[int] = list(ensure_eager_tensor(x).shape)

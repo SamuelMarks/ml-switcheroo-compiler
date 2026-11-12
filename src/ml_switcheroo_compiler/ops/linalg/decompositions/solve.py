@@ -102,11 +102,11 @@ def solve(a: Tensor, b: Tensor) -> TensorOrScalar:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -162,13 +162,13 @@ def solve_triangular(
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        lower (bool): The lower parameter.
-        unit_diagonal (bool): The unit_diagonal parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        lower (bool): Input `lower` argument (lower).
+        unit_diagonal (bool): Input `unit_diagonal` argument (unit diagonal).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

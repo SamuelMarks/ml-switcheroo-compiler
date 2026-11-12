@@ -132,12 +132,12 @@ def lstsq(
     """Compute the lstsq tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
-        b (Tensor): The b parameter.
-        rcond (float | None): The rcond parameter.
+        a (Tensor): Input `a` argument (a).
+        b (Tensor): Input `b` argument (b).
+        rcond (float | None): Input `rcond` argument (rcond).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
@@ -154,12 +154,12 @@ def lu(input: TensorOrScalar, output_idx_type: TensorOrScalar = None, name: Tens
     """Compute the lu tensor operation.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        output_idx_type (TensorOrScalar): The output_idx_type parameter.
-        name (TensorOrScalar): The name parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        output_idx_type (TensorOrScalar): Input `output_idx_type` argument (output idx type).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return input, input, input
 
@@ -168,13 +168,13 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: TensorOr
     """Compute the lu matrix inverse tensor operation.
 
     Args:
-        lower_upper (Tensor): The lower_upper parameter.
-        perm (Tensor): The perm parameter.
-        validate_args (bool): The validate_args parameter.
-        name (str): The name parameter.
+        lower_upper (Tensor): Input `lower_upper` argument (lower upper).
+        perm (Tensor): Input `perm` argument (perm).
+        validate_args (bool): Input `validate_args` argument (validate args).
+        name (str): Input `name` argument (name).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("LuMatrixInverse", lower_upper.data, perm.data, validate_args=validate_args)
@@ -283,12 +283,12 @@ def tensorinv(a: Tensor, ind: TensorOrScalar = 2, name: TensorOrScalar = None) -
     """Compute the tensorinv tensor operation.
 
     Args:
-        a (Tensor): The a parameter.
-        ind (int): The ind parameter.
-        name (str): The name parameter.
+        a (Tensor): Input `a` argument (a).
+        ind (int): Input `ind` argument (ind).
+        name (str): Input `name` argument (name).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()

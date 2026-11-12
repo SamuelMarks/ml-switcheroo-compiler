@@ -80,6 +80,9 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sign`.
             """
             return ensure_eager_tensor(ensure_callable(np.sign)(x))
 
@@ -89,6 +92,9 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `abs`.
             """
             return ensure_eager_tensor(ensure_callable(np.abs)(x))
 
@@ -98,6 +104,9 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `exp`.
             """
             return ensure_eager_tensor(ensure_callable(np.exp)(x))
 
@@ -107,6 +116,9 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `log`.
             """
             return ensure_eager_tensor(ensure_callable(np.log)(x))
 
@@ -116,6 +128,9 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sqrt`.
             """
             return ensure_eager_tensor(ensure_callable(np.sqrt)(x))
 
@@ -217,6 +232,9 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `zerofraction`.
                 """
                 return 1.0
 
@@ -256,6 +274,9 @@ def test_missing_i0() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `i0`.
             """
             return np.array([1.0])
 
@@ -264,6 +285,9 @@ def test_missing_i0() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `iscomplex`.
             """
             return np.array([1.0])
 
@@ -272,6 +296,9 @@ def test_missing_i0() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `isreal`.
             """
             return np.array([1.0])
 
@@ -280,6 +307,9 @@ def test_missing_i0() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `signbit`.
             """
             return np.array([1.0])
 
@@ -307,6 +337,9 @@ class DummyBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `shape`.
         """
         return (2, 2)
 
@@ -315,6 +348,9 @@ class DummyBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `indices`.
         """
         return (0, 0)
 
@@ -324,6 +360,9 @@ class DummyBackend:
         Args:
             x: Test parameter `x`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `ones`.
         """
         return x
 
@@ -333,6 +372,9 @@ class DummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `where`.
         """
         return args[0]
 
@@ -352,6 +394,9 @@ class DummyBackendWithRandom:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `triangular`.
             """
             return "random.triangular"
 
@@ -362,6 +407,9 @@ class DummyBackendWithRandom:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `triangularsolve`.
             """
             return "random.triangularsolve"
 
@@ -372,6 +420,9 @@ class DummyBackendWithRandom:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `xlog1py`.
             """
             return "random.xlog1py"
 
@@ -382,6 +433,9 @@ class DummyBackendWithRandom:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `xlogy`.
             """
             return "random.xlogy"
 
@@ -390,14 +444,30 @@ warnings.filterwarnings("ignore")
 
 
 def _all_backend_getattr(self: EagerValue, name: EagerValue) -> EagerValue:
-    """Resolve attribute on AllBackend."""
+    """Resolve attribute on AllBackend.
+
+    Args:
+        self (EagerValue): Dynamic `AllBackend` instance.
+        name (EagerValue): Input `name` value (name) for `_all_backend_getattr`.
+
+    Returns:
+        EagerValue: Computed output value from `_all_backend_getattr`.
+    """
     if str(name).startswith("_"):
         raise AttributeError()
     if name == "nn":
         return ensure_eager_tensor(self)
 
     def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Return dummy array."""
+        """Return dummy array.
+
+        Args:
+            *args (EagerValue): Positional arguments forwarded to `_dummy`.
+            **kwargs (EagerValue): Keyword arguments forwarded to `_dummy`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy`.
+        """
         return np.array([1.0])
 
     ensure_mutable(_dummy).item = ensure_eager_tensor(lambda: 1.0)
@@ -409,7 +479,12 @@ AllBackend = ensure_callable(type)("AllBackend", (), {"_" + "_getattr_" + "_": _
 
 
 def _fallback_backend_init(self: EagerValue, hide_names: EagerValue) -> None:
-    """Initialize FallbackBackend."""
+    """Initialize FallbackBackend.
+
+    Args:
+        self (EagerValue): Dynamic `FallbackBackend` instance.
+        hide_names (EagerValue): Input `hide_names` value (hide names) for `_fallback_backend_init`.
+    """
     from tests.testing_utils import get_test_members
 
     ensure_mutable(self).hide_names = ensure_eager_tensor(hide_names)
@@ -417,7 +492,15 @@ def _fallback_backend_init(self: EagerValue, hide_names: EagerValue) -> None:
 
 
 def _fallback_backend_getattr(self: EagerValue, name: EagerValue) -> EagerValue:
-    """Resolve attribute on FallbackBackend."""
+    """Resolve attribute on FallbackBackend.
+
+    Args:
+        self (EagerValue): Dynamic `FallbackBackend` instance.
+        name (EagerValue): Input `name` value (name) for `_fallback_backend_getattr`.
+
+    Returns:
+        EagerValue: Computed output value from `_fallback_backend_getattr`.
+    """
     if ensure_eager_tensor(name) in ensure_eager_tensor(ensure_eager_tensor(self).hide_names):
         raise AttributeError(f"Hidden: {name}")
     if name == "nn":
@@ -463,6 +546,9 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
             use_int: Test parameter `use_int`.
             use_one_arg: Test parameter `use_one_arg`.
             sig: Test parameter `sig`.
+
+        Returns:
+            EagerValue: Computed output value from `build_call`.
         """
         args = []
         kwargs = {}
@@ -495,6 +581,7 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (all_bk, arg, build_call, fb) = (_state["all_bk"], _state["arg"], _state["build_call"], _state["fb"])
     op = _state["op"]
     bk: EagerValue = all_bk
@@ -505,11 +592,11 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
                 try:
                     ensure_callable(op)(*args, **ensure_attrs(kwargs))
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
+                    handled_errors += 1
                 try:
                     op(bk, arg)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
+                    handled_errors += 1
     _state.update(ensure_tensor_dict({"all_bk": all_bk, "arg": arg, "bk": bk}))
     _state.update(ensure_tensor_dict({"build_call": build_call, "fb": fb, "op": op}))
 
@@ -538,13 +625,14 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (args, kwargs, op, orig_scipy) = (_state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"])
     orig_scipy2 = _state["orig_scipy2"]
     orig_scipy_root = _state["orig_scipy_root"]
     try:
         ensure_callable(op)(*args, **ensure_attrs(kwargs))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if ensure_eager_tensor(orig_scipy) is not None:
             ensure_eager_tensor(sys.modules)["scipy.special"] = orig_scipy
@@ -611,6 +699,9 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
                 Args:
                     x: Test parameter `x`.
                     axis: Test parameter `axis`.
+
+                Returns:
+                    EagerValue: Computed output value from `softmax`.
                 """
                 return x
 
@@ -634,14 +725,22 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
         """Test class DummyItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1.0
 
     class DummyList:
         """Test class DummyList."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return 1.0
 
     ensure_callable(mod._allclose)(np, arg, arg, rtol=ensure_callable(DummyItem)())
@@ -657,6 +756,9 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -687,6 +789,9 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return 1
 
@@ -697,6 +802,9 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `floor`.
             """
             return 1
 
@@ -707,6 +815,9 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ceil`.
             """
             return 1
 
@@ -739,6 +850,7 @@ def test_missing_coverage() -> None:
 
 def test_empty_backend() -> None:
     """Test function test_empty_backend."""
+    handled_errors = 0
     import inspect
 
     import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
@@ -759,12 +871,12 @@ def test_empty_backend() -> None:
         try:
             op(*args_to_pass[: len(sig.parameters)])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_empty_backend)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def _test_remaining_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -793,6 +905,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `cho_solve`.
             """
             return np.array([1.0])
 
@@ -803,6 +918,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `solve_banded`.
             """
             return np.array([1.0])
 
@@ -813,6 +931,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `svd`.
             """
             return np.array([1.0])
 
@@ -823,6 +944,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `tensorinv`.
             """
             return np.array([1.0])
 
@@ -833,6 +957,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `tensorsolve`.
             """
             return np.array([1.0])
 
@@ -843,6 +970,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `cross`.
             """
             return np.array([1.0])
 
@@ -853,6 +983,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `outer`.
             """
             return np.array([1.0])
 
@@ -863,6 +996,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `det`.
             """
             return np.array([1.0])
 
@@ -873,6 +1009,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eig`.
             """
             return np.array([1.0])
 
@@ -883,6 +1022,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eigh`.
             """
             return np.array([1.0])
 
@@ -893,6 +1035,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eigvals`.
             """
             return np.array([1.0])
 
@@ -903,6 +1048,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eigvalsh`.
             """
             return np.array([1.0])
 
@@ -913,6 +1061,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `cholesky`.
             """
             return np.array([1.0])
 
@@ -923,6 +1074,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `matrix_power`.
             """
             return np.array([1.0])
 
@@ -933,6 +1087,9 @@ class _BkWithLinalg:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `norm`.
             """
             return np.array([1.0])
 
@@ -1031,6 +1188,9 @@ def test_unfold_coverage_manual() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -1055,6 +1215,9 @@ def test_final_fftn() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftn`.
             """
             return np.array([1.0])
 
@@ -1084,6 +1247,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `householder_product`.
             """
             return np.array([1.0])
 
@@ -1097,6 +1263,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fft2`.
             """
             return np.array([1.0])
 
@@ -1107,6 +1276,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftfreq`.
             """
             return np.array([1.0])
 
@@ -1117,6 +1289,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftn`.
             """
             return np.array([1.0])
 
@@ -1127,6 +1302,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftshift`.
             """
             return np.array([1.0])
 
@@ -1137,6 +1315,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ifft`.
             """
             return np.array([1.0])
 
@@ -1147,6 +1328,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ifft2`.
             """
             return np.array([1.0])
 
@@ -1157,6 +1341,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ifftn`.
             """
             return np.array([1.0])
 
@@ -1167,6 +1354,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ifftshift`.
             """
             return np.array([1.0])
 
@@ -1180,6 +1370,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `infeed`.
             """
             return np.array([1.0])
 
@@ -1190,6 +1383,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `outfeed`.
             """
             return np.array([1.0])
 
@@ -1200,6 +1396,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `pshuffle`.
             """
             return np.array([1.0])
 
@@ -1210,6 +1409,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `pswapaxes`.
             """
             return np.array([1.0])
 
@@ -1220,6 +1422,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `ppermute`.
             """
             return np.array([1.0])
 
@@ -1230,6 +1435,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `psum_scatter`.
             """
             return np.array([1.0])
 
@@ -1243,6 +1451,9 @@ class _BkSpecial:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `tridiagonal`.
             """
             return np.array([1.0])
 

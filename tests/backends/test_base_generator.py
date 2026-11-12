@@ -24,7 +24,11 @@ class DummyFormatter:
         self.indent_level = 0
 
     def get_indent(self) -> EagerValue:
-        """Test function get_indent."""
+        """Test function get_indent.
+
+        Returns:
+            EagerValue: Computed output value from `get_indent`.
+        """
         return "  " * self.indent_level
 
     def add_line(self, line: EagerValue) -> None:
@@ -41,6 +45,9 @@ class DummyFormatter:
         Args:
             node_id: Test parameter `node_id`.
             prefix: Test parameter `prefix`.
+
+        Returns:
+            str: Computed output value from `assign_var_name`.
         """
         return f"{prefix}_foo"
 
@@ -49,7 +56,11 @@ class DummyGenerator(BaseGenerator):
     """Test class DummyGenerator."""
 
     def get_fallback_prefix(self) -> str:
-        """Test function get_fallback_prefix."""
+        """Test function get_fallback_prefix.
+
+        Returns:
+            str: Computed output value from `get_fallback_prefix`.
+        """
         return "dummy"
 
 
@@ -134,6 +145,9 @@ def test_base_generator_methods() -> None:
 
         Args:
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `get_ops_map`.
         """
         return {"TestOp": "test_prefix.testop({0}, {1}, kw={kw})"}
 
@@ -147,6 +161,9 @@ def test_base_generator_methods() -> None:
 
         Args:
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `get_ops_map2`.
         """
         return {"TestOp2": "test_prefix.testop({0}, {1}, kw={kw})"}
 
@@ -251,6 +268,9 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
             Args:
                 id: Test parameter `id`.
                 prefix: Test parameter `prefix`.
+
+            Returns:
+                EagerValue: Computed output value from `assign_var_name`.
             """
             return ensure_eager_tensor("var_") + ensure_eager_tensor(id)
 
@@ -261,6 +281,9 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
                 node: Test parameter `node`.
                 inputs: Test parameter `inputs`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `generic_visit`.
             """
             return f"generic({ensure_eager_tensor(node).op_type})"
 
@@ -291,6 +314,9 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                dict[str, str]: Computed output value from `get_ops_map`.
             """
             return {}
 
@@ -348,6 +374,9 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
                 node: Test parameter `node`.
                 inputs: Test parameter `inputs`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `visit_TestOp`.
             """
             return "visited_TestOp"
 
@@ -366,6 +395,9 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
                 node: Test parameter `node`.
                 inputs: Test parameter `inputs`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `visit_TestOp`.
             """
             return "visited_TestOp"
 
@@ -398,6 +430,9 @@ def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTen
                 node: Test parameter `node`.
                 inputs: Test parameter `inputs`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `visit_OtherOp`.
             """
             return "visited_OtherOp"
 
@@ -431,7 +466,11 @@ def test_base_generator_maps() -> None:
         """Test class MinimalGen."""
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "m"
 
         def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
@@ -440,6 +479,9 @@ def test_base_generator_maps() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                dict[str, str]: Computed output value from `get_ops_map`.
             """
             ops = super().get_ops_map(kwargs)
             ops["Add"] = "m.add"
@@ -470,16 +512,28 @@ def test_class_based_generator_full() -> None:
             self.add_line("self.generated = True")
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             self.add_line("self.init = True")
             return True
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "my"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "python"
 
     gen = MyClassGen(IRGraph())
@@ -504,15 +558,27 @@ def test_class_based_generator_full() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "my"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "python"
 
     gen2 = MyClassGenNoBase(IRGraph())
@@ -626,15 +692,27 @@ def test_class_based_generator_has_base_no_params() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "python"
 
     gen = Gen3(IRGraph())
@@ -662,15 +740,27 @@ def test_class_based_generator_has_base_no_params_not_python() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "cpp"
 
     gen = Gen4(IRGraph())
@@ -692,7 +782,11 @@ def test_ast_walker_proper() -> None:
         """Test class MyGen."""
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def _emit_input_assignment(self, v: EagerValue, n: EagerValue, p: EagerValue, i: EagerValue) -> None:
@@ -722,6 +816,9 @@ def test_ast_walker_proper() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                dict[str, str]: Computed output value from `get_ops_map`.
             """
             return {}
 
@@ -750,15 +847,27 @@ def test_class_based_generator_has_base_no_params_not_python_2() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "js"
 
     gen = Gen4(IRGraph())
@@ -785,15 +894,27 @@ def test_class_based_generator_has_base_no_params_is_python() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "python"
 
     gen = Gen5(IRGraph())
@@ -829,15 +950,27 @@ def test_class_based_generator_has_base_no_params_hit_457() -> None:
             pass
 
         def _emit_init_body(self) -> bool:
-            """Test function _emit_init_body."""
+            """Test function _emit_init_body.
+
+            Returns:
+                bool: Computed output value from `_emit_init_body`.
+            """
             return False
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
         def get_language(self) -> str:
-            """Test function get_language."""
+            """Test function get_language.
+
+            Returns:
+                str: Computed output value from `get_language`.
+            """
             return "python"
 
     gen = Gen6(IRGraph())
@@ -891,7 +1024,11 @@ def test_base_generator_coverage_extras() -> None:
         """Test class CovGen."""
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "numpy"
 
     gen = CovGen(IRGraph())
@@ -918,7 +1055,11 @@ def test_get_ops_map_fallbacks_coverage() -> None:
         """Test class MyGen."""
 
         def get_fallback_prefix(self) -> str:
-            """Test function get_fallback_prefix."""
+            """Test function get_fallback_prefix.
+
+            Returns:
+                str: Computed output value from `get_fallback_prefix`.
+            """
             return "test_prefix"
 
     gen = MyGen(IRGraph())
@@ -932,6 +1073,9 @@ def test_get_ops_map_fallbacks_coverage() -> None:
             Args:
                 prefix: Test parameter `prefix`.
                 name: Test parameter `name`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_get`.
             """
             if prefix == "test_prefix":
                 return ensure_eager_tensor("mapped_") + ensure_eager_tensor(name)
@@ -973,6 +1117,9 @@ def test_base_generator_compile_aot() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `_compile_aot_impl`.
             """
             return "compiled_artifact"
 
@@ -1103,6 +1250,9 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
                 node: Test parameter `node`.
                 input_vars: Test parameter `input_vars`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `visit_VisitorOp`.
             """
             return f"visitor_handled({', '.join(input_vars)})"
 
@@ -1120,6 +1270,9 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
                 node: Test parameter `node`.
                 input_vars: Test parameter `input_vars`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `visit_SubclassOp`.
             """
             return f"subclass_handled({', '.join(input_vars)})"
 

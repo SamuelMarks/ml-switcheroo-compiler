@@ -261,7 +261,11 @@ def test_symnode_eval_fallback_and_polynomial() -> None:
         """Test class PolySymNode."""
 
         def to_polynomial(self) -> Polynomial:
-            """Test function to_polynomial."""
+            """Test function to_polynomial.
+
+            Returns:
+                Polynomial: Computed output value from `to_polynomial`.
+            """
             return p
 
     node = PolySymNode()
@@ -286,7 +290,11 @@ def test_symnode_fallback_eval_branches() -> None:
         """Test class SimplifyDummy."""
 
         def simplify(self) -> SymNode:
-            """Test function simplify."""
+            """Test function simplify.
+
+            Returns:
+                SymNode: Computed output value from `simplify`.
+            """
             return SymConst(100)
 
     assert SimplifyDummy().eval({}) == 100
@@ -504,7 +512,11 @@ def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, E
         """Test class UnsimplifyingMul."""
 
         def simplify(self) -> _SymNodeCls:
-            """Test function simplify."""
+            """Test function simplify.
+
+            Returns:
+                _SymNodeCls: Computed output value from `simplify`.
+            """
             return self
 
     raw_mul = ensure_callable(UnsimplifyingMul)("*", x, SymConst(6))

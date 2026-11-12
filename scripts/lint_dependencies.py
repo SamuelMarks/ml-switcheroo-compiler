@@ -195,6 +195,8 @@ def _scan_ast_imports(
         elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
             _check_module_name(node.module.split(".")[0], file_path, node.lineno, backend_allowed, root, violations)
         elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id == "eval":
+                violations.append(f"{file_path}:{node.lineno}: Prohibited builtin 'eval()' call; use AST validation instead.")
             dyn_mod: str | None = _extract_dynamic_import_mod_name(node)
             if dyn_mod:
                 _check_module_name(dyn_mod, file_path, node.lineno, backend_allowed, root, violations)

@@ -70,6 +70,9 @@ def test_linker_exception(monkeypatch: pytest.MonkeyPatch) -> None:
 
         Raises:
             ValueError: Always raised to simulate an inspection error.
+
+        Returns:
+            typing.NoReturn: Computed output value from `mock_getframeinfo`.
         """
         msg = "test error"
         raise ValueError(msg)

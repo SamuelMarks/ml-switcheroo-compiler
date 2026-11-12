@@ -23,6 +23,9 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            OpDef: Computed output value from `_get_op`.
         """
 
         class _MockOp(OpDef):
@@ -31,7 +34,15 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
             op_name = str(name)
 
             def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> Tensor:
-                """Return Tensor wrapping (name, args) tuple."""
+                """Return Tensor wrapping (name, args) tuple.
+
+                Args:
+                    *args (EagerValue): Positional arguments forwarded to `__call__`.
+                    **kwargs (EagerValue): Keyword arguments forwarded to `__call__`.
+
+                Returns:
+                    Tensor: Computed output value from `__call__`.
+                """
                 return Tensor((name, args), TensorConfig())
 
         return _MockOp()

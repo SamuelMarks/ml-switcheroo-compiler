@@ -162,6 +162,9 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `dummy_emit_creation_node`.
             """
             return Tensor(None, TensorConfig(shape=(), dtype=DType("float32"), device=Device("cpu")))
 

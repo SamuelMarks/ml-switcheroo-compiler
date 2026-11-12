@@ -24,7 +24,7 @@ def _np_diag_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     """Implement DiagIndices via diag_indices.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -38,7 +38,7 @@ def _np_diag_indices_from_(backend_module: EagerValue, *args: EagerValue, **kwar
     """Implement DiagIndicesFrom via diag_indices_from.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -52,7 +52,7 @@ def _np_diagflat_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement Diagflat via diagflat.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -66,7 +66,7 @@ def _np_diagonal_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """Implement Diagonal via diagonal.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -80,7 +80,7 @@ def _np_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     """Implement Indices via indices.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -94,7 +94,7 @@ def _np_mask_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     """Implement MaskIndices via mask_indices.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
@@ -108,12 +108,12 @@ def _np_linearoperatorblockdiag(backend_module: EagerValue, *args: EagerValue, *
     """Implement LinearOperatorBlockDiag.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockDiag
 
@@ -125,12 +125,12 @@ def _np_linearoperatordiag(backend_module: EagerValue, *args: EagerValue, **kwar
     """Implement LinearOperatorDiag.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorDiag
 
@@ -142,15 +142,15 @@ def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs
     """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -184,7 +184,7 @@ def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         kwargs: Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -214,7 +214,7 @@ def _np_confusion_matrix_cap(backend_module: EagerValue, *args: EagerValue, **kw
         kwargs: Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)

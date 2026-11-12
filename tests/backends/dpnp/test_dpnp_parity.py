@@ -270,6 +270,9 @@ def test_dpnp_eager_helpers_and_tensor_unwrap() -> None:
             mod: Test parameter `mod`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            str: Computed output value from `mock_custom_op`.
         """
         del mod, args, kwargs
         return "custom_registered_result"
@@ -552,6 +555,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             Args:
                 shape: Test parameter `shape`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.zeros)(shape, dtype=ensure_callable(kwargs.get)("dtype", float))
@@ -563,6 +569,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             Args:
                 shape: Test parameter `shape`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `ones`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.ones)(shape, dtype=ensure_callable(kwargs.get)("dtype", float))
@@ -574,6 +583,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             Args:
                 shape: Test parameter `shape`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `empty`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.empty)(shape, dtype=ensure_callable(kwargs.get)("dtype", float))
@@ -586,6 +598,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 shape: Test parameter `shape`.
                 fill_value: Test parameter `fill_value`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `full`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.full)(shape, fill_value, dtype=ensure_callable(kwargs.get)("dtype", None))
@@ -597,6 +612,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             Args:
                 data: Test parameter `data`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.array)(data, dtype=ensure_callable(kwargs.get)("dtype", None))
@@ -608,6 +626,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             Args:
                 data: Test parameter `data`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             _check_usm(kwargs)
             return ensure_callable(np.asarray)(data, dtype=ensure_callable(kwargs.get)("dtype", None))
@@ -618,6 +639,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
 
             Args:
                 a: Test parameter `a`.
+
+            Returns:
+                EagerValue: Computed output value from `asnumpy`.
             """
             raise RuntimeError("asnumpy failure")
 
@@ -713,6 +737,9 @@ def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProt
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `custom_linalg_op`.
                 """
                 return ensure_eager_tensor(x) + ensure_eager_tensor(100)
 

@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
+from collections.abc import Mapping
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 
 def simple_fn(x):
@@ -22,7 +23,7 @@ with ConfigContext(backend="numpy"):
     # trace forward pass
     block = _trace_function(simple_fn, (x,), "fwd")
     fwd_graph = LogicalGraph(name="fwd")
-    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, Mapping) else block.nodes
     for node in nodes_iter:
         fwd_graph.nodes[node.id] = node
     fwd_graph.inputs = block.inputs
@@ -97,6 +98,7 @@ from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
+from collections.abc import Mapping
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass, annotate_learned_shapes
 
@@ -108,7 +110,7 @@ x = Tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], TensorConfig((8,), "float32
 with ConfigContext(backend="numpy"):
     block = _trace_function(simple_fn, (x,), "fwd8")
     graph = LogicalGraph(name="fwd8")
-    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, Mapping) else block.nodes
     for node in nodes_iter:
         graph.nodes[node.id] = node
     graph.inputs = block.inputs

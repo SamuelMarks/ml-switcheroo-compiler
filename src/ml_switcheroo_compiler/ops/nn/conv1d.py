@@ -37,13 +37,13 @@ def conv1d(lhs: Tensor, rhs: Tensor, config_obj: ConvConfig | TensorOrScalar = N
     """1D Convolution.
 
     Args:
-        lhs (Tensor): The lhs parameter.
-        rhs (Tensor): The rhs parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        lhs (Tensor): Input `lhs` argument (lhs).
+        rhs (Tensor): Input `rhs` argument (rhs).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
         config_obj = _build_conv_config(kwargs, ((0, 2, 1), (2, 1, 0), (0, 2, 1)))
@@ -61,13 +61,13 @@ def conv1d_transpose(
     """1D convolution transpose.
 
     Args:
-        lhs (Tensor): The lhs parameter.
-        rhs (Tensor): The rhs parameter.
-        strides (Union): The strides parameter.
-        padding (Union): The padding parameter.
+        lhs (Tensor): Input `lhs` argument (lhs).
+        rhs (Tensor): Input `rhs` argument (rhs).
+        strides (Union): Input `strides` argument (strides).
+        padding (Union): Input `padding` argument (padding).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     conv_transpose = get_op("ConvTranspose")()
 
@@ -78,13 +78,13 @@ def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: ConvConfig | TensorOr
     """1D Depthwise Convolution.
 
     Args:
-        lhs (Tensor): The lhs parameter.
-        rhs (Tensor): The rhs parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        lhs (Tensor): Input `lhs` argument (lhs).
+        rhs (Tensor): Input `rhs` argument (rhs).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dimension_numbers = ((0, 2, 1), (2, 1, 0), (0, 2, 1))
     rhs_reshaped, config_obj = _prepare_depthwise_conv(lhs, rhs, 1, dimension_numbers, config_obj, **kwargs)
@@ -102,14 +102,14 @@ def separable_conv1d(
     """1D Separable Convolution.
 
     Args:
-        lhs (Tensor): The lhs parameter.
-        depthwise_filter (Tensor): The depthwise_filter parameter.
-        pointwise_filter (Tensor): The pointwise_filter parameter.
-        config (ConvHyperparams): The config parameter.
+        lhs (Tensor): Input `lhs` argument (lhs).
+        depthwise_filter (Tensor): Input `depthwise_filter` argument (depthwise filter).
+        pointwise_filter (Tensor): Input `pointwise_filter` argument (pointwise filter).
+        config (ConvHyperparams): Input `config` argument (config).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     cfg = config if isinstance(config, (ConvHyperparams, _ConvHyperparamsProtocol)) else ConvHyperparams()
     kwargs["strides"] = cfg.strides

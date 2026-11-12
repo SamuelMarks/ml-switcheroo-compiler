@@ -46,12 +46,12 @@ def _copysign(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager copysign operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "copysign", None)
     if func:
@@ -66,12 +66,12 @@ def _getprintoptions(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager getprintoptions operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "get_printoptions")(*args, **kwargs))
 
@@ -81,7 +81,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np tensorarrayread operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional arguments (handle/array, index).
         **kwargs: Keyword arguments.
 
@@ -121,7 +121,7 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np tensorarraywrite operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional arguments (handle/array, index, value).
         **kwargs: Keyword arguments.
 
@@ -176,12 +176,12 @@ def _np_topk(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np topk operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     arr = args[0]
     k = int(ensure_int(args[1])) if len(args) > 1 else 1

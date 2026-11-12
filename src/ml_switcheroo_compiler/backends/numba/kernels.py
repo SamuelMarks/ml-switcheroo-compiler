@@ -9,14 +9,17 @@ float32: str = "float32"
 
 
 def _resolve_dense_backend() -> BackendModuleProtocol:
-    """Resolve the underlying array buffer backend via the BackendRegistry.
+    """Resolve the underlying array buffer backend via the active backend registry.
 
     Returns:
         BackendModuleProtocol: Registered host array backend module.
     """
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
-    return ensure_mod(BackendRegistry.get("numpy").get_module())
+    active = get_active_backend()
+    if active.__name__ == "NumbaCodeGenerator":
+        return ensure_mod(BackendRegistry.get("pure_python").get_module())
+    return ensure_mod(active.get_module())
 
 
 def _make_nb_kernel(op_name: str) -> EagerValue:

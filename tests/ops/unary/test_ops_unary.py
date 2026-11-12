@@ -113,5 +113,5 @@ def test_unary_special_coverage_brute() -> None:
     c = Cast()
     bc = Bitcast()
     c.eager_eval(np.array([1, 2]), dtype="float32")
-    bc.eager_eval(np.array([1, 2], dtype=np.int32), dtype="float32")
-    assert callable(test_unary_special_coverage_brute)
+    _out = bc.eager_eval(np.array([1, 2], dtype=np.int32), dtype="float32")
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2,) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [0.0, 0.0], atol=1e-3))

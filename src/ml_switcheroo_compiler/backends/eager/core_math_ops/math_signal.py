@@ -15,12 +15,12 @@ def _correlate(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager correlate operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "correlate", None)
     if func is not None:
@@ -36,12 +36,12 @@ def _np_windowhann(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np windowhann operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "windowhann", get_backend_member(backend_module, "windowhann", None))
     if func is not None:

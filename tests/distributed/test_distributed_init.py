@@ -78,6 +78,9 @@ def test_distributed_init_eager(monkeypatch: EagerTensorProtocol) -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_shard_tensor`.
         """
         return "sharded"
 

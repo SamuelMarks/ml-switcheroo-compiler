@@ -140,6 +140,9 @@ def test_unary_operations_and_piecewise() -> None:
 
         Args:
             env: Test parameter `env`.
+
+        Returns:
+            EagerValue: Computed output value from `cond_1`.
         """
         return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 10)
 
@@ -148,6 +151,9 @@ def test_unary_operations_and_piecewise() -> None:
 
         Args:
             env: Test parameter `env`.
+
+        Returns:
+            EagerValue: Computed output value from `cond_2`.
         """
         return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 0)
 

@@ -29,6 +29,9 @@ def test_checkpoint_activation_eviction_and_memory() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `complex_forward`.
         """
         h1 = ops.multiply(x, x)
         h2 = ops.add(h1, x)
@@ -64,6 +67,9 @@ def test_checkpoint_gradient_exact_numerical_match() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         y = ops.multiply(x, x)
         z = ops.add(y, ops.multiply(x, 3.0))
@@ -95,6 +101,9 @@ def test_checkpoint_value_and_grad_parity() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.multiply(x, ops.multiply(x, x))
 
@@ -121,6 +130,9 @@ def test_checkpoint_eager_execution() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ops.add(x, 10.0)
 

@@ -16,12 +16,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AdjustBrightness operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         delta = kwargs.get("delta", 0.0)
@@ -31,12 +31,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AdjustContrast operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         contrast_factor = kwargs.get("contrast_factor", 1.0)
@@ -46,12 +46,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AdjustHue operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         delta = kwargs.get("delta", 0.0)
@@ -61,12 +61,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AdjustSaturation operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         saturation_factor = kwargs.get("saturation_factor", 1.0)
@@ -76,12 +76,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AffineGenerator operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         batch_size = kwargs.get("batch_size", 1)
@@ -91,12 +91,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AffineGrid operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         size = kwargs.get("size", ())
@@ -107,12 +107,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AffineTransform operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         interpolation = kwargs.get("interpolation", "nearest")
@@ -122,12 +122,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AugMix operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_augmix({input_vars[0]})"
@@ -136,12 +136,12 @@ class ImageASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AutoContrast operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_auto_contrast({input_vars[0]})"

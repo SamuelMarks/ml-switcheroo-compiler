@@ -47,6 +47,9 @@ def test_grad_api_overwrite_with_gradient_full() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `target_fn`.
         """
         overwritten = overwrite_with_gradient(x, g)
         return ensure_tensor_obj(ensure_eager_tensor(overwritten) * ensure_eager_tensor(2.0))
@@ -69,7 +72,11 @@ def test_grad_api_backward_non_proxy_data() -> None:
         """Dummy data object without .id attribute."""
 
         def __str__(self) -> str:
-            """String representation."""
+            """String representation.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "raw_val_str"
 
     loss_tensor = ensure_callable(Tensor)(ensure_callable(NonProxyData)(), ensure_callable(TensorConfig)((), DType.Float32, ensure_callable(Device)("cpu")))
@@ -93,6 +100,9 @@ def test_grad_api_grad_has_aux_branch() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[float, str]: Computed output value from `fn_aux`.
         """
         return x * 5.0, "auxiliary"
 
@@ -111,6 +121,9 @@ def test_grad_api_value_and_grad_has_aux_branch() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[float, str]: Computed output value from `fn_with_aux`.
         """
         return x * 3.0, "aux_info"
 
@@ -159,6 +172,9 @@ def test_grad_api_nth_order_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
 

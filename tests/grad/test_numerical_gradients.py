@@ -200,6 +200,9 @@ def test_numerical_gradient_binary_functions() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func_add`.
         """
         b = _create_tensor(b_vals, (3,))
         return x + b
@@ -209,6 +212,9 @@ def test_numerical_gradient_binary_functions() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func_sub`.
         """
         b = _create_tensor(b_vals, (3,))
         return x - b
@@ -218,6 +224,9 @@ def test_numerical_gradient_binary_functions() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func_mul`.
         """
         b = _create_tensor(b_vals, (3,))
         return x * b
@@ -244,6 +253,9 @@ def test_numerical_jvp_verification() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            Tensor: Computed output value from `func`.
         """
         return dispatch_op("Sin", t) * t
 
@@ -272,6 +284,9 @@ def test_numerical_hvp_verification() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func`.
         """
         return x * x * x + dispatch_op("Sin", x)
 

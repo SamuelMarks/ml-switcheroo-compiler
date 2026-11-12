@@ -562,14 +562,14 @@ class ApplyAdam(OpDef):
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): The param parameter.
-            m (EagerTensorProtocol): The m parameter.
-            v (EagerTensorProtocol): The v parameter.
+            param (EagerTensorProtocol): Input `param` argument (param).
+            m (EagerTensorProtocol): Input `m` argument (m).
+            v (EagerTensorProtocol): Input `v` argument (v).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(param)
 
@@ -584,13 +584,13 @@ class ApplyAdagrad(OpDef):
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): The param parameter.
-            accum (EagerTensorProtocol): The accum parameter.
+            param (EagerTensorProtocol): Input `param` argument (param).
+            accum (EagerTensorProtocol): Input `accum` argument (accum).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(param)
 
@@ -605,14 +605,14 @@ class ApplyFtrl(OpDef):
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): The param parameter.
-            accum (EagerTensorProtocol): The accum parameter.
-            linear (EagerTensorProtocol): The linear parameter.
+            param (EagerTensorProtocol): Input `param` argument (param).
+            accum (EagerTensorProtocol): Input `accum` argument (accum).
+            linear (EagerTensorProtocol): Input `linear` argument (linear).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(param)
 
@@ -627,14 +627,14 @@ class ApplyRMSProp(OpDef):
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): The param parameter.
-            ms (EagerTensorProtocol): The ms parameter.
-            mom (EagerTensorProtocol): The mom parameter.
+            param (EagerTensorProtocol): Input `param` argument (param).
+            ms (EagerTensorProtocol): Input `ms` argument (ms).
+            mom (EagerTensorProtocol): Input `mom` argument (mom).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(param)
 
@@ -643,14 +643,14 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> 
     """Apply Adam update.
 
     Args:
-        param (Tensor): The param parameter.
-        m (Tensor): The m parameter.
-        v (Tensor): The v parameter.
-        grad (Tensor): The grad parameter.
-        lr (float): The lr parameter.
+        param (Tensor): Input `param` argument (param).
+        m (Tensor): Input `m` argument (m).
+        v (Tensor): Input `v` argument (v).
+        grad (Tensor): Input `grad` argument (grad).
+        lr (float): Input `lr` argument (lr).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -664,13 +664,13 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Tens
     """Apply Adagrad update.
 
     Args:
-        param (Tensor): The param parameter.
-        accum (Tensor): The accum parameter.
-        grad (Tensor): The grad parameter.
-        lr (float): The lr parameter.
+        param (Tensor): Input `param` argument (param).
+        accum (Tensor): Input `accum` argument (accum).
+        grad (Tensor): Input `grad` argument (grad).
+        lr (float): Input `lr` argument (lr).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -683,14 +683,14 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
     """Apply FTRL update.
 
     Args:
-        param (Tensor): The param parameter.
-        accum (Tensor): The accum parameter.
-        linear (Tensor): The linear parameter.
-        grad (Tensor): The grad parameter.
-        lr (float): The lr parameter.
+        param (Tensor): Input `param` argument (param).
+        accum (Tensor): Input `accum` argument (accum).
+        linear (Tensor): Input `linear` argument (linear).
+        grad (Tensor): Input `grad` argument (grad).
+        lr (float): Input `lr` argument (lr).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -703,14 +703,14 @@ def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: floa
     """Apply RMSProp update.
 
     Args:
-        param (Tensor): The param parameter.
-        ms (Tensor): The ms parameter.
-        mom (Tensor): The mom parameter.
-        grad (Tensor): The grad parameter.
-        lr (float): The lr parameter.
+        param (Tensor): Input `param` argument (param).
+        ms (Tensor): Input `ms` argument (ms).
+        mom (Tensor): Input `mom` argument (mom).
+        grad (Tensor): Input `grad` argument (grad).
+        lr (float): Input `lr` argument (lr).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -729,12 +729,12 @@ class LionConfigOp(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)
 
@@ -749,11 +749,11 @@ class AdamaxHyperparamsOp(OpDef):
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             *args (EagerTensorProtocol): Positional args.
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(inputs)

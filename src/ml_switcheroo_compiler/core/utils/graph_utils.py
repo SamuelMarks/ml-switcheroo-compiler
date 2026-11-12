@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Mapping
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
@@ -84,7 +85,7 @@ class _TopologicalSorter:
         """
         raw_nodes: TensorOrScalar = self.graph.nodes
         node_ids: list[str]
-        if isinstance(raw_nodes, dict):
+        if isinstance(raw_nodes, Mapping):
             node_ids = [str(k) for k in raw_nodes.keys()]
         elif isinstance(raw_nodes, list):
             node_ids = [x if isinstance(x, str) else (str(x.id) if isinstance(x, LogicalNode) or is_traced_data(x) else str(x)) for x in raw_nodes]

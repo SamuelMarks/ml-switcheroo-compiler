@@ -55,7 +55,11 @@ class MockDataChannel:
         self.sent.append(data)
 
     async def recv(self) -> bytes:
-        """Pop queued binary data or return empty bytes."""
+        """Pop queued binary data or return empty bytes.
+
+        Returns:
+            bytes: Computed output value from `recv`.
+        """
         if not self.recv_queue:
             return b""
         return self.recv_queue.pop(0)
@@ -400,7 +404,11 @@ async def test_stream_backpressure_branches() -> None:
             self.checks = 0
 
         def bufferedAmount(self) -> EagerValue:
-            """Test function bufferedAmount."""
+            """Test function bufferedAmount.
+
+            Returns:
+                EagerValue: Computed output value from `bufferedAmount`.
+            """
             self.checks += 1
             if self.checks > 2:
                 return 0
@@ -431,6 +439,9 @@ async def _test_stream_send_recv_message_variants_part_1(_state: dict[str, Eager
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `send`.
             """
 
             async def _inner() -> None:
@@ -517,6 +528,9 @@ async def _test_stream_send_recv_message_variants_part_3(_state: dict[str, Eager
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `sendMessage`.
             """
 
             async def _inner() -> None:
@@ -552,11 +566,19 @@ async def _test_stream_send_recv_message_variants_part_4(_state: dict[str, Eager
             self.mode = mode
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             if self.mode == "sync_coro":
 
                 async def _inner() -> EagerValue:
-                    """Test function _inner."""
+                    """Test function _inner.
+
+                    Returns:
+                        EagerValue: Computed output value from `_inner`.
+                    """
                     return bytearray(b"bytearray_data")
 
                 return ensure_eager_tensor(_inner())
@@ -875,7 +897,11 @@ class SimulatedPeerChannel:
         await self.out_q.put(data)
 
     async def recv(self) -> bytes:
-        """Receive byte message from incoming queue."""
+        """Receive byte message from incoming queue.
+
+        Returns:
+            bytes: Computed output value from `recv`.
+        """
         return await self.in_q.get()
 
 
@@ -884,6 +910,9 @@ def _create_mesh_channels(n: int) -> list[list[SimulatedPeerChannel | None]]:
 
     Args:
         n: Test parameter `n`.
+
+    Returns:
+        list[list[SimulatedPeerChannel | None]]: Computed output value from `_create_mesh_channels`.
     """
     # queues[src][dst]
     queues = ensure_eager_tensor([[asyncio.Queue() for _ in range(n)] for _ in range(n)])
@@ -917,6 +946,9 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_sum`.
         """
         return ensure_ndarray(await ensure_callable(ring_all_reduce)(inputs[rank], "SUM", mesh[rank], rank))
 
@@ -933,6 +965,9 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_prod`.
         """
         return ensure_ndarray(await ensure_callable(all_reduce)(inputs_prod[rank], "PROD", mesh_prod[rank], rank, algorithm="ring"))
 
@@ -950,6 +985,9 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_max`.
         """
         return ensure_ndarray(await ensure_callable(ring_all_reduce)(inputs_max[rank], "MAX", mesh_max[rank], rank))
 
@@ -966,6 +1004,9 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_min`.
         """
         return ensure_ndarray(await ensure_callable(ring_all_reduce)(inputs_max[rank], "MIN", mesh_min[rank], rank))
 
@@ -1005,6 +1046,9 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank`.
         """
         return ensure_ndarray(await ensure_callable(recursive_halving_doubling_all_gather)(inputs[rank], 0, mesh[rank], rank))
 
@@ -1020,6 +1064,9 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank2`.
         """
         return ensure_ndarray(await ensure_callable(all_gather)(inputs[rank], 0, mesh2[rank], rank, algorithm="recursive_doubling"))
 
@@ -1041,6 +1088,9 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_3`.
         """
         return ensure_ndarray(await ensure_callable(recursive_halving_doubling_all_gather)(inputs_3[rank], 0, mesh_3[rank], rank))
 
@@ -1088,6 +1138,9 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_sum`.
         """
         return ensure_ndarray(await ensure_callable(ring_reduce_scatter)(inputs[rank], "SUM", 0, mesh[rank], rank))
 
@@ -1103,6 +1156,9 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_ring`.
         """
         return ensure_ndarray(await ensure_callable(reduce_scatter)(inputs[rank], "SUM", 0, mesh_ring[rank], rank, algorithm="ring"))
 
@@ -1131,6 +1187,9 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_prod`.
         """
         return ensure_ndarray(await ensure_callable(ring_reduce_scatter)(inputs_prod[rank], "PROD", 0, mesh_prod[rank], rank))
 
@@ -1148,6 +1207,9 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_max`.
         """
         return ensure_ndarray(await ensure_callable(ring_reduce_scatter)(inputs_max[rank], "MAX", 0, mesh_max[rank], rank))
 
@@ -1177,6 +1239,9 @@ async def _test_multi_peer_ring_reduce_scatter_part_3(_state: dict[str, EagerTen
 
         Args:
             rank: Test parameter `rank`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `run_rank_min`.
         """
         return ensure_ndarray(await ensure_callable(ring_reduce_scatter)(inputs_max[rank], "MIN", 0, mesh_min[rank], rank))
 

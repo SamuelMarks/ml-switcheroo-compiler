@@ -29,7 +29,11 @@ class DummyTensor:
         self.requires_grad = requires_grad
 
     def __len__(self) -> EagerValue:
-        """Test function __len__."""
+        """Test function __len__.
+
+        Returns:
+            EagerValue: Computed output value from `__len__`.
+        """
         return ensure_eager_tensor(self.shape)[0]
 
 

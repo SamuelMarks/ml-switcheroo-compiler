@@ -170,7 +170,7 @@ class Hstack(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [_extract_shape_or_seq(s) for s in args[0]]
@@ -200,7 +200,7 @@ class Vstack(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [_extract_shape_or_seq(s) for s in args[0]]
@@ -230,7 +230,7 @@ class Dstack(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [_extract_shape_or_seq(s) for s in args[0]]
@@ -262,7 +262,7 @@ class ColumnStack(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [_extract_shape_or_seq(s) for s in args[0]]
@@ -332,7 +332,7 @@ class Append(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         raw_args: tuple[TensorOrScalar, ...] = args
         if not raw_args or not isinstance(raw_args[0], ShapeProtocol):

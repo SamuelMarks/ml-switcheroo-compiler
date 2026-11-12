@@ -89,12 +89,12 @@ class NanToNum(UnaryMathOp):
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
-            x (TensorOrScalar): The input parameter.
+            x (TensorOrScalar): Input `input` argument (input).
             *args (TensorOrScalar): Extra positional arguments.
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            Tensor: Result.
+            Tensor: Computed `Tensor` output.
         """
         clean_kwargs = {k: v for k, v in kwargs.items() if k != "copy"}
         return super().__call__(x, *args, **clean_kwargs)

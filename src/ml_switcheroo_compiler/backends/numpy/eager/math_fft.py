@@ -11,12 +11,12 @@ def _np_fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np fft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fft(*args, **kwargs)
 
@@ -26,12 +26,12 @@ def _np_rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np rfft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.rfft(*args, **kwargs)
 
@@ -41,12 +41,12 @@ def _np_ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np ifft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ifft(*args, **kwargs)
 
@@ -56,12 +56,12 @@ def _np_irfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np irfft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.irfft(*args, **kwargs)
 
@@ -71,12 +71,12 @@ def _np_fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np fftn operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fftn(*args, **kwargs)
 
@@ -86,12 +86,12 @@ def _np_ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np ifftn operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ifftn(*args, **kwargs)
 
@@ -101,12 +101,12 @@ def _np_rfftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np rfftn operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.rfftn(*args, **kwargs)
 
@@ -116,12 +116,12 @@ def _np_irfftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np irfftn operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.irfftn(*args, **kwargs)
 
@@ -131,12 +131,12 @@ def _np_fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np fft2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fft2(*args, **kwargs)
 
@@ -146,12 +146,12 @@ def _np_ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np ifft2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ifft2(*args, **kwargs)
 
@@ -161,12 +161,12 @@ def _np_rfft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np rfft2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.rfft2(*args, **kwargs)
 
@@ -176,12 +176,12 @@ def _np_irfft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np irfft2 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.irfft2(*args, **kwargs)
 
@@ -191,12 +191,12 @@ def _np_fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np fftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fftn(*args, **kwargs)
 
@@ -206,12 +206,12 @@ def _np_ifftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np ifftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ifftn(*args, **kwargs)
 
@@ -221,12 +221,12 @@ def _np_rfftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np rfftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.rfftn(*args, **kwargs)
 
@@ -236,12 +236,12 @@ def _np_irfftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np irfftnd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.irfftn(*args, **kwargs)
 
@@ -251,12 +251,12 @@ def _np_fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np fftshift operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fftshift(*args, **kwargs)
 
@@ -266,12 +266,12 @@ def _np_ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np ifftshift operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ifftshift(*args, **kwargs)
 
@@ -281,12 +281,12 @@ def _np_fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np fftfreq operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.fftfreq(*args, **kwargs)
 
@@ -296,12 +296,12 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np hfft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.hfft(*args, **kwargs)
 
@@ -311,12 +311,12 @@ def _np_ihfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np ihfft operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.ihfft(*args, **kwargs)
 
@@ -326,11 +326,11 @@ def _np_rfftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np rfftfreq operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.fft.rfftfreq(*args, **kwargs)

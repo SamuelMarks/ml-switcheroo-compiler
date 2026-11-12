@@ -42,6 +42,9 @@ class DummyBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `asarray`.
         """
         return np.asarray(x)
 

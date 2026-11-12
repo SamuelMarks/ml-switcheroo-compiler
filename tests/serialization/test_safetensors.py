@@ -91,6 +91,9 @@ def test_safetensors_with_backend_mock(mocker: EagerTensorProtocol) -> None:
                 buffer: Test parameter `buffer`.
                 dtype: Test parameter `dtype`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `from_buffer`.
             """
             return "mocked_tensor"
 

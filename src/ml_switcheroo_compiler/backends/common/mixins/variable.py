@@ -20,12 +20,12 @@ class VariableASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the Assign operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_assign({input_vars[0]}, {input_vars[1]})"
@@ -39,12 +39,12 @@ class VariableASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AssignAdd operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_assign_add({input_vars[0]}, {input_vars[1]})"
@@ -58,12 +58,12 @@ class VariableASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AssignSub operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_assign_sub({input_vars[0]}, {input_vars[1]})"

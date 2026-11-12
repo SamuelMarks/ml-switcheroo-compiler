@@ -22,10 +22,13 @@ def _is_prohibited_dynamic_numpy_call(node: ast.AST) -> str | None:
         return node.id
     if not isinstance(node, ast.Call) or not node.args:
         return None
+    first_arg = node.args[0]
+    is_registry_np = isinstance(first_arg, ast.Constant) and first_arg.value == "numpy" and ((isinstance(node.func, ast.Name) and node.func.id == "get_backend") or (isinstance(node.func, ast.Attribute) and node.func.attr == "get" and "BackendRegistry" in ast.unparse(node.func.value)))
+    if is_registry_np:
+        return "BackendRegistry.get('numpy')"
     is_dynamic_import = (isinstance(node.func, ast.Attribute) and node.func.attr == "import_module") or (isinstance(node.func, ast.Name) and node.func.id in ("import_module", "__import__"))
     if not is_dynamic_import:
         return None
-    first_arg = node.args[0]
     if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
         if first_arg.value == "numpy" or first_arg.value.startswith("numpy."):
             return first_arg.value

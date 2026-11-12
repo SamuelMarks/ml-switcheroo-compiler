@@ -125,6 +125,7 @@ def test_numpy_eager_coverage() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
+    handled_errors = 0
     ops = [
         "FloorDivide",
         "Remainder",
@@ -342,8 +343,8 @@ def test_numpy_eager_coverage() -> None:
                 try:
                     ensure_callable(execute_op)(None, op, x, 1)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
-    assert callable(test_numpy_eager_coverage)
+                    handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_conv_general_dilated_extra() -> None:
@@ -357,8 +358,9 @@ def test_conv_general_dilated_extra() -> None:
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
     res = ensure_callable(_conv_general_dilated)(lhs, rhs, ensure_callable(ConvConfig)(window_strides=(1,), padding=None))
+    assert ensure_eager_tensor(res).shape == (1, 4, 3)
     res = ensure_callable(_conv_general_dilated)(lhs, rhs, ensure_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=ensure_callable(ConvDimensionNumbers)(lhs_spec=(0, 1, 2), rhs_spec=(0, 1, 2), out_spec=(0, 1, 2))))
-    assert callable(test_conv_general_dilated_extra)
+    assert ensure_eager_tensor(res).shape == (1, 4, 3)
 
 
 def test_numpy_eager_conv_extra() -> None:
@@ -368,8 +370,8 @@ def test_numpy_eager_conv_extra() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     ConvTranspose = numpy_eager_registry.get("ConvTranspose")
-    ensure_callable(ConvTranspose)(np, ensure_callable(np.ones)((1, 1, 1, 1)), ensure_callable(np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
-    assert callable(test_numpy_eager_conv_extra)
+    _out = ensure_callable(ConvTranspose)(np, ensure_callable(np.ones)((1, 1, 1, 1)), ensure_callable(np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (1, 1, 1, 1) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [[[[1.0]]]], atol=1e-3))
 
 
 def test_numpy_eager_linalg_extra() -> None:
@@ -537,8 +539,8 @@ def test_numpy_vision_color_eager() -> None:
     _np_posterize(ensure_eager_tensor(np), img, bits=4)
     _np_rgb_to_grayscale(ensure_eager_tensor(np), img)
     _np_rgb_to_grayscale(ensure_eager_tensor(np), img, keepdim=True)
-    _np_solarize(ensure_eager_tensor(np), img, threshold=0.5)
-    assert callable(test_numpy_vision_color_eager)
+    _out = _np_solarize(ensure_eager_tensor(np), img, threshold=0.5)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2, 2, 3)
 
 
 def test_numpy_vision_geometry_eager_extra() -> None:
@@ -683,6 +685,7 @@ def test_numpy_eager_coverage_2() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
+    handled_errors = 0
     ops = [
         "FloorDivide",
         "Remainder",
@@ -900,8 +903,8 @@ def test_numpy_eager_coverage_2() -> None:
                 try:
                     ensure_callable(execute_op)(None, op, x, 1)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
-    assert callable(test_numpy_eager_coverage_2)
+                    handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_reduce_window_coverage_2() -> None:
@@ -965,8 +968,8 @@ def test_numpy_eager_conv_extra_2() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     ConvTranspose = numpy_eager_registry.get("ConvTranspose")
-    ensure_callable(ConvTranspose)(np, ensure_callable(np.ones)((1, 1, 1, 1)), ensure_callable(np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
-    assert callable(test_numpy_eager_conv_extra_2)
+    _out = ensure_callable(ConvTranspose)(np, ensure_callable(np.ones)((1, 1, 1, 1)), ensure_callable(np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (1, 1, 1, 1) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [[[[1.0]]]], atol=1e-3))
 
 
 def test_numpy_eager_linalg_extra_2() -> None:
@@ -1053,9 +1056,9 @@ def test_np_polynomial_bessel_no_args() -> None:
 
     backend = get_active_backend()
     ops_with_one_arg = ["modified_bessel_i0", "modified_bessel_i1", "modified_bessel_k0", "modified_bessel_k1"]
-    for op_name in ops_with_one_arg:
-        backend.execute_op(op_name)
-    assert callable(test_np_polynomial_bessel_no_args)
+    results = [backend.execute_op(op_name) for op_name in ops_with_one_arg]
+    assert len(results) == 4
+    assert all(np.asarray(ensure_eager_tensor(r)).size >= 1 for r in results)
 
 
 def test_np_polynomial_get_sc() -> None:
@@ -1281,22 +1284,6 @@ def test_io_fallbacks() -> None:
     assert ensure_callable(writer.close)() is None
 
 
-def test_io_fallbacks_decode() -> None:
-    """Test IO decode fallbacks."""
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    if True:
-        pass
-    if True:
-        pass
-    assert callable(test_io_fallbacks_decode)
-
-
 def test_io_fallbacks_load() -> None:
     """Test IO load fallbacks."""
     import unittest.mock as mock
@@ -1317,52 +1304,6 @@ def test_io_fallbacks_load() -> None:
                 raise NotImplementedError()
 
         mock_get.return_value = DummyBackend
-
-
-def test_io_fallbacks_decode_backend() -> None:
-    """Test decode backend fallbacks."""
-    import unittest.mock as mock
-
-    with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
-
-        class DummyBackend:
-            """Test class DummyBackend."""
-
-            @classmethod
-            def encode_base64(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function encode_base64.
-
-                Args:
-                    args: Test parameter `args`.
-                    kwargs: Test parameter `kwargs`.
-                """
-                return "encoded"
-
-            @classmethod
-            def decode_base64(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_base64.
-
-                Args:
-                    args: Test parameter `args`.
-                    kwargs: Test parameter `kwargs`.
-                """
-                return "decoded"
-
-            @classmethod
-            def parse_sequence_example(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function parse_sequence_example.
-
-                Args:
-                    args: Test parameter `args`.
-                    kwargs: Test parameter `kwargs`.
-                """
-                return ("parsed", "parsed2")
-
-        mock_get.return_value = DummyBackend
-        pass
-        pass
-        pass
-    assert callable(test_io_fallbacks_decode_backend)
 
 
 def test_io_fallbacks_load_file() -> None:
@@ -1407,6 +1348,9 @@ def test_np_io_dummy_ops_with_backends() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `decode_jpeg`.
                 """
                 return "jpeg"
 
@@ -1417,6 +1361,9 @@ def test_np_io_dummy_ops_with_backends() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `decode_png`.
                 """
                 return "png"
 
@@ -1427,6 +1374,9 @@ def test_np_io_dummy_ops_with_backends() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `decode_gif`.
                 """
                 return "gif"
 
@@ -1437,6 +1387,9 @@ def test_np_io_dummy_ops_with_backends() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `decode_bmp`.
                 """
                 return "bmp"
 
@@ -1533,6 +1486,9 @@ def test_core_math_ops_cbrt_fallback() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sign`.
             """
             return 1.0 if ensure_eager_tensor(x) >= ensure_eager_tensor(0) else -ensure_eager_tensor(1.0)
 
@@ -1541,6 +1497,9 @@ def test_core_math_ops_cbrt_fallback() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `abs`.
             """
             return x if ensure_eager_tensor(x) >= ensure_eager_tensor(0) else -ensure_eager_tensor(x)
 
@@ -1550,6 +1509,9 @@ def test_core_math_ops_cbrt_fallback() -> None:
             Args:
                 x: Test parameter `x`.
                 y: Test parameter `y`.
+
+            Returns:
+                EagerValue: Computed output value from `power`.
             """
             return ensure_eager_tensor(x) ** ensure_eager_tensor(y)
 
@@ -1577,6 +1539,9 @@ def test_core_math_ops_fix_copysign() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `floor`.
             """
             import math
 
@@ -1587,6 +1552,9 @@ def test_core_math_ops_fix_copysign() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `ceil`.
             """
             import math
 
@@ -1599,6 +1567,9 @@ def test_core_math_ops_fix_copysign() -> None:
                 cond: Test parameter `cond`.
                 x: Test parameter `x`.
                 y: Test parameter `y`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return x if cond else y
 
@@ -1607,6 +1578,9 @@ def test_core_math_ops_fix_copysign() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `abs`.
             """
             return x if ensure_eager_tensor(x) >= ensure_eager_tensor(0) else -ensure_eager_tensor(x)
 
@@ -1615,6 +1589,9 @@ def test_core_math_ops_fix_copysign() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sign`.
             """
             return 1.0 if ensure_eager_tensor(x) >= ensure_eager_tensor(0) else -ensure_eager_tensor(1.0)
 
@@ -1674,6 +1651,9 @@ def test_core_math_ops_hypot_i0_imag() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sqrt`.
             """
             return ensure_eager_tensor(x) ** ensure_eager_tensor(0.5)
 
@@ -2002,6 +1982,9 @@ def test_core_math_ops_heaviside_fallback() -> None:
                 cond: Test parameter `cond`.
                 t: Test parameter `t`.
                 f: Test parameter `f`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return t if cond else f
 
@@ -2056,6 +2039,9 @@ def test_core_math_ops_adjoint_det() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `conj`.
             """
             return ensure_eager_tensor(ensure_callable(np.conj)(x))
 
@@ -2064,6 +2050,9 @@ def test_core_math_ops_adjoint_det() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `transpose`.
             """
             return ensure_callable(np.transpose)(x)
 
@@ -2113,6 +2102,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `eig`.
                 """
                 return x
 
@@ -2122,6 +2114,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `eigh`.
                 """
                 return x
 
@@ -2131,6 +2126,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `eigvals`.
                 """
                 return x
 
@@ -2140,6 +2138,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `eigvalsh`.
                 """
                 return x
 
@@ -2157,6 +2158,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `eig`.
             """
             return x
 
@@ -2165,6 +2169,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `eigh`.
             """
             return x
 
@@ -2173,6 +2180,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `eigvals`.
             """
             return x
 
@@ -2181,6 +2191,9 @@ def test_core_math_ops_eig_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `eigvalsh`.
             """
             return x
 
@@ -2231,6 +2244,9 @@ def test_core_math_ops_cholesky_funcs() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `cholesky`.
                 """
                 return x
 
@@ -2241,6 +2257,9 @@ def test_core_math_ops_cholesky_funcs() -> None:
                 Args:
                     b: Test parameter `b`.
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `cho_solve`.
                 """
                 return b
 
@@ -2250,6 +2269,9 @@ def test_core_math_ops_cholesky_funcs() -> None:
             Args:
                 shape: Test parameter `shape`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
             return 0
 
@@ -2266,6 +2288,9 @@ def test_core_math_ops_cholesky_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `cholesky`.
             """
             return x
 
@@ -2275,6 +2300,9 @@ def test_core_math_ops_cholesky_funcs() -> None:
             Args:
                 b: Test parameter `b`.
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `cho_solve`.
             """
             return b
 
@@ -2497,6 +2525,9 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
                 Args:
                     x: Test parameter `x`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `accumulate`.
                 """
                 return x
 
@@ -2510,6 +2541,9 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
                 Args:
                     x: Test parameter `x`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `accumulate`.
                 """
                 return x
 
@@ -2561,6 +2595,9 @@ def test_core_math_ops_divide_multiply_no_nan() -> None:
             Args:
                 x: Test parameter `x`.
                 y: Test parameter `y`.
+
+            Returns:
+                EagerValue: Computed output value from `divide`.
             """
             return ensure_eager_tensor(x) / ensure_eager_tensor(y) if ensure_eager_tensor(y) != ensure_eager_tensor(0) else ensure_callable(float)("inf")
 
@@ -2570,6 +2607,9 @@ def test_core_math_ops_divide_multiply_no_nan() -> None:
             Args:
                 x: Test parameter `x`.
                 y: Test parameter `y`.
+
+            Returns:
+                EagerValue: Computed output value from `multiply`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(y)
 
@@ -2580,6 +2620,9 @@ def test_core_math_ops_divide_multiply_no_nan() -> None:
                 cond: Test parameter `cond`.
                 t: Test parameter `t`.
                 f: Test parameter `f`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return t if cond else f
 
@@ -2588,6 +2631,9 @@ def test_core_math_ops_divide_multiply_no_nan() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `isnan`.
             """
             import math
 
@@ -2915,6 +2961,7 @@ def test_core_math_ops_gamma_gcd() -> None:
 
 def test_math_misc_brute_coverage() -> None:
     """Test function test_math_misc_brute_coverage."""
+    handled_errors = 0
     import numpy as np
 
     from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -2923,7 +2970,15 @@ def test_math_misc_brute_coverage() -> None:
     np_members = get_test_members(np)
 
     def _dummy_getattr(self: EagerValue, name: EagerValue) -> EagerValue:
-        """Resolve attribute on DummyBackend."""
+        """Resolve attribute on DummyBackend.
+
+        Args:
+            self (EagerValue): Dynamic `DummyBackend` instance.
+            name (EagerValue): Input `name` value (name) for `_dummy_getattr`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_getattr`.
+        """
         if str(name) in np_members:
             return np_members[str(name)]
         return lambda *args, **kwargs: np.array([1.0])
@@ -2940,32 +2995,32 @@ def test_math_misc_brute_coverage() -> None:
         try:
             op(dummy)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, np.array([1, 2, 3]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, np.array([1, 2, 3]), np.array([1, 2, 3]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, 1)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, [1, 2])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, 1, 2)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(dummy, np.array([1.0, 2.0]), np.array([1.0, 2.0]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_math_misc_brute_coverage)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_math_misc_specifics() -> None:
@@ -3092,7 +3147,12 @@ def test_math_misc_exceptions() -> None:
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     def _throwing_getattr(self: EagerValue, name: EagerValue) -> None:
-        """Raise ValueError on attribute access."""
+        """Raise ValueError on attribute access.
+
+        Args:
+            self (EagerValue): Dynamic `ThrowingBackend` instance.
+            name (EagerValue): Input `name` value (name) for `_throwing_getattr`.
+        """
         raise ValueError("Intentional error")
 
     ThrowingBackend = ensure_callable(type)("ThrowingBackend", (), {"_" + "_getattr_" + "_": _throwing_getattr})
@@ -3131,6 +3191,7 @@ def test_math_misc_exceptions() -> None:
 
 def test_math_misc_type_calls() -> None:
     """Test function test_math_misc_type_calls."""
+    handled_errors = 0
     import pytest
 
     with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=".*"):
@@ -3182,51 +3243,51 @@ def test_math_misc_type_calls() -> None:
         try:
             math_misc._np_rawmatmul(ensure_mod(bt), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_sparsedensematmul(ensure_mod(bt), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_decode_image(ensure_mod(bt), b"img")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_parse_example(ensure_mod(bt), b"example")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_parse_tensor(ensure_mod(bt), b"tensor")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_read_file(ensure_mod(bt), "/tmp/ml_switcheroo_test_file.txt")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_rem(ensure_eager_tensor(bt), np.array([5]), np.array([2]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_serialize_tensor(ensure_eager_tensor(bt), np.array([1]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_write_file(ensure_mod(bt), "/tmp/ml_switcheroo_test_file.txt", b"content")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_confusion_matrix(ensure_mod(bt), np.array([0]), np.array([0]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             math_misc._np_decode_csv(ensure_mod(bt), ["1,2"])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             ensure_callable(ensure_callable(numpy_eager_registry.get)("descriptive"))(bt, ensure_callable(np.array)([1.0, 2.0]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
 
 
 def test_math_misc_np_ops() -> None:
@@ -3464,7 +3525,11 @@ def test_reductions() -> None:
         """Test class MockK."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 2
 
     red._np_top_k(b, np.array([1.0, 2.0, 3.0]), ensure_eager_tensor(MockK()))
@@ -3476,7 +3541,11 @@ def test_reductions() -> None:
             """Test class Data."""
 
             def item(self) -> EagerValue:
-                """Test function item."""
+                """Test function item.
+
+                Returns:
+                    EagerValue: Computed output value from `item`.
+                """
                 return 2
 
         data = Data()
@@ -3635,6 +3704,9 @@ def test_math_fft_signal_fftconvolve() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `fftconvolve`.
             """
             return "success"
 

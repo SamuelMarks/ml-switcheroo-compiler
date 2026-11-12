@@ -223,6 +223,9 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
             backend_ctx: Test parameter `backend_ctx`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            str: Computed output value from `mock_ak_op`.
         """
         del backend_ctx, args, kwargs
         return "custom_awkward_eval"
@@ -245,6 +248,9 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `sum`.
             """
             del args, kwargs
             raise RuntimeError("internal awkward crash")
@@ -343,6 +349,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_2(_state: dict[str, 
 
             Args:
                 _: Test parameter `_`.
+
+            Returns:
+                EagerValue: Computed output value from `to_regular`.
             """
             raise RuntimeError("to_regular error")
 
@@ -382,6 +391,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
 
             Args:
                 _: Test parameter `_`.
+
+            Returns:
+                EagerValue: Computed output value from `from_regular`.
             """
             raise RuntimeError("from_regular error")
 
@@ -391,6 +403,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
 
             Args:
                 _: Test parameter `_`.
+
+            Returns:
+                EagerValue: Computed output value from `to_numpy`.
             """
             raise RuntimeError("to_numpy error")
 
@@ -400,6 +415,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
 
             Args:
                 _: Test parameter `_`.
+
+            Returns:
+                EagerValue: Computed output value from `from_numpy`.
             """
             raise RuntimeError("from_numpy error")
 
@@ -409,6 +427,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
 
             Args:
                 _: Test parameter `_`.
+
+            Returns:
+                EagerValue: Computed output value from `from_iter`.
             """
             raise RuntimeError("from_iter error")
 
@@ -434,7 +455,11 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state: dict[str, 
         """Test class ObjectWithToList."""
 
         def tolist(self) -> list[int]:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                list[int]: Computed output value from `tolist`.
+            """
             return [10, 20]
 
     assert ensure_callable(to_list)(ensure_callable(ObjectWithToList)()) == [10, 20]
@@ -470,6 +495,9 @@ def test_awkward_full_branches_and_edge_cases() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `fake_import`.
         """
         if name == "awkward":
             raise ImportError("no awkward")

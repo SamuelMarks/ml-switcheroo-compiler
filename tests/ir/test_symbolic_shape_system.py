@@ -969,11 +969,19 @@ def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, 
         """Irreducible node for testing."""
 
         def simplify(self) -> SymNode:
-            """Simplify."""
+            """Simplify.
+
+            Returns:
+                SymNode: Computed output value from `simplify`.
+            """
             return self
 
         def canonical(self) -> SymNode:
-            """Canonical."""
+            """Canonical.
+
+            Returns:
+                SymNode: Computed output value from `canonical`.
+            """
             return self
 
         def to_polynomial(self) -> None:
@@ -985,11 +993,18 @@ def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, 
 
             Args:
                 env: Test parameter `env`.
+
+            Returns:
+                int: Computed output value from `eval`.
             """
             return 0
 
         def free_vars(self) -> set[str]:
-            """Free vars."""
+            """Free vars.
+
+            Returns:
+                set[str]: Computed output value from `free_vars`.
+            """
             return set()
 
     s_irred = SymBinaryOp("+", IrreducibleNode(), SymConst(1))

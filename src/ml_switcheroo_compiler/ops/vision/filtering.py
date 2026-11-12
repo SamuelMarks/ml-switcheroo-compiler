@@ -16,12 +16,12 @@ def gaussian_blur(images: Tensor, config_obj: TensorOrScalar = None, **kwargs: T
     """Apply Gaussian blur to the image(s).
 
     Args:
-        images (Tensor): The images parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        images (Tensor): Input `images` argument (images).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
         kernel_size = kwargs.get("kernel_size", (3, 3))
@@ -61,13 +61,13 @@ def median_filter(
     """Apply a median filter to the image(s).
 
     Args:
-        images (Tensor): The images parameter.
-        kernel_size (int | tuple[int, int]): The kernel_size parameter.
-        padding (str): The padding parameter.
-        data_format (str | None): The data_format parameter.
+        images (Tensor): Input `images` argument (images).
+        kernel_size (int | tuple[int, int]): Input `kernel_size` argument (kernel size).
+        padding (str): Input `padding` argument (padding).
+        data_format (str | None): Input `data_format` argument (data format).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if isinstance(kernel_size, int):
         kernel_size = (kernel_size, kernel_size)
@@ -103,12 +103,12 @@ def iou(
     """Compute Intersection-Over-Union between two sets of bounding boxes.
 
     Args:
-        boxes1 (Tensor): The boxes1 parameter.
-        boxes2 (Tensor): The boxes2 parameter.
-        bounding_box_format (str): The bounding_box_format parameter.
+        boxes1 (Tensor): Input `boxes1` argument (boxes1).
+        boxes2 (Tensor): Input `boxes2` argument (boxes2).
+        bounding_box_format (str): Input `bounding_box_format` argument (bounding box format).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -141,14 +141,14 @@ def non_max_suppression(
     """Greedily selects a subset of bounding boxes in descending order of score.
 
     Args:
-        boxes (Tensor): The boxes parameter.
-        scores (Tensor): The scores parameter.
-        max_output_size (int): The max_output_size parameter.
-        iou_threshold (float): The iou_threshold parameter.
-        score_threshold (float): The score_threshold parameter.
+        boxes (Tensor): Input `boxes` argument (boxes).
+        scores (Tensor): Input `scores` argument (scores).
+        max_output_size (int): Input `max_output_size` argument (max output size).
+        iou_threshold (float): Input `iou_threshold` argument (iou threshold).
+        score_threshold (float): Input `score_threshold` argument (score threshold).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -179,11 +179,11 @@ def sharpen(images: Tensor, factor: float = 1.0) -> TensorOrScalar:
     """Sharpen images.
 
     Args:
-        images (Tensor): The images parameter.
-        factor (float): The factor parameter.
+        images (Tensor): Input `images` argument (images).
+        factor (float): Input `factor` argument (factor).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -205,13 +205,13 @@ def random_gaussian_blur(
     """Randomly apply Gaussian blur.
 
     Args:
-        images (Tensor): The images parameter.
-        kernel_size (int | tuple[int, int]): The kernel_size parameter.
-        sigma (float | tuple[float, float]): The sigma parameter.
+        images (Tensor): Input `images` argument (images).
+        kernel_size (int | tuple[int, int]): Input `kernel_size` argument (kernel size).
+        sigma (float | tuple[float, float]): Input `sigma` argument (sigma).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -243,12 +243,12 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
     """Randomly adjust sharpness.
 
     Args:
-        images (Tensor): The images parameter.
-        factor (float | tuple[float, float]): The factor parameter.
+        images (Tensor): Input `images` argument (images).
+        factor (float | tuple[float, float]): Input `factor` argument (factor).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()

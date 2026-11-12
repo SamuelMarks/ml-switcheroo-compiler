@@ -559,6 +559,9 @@ def test_sparse_eager_execute_op() -> None:
             backend_mod: Test parameter `backend_mod`.
             x: Test parameter `x`.
             scale: Test parameter `scale`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `custom_eager`.
         """
         return ensure_ndarray(ensure_callable(np.asarray)(x) * ensure_callable(float)(scale))
 

@@ -29,12 +29,12 @@ def dynamic_slice(
     """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
-        input (Tensor): The input parameter.
-        start_indices (Sequence): The start_indices parameter.
-        slice_sizes (Sequence): The slice_sizes parameter.
+        input (Tensor): Input `input` argument (input).
+        start_indices (Sequence): Input `start_indices` argument (start indices).
+        slice_sizes (Sequence): Input `slice_sizes` argument (slice sizes).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         starts = []
@@ -65,12 +65,12 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int | Te
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
-        input (Tensor): The input parameter.
-        update (Tensor): The update parameter.
-        start_indices (Sequence): The start_indices parameter.
+        input (Tensor): Input `input` argument (input).
+        update (Tensor): Input `update` argument (update).
+        start_indices (Sequence): Input `start_indices` argument (start indices).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
@@ -87,12 +87,12 @@ def dynamic_update_slice(
     """Update a slice of an array at dynamically computed start indices.
 
     Args:
-        operand (Tensor): The operand parameter.
-        update (Tensor): The update parameter.
-        start_indices (Sequence): The start_indices parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        update (Tensor): Input `update` argument (update).
+        start_indices (Sequence): Input `start_indices` argument (start indices).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     inputs = [operand, update, *start_indices]
     return _emit_shape_node(
@@ -118,7 +118,7 @@ class DynamicSlice(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         slice_sizes = args[2] if len(args) > BINARY_OP_ARITY else kwargs["slice_sizes"]
         return tuple(ensure_shape(slice_sizes))

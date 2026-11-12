@@ -97,6 +97,9 @@ def test_nlp_options_and_shapes(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return np.array([1.0])
 

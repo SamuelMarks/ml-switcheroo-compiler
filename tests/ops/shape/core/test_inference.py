@@ -22,6 +22,9 @@ def test_register_shape_inference() -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `my_infer_shape`.
         """
         return (2, 3)
 
@@ -42,6 +45,9 @@ def test_infer_shape_fallback() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return (4, 5)
 
@@ -77,6 +83,9 @@ def test_infer_shape_args_fallback() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             if any(isinstance(a, tuple) for a in args):
                 raise ValueError("Expected raw objects")
@@ -110,6 +119,9 @@ def test_infer_shape_exception_handling(mocker: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return ()
 
@@ -136,6 +148,9 @@ def test_infer_shape_with_yaml_data(mocker: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return (1, 1)
 

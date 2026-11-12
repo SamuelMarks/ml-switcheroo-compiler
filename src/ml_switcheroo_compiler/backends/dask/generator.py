@@ -52,8 +52,8 @@ class DaskGenerator(PythonStringGenerator):
         """Initialize distributed context.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
         """
         import dask.distributed as dask_dist
 
@@ -69,7 +69,7 @@ class DaskGenerator(PythonStringGenerator):
         """Init.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
@@ -78,7 +78,7 @@ class DaskGenerator(PythonStringGenerator):
         """Get the library prefix string used when emitting Dask array operations.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return "da"
 
@@ -86,7 +86,7 @@ class DaskGenerator(PythonStringGenerator):
         """Get helper functions.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         res: list[str] = []
         return res
@@ -99,7 +99,7 @@ class DaskGenerator(PythonStringGenerator):
 
         Args:
             node (IRNode): The node to process.
-            input_vars (list[str]): The input_vars parameter.
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Extra attributes.
 
         Returns:

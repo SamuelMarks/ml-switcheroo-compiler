@@ -77,7 +77,11 @@ class _MockVarItem:
             self.name = name
 
     def numpy(self) -> EagerValue:
-        """Return numpy value."""
+        """Return numpy value.
+
+        Returns:
+            EagerValue: Computed output value from `numpy`.
+        """
         return self._data
 
 
@@ -105,7 +109,11 @@ class MockModel:
             name = "ema1"
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return "ema1_data"
 
         self.ema_variables = [EMA()]
@@ -114,13 +122,21 @@ class MockModel:
             """Test class EMA2."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return "ema2_data"
 
         ensure_callable(self.ema_variables.append)(ensure_callable(EMA2)())
 
     def get_config(self) -> EagerValue:
-        """Test function get_config."""
+        """Test function get_config.
+
+        Returns:
+            EagerValue: Computed output value from `get_config`.
+        """
         return {"conf": "mock"}
 
 
@@ -223,7 +239,11 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
         name = "nt2"
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return "nt2_data"
 
     ensure_callable(_extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
@@ -341,7 +361,11 @@ def test_deserialize_serialize_keras_object() -> None:
         """Test class Obj."""
 
         def get_config(self) -> EagerValue:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                EagerValue: Computed output value from `get_config`.
+            """
             return {"a": 1}
 
     assert serialize_object(ensure_eager_tensor(Obj())) == {"a": 1}

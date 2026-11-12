@@ -155,6 +155,9 @@ def test_np_tensor_scatter_update() -> None:
             t: Test parameter `t`.
             idx: Test parameter `idx`.
             u: Test parameter `u`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_update`.
         """
         return _tensor_scatter_update(t, idx, u)
 
@@ -274,7 +277,11 @@ def test_tuple_instances() -> None:
         """Test class MockIndex."""
 
         def __array__(self) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return np.array([[0, 0], [1, 1]])
 
     idx = MockIndex()

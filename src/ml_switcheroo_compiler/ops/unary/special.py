@@ -75,7 +75,7 @@ class CanCast(OpDef):
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # CanCast returns a boolean scalar
         return ()
@@ -97,7 +97,7 @@ class Frexp(OpDef):
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...] | str: Result.
+            tuple[int, ...] | str: Computed `tuple[int, ...] | str` output.
         """
         if not args:
             x_kw = kwargs.get("x")
@@ -229,7 +229,7 @@ class Lbeta(OpDef):
             **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = tuple(x) if isinstance(x, (tuple, list)) else extract_shape(x)
         if len(shape) > 0:

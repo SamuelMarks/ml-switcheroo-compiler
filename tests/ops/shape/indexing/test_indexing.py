@@ -276,6 +276,9 @@ def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name
@@ -343,6 +346,9 @@ def test_indexing_edge_cases(mocker: EagerTensorProtocol) -> None:
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name

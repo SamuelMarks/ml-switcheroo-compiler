@@ -186,6 +186,9 @@ def test_ragged_tensor_to_dense() -> None:
 
             Args:
                 padding: Test parameter `padding`.
+
+            Returns:
+                EagerValue: Computed output value from `to_padded_tensor`.
             """
             _typed_ret_1: EagerValue = torch.tensor([[1.0, padding], [padding, padding]])
             return _typed_ret_1

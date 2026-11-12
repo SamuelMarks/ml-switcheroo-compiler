@@ -487,14 +487,16 @@ class SparseGenerator(PythonStringGenerator):
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-            from ml_switcheroo_compiler.backends.registry import BackendRegistry
+            from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = extract_data(arg)
-            res_dict = evaluate_graph(graph, feed_dict, backend=BackendRegistry.get("numpy"))
+            active_be = get_active_backend()
+            eval_be = BackendRegistry.get("pure_python") if active_be.__name__ == "SparseCodeGenerator" else active_be
+            res_dict = evaluate_graph(graph, feed_dict, backend=eval_be)
             if not graph.outputs:
                 return ensure_eager_tensor(res_dict)
             if len(graph.outputs) == 1:

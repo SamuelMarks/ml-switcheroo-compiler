@@ -207,6 +207,9 @@ def test_validate_mappings_with_temp_files() -> None:
             Args:
                 path: Test parameter `path`.
                 start: Test parameter `start`.
+
+            Returns:
+                str: Computed output value from `mock_relpath`.
             """
             return orig_relpath(path, d)
 

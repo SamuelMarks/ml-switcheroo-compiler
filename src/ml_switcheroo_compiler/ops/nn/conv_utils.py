@@ -121,11 +121,11 @@ def _build_conv_config(
     """Compute the build conv config tensor operation.
 
     Args:
-        kwargs (dict): The kwargs parameter.
-        dimension_numbers (tuple): The dimension_numbers parameter.
+        kwargs (dict): Input `kwargs` argument (kwargs).
+        dimension_numbers (tuple): Input `dimension_numbers` argument (dimension numbers).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     strides = kwargs.get("strides", 1)
     if isinstance(strides, int):
@@ -156,15 +156,15 @@ def _prepare_depthwise_conv(
     """Prepare configuration and reshape weights for depthwise convolution.
 
     Args:
-        lhs (Tensor): The lhs parameter.
-        rhs (Tensor): The rhs parameter.
-        spatial_dims (int): The spatial_dims parameter.
-        dimension_numbers (tuple): The dimension_numbers parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        lhs (Tensor): Input `lhs` argument (lhs).
+        rhs (Tensor): Input `rhs` argument (rhs).
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
+        dimension_numbers (tuple): Input `dimension_numbers` argument (dimension numbers).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config_obj is None:
         strides = kwargs.get("strides", 1)
@@ -201,14 +201,14 @@ def atrous_conv2d(value: TensorOrScalar, filters: TensorOrScalar, rate: TensorOr
     """Atrous convolution.
 
     Args:
-        value (TensorOrScalar): The value parameter.
-        filters (TensorOrScalar): The filters parameter.
-        rate (TensorOrScalar): The rate parameter.
-        padding (TensorOrScalar): The padding parameter.
-        name (TensorOrScalar): The name parameter.
+        value (TensorOrScalar): Input `value` argument (value).
+        filters (TensorOrScalar): Input `filters` argument (filters).
+        rate (TensorOrScalar): Input `rate` argument (rate).
+        padding (TensorOrScalar): Input `padding` argument (padding).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     conv2d = get_op("Conv2d")()
 
@@ -225,14 +225,14 @@ def atrous_conv2d_transpose(
     """Atrous convolution transpose.
 
     Args:
-        value (TensorOrScalar): The value parameter.
-        filters (TensorOrScalar): The filters parameter.
-        output_shape (TensorOrScalar): The output_shape parameter.
-        config (GenericConvConfig | None): The config parameter.
-        name (TensorOrScalar): The name parameter.
+        value (TensorOrScalar): Input `value` argument (value).
+        filters (TensorOrScalar): Input `filters` argument (filters).
+        output_shape (TensorOrScalar): Input `output_shape` argument (output shape).
+        config (GenericConvConfig | None): Input `config` argument (config).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     conf = config if config is not None else GenericConvConfig()
 
@@ -245,13 +245,13 @@ def bias_add(value: TensorOrScalar, bias: TensorOrScalar, data_format: TensorOrS
     """Add `bias` to `value`.
 
     Args:
-        value (TensorOrScalar): The value parameter.
-        bias (TensorOrScalar): The bias parameter.
-        data_format (TensorOrScalar): The data_format parameter.
-        name (TensorOrScalar): The name parameter.
+        value (TensorOrScalar): Input `value` argument (value).
+        bias (TensorOrScalar): Input `bias` argument (bias).
+        data_format (TensorOrScalar): Input `data_format` argument (data format).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return add(value, bias)
 
@@ -260,12 +260,12 @@ def collapse_repeated(labels: TensorOrScalar, seq_length: TensorOrScalar, name: 
     """Merge repeated labels into single labels.
 
     Args:
-        labels (TensorOrScalar): The labels parameter.
-        seq_length (TensorOrScalar): The seq_length parameter.
-        name (TensorOrScalar): The name parameter.
+        labels (TensorOrScalar): Input `labels` argument (labels).
+        seq_length (TensorOrScalar): Input `seq_length` argument (seq length).
+        name (TensorOrScalar): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -286,12 +286,12 @@ def compute_average_loss(per_example_loss: TensorOrScalar, sample_weight: Tensor
     """Compute the average loss.
 
     Args:
-        per_example_loss (TensorOrScalar): The per_example_loss parameter.
-        sample_weight (TensorOrScalar): The sample_weight parameter.
-        global_batch_size (TensorOrScalar): The global_batch_size parameter.
+        per_example_loss (TensorOrScalar): Input `per_example_loss` argument (per example loss).
+        sample_weight (TensorOrScalar): Input `sample_weight` argument (sample weight).
+        global_batch_size (TensorOrScalar): Input `global_batch_size` argument (global batch size).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if sample_weight is not None:
         per_example_loss = multiply(per_example_loss, sample_weight)
@@ -307,13 +307,13 @@ def depthwise_conv2d(
     """Depthwise 2-D convolution.
 
     Args:
-        input (Tensor): The input parameter.
-        filter (Tensor): The filter parameter.
-        config (GenericConvConfig | None): The config parameter.
-        name (str | None): The name parameter.
+        input (Tensor): Input `input` argument (input).
+        filter (Tensor): Input `filter` argument (filter).
+        config (GenericConvConfig | None): Input `config` argument (config).
+        name (str | None): Input `name` argument (name).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     conf = config if config is not None else GenericConvConfig()
 
@@ -446,12 +446,12 @@ def dilation2d(
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        filter (TensorOrScalar): The filter parameter.
-        args (ConvSpatialArgs | None): The args parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        filter (TensorOrScalar): Input `filter` argument (filter).
+        args (ConvSpatialArgs | None): Input `args` argument (args).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -472,12 +472,12 @@ def erosion2d(
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
     Args:
-        value (TensorOrScalar): The value parameter.
-        kernel (TensorOrScalar): The kernel parameter.
-        args (ConvSpatialArgs | None): The args parameter.
+        value (TensorOrScalar): Input `value` argument (value).
+        kernel (TensorOrScalar): Input `kernel` argument (kernel).
+        args (ConvSpatialArgs | None): Input `args` argument (args).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -498,12 +498,12 @@ def convolution(
     """Compute sums of N-D convolutions (actually cross-correlation).
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        filters (TensorOrScalar): The filters parameter.
-        args (ConvSpatialArgs | None): The args parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        filters (TensorOrScalar): Input `filters` argument (filters).
+        args (ConvSpatialArgs | None): Input `args` argument (args).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
@@ -529,13 +529,13 @@ def conv_transpose(
     """Return the transpose of `convolution`.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        filters (TensorOrScalar): The filters parameter.
-        output_shape (TensorOrScalar): The output_shape parameter.
-        args (ConvSpatialArgs | None): The args parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        filters (TensorOrScalar): Input `filters` argument (filters).
+        output_shape (TensorOrScalar): Input `output_shape` argument (output shape).
+        args (ConvSpatialArgs | None): Input `args` argument (args).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 

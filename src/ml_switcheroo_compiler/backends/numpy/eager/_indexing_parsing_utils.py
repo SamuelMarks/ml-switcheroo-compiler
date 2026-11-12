@@ -41,10 +41,10 @@ def _eval_constant(node: ast.AST) -> EagerValue:
     """Execute the eager eval constant operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
+        node (ast.AST): Input `node` argument (node).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     val = node.value if isinstance(node, ast.Constant) else None
     if val is ...:
@@ -56,11 +56,11 @@ def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -
     """Execute the eager eval slice call operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
-        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
+        node (ast.AST): Input `node` argument (node).
+        _eval_fn (Callable[[ast.AST], EagerValue]): Input `_eval_fn` argument ( eval fn).
 
     Returns:
-        SliceType: Result.
+        SliceType: Computed `SliceType` output.
     """
     args_seq = node.args if isinstance(node, ast.Call) else []
     return slice(*[_as_slice_arg(_eval_fn(a)) for a in args_seq])
@@ -70,11 +70,11 @@ def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -
     """Execute the eager eval array call operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
-        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
+        node (ast.AST): Input `node` argument (node).
+        _eval_fn (Callable[[ast.AST], EagerValue]): Input `_eval_fn` argument ( eval fn).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     args_seq = node.args if isinstance(node, ast.Call) else []
     return np.array([_eval_fn(a) for a in args_seq])
@@ -98,11 +98,11 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> Eage
     """Execute the eager eval call operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
-        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
+        node (ast.AST): Input `node` argument (node).
+        _eval_fn (Callable[[ast.AST], EagerValue]): Input `_eval_fn` argument ( eval fn).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         if node.func.id == "slice":
@@ -118,10 +118,10 @@ def _eval_name(node: ast.AST) -> EagerValue:
     """Execute the eager eval name operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
+        node (ast.AST): Input `node` argument (node).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     node_id = node.id if isinstance(node, ast.Name) else ""
     if node_id == "Ellipsis":
@@ -135,11 +135,11 @@ def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> 
     """Execute the eager eval unary op operation on the active backend array.
 
     Args:
-        node (ast.AST): The node parameter.
-        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
+        node (ast.AST): Input `node` argument (node).
+        _eval_fn (Callable[[ast.AST], EagerValue]): Input `_eval_fn` argument ( eval fn).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
         val = _eval_fn(node.operand)
@@ -168,10 +168,10 @@ def _safe_parse_key(key_str: str) -> EagerValue:
     """Safely parse a stringified indexing key.
 
     Args:
-        key_str (str): The key_str parameter.
+        key_str (str): Input `key_str` argument (key str).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tree = ast.parse(key_str, mode="eval").body
     evaluators = _get_node_evaluators()
@@ -180,10 +180,10 @@ def _safe_parse_key(key_str: str) -> EagerValue:
         """Execute the eager eval operation on the active backend array.
 
         Args:
-            node (ast.AST): The node parameter.
+            node (ast.AST): Input `node` argument (node).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         node_type = type(node)
         if node_type in evaluators:

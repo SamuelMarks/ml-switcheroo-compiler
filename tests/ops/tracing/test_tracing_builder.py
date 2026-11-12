@@ -85,6 +85,9 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
         Args:
             obj: Test parameter `obj`.
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `custom_hasattr`.
         """
         if ensure_eager_tensor(obj) is ensure_eager_tensor(global_tracing_state) and ensure_eager_tensor(name) == ensure_eager_tensor("constant_cache"):
             return False

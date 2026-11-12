@@ -39,10 +39,10 @@ def cholesky(input: Tensor) -> TensorOrScalar:
     """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
-        input (Tensor): The input parameter.
+        input (Tensor): Input `input` argument (input).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

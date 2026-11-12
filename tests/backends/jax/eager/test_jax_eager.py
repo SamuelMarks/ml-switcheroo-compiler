@@ -157,6 +157,9 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
             jnp_module: Test parameter `jnp_module`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_global_op`.
         """
         return ensure_eager_tensor(ensure_eager_tensor(jnp_module).array)([42.0])
 

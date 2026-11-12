@@ -235,6 +235,9 @@ def test_invoke_style2_jvp_rule() -> None:
         Args:
             x_tangent: Test parameter `x_tangent`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_jvp`.
         """
         return "x_tangent + 1"
 
@@ -255,6 +258,9 @@ def test_invoke_style2_jvp_rule() -> None:
         Args:
             x_tangent: Test parameter `x_tangent`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_jvp2`.
         """
         return 42
 
@@ -285,6 +291,9 @@ def test_invoke_jvp_rule() -> None:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             tangent: Test parameter `tangent`.
+
+        Returns:
+            EagerValue: Computed output value from `jvp_style1`.
         """
         return "t1"
 
@@ -311,6 +320,9 @@ def test_invoke_jvp_rule() -> None:
         Args:
             tangent_x: Test parameter `tangent_x`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `jvp_style2`.
         """
         return "t2"
 

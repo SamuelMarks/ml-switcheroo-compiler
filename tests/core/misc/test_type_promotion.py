@@ -77,13 +77,20 @@ def test_type_promotion_129() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                bool: Computed output value from `__eq__`.
             """
             if type(other) is type(self):
                 return False
             return bool(other == DType.Bool)
 
         def __hash__(self) -> int:
-            """Test function __hash__."""
+            """Test function __hash__.
+
+            Returns:
+                int: Computed output value from `__hash__`.
+            """
             return hash(DType.Bool)
 
     res = ensure_callable(tp.promote_types)(ensure_callable(FakeType)(), ensure_callable(FakeType)())

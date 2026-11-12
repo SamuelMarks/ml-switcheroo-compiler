@@ -10,10 +10,10 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
     """Retrieve the file path and line number of a caller frame at a specified depth in.
 
     Args:
-        back_frames (int): The back_frames parameter.
+        back_frames (int): Input `back_frames` argument (back frames).
 
     Returns:
-            Optional[str]: Result.
+            Optional[str]: Computed `Optional[str]` output.
     """
     frame = None
     try:

@@ -70,11 +70,11 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
-        tensors (Sequence[Tensor]): The tensors parameter.
-        axis (int): The axis parameter.
+        tensors (Sequence[Tensor]): Input `tensors` argument (tensors).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -108,11 +108,11 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     """Stack a sequence of tensors along a new dimension.
 
     Args:
-        tensors (Sequence[Tensor]): The tensors parameter.
-        axis (int): The axis parameter.
+        tensors (Sequence[Tensor]): Input `tensors` argument (tensors).
+        axis (int): Input `axis` argument (axis).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     out_dtype_str = _resolve_stack_dtype_str(tensors[0])
 

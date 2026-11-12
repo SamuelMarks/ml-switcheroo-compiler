@@ -313,6 +313,9 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `exists_rule_file`.
         """
         return path.endswith("vjp_rules.yaml")
 
@@ -330,6 +333,9 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `exists_rules_op`.
         """
         return path.endswith("rules/OpRulesDir.yaml") or path.endswith("rules/MissingInRulesDir.yaml")
 

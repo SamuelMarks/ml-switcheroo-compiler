@@ -266,6 +266,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `run_adam`.
         """
         return ensure_callable(apply_adam)(a, a, a, b, 0.1)
 
@@ -278,6 +281,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `run_adagrad`.
         """
         return ensure_callable(apply_adagrad)(a, a, b, 0.1)
 
@@ -290,6 +296,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `run_ftrl`.
         """
         return ensure_callable(apply_ftrl)(a, a, a, b, 0.1)
 
@@ -302,6 +311,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `run_rmsprop`.
         """
         return ensure_callable(apply_rmsprop)(a, a, a, b, 0.1)
 

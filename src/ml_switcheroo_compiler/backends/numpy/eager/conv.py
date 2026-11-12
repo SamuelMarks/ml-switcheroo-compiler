@@ -54,14 +54,14 @@ def _get_transpose(spec: EagerValue, default: str) -> tuple[int, ...]:
     """Get transpose.
 
     Args:
-        spec (Union): The spec parameter.
-        default (str): The default parameter.
+        spec (Union): Input `spec` argument (spec).
+        default (str): Input `default` argument (default).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
 
     Raises:
-        TypeError: An exception.
+        TypeError: If invalid inputs or unsupported runtime conditions trigger `TypeError`.
     """
     if isinstance(spec, str):
         try:
@@ -76,10 +76,10 @@ def _get_conv_defaults(spatial_dims: int) -> tuple[str, str]:
     """Execute the eager get conv defaults operation on the active backend array.
 
     Args:
-        spatial_dims (int): The spatial_dims parameter.
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
 
     Returns:
-        tuple[str, str]: Result.
+        tuple[str, str]: Computed `tuple[str, str]` output.
     """
     if spatial_dims == 1:
         return ("NCW", "OIW")
@@ -92,13 +92,13 @@ def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: in
     """Parse dimension numbers for convolution.
 
     Args:
-        lhs_ndim (int): The lhs_ndim parameter.
-        rhs_ndim (int): The rhs_ndim parameter.
-        spatial_dims (int): The spatial_dims parameter.
-        dimension_numbers (EagerValue): The dimension_numbers parameter.
+        lhs_ndim (int): Input `lhs_ndim` argument (lhs ndim).
+        rhs_ndim (int): Input `rhs_ndim` argument (rhs ndim).
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
+        dimension_numbers (EagerValue): Input `dimension_numbers` argument (dimension numbers).
 
     Returns:
-        ConvDimSpecs: Result.
+        ConvDimSpecs: Computed `ConvDimSpecs` output.
     """
     if dimension_numbers is None:
         lhs_spec: tuple[EagerValue, ...] = (0, 1) + tuple(range(2, lhs_ndim))
@@ -131,13 +131,13 @@ def _calculate_same_padding(
     """Execute the eager calculate same padding operation on the active backend array.
 
     Args:
-        lhs_shape (tuple[int, ...]): The lhs_shape parameter.
-        rhs_shape (tuple[int, ...]): The rhs_shape parameter.
-        rhs_dilation (Sequence[int]): The rhs_dilation parameter.
-        window_strides (Sequence[int]): The window_strides parameter.
+        lhs_shape (tuple[int, ...]): Input `lhs_shape` argument (lhs shape).
+        rhs_shape (tuple[int, ...]): Input `rhs_shape` argument (rhs shape).
+        rhs_dilation (Sequence[int]): Input `rhs_dilation` argument (rhs dilation).
+        window_strides (Sequence[int]): Input `window_strides` argument (window strides).
 
     Returns:
-        list[tuple[int, int]]: Result.
+        list[tuple[int, int]]: Computed `list[tuple[int, int]]` output.
     """
     spatial_dims: int = len(lhs_shape) - 2
     pad_list: list[tuple[int, int]] = []
@@ -156,12 +156,12 @@ def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_
     """Calculate convolution padding.
 
     Args:
-        config (ConvConfig): The config parameter.
-        lhs_shape (tuple): The lhs_shape parameter.
-        rhs_shape (tuple): The rhs_shape parameter.
+        config (ConvConfig): Input `config` argument (config).
+        lhs_shape (tuple): Input `lhs_shape` argument (lhs shape).
+        rhs_shape (tuple): Input `rhs_shape` argument (rhs shape).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     spatial_dims: int = len(lhs_shape) - 2
     padding: Sequence[tuple[int, int]] | str | None = config.padding
@@ -181,12 +181,12 @@ def _apply_conv_dilation(tensor: EagerValue, dilation: Sequence[int], spatial_di
     """Apply dilation to a convolution tensor.
 
     Args:
-        tensor (EagerValue): The tensor parameter.
-        dilation (Sequence[int]): The dilation parameter.
-        spatial_dims (int): The spatial_dims parameter.
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        dilation (Sequence[int]): Input `dilation` argument (dilation).
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     if not any(d > 1 for d in dilation):
         return tensor
@@ -215,13 +215,13 @@ def _compute_conv_patch_group(lhs_patch: EagerValue, rhs_c: EagerValue, config: 
     """Execute the eager compute conv patch group operation on the active backend array.
 
     Args:
-        lhs_patch (EagerValue): The lhs_patch parameter.
-        rhs_c (EagerValue): The rhs_c parameter.
-        config (PatchConfig): The config parameter.
-        g (int): The g parameter.
+        lhs_patch (EagerValue): Input `lhs_patch` argument (lhs patch).
+        rhs_c (EagerValue): Input `rhs_c` argument (rhs c).
+        config (PatchConfig): Input `config` argument (config).
+        g (int): Input `g` argument (g).
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     group_in_c: int = config.group_in_c
     group_out_c: int = config.group_out_c
@@ -234,11 +234,11 @@ def _compute_single_patch_grouped(lhs_patch: EagerValue, rhs_c: EagerValue, out:
     """Execute the eager compute single patch grouped operation on the active backend array.
 
     Args:
-        lhs_patch (EagerValue): The lhs_patch parameter.
-        rhs_c (EagerValue): The rhs_c parameter.
-        out (EagerValue): The out parameter.
-        spatial_indices (tuple): The spatial_indices parameter.
-        config (PatchConfig): The config parameter.
+        lhs_patch (EagerValue): Input `lhs_patch` argument (lhs patch).
+        rhs_c (EagerValue): Input `rhs_c` argument (rhs c).
+        out (EagerValue): Input `out` argument (out).
+        spatial_indices (tuple): Input `spatial_indices` argument (spatial indices).
+        config (PatchConfig): Input `config` argument (config).
     """
     for g in range(config.feature_group_count):
         res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_compute_conv_patch_group(lhs_patch, rhs_c, config, g))
@@ -250,12 +250,12 @@ def _get_patch_slices(spatial_indices: tuple[int, ...], window_strides: Sequence
     """Execute the eager get patch slices operation on the active backend array.
 
     Args:
-        spatial_indices (tuple[int, ...]): The spatial_indices parameter.
-        window_strides (Sequence[int]): The window_strides parameter.
-        rhs_shape (tuple[int, ...]): The rhs_shape parameter.
+        spatial_indices (tuple[int, ...]): Input `spatial_indices` argument (spatial indices).
+        window_strides (Sequence[int]): Input `window_strides` argument (window strides).
+        rhs_shape (tuple[int, ...]): Input `rhs_shape` argument (rhs shape).
 
     Returns:
-        tuple[SliceType, ...]: Result.
+        tuple[SliceType, ...]: Computed `tuple[SliceType, ...]` output.
     """
     slices: list[SliceType] = [slice(None), slice(None)]
     for i, idx in enumerate(spatial_indices):
@@ -269,8 +269,8 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
     """Execute the eager compute single patch operation on the active backend array.
 
     Args:
-        state (ConvExecutionState): The state parameter.
-        spatial_indices (tuple): The spatial_indices parameter.
+        state (ConvExecutionState): Input `state` argument (state).
+        spatial_indices (tuple): Input `spatial_indices` argument (spatial indices).
     """
     slices: tuple[EagerValue, ...] = _get_patch_slices(spatial_indices, state.config.window_strides, state.rhs_c.shape)
     lhs_patch: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(ensure_eager_tensor(state.lhs_pad)[slices])
@@ -296,10 +296,10 @@ def _compute_conv_patches(lhs_pad: EagerValue, rhs_c: EagerValue, out: EagerValu
     """Execute the eager compute conv patches operation on the active backend array.
 
     Args:
-        lhs_pad (EagerValue): The lhs_pad parameter.
-        rhs_c (EagerValue): The rhs_c parameter.
-        out (EagerValue): The out parameter.
-        config (ConvConfig): The config parameter.
+        lhs_pad (EagerValue): Input `lhs_pad` argument (lhs pad).
+        rhs_c (EagerValue): Input `rhs_c` argument (rhs c).
+        out (EagerValue): Input `out` argument (out).
+        config (ConvConfig): Input `config` argument (config).
     """
     spatial_dims: int = len(get_backend_member(lhs_pad, "shape")) - 2
     out_spatial = ensure_shape(get_backend_member(out, "shape"))[2:]
@@ -318,12 +318,12 @@ def _apply_conv_padding_helper(lhs_c: EagerValue, rhs_c: EagerValue, config: Con
     """Execute the eager apply conv padding helper operation on the active backend array.
 
     Args:
-        lhs_c (EagerValue): The lhs_c parameter.
-        rhs_c (EagerValue): The rhs_c parameter.
-        config (ConvConfig): The config parameter.
+        lhs_c (EagerValue): Input `lhs_c` argument (lhs c).
+        rhs_c (EagerValue): Input `rhs_c` argument (rhs c).
+        config (ConvConfig): Input `config` argument (config).
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     lhs_sh = ensure_shape(get_backend_member(lhs_c, "shape"))
     rhs_sh = ensure_shape(get_backend_member(rhs_c, "shape"))
@@ -345,13 +345,13 @@ def _preprocess_conv_tensors(
     """Execute the eager preprocess conv tensors operation on the active backend array.
 
     Args:
-        lhs (EagerValue): The lhs parameter.
-        rhs (EagerValue): The rhs parameter.
-        config (ConvConfig): The config parameter.
-        specs (ConvDimSpecs): The specs parameter.
+        lhs (EagerValue): Input `lhs` argument (lhs).
+        rhs (EagerValue): Input `rhs` argument (rhs).
+        config (ConvConfig): Input `config` argument (config).
+        specs (ConvDimSpecs): Input `specs` argument (specs).
 
     Returns:
-        tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Result.
+        tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed `tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]` output.
     """
     lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "transpose")(lhs, specs.lhs_spec))
     rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "transpose")(rhs, specs.rhs_spec))
@@ -381,13 +381,13 @@ def _compute_out_shape(
     """Execute the eager compute out shape operation on the active backend array.
 
     Args:
-        lhs_pad_shape (tuple[int, ...]): The lhs_pad_shape parameter.
-        rhs_c_shape (tuple[int, ...]): The rhs_c_shape parameter.
-        spatial_dims (int): The spatial_dims parameter.
-        window_strides (Sequence[int]): The window_strides parameter.
+        lhs_pad_shape (tuple[int, ...]): Input `lhs_pad_shape` argument (lhs pad shape).
+        rhs_c_shape (tuple[int, ...]): Input `rhs_c_shape` argument (rhs c shape).
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
+        window_strides (Sequence[int]): Input `window_strides` argument (window strides).
 
     Returns:
-        list[int]: Result.
+        list[int]: Computed `list[int]` output.
     """
     out_spatial: list[int] = [(lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1 for i in range(spatial_dims)]
     return [lhs_pad_shape[0], rhs_c_shape[0]] + out_spatial
@@ -397,10 +397,10 @@ def _get_inv_out_spec(out_spec: tuple[int, ...]) -> list[int]:
     """Execute the eager get inv out spec operation on the active backend array.
 
     Args:
-        out_spec (tuple[int, ...]): The out_spec parameter.
+        out_spec (tuple[int, ...]): Input `out_spec` argument (out spec).
 
     Returns:
-        list[int]: Result.
+        list[int]: Computed `list[int]` output.
     """
     inv_out_spec: list[int] = [0] * len(out_spec)
     for i, p in enumerate(out_spec):
@@ -412,13 +412,13 @@ def _conv_general_dilated(lhs: EagerValue, rhs: EagerValue, config: ConvConfig, 
     """Evaluate.
 
     Args:
-        lhs (EagerValue): The lhs parameter.
-        rhs (EagerValue): The rhs parameter.
-        config (ConvConfig): The config parameter.
+        lhs (EagerValue): Input `lhs` argument (lhs).
+        rhs (EagerValue): Input `rhs` argument (rhs).
+        config (ConvConfig): Input `config` argument (config).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     lhs_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(lhs)
     rhs_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(rhs)
@@ -437,12 +437,12 @@ def _np_conv_general_dilated(backend_module: BackendModuleProtocol, *args: Eager
     """Execute the eager np conv general dilated operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
@@ -567,12 +567,12 @@ def _np_conv_transpose(backend_module: BackendModuleProtocol, *args: EagerValue,
     """Execute the eager np conv transpose operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     lhs: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     rhs: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])

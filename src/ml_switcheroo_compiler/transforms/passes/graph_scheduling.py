@@ -1,4 +1,4 @@
-"""Module graph_scheduling.py."""
+"""Compiler `graph scheduling` operations and primitives for the `passes` subsystem."""
 
 from __future__ import annotations  # noqa: I001
 import typing
@@ -77,8 +77,8 @@ class CostModel(typing.Protocol):
         """Get the memory cost of a node in bytes.
 
         Args:
-            node (IRNode): The node parameter.
-            int | str: Result.
+            node (IRNode): Input `node` argument (node).
+            int | str: Computed `int | str` output.
 
         Returns:
             int | str: Computed result.
@@ -89,8 +89,8 @@ class CostModel(typing.Protocol):
         """Get the compute cost of a node.
 
         Args:
-            node (IRNode): The node parameter.
-            int: Result.
+            node (IRNode): Input `node` argument (node).
+            int: Computed `int` output.
 
         Returns:
             int: Computed result.
@@ -105,7 +105,7 @@ class DefaultCostModel:
         """Initialize default cost model.
 
         Returns:
-            None: Result.
+            None: Computed `None` output.
         """
         yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
         with open(yaml_path) as f:

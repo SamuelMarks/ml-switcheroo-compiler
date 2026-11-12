@@ -38,6 +38,9 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
 
             Args:
                 padding: Test parameter `padding`.
+
+            Returns:
+                EagerValue: Computed output value from `to_padded_tensor`.
             """
             return "nested_padded"
 

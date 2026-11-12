@@ -153,6 +153,9 @@ def test_unstack_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured.append((op_name, shape))
         return op_name

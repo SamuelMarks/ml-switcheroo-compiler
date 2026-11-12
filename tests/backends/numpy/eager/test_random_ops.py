@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
 
 def test_random_ops_coverage() -> None:
     """Test function test_random_ops_coverage."""
+    handled_errors = 0
     from tests.testing_utils import get_test_members
 
     ops = [ensure_callable(fn) for name, fn in get_test_members(ro).items() if name.startswith("_") and callable(fn)]
@@ -36,7 +37,7 @@ def test_random_ops_coverage() -> None:
         try:
             op(*args_to_pass[:-1])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
 
 
 def test_missing_random_ops() -> None:
@@ -61,6 +62,9 @@ def test_missing_random_ops() -> None:
 
             Args:
                 keys: Test parameter `keys`.
+
+            Returns:
+                EagerValue: Computed output value from `lookup`.
             """
             return keys
 
@@ -74,7 +78,11 @@ def test_missing_random_ops() -> None:
             raise ValueError()
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "bad"
 
     ro._np_stateless_split(ensure_eager_tensor(np), seed=np.array([BadStr()]), num=2)

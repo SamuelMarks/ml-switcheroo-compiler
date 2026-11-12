@@ -44,12 +44,12 @@ def _sparse_op(op_name: str, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor 
     """Compute the sparse op tensor operation.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
         *args (OpArgValue): Positional args.
         **kwargs (OpArgValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     op_cls = get_op(op_name)
     if config.eager_mode:
@@ -79,7 +79,7 @@ def sparse_bincount(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOr
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseBincount", *args, **kwargs)
 
@@ -92,7 +92,7 @@ def sparse_cross_hashed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseCrossHashed", *args, **kwargs)
 
@@ -105,7 +105,7 @@ def sparse_expand_dims(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseExpandDims", *args, **kwargs)
 
@@ -118,7 +118,7 @@ def sparse_eye(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseEye", *args, **kwargs)
 
@@ -131,7 +131,7 @@ def sparse_fill_empty_rows(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> T
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseFillEmptyRows", *args, **kwargs)
 
@@ -144,7 +144,7 @@ def sparse_map_values(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseMapValues", *args, **kwargs)
 
@@ -157,7 +157,7 @@ def sparse_mask(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseMask", *args, **kwargs)
 
@@ -170,7 +170,7 @@ def sparse_maximum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseMaximum", *args, **kwargs)
 
@@ -183,7 +183,7 @@ def sparse_minimum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseMinimum", *args, **kwargs)
 
@@ -196,7 +196,7 @@ def sparse_reduce_max(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseReduceMax", *args, **kwargs)
 
@@ -209,7 +209,7 @@ def sparse_reduce_sum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseReduceSum", *args, **kwargs)
 
@@ -222,7 +222,7 @@ def sparse_reorder(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseReorder", *args, **kwargs)
 
@@ -235,7 +235,7 @@ def sparse_reset_shape(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseResetShape", *args, **kwargs)
 
@@ -248,7 +248,7 @@ def sparse_reshape(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseReshape", *args, **kwargs)
 
@@ -261,7 +261,7 @@ def sparse_retain(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSc
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseRetain", *args, **kwargs)
 
@@ -274,7 +274,7 @@ def sparse_segment_mean(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSegmentMean", *args, **kwargs)
 
@@ -287,7 +287,7 @@ def sparse_segment_sqrt_n(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSegmentSqrtN", *args, **kwargs)
 
@@ -300,7 +300,7 @@ def sparse_segment_sum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSegmentSum", *args, **kwargs)
 
@@ -313,7 +313,7 @@ def sparse_slice(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSlice", *args, **kwargs)
 
@@ -326,7 +326,7 @@ def sparse_softmax(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSoftmax", *args, **kwargs)
 
@@ -339,7 +339,7 @@ def sparse_to_indicator(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseToIndicator", *args, **kwargs)
 
@@ -352,7 +352,7 @@ def sparse_transpose(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseTranspose", *args, **kwargs)
 
@@ -365,7 +365,7 @@ def sparse_add(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseAdd", *args, **kwargs)
 
@@ -378,7 +378,7 @@ def sparse_dense_matmul(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseDenseMatMul", *args, **kwargs)
 
@@ -391,7 +391,7 @@ def sparse_sampled_add(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSampledAdd", *args, **kwargs)
 
@@ -404,7 +404,7 @@ def smm(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("Smm", *args, **kwargs)
 
@@ -417,7 +417,7 @@ def sparse_concat(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSc
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseConcat", *args, **kwargs)
 
@@ -430,7 +430,7 @@ def sparse_split(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseSplit", *args, **kwargs)
 
@@ -443,6 +443,6 @@ def sparse_to_dense(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOr
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _sparse_op("SparseToDense", *args, **kwargs)

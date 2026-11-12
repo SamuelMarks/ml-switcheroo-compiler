@@ -131,12 +131,12 @@ class SparseDenseMatMul(OpDef):
         """Infers the output shape for the sparse to dense operation.
 
         Args:
-            sp_a (EagerTensorProtocol): The sp_a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            sp_a (EagerTensorProtocol): Input `sp_a` argument (sp a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_a = _get_dense_shape(sp_a)
         shape_b = _get_dense_shape(b)
@@ -158,12 +158,12 @@ class SparseAdd(OpDef):
         """Infers the output shape for the sparse add operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_a = _get_dense_shape(a)
         shape_b = _get_dense_shape(b)
@@ -180,12 +180,12 @@ class SparseSampledAdd(OpDef):
         """Infers the output shape for the sparse sampled add operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_a = _get_dense_shape(a)
         shape_b = _get_dense_shape(b)
@@ -202,12 +202,12 @@ class Smm(OpDef):
         """Infers the output shape for the smm operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_a = _get_dense_shape(a)
         shape_b = _get_dense_shape(b)
@@ -229,11 +229,11 @@ class SparseReduceSum(OpDef):
         """Infers the output shape for the sparse reduce sum operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = _get_dense_shape(sp_input)
         if not shape:
@@ -253,11 +253,11 @@ class SparseSoftmax(OpDef):
         """Infers the output shape for the sparse softmax operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(sp_input)
 
@@ -272,11 +272,11 @@ class SparseReduceMax(OpDef):
         """Infers the output shape for the sparse reduce max operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = _get_dense_shape(sp_input)
         if not shape:
@@ -296,11 +296,11 @@ class SparseBincount(OpDef):
         """Infers the output shape for the sparse bincount operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = _get_dense_shape(a)
         batch = shape[0] if shape else 1
@@ -318,11 +318,11 @@ class SparseCrossHashed(OpDef):
         """Infers the output shape for the sparse cross hashed operation.
 
         Args:
-            inputs (EagerTensorProtocol): The inputs parameter.
+            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         inp_list = inputs if isinstance(inputs, (list, tuple)) else [inputs]
         first_shape = _get_dense_shape(inp_list[0]) if inp_list else ()
@@ -341,11 +341,11 @@ class SparseExpandDims(OpDef):
         """Infers the output shape for the sparse expand dims operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = list(_get_dense_shape(a))
         axis = int(ensure_int(kwargs.get("axis", 0)))
@@ -365,11 +365,11 @@ class SparseEye(OpDef):
         """Infers the output shape for the sparse eye operation.
 
         Args:
-            num_rows (EagerTensorProtocol): The num_rows parameter.
+            num_rows (EagerTensorProtocol): Input `num_rows` argument (num rows).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         raw_rows: TensorOrScalar | _ValueAttrProtocol = num_rows
         r = int(ensure_int(raw_rows.value if isinstance(raw_rows, _ValueAttrProtocol) else num_rows)) if isinstance(num_rows, int) or isinstance(raw_rows, _ValueAttrProtocol) else 1
@@ -387,12 +387,12 @@ class SparseFillEmptyRows(OpDef):
         """Infers the output shape for the sparse fill empty rows operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            default_value (TensorOrScalar): The default_value parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            default_value (TensorOrScalar): Input `default_value` argument (default value).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(sp_input)
 
@@ -407,11 +407,11 @@ class SparseMapValues(OpDef):
         """Infers the output shape for the sparse map values operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(sp_input)
 
@@ -426,12 +426,12 @@ class SparseMask(OpDef):
         """Infers the output shape for the sparse mask operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            mask (TensorOrScalar): The mask parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            mask (TensorOrScalar): Input `mask` argument (mask).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(a)
 
@@ -446,12 +446,12 @@ class SparseMaximum(OpDef):
         """Infers the output shape for the sparse maximum operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_sparse_shapes(_get_dense_shape(a), _get_dense_shape(b))
 
@@ -466,12 +466,12 @@ class SparseMinimum(OpDef):
         """Infers the output shape for the sparse minimum operation.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _broadcast_sparse_shapes(_get_dense_shape(a), _get_dense_shape(b))
 
@@ -486,11 +486,11 @@ class SparseReorder(OpDef):
         """Infers the output shape for the sparse reorder operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(sp_input)
 
@@ -505,11 +505,11 @@ class SparseResetShape(OpDef):
         """Infers the output shape for the sparse reset shape operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         new_shape = kwargs.get("new_shape")
         if new_shape is not None:
@@ -527,12 +527,12 @@ class SparseReshape(OpDef):
         """Infers the output shape for the sparse reshape operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            shape (TensorOrScalar): The shape parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            shape (TensorOrScalar): Input `shape` argument (shape).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if shape is not None:
             return tuple(int(d) for d in shape) if isinstance(shape, (list, tuple)) else _get_dense_shape(shape)
@@ -549,12 +549,12 @@ class SparseRetain(OpDef):
         """Infers the output shape for the sparse retain operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            to_retain (TensorOrScalar): The to_retain parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            to_retain (TensorOrScalar): Input `to_retain` argument (to retain).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return _get_dense_shape(sp_input)
 
@@ -569,13 +569,13 @@ class SparseSegmentMean(OpDef):
         """Infers the output shape for the sparse segment mean operation.
 
         Args:
-            data (EagerTensorProtocol): The data parameter.
-            indices (TensorOrScalar): The indices parameter.
-            segment_ids (TensorOrScalar): The segment_ids parameter.
+            data (EagerTensorProtocol): Input `data` argument (data).
+            indices (TensorOrScalar): Input `indices` argument (indices).
+            segment_ids (TensorOrScalar): Input `segment_ids` argument (segment ids).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         d_shape = _get_dense_shape(data)
         num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
@@ -592,13 +592,13 @@ class SparseSegmentSqrtN(OpDef):
         """Infers the output shape for the sparse segment sqrt n operation.
 
         Args:
-            data (EagerTensorProtocol): The data parameter.
-            indices (TensorOrScalar): The indices parameter.
-            segment_ids (TensorOrScalar): The segment_ids parameter.
+            data (EagerTensorProtocol): Input `data` argument (data).
+            indices (TensorOrScalar): Input `indices` argument (indices).
+            segment_ids (TensorOrScalar): Input `segment_ids` argument (segment ids).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         d_shape = _get_dense_shape(data)
         num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
@@ -615,13 +615,13 @@ class SparseSegmentSum(OpDef):
         """Infers the output shape for the sparse segment sum operation.
 
         Args:
-            data (EagerTensorProtocol): The data parameter.
-            indices (TensorOrScalar): The indices parameter.
-            segment_ids (TensorOrScalar): The segment_ids parameter.
+            data (EagerTensorProtocol): Input `data` argument (data).
+            indices (TensorOrScalar): Input `indices` argument (indices).
+            segment_ids (TensorOrScalar): Input `segment_ids` argument (segment ids).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         d_shape = _get_dense_shape(data)
         num_segments = int(ensure_int(kwargs.get("num_segments", 1)))
@@ -638,13 +638,13 @@ class SparseSlice(OpDef):
         """Infers the output shape for the sparse slice operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            start (TensorOrScalar): The start parameter.
-            size (TensorOrScalar): The size parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            start (TensorOrScalar): Input `start` argument (start).
+            size (TensorOrScalar): Input `size` argument (size).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         target_size = size if size is not None else kwargs.get("size")
         if target_size is not None:
@@ -662,12 +662,12 @@ class SparseToIndicator(OpDef):
         """Infers the output shape for the sparse to indicator operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            vocab_size (TensorOrScalar): The vocab_size parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            vocab_size (TensorOrScalar): Input `vocab_size` argument (vocab size).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = _get_dense_shape(sp_input)
         batch = shape[0] if shape else 1
@@ -686,11 +686,11 @@ class SparseTranspose(OpDef):
         """Infers the output shape for the sparse transpose operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape = _get_dense_shape(sp_input)
         perm = kwargs.get("perm")
@@ -732,11 +732,11 @@ class SparseConcat(OpDef):
         """Infers the output shape for the sparse concat operation.
 
         Args:
-            sp_inputs (EagerTensorProtocol): The sp_inputs parameter.
+            sp_inputs (EagerTensorProtocol): Input `sp_inputs` argument (sp inputs).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         inps = sp_inputs if isinstance(sp_inputs, (list, tuple)) else [sp_inputs]
         if not inps:
@@ -765,12 +765,12 @@ class SparseSplit(OpDef):
         """Infers the output shape for the sparse split operation.
 
         Args:
-            sp_input (EagerTensorProtocol): The sp_input parameter.
-            num_split (TensorOrScalar): The num_split parameter.
+            sp_input (EagerTensorProtocol): Input `sp_input` argument (sp input).
+            num_split (TensorOrScalar): Input `num_split` argument (num split).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         shape = list(_get_dense_shape(sp_input))
         n_split = num_split if num_split is not None else kwargs.get("num_split", 1)
@@ -794,13 +794,13 @@ class SparseToDense(OpDef):
         """Infers the output shape for the sparse to dense operation.
 
         Args:
-            sparse_indices (EagerTensorProtocol): The sparse_indices parameter.
-            output_shape (EagerTensorProtocol): The output_shape parameter.
-            sparse_values (TensorOrScalar): The sparse_values parameter.
-            default_value (TensorOrScalar): The default_value parameter.
+            sparse_indices (EagerTensorProtocol): Input `sparse_indices` argument (sparse indices).
+            output_shape (EagerTensorProtocol): Input `output_shape` argument (output shape).
+            sparse_values (TensorOrScalar): Input `sparse_values` argument (sparse values).
+            default_value (TensorOrScalar): Input `default_value` argument (default value).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return tuple(int(d) for d in output_shape) if isinstance(output_shape, (list, tuple)) else _get_dense_shape(output_shape)

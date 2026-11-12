@@ -549,19 +549,21 @@ def test_dispatch_eager_wrapper() -> None:
     """Test function test_dispatch_eager_wrapper."""
 
     @dispatch_eager("TestOp")
-    def test_func(t1: EagerTensorProtocol, t2: EagerTensorProtocol) -> EagerValue:
-        """Test function test_func.
+    def sample_op_func(t1: EagerTensorProtocol, t2: EagerTensorProtocol) -> EagerValue:
+        """Return fallback marker when eager mode is disabled.
 
         Args:
-            t1: Test parameter `t1`.
-            t2: Test parameter `t2`.
+            t1 (EagerTensorProtocol): First operand tensor.
+            t2 (EagerTensorProtocol): Second operand tensor.
+
+        Returns:
+            EagerValue: Computed output value from `sample_op_func`.
         """
-        assert callable(test_func)
         return "not eager"
 
     with patch("ml_switcheroo_compiler.ops.base.config") as mock_config:
         mock_config.eager_mode = False
-        assert test_func(ensure_eager_tensor(1), ensure_eager_tensor(2)) == "not eager"
+        assert sample_op_func(ensure_eager_tensor(1), ensure_eager_tensor(2)) == "not eager"
         mock_config.eager_mode = True
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
             backend = MagicMock()
@@ -574,10 +576,10 @@ def test_dispatch_eager_wrapper() -> None:
             from ml_switcheroo_compiler.core.dtype import DType
 
             t1.dtype = DType.Float32
-            res = test_func(t1, ensure_eager_tensor(2))
+            res = sample_op_func(t1, ensure_eager_tensor(2))
             assert isinstance(res, Tensor)
             backend.execute_op.return_value = ("backend_res1", "backend_res2")
-            res_tuple = test_func(t1, ensure_eager_tensor(2))
+            res_tuple = sample_op_func(t1, ensure_eager_tensor(2))
             assert isinstance(res_tuple, tuple)
             assert isinstance(res_tuple[0], Tensor)
             assert isinstance(res_tuple[1], Tensor)

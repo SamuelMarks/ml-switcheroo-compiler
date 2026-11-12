@@ -236,7 +236,7 @@ LogicalNodeOverrideValue = typing.Union[
 
 
 def clone_logical_node(node: LogicalNode, **overrides: LogicalNodeOverrideValue) -> LogicalNode:
-    """Clones a LogicalNode, allowing overrides via keyword arguments.
+    """Clone a `LogicalNode` with shallow container isolation and optional field overrides.
 
     Args:
         node (LogicalNode): The source LogicalNode to clone.
@@ -245,4 +245,12 @@ def clone_logical_node(node: LogicalNode, **overrides: LogicalNodeOverrideValue)
     Returns:
         LogicalNode: The cloned LogicalNode.
     """
-    return node.model_copy(update=dict(overrides), deep=True)
+    updates: dict[str, LogicalNodeOverrideValue] = {
+        "inputs": list(node.inputs),
+        "outputs": list(node.outputs),
+        "output_specs": list(node.output_specs),
+        "subgraphs": {str(k): v for k, v in node.subgraphs.items() if isinstance(v, LogicalGraph)},
+        "attributes": dict(node.attributes),
+    }
+    updates.update(overrides)
+    return node.model_copy(update=updates, deep=False)

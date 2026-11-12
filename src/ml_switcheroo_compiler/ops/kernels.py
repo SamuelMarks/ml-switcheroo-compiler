@@ -27,7 +27,7 @@ class CudaKernelOp(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -46,7 +46,7 @@ class MetalKernelOp(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -65,7 +65,7 @@ class PrecompiledCudaKernelOp(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -129,14 +129,14 @@ def cuda_kernel(
     """Injects and compiles an inline CUDA kernel.
 
     Args:
-        source (str): The source parameter.
-        inputs (list): The inputs parameter.
-        output_shapes (list): The output_shapes parameter.
-        output_dtypes (list): The output_dtypes parameter.
-        launch_config (Optional): The launch_config parameter.
+        source (str): Input `source` argument (source).
+        inputs (list): Input `inputs` argument (inputs).
+        output_shapes (list): Input `output_shapes` argument (output shapes).
+        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
+        launch_config (Optional): Input `launch_config` argument (launch config).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
@@ -166,14 +166,14 @@ def metal_kernel(
     """Injects and compiles an inline Metal kernel.
 
     Args:
-        source (str): The source parameter.
-        inputs (list): The inputs parameter.
-        output_shapes (list): The output_shapes parameter.
-        output_dtypes (list): The output_dtypes parameter.
-        launch_config (Optional): The launch_config parameter.
+        source (str): Input `source` argument (source).
+        inputs (list): Input `inputs` argument (inputs).
+        output_shapes (list): Input `output_shapes` argument (output shapes).
+        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
+        launch_config (Optional): Input `launch_config` argument (launch config).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
@@ -203,14 +203,14 @@ def precompiled_cuda_kernel(
     """Injects and executes a precompiled CUDA binary (PTX/CUBIN).
 
     Args:
-        binary (bytes): The binary parameter.
-        inputs (list): The inputs parameter.
-        output_shapes (list): The output_shapes parameter.
-        output_dtypes (list): The output_dtypes parameter.
-        launch_config (Optional): The launch_config parameter.
+        binary (bytes): Input `binary` argument (binary).
+        inputs (list): Input `inputs` argument (inputs).
+        output_shapes (list): Input `output_shapes` argument (output shapes).
+        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
+        launch_config (Optional): Input `launch_config` argument (launch config).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:

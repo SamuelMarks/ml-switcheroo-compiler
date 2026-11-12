@@ -218,6 +218,9 @@ def test_evaluator_missing_output() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -238,6 +241,9 @@ def test_evaluator_recompute_coverage_mock() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -265,6 +271,9 @@ def test_evaluator_missing_funcs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -275,6 +284,9 @@ def test_evaluator_missing_funcs() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "exec"
 
@@ -296,6 +308,9 @@ def test_evaluator_missing_funcs() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `eager_eval`.
             """
             return "dummy"
 
@@ -311,6 +326,9 @@ def test_evaluator_missing_funcs() -> None:
                 op_type: Test parameter `op_type`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "backend"
 
@@ -366,6 +384,9 @@ def test_evaluator_base_eval_missing2() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `eager_eval`.
             """
             return "dummy3"
 
@@ -435,6 +456,9 @@ def test_evaluator_slice_parsing_edge() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -480,6 +504,9 @@ def disabled_test_evaluator_handle_custom_ops() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -489,6 +516,9 @@ def disabled_test_evaluator_handle_custom_ops() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "exec"
 
@@ -576,6 +606,9 @@ def test_evaluator_handle_getitem() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -603,6 +636,9 @@ def test_evaluator_handle_meshgrid() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return ["m1", "m2"]
 
@@ -628,6 +664,9 @@ def test_evaluator_target_dispatch() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -638,6 +677,9 @@ def test_evaluator_target_dispatch() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return ["m1", "m2"]
 
@@ -657,6 +699,9 @@ def test_evaluator_target_dispatch() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -694,6 +739,9 @@ def test_evaluator_target_dispatch_more() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -704,6 +752,9 @@ def test_evaluator_target_dispatch_more() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "exec"
 
@@ -746,6 +797,9 @@ def test_evaluate_if_node() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerTensorProtocol: Computed output value from `execute_op`.
             """
             if op == "Identity":
                 return ensure_eager_tensor(ensure_eager_tensor(args)[0] * 2)
@@ -780,6 +834,9 @@ def test_evaluate_if_node_false() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerTensorProtocol: Computed output value from `execute_op`.
             """
             if op == "Identity":
                 return ensure_eager_tensor(ensure_eager_tensor(args)[0] + 1)
@@ -812,6 +869,9 @@ def test_evaluate_if_node_no_outputs() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -822,6 +882,9 @@ def test_evaluate_if_node_no_outputs() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return args[0]
 
@@ -859,6 +922,9 @@ def test_evaluate_loop_node() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerTensorProtocol: Computed output value from `execute_op`.
             """
             val = args[0] if args else None
             if val is None:
@@ -946,6 +1012,9 @@ def test_evaluator_dispatch() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return np.array(x)
 
@@ -956,6 +1025,9 @@ def test_evaluator_dispatch() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             if name == "Meshgrid":
                 return [1, 2]
@@ -1035,6 +1107,9 @@ def test_evaluator_extra_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return np.array(x)
 
@@ -1043,6 +1118,9 @@ def test_evaluator_extra_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.array(x)
 
@@ -1053,6 +1131,9 @@ def test_evaluator_extra_branches() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return 42
 
@@ -1120,6 +1201,9 @@ def test_evaluator_if() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return 42
 
@@ -1152,7 +1236,11 @@ def test_evaluator_if() -> None:
         """Test class FakeTensorBool."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return True
 
     env_bool = ensure_callable(Environment)({"cond": ensure_callable(FakeTensorBool)(), "val1": 10})
@@ -1179,6 +1267,9 @@ def test_evaluator_loop() -> None:
                 name: Test parameter `name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return ensure_eager_tensor(ensure_eager_tensor(args)[0] + 1)
 

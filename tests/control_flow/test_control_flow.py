@@ -143,10 +143,11 @@ def test_scan_tuple_return() -> None:
             """
             return (c, (x, x))
 
-        ensure_callable(scan)(f, xs, xs)
+        carry_out, ys_out = ensure_callable(scan)(f, xs, xs)
+        assert carry_out.shape == (2, 1)
+        assert len(ys_out) == 2
     finally:
         config.eager_mode = False
-    assert callable(test_scan_tuple_return)
 
 
 def test_map_tuple_return() -> None:
@@ -171,10 +172,11 @@ def test_map_tuple_return() -> None:
             """
             return (x, x)
 
-        map_fn(f, elems)
+        mapped = map_fn(f, elems)
+        assert isinstance(mapped, tuple)
+        assert len(mapped) == 2
     finally:
         config.eager_mode = False
-    assert callable(test_map_tuple_return)
 
 
 def test_tracing_exceptions() -> None:
@@ -556,6 +558,9 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_op`.
         """
 
         class Val:
@@ -655,10 +660,10 @@ def test_associative_scan_eager() -> None:
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
         t = Tensor(np.array([1.0]), TensorConfig((1,), "float32", Device(DeviceType.CPU)))
-        associative_scan(t)
+        scanned = associative_scan(t)
+        assert isinstance(scanned, Tensor) and scanned.shape == (1,)
     finally:
         config.eager_mode = orig
-    assert callable(test_associative_scan_eager)
 
 
 def test_associative_scan_lazy() -> None:

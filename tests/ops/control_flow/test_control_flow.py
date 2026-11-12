@@ -41,6 +41,9 @@ class DummyTensor:
 
         Args:
             i: Test parameter `i`.
+
+        Returns:
+            EagerValue: Computed output value from `__getitem__`.
         """
         return DummyTensor()
 
@@ -187,6 +190,9 @@ def test_control_flow_custom_gradient() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg`.
         """
         return (x, lambda g: g)
 
@@ -204,7 +210,11 @@ def test_control_flow_case() -> None:
     assert ensure_callable(case)([], default=lambda: "def") == "def"
 
     def true_fn() -> EagerValue:
-        """Test function true_fn."""
+        """Test function true_fn.
+
+        Returns:
+            EagerValue: Computed output value from `true_fn`.
+        """
         return "true"
 
     with patch("ml_switcheroo_compiler.ops.control_flow.cond", return_value="cond_res"):
@@ -233,6 +243,9 @@ def test_control_flow_associative_scan() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "exec"
 
@@ -335,6 +348,9 @@ def test_custom_grad_vjp_direct() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg`.
         """
         return ensure_eager_tensor((Ret(), lambda g: P()))
 
@@ -355,6 +371,9 @@ def test_custom_grad_vjp_direct() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg2`.
         """
         return ensure_eager_tensor((Ret(), lambda g: (P(), "str")))
 
@@ -396,6 +415,9 @@ def test_cg_clear() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg`.
         """
         return ensure_eager_tensor((Ret(), lambda g: P()))
 
@@ -416,6 +438,9 @@ def test_cg_clear() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg2`.
         """
         return ensure_eager_tensor((Ret(), lambda g: (P(), "str")))
 
@@ -446,6 +471,9 @@ def test_dyn_vjp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cg`.
         """
         return (x, lambda g: g)
 

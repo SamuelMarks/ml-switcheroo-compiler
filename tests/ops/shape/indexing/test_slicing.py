@@ -128,6 +128,9 @@ def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> No
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name

@@ -176,7 +176,11 @@ def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTe
         """Test class CustomInitValue."""
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "custom_str_repr"
 
     g_init_edge = IRGraph(name="init_edge")

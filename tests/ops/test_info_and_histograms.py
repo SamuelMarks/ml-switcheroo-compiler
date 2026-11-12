@@ -35,17 +35,25 @@ def test_axis_index_infer_shape() -> None:
 
 def test_cover_misc() -> None:
     """Test coverage for misc ops."""
+    import inspect
+
     from tests.testing_utils import get_test_members
 
-    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op"):
+    instantiated = 0
+    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op") as mock_disp:
+        mock_disp.return_value = "dispatched"
         for module in [misc, shape_misc, unary_logical, dist_ops, frontend_utils, activations, io_ops, dot_ops, binary_math, slicing, random_core]:
             for attr, val in get_test_members(module).items():
-                if attr not in ["dispatch_op", "object", "object"]:
-                    try:
-                        ensure_callable(val)()
-                    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                        _caught_err = True
-    assert callable(test_cover_misc)
+                if not attr or not attr[0].isupper() or attr in ("OpDef", "Tensor", "TensorConfig") or not callable(val):
+                    continue
+                fn_cls = ensure_callable(val)
+                sig = inspect.signature(fn_cls)
+                req = [p for p in sig.parameters.values() if p.default is inspect.Parameter.empty and p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+                if not req:
+                    op_inst = fn_cls()
+                    if op_inst is not None:
+                        instantiated += 1
+    assert instantiated >= 10
 
 
 def test_grid_and_indices_infer_shapes_extras() -> None:

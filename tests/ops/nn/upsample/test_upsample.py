@@ -84,6 +84,9 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
                     op: Test parameter `op`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `execute_op`.
                 """
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
@@ -92,6 +95,9 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `array`.
                 """
                 return np.asarray(x)
 
@@ -177,6 +183,9 @@ def test_upsample_brute() -> None:
                     op: Test parameter `op`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `execute_op`.
                 """
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
@@ -185,6 +194,9 @@ def test_upsample_brute() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `array`.
                 """
                 return np.asarray(x)
 

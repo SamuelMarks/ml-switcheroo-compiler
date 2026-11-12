@@ -15,9 +15,9 @@ class QuantizationConfig:
         """Initialize QuantizationConfig.
 
         Args:
-            target_dtype (DType): The target_dtype parameter.
-            per_channel (bool): The per_channel parameter.
-            symmetric (bool): The symmetric parameter.
+            target_dtype (DType): Input `target_dtype` argument (target dtype).
+            per_channel (bool): Input `per_channel` argument (per channel).
+            symmetric (bool): Input `symmetric` argument (symmetric).
         """
         self.target_dtype = target_dtype
         self.per_channel = per_channel
@@ -51,10 +51,10 @@ class PTQPass:
         """Lower ops to their integer quantized equivalents.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
-            IRGraph: Result.
+            IRGraph: Computed `IRGraph` output.
         """
         optimized = False
         new_nodes = {}
@@ -90,9 +90,9 @@ class PTQCalibrationPass:
         """Initialize PTQCalibrationPass.
 
         Args:
-            config (QuantizationConfig): The config parameter.
-            dataset (Dataset): The dataset parameter.
-            method (str): The method parameter.
+            config (QuantizationConfig): Input `config` argument (config).
+            dataset (Dataset): Input `dataset` argument (dataset).
+            method (str): Input `method` argument (method).
         """
         self.config = config
         self.dataset = dataset
@@ -102,10 +102,10 @@ class PTQCalibrationPass:
         """Run the PTQ Calibration pass.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
-            bool: Result.
+            bool: Computed `bool` output.
         """
         modified = False
         new_nodes = dict(graph.nodes)
@@ -152,10 +152,10 @@ class QATFakeQuantizePass:
         """Insert FakeQuantize nodes for Quantization-Aware Training.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
-            bool: Result.
+            bool: Computed `bool` output.
         """
         modified = False
         sorted_nodes = DAGTopologicalSorter.sort(graph)
@@ -222,10 +222,10 @@ class IntegerQuantizationLoweringPass:
         """Lower ops to their integer quantized equivalents.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
-            bool: Result.
+            bool: Computed `bool` output.
         """
         modified = False
         new_nodes = {}

@@ -17,7 +17,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_numba_stub(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Provide a NumPy-backed numba stub when numba is not installed."""
+    """Provide a NumPy-backed numba stub when numba is not installed.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     import importlib.util
     import sys
     from unittest.mock import MagicMock

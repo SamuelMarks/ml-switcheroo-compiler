@@ -55,6 +55,9 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                float: Computed output value from `divide`.
             """
             return a / b
 
@@ -70,6 +73,9 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                float: Computed output value from `true_divide`.
             """
             return a / b
 
@@ -89,6 +95,9 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                float: Computed output value from `fmod`.
             """
             return math.fmod(a, b)
 
@@ -113,6 +122,9 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                float: Computed output value from `remainder`.
             """
             return a % b
 
@@ -128,6 +140,9 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                float: Computed output value from `mod`.
             """
             return a % b
 
@@ -195,6 +210,9 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                tuple[float, float]: Computed output value from `modf`.
             """
             return math.modf(val)
 
@@ -212,6 +230,9 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
             Args:
                 multi_index: Test parameter `multi_index`.
                 dims: Test parameter `dims`.
+
+            Returns:
+                EagerValue: Computed output value from `ravel_multi_index`.
             """
             return ensure_callable(np.ravel_multi_index)(multi_index, dims)
 
@@ -239,6 +260,9 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `scattermul`.
             """
             return "scattermul_result"
 
@@ -254,6 +278,9 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `stringsubstr`.
             """
             return "substr_result"
 
@@ -271,6 +298,9 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `tensorscattersub`.
             """
             return "scattersub_result"
 
@@ -298,6 +328,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `truncatediv`.
             """
             return "truncatediv_result"
 
@@ -314,6 +347,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `truncatemod`.
             """
             return "truncatemod_result"
 
@@ -331,6 +367,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `xdivy`.
             """
             return "xdivy_result"
 

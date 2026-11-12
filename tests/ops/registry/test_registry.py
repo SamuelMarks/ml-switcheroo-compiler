@@ -22,7 +22,11 @@ def test_registry_register_op() -> None:
         """Test class TestRegistryOp1."""
 
         def infer_shape(self) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
+            """
             return ()
 
     assert get_op("TestRegistryOp1") == TestRegistryOp1
@@ -39,7 +43,11 @@ def test_registry_register_op() -> None:
             """Test class AnotherOpClass."""
 
             def infer_shape(self) -> EagerValue:
-                """Test function infer_shape."""
+                """Test function infer_shape.
+
+                Returns:
+                    EagerValue: Computed output value from `infer_shape`.
+                """
                 return ()
 
 
@@ -48,7 +56,11 @@ def test_registry_util() -> None:
 
     @register_util("my_util")
     def my_util_fn() -> EagerValue:
-        """Test function my_util_fn."""
+        """Test function my_util_fn.
+
+        Returns:
+            EagerValue: Computed output value from `my_util_fn`.
+        """
         return 42
 
     assert get_util("my_util") == my_util_fn
@@ -62,7 +74,11 @@ def test_registry_frontend() -> None:
 
     @ensure_callable(register_frontend)("my_frontend")
     def my_frontend_fn() -> EagerValue:
-        """Test function my_frontend_fn."""
+        """Test function my_frontend_fn.
+
+        Returns:
+            EagerValue: Computed output value from `my_frontend_fn`.
+        """
         return 42
 
     assert get_frontend("my_frontend") == my_frontend_fn

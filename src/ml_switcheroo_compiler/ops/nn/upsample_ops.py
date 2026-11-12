@@ -21,15 +21,15 @@ def _resolve_scale_factor(
     """Resolve the scale factor for upsampling.
 
     Args:
-        input (Tensor): The input parameter.
-        scale_factor (Union): The scale_factor parameter.
-        spatial_dims (int): The spatial_dims parameter.
+        input (Tensor): Input `input` argument (input).
+        scale_factor (Union): Input `scale_factor` argument (scale factor).
+        spatial_dims (int): Input `spatial_dims` argument (spatial dims).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     assert scale_factor is not None
     if isinstance(scale_factor, (float, int)):
@@ -56,15 +56,15 @@ def _upsample_resolve_size(
     """Compute the upsample resolve size tensor operation.
 
     Args:
-        input (Tensor): The input parameter.
-        size (Optional): The size parameter.
-        scale_factor (Optional): The scale_factor parameter.
+        input (Tensor): Input `input` argument (input).
+        size (Optional): Input `size` argument (size).
+        scale_factor (Optional): Input `scale_factor` argument (scale factor).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     has_size = size is not None
     has_sf = scale_factor is not None
@@ -96,14 +96,14 @@ def _upsample_dispatch(
     """Compute the upsample dispatch tensor operation.
 
     Args:
-        input (Tensor): The input parameter.
-        mode (str): The mode parameter.
-        size (Optional): The size parameter.
-        scale_factor (Optional): The scale_factor parameter.
-        align_corners (bool): The align_corners parameter.
+        input (Tensor): Input `input` argument (input).
+        mode (str): Input `mode` argument (mode).
+        size (Optional): Input `size` argument (size).
+        scale_factor (Optional): Input `scale_factor` argument (scale factor).
+        align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     target_size = _upsample_resolve_size(input, size, scale_factor)
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1

@@ -297,7 +297,7 @@ class ParameterServerStrategy(Distribution):
         """Initialize ParameterServerStrategy.
 
         Args:
-            cluster_resolver (TensorOrScalar): The cluster_resolver parameter.
+            cluster_resolver (TensorOrScalar): Input `cluster_resolver` argument (cluster resolver).
         """
         super().__init__()
         self.cluster_resolver = cluster_resolver
@@ -652,9 +652,9 @@ class Server:
         """Initialize Server.
 
         Args:
-            server_def (Union[dict[str, AttrType], str, None]): The server_def parameter.
-            job_name (Optional[str]): The job_name parameter.
-            task_index (Optional[int]): The task_index parameter.
+            server_def (Union[dict[str, AttrType], str, None]): Input `server_def` argument (server def).
+            job_name (Optional[str]): Input `job_name` argument (job name).
+            task_index (Optional[int]): Input `task_index` argument (task index).
         """
         self.server_def = server_def
         self.job_name = job_name
@@ -781,7 +781,7 @@ class Server:
         """Run the server."""
         import select
 
-        np = registry.BackendRegistry.get("numpy").get_module()
+        backend_mod = registry.get_active_backend().get_module()
 
         if not self._server:
             return
@@ -792,7 +792,7 @@ class Server:
                 ready, _, _ = select.select([self._server], [], [], 0.1)
                 if ready:
                     conn, _ = self._server.accept()
-                    self._process_client_connection(conn, np)
+                    self._process_client_connection(conn, backend_mod)
             except Exception as e:
                 import warnings
 
@@ -1055,8 +1055,8 @@ class PipelineParallelStrategy(Distribution):
         """Implement actual Send and Recv IR node insertion across stage boundaries.
 
         Args:
-            graph (IRGraph): The graph parameter.
-            stages (list[list[str]]): The stages parameter.
+            graph (IRGraph): Input `graph` argument (graph).
+            stages (list[list[str]]): Input `stages` argument (stages).
         """
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -1096,10 +1096,10 @@ class PipelineParallelStrategy(Distribution):
         """Implement microbatch loop generation (splitting global batch size into sequential chunks).
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -1247,7 +1247,7 @@ class PipelineParallelStrategy(Distribution):
         """Generate schedule based on YAML configuration.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
 
         Returns:
             list[tuple[str, int]]: Schedule.
@@ -1315,7 +1315,7 @@ class PipelineParallelStrategy(Distribution):
         """Implement gradient accumulation tracking across pipeline stages.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -1340,8 +1340,8 @@ class SPMDShardingStrategy(Distribution):
         """Initialize SPMDShardingStrategy.
 
         Args:
-            mesh (Union[dict, list, tuple, None]): The mesh parameter.
-            layout_map (Union[dict, None]): The layout_map parameter.
+            mesh (Union[dict, list, tuple, None]): Input `mesh` argument (mesh).
+            layout_map (Union[dict, None]): Input `layout_map` argument (layout map).
         """
         super().__init__()
         self.mesh = mesh

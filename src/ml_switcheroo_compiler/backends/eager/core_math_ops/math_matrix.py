@@ -86,12 +86,12 @@ def _einsum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager einsum operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     eq = kwargs.pop("equation", "") if has_backend_member(kwargs, "pop") and "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
@@ -106,15 +106,15 @@ def _scaled_dot_product_attention_eager(backend_module: BackendModuleProtocol, q
     """Fallback eager execution for ScaledDotProductAttention.
 
     Args:
-        backend_module: The backend_module parameter.
-        query: The query parameter.
-        key: The key parameter.
-        value: The value parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        query: Input `query` argument (query).
+        key: Input `key` argument (key).
+        value: Input `value` argument (value).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     import math
 
@@ -153,12 +153,12 @@ def _cholesky_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager cholesky solve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -176,12 +176,12 @@ def _banded_triangular_solve(backend_module: BackendModuleProtocol, *args: Eager
     """Execute the eager banded triangular solve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -199,12 +199,12 @@ def _matrix_power(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager matrix power operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -222,12 +222,12 @@ def _matrix_rank(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager matrix rank operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -245,12 +245,12 @@ def _solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager solve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -268,12 +268,12 @@ def _tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager tensorsolve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -291,12 +291,12 @@ def _np_tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np tensorsolve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tensorsolve", get_backend_member(backend_module, "tensorsolve", None))
     if func is not None:
@@ -309,12 +309,12 @@ def _np_triangularsolve(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np triangularsolve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "triangularsolve", get_backend_member(backend_module, "triangularsolve", None))
     if func is not None:
@@ -327,12 +327,12 @@ def _np_tridiagonalmatmul(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np tridiagonalmatmul operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tridiagonalmatmul", get_backend_member(backend_module, "tridiagonalmatmul", None))
     if func is not None:
@@ -345,12 +345,12 @@ def _np_tridiagonalsolve(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np tridiagonalsolve operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tridiagonalsolve", get_backend_member(backend_module, "tridiagonalsolve", None))
     if func is not None:
@@ -363,12 +363,12 @@ def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np vecdot operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "vecdot", get_backend_member(backend_module, "vecdot", None))
     if func is not None:

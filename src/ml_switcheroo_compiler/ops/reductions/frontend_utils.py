@@ -58,7 +58,7 @@ class ReduceWindow:
             **kwargs (Tensor | float | str | WindowConfig | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -76,14 +76,14 @@ def _emit_reduction_node(
     """Compute the emit reduction node tensor operation.
 
     Args:
-        op_type (str): The op_type parameter.
-        inputs (Sequence[Tensor]): The inputs parameter.
-        attrs (dict[str, int | float | str | bool | tuple[int, ...] | list[int] | tuple[tuple[int, int], ...] | None]): The attrs parameter.
-        out_shape (tuple[int | None, ...]): The out_shape parameter.
-        out_dtype (DType): The out_dtype parameter.
+        op_type (str): Input `op_type` argument (op type).
+        inputs (Sequence[Tensor]): Input `inputs` argument (inputs).
+        attrs (dict[str, int | float | str | bool | tuple[int, ...] | list[int] | tuple[tuple[int, int], ...] | None]): Input `attrs` argument (attrs).
+        out_shape (tuple[int | None, ...]): Input `out_shape` argument (out shape).
+        out_dtype (DType): Input `out_dtype` argument (out dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     out_id = str(uuid.uuid4())
     clean_shape: tuple[int, ...] = tuple(d for d in out_shape if d is not None)
@@ -111,13 +111,13 @@ def _reduce_window_eager(
     """Compute the reduce window eager tensor operation.
 
     Args:
-        operand (Tensor): The operand parameter.
-        init_value (Tensor | float): The init_value parameter.
-        computation (str): The computation parameter.
-        window_config (WindowConfig): The window_config parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     backend = get_active_backend()
     init_val_data = init_value.data if isinstance(init_value, Tensor) else init_value
@@ -139,12 +139,12 @@ def _build_reduce_window_attributes(
     """Compute the build reduce window attributes tensor operation.
 
     Args:
-        init_value (Tensor | float): The init_value parameter.
-        computation (str): The computation parameter.
-        window_config (WindowConfig): The window_config parameter.
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
 
     Returns:
-        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]: Result.
+        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]: Computed `dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]` output.
     """
     attributes: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None] = {
         "computation": computation,
@@ -168,13 +168,13 @@ def _reduce_window_trace(
     """Compute the reduce window trace tensor operation.
 
     Args:
-        operand (Tensor): The operand parameter.
-        init_value (Tensor | float): The init_value parameter.
-        computation (str): The computation parameter.
-        window_config (WindowConfig): The window_config parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     inputs = [operand]
     if isinstance(init_value, Tensor):
@@ -197,13 +197,13 @@ def reduce_window(
     """Apply a reduction function over a sliding window of the input.
 
     Args:
-        operand (Tensor): The operand parameter.
-        init_value (Tensor | float): The init_value parameter.
-        computation (str): The computation parameter.
-        window_config (WindowConfig): The window_config parameter.
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         return _reduce_window_eager(operand, init_value, computation, window_config)

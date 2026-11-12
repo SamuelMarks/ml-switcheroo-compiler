@@ -27,6 +27,9 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_isdir`.
         """
         return True
 
@@ -35,6 +38,9 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_listdir`.
         """
         return ["test.yaml"]
 
@@ -69,6 +75,9 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_isdir`.
         """
         return False
 
@@ -77,6 +86,9 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_exists`.
         """
         return True
 

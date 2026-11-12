@@ -43,12 +43,12 @@ class PyTorchScatterVisitor:
         """Handle TensorScatterUpdate nodes.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]})"
 
@@ -56,12 +56,12 @@ class PyTorchScatterVisitor:
         """Handle TensorScatterAdd nodes.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
 
@@ -69,12 +69,12 @@ class PyTorchScatterVisitor:
         """Emit target backend code or IR transformation for the TensorScatterMax operation.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
@@ -82,12 +82,12 @@ class PyTorchScatterVisitor:
         """Emit target backend code or IR transformation for the TensorScatterMin operation.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
@@ -99,12 +99,12 @@ class PyTorchDistributedVisitor:
         """Generate code for all_gather.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         tensor = input_vars[0]
         return f"torch.distributed.all_gather_into_tensor(output, {tensor})"
@@ -113,12 +113,12 @@ class PyTorchDistributedVisitor:
         """Generate code for reduce_scatter.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
@@ -127,12 +127,12 @@ class PyTorchDistributedVisitor:
         """Generate code for all_reduce.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         tensor = input_vars[0]
         return f"torch.distributed.all_reduce({tensor})"
@@ -141,12 +141,12 @@ class PyTorchDistributedVisitor:
         """Generate code for all_to_all.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         tensor = input_vars[0]
         return f"torch.distributed.all_to_all_single(torch.empty_like({tensor}), {tensor})"
@@ -155,12 +155,12 @@ class PyTorchDistributedVisitor:
         """Generate code for broadcast.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         tensor = input_vars[0]
         src = (node.attributes or {}).get("root", 0)

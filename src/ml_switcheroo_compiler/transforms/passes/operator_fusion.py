@@ -123,10 +123,10 @@ def _match_node_inputs(
     """Match the inputs of a node against a pattern supporting commutativity.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        pattern (NodePattern): The pattern parameter.
-        capture_map (dict): The capture_map parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        pattern (NodePattern): Input `pattern` argument (pattern).
+        capture_map (dict): Input `capture_map` argument (capture map).
 
     Returns:
         bool: True if inputs match, False otherwise.
@@ -260,10 +260,10 @@ class PatternMatchingEngine:
         """Try applying matching rules to a single node.
 
         Args:
-            graph (IRGraph): The graph parameter.
-            node_id (str): The node_id parameter.
-            new_nodes (dict): The new_nodes parameter.
-            id_map (dict): The id_map parameter.
+            graph (IRGraph): Input `graph` argument (graph).
+            node_id (str): Input `node_id` argument (node id).
+            new_nodes (dict): Input `new_nodes` argument (new nodes).
+            id_map (dict): Input `id_map` argument (id map).
 
         Returns:
             bool: True if a rule matched and was applied, False otherwise.

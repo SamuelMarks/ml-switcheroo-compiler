@@ -28,12 +28,20 @@ class MockMLXArray:
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Return array shape."""
+        """Return array shape.
+
+        Returns:
+            tuple[int, ...]: Computed output value from `shape`.
+        """
         return self._data.shape
 
     @property
     def ndim(self) -> int:
-        """Return number of dimensions."""
+        """Return number of dimensions.
+
+        Returns:
+            int: Computed output value from `ndim`.
+        """
         return self._data.ndim
 
     def __getitem__(self, item: EagerValue) -> MockMLXArray:
@@ -41,6 +49,9 @@ class MockMLXArray:
 
         Args:
             item: Test parameter `item`.
+
+        Returns:
+            MockMLXArray: Computed output value from `__getitem__`.
         """
         return MockMLXArray(ensure_eager_tensor(self._data)[item])
 
@@ -49,6 +60,9 @@ class MockMLXArray:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockMLXArray: Computed output value from `__add__`.
         """
         return MockMLXArray(ensure_eager_tensor(self._data) + ensure_eager_tensor(other._data))
 
@@ -57,11 +71,18 @@ class MockMLXArray:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockMLXArray: Computed output value from `__mul__`.
         """
         return MockMLXArray(ensure_eager_tensor(self._data) * ensure_eager_tensor(other._data))
 
     def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-        """Extract NumPy view."""
+        """Extract NumPy view.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `to_numpy`.
+        """
         return self._data
 
 
@@ -75,6 +96,9 @@ class MockMLXModule:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            MockMLXArray: Computed output value from `add`.
         """
         return a + b
 
@@ -85,6 +109,9 @@ class MockMLXModule:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            MockMLXArray: Computed output value from `multiply`.
         """
         return a * b
 
@@ -95,6 +122,9 @@ class MockMLXModule:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            MockMLXArray: Computed output value from `maximum`.
         """
         return MockMLXArray(np.maximum(a._data, b._data))
 
@@ -105,6 +135,9 @@ class MockMLXModule:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            MockMLXArray: Computed output value from `minimum`.
         """
         return MockMLXArray(np.minimum(a._data, b._data))
 

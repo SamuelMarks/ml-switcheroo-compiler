@@ -31,11 +31,6 @@ def test_tensor_array_at() -> None:
     assert indexer[0].add(1) is t
 
 
-def test_tensor_eval_view_detach_backward() -> None:
-    """Test function test_tensor_eval_view_detach_backward."""
-    assert callable(test_tensor_eval_view_detach_backward)
-
-
 def test_variable_assign() -> None:
     """Test function test_variable_assign."""
     from unittest.mock import patch
@@ -58,6 +53,9 @@ def test_variable_assign() -> None:
                 name: Test parameter `name`.
                 data1: Test parameter `data1`.
                 data2: Test parameter `data2`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return data1
 
@@ -102,7 +100,11 @@ def test_parameter() -> None:
         """Test class FakeData."""
 
         def __int__(self) -> EagerValue:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                EagerValue: Computed output value from `__int__`.
+            """
             return 42
 
     ensure_mutable(p).numpy = ensure_eager_tensor(lambda: 42)
@@ -260,7 +262,11 @@ def test_tensor_contiguous() -> None:
         """Custom device string representation."""
 
         def __str__(self) -> str:
-            """Return cpu string."""
+            """Return cpu string.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "cpu"
 
     assert TensorConfig(shape=None, dtype=None, device=None).shape == ()

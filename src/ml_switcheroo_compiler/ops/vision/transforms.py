@@ -22,14 +22,14 @@ def perspective_transform(
     """Apply a perspective transformation to the image(s).
 
     Args:
-        images (Tensor): The images parameter.
-        start_points (Tensor): The start_points parameter.
-        end_points (Tensor): The end_points parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        images (Tensor): Input `images` argument (images).
+        start_points (Tensor): Input `start_points` argument (start points).
+        end_points (Tensor): Input `end_points` argument (end points).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
         config_obj = PerspectiveConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
@@ -62,13 +62,13 @@ def elastic_transform(
     """Apply an elastic transformation to the image(s).
 
     Args:
-        images (Tensor): The images parameter.
-        displacement (Tensor): The displacement parameter.
-        config_obj (TensorOrScalar): The config_obj parameter.
+        images (Tensor): Input `images` argument (images).
+        displacement (Tensor): Input `displacement` argument (displacement).
+        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
         config_obj = ElasticConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
@@ -95,10 +95,10 @@ def flip_left_right(images: Tensor) -> TensorOrScalar:
     """Flips images horizontally.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -112,10 +112,10 @@ def flip_up_down(images: Tensor) -> TensorOrScalar:
     """Flips images vertically.
 
     Args:
-        images (Tensor): The images parameter.
+        images (Tensor): Input `images` argument (images).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -135,12 +135,12 @@ class ElasticTransform(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        images (EagerTensorProtocol): The images parameter.
+        images (EagerTensorProtocol): Input `images` argument (images).
         *args (EagerTensorProtocol): Positional args.
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(images)
         return _typed_ret_1

@@ -133,6 +133,9 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return np.array(data)
 
@@ -198,6 +201,9 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
             Args:
                 data: Test parameter `data`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return np.array(data)
 

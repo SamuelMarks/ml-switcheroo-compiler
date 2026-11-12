@@ -70,7 +70,11 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    """Ensure optional profiler backend stubs are installed when packages are missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     import sys
 
     install_profiler_backend_stubs(monkeypatch)
@@ -400,6 +404,9 @@ def test_backends_pytorch_distributed_collectives_branches() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import`.
         """
         if name in ("torch", "torch.distributed"):
             raise ImportError("torch missing")
@@ -658,7 +665,11 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
 
         @property
         def todense(self) -> EagerValue:
-            """Test function todense."""
+            """Test function todense.
+
+            Returns:
+                EagerValue: Computed output value from `todense`.
+            """
             raise AttributeError("no todense")
 
     mock_sparse_val = _MockSparseNoAttrs()

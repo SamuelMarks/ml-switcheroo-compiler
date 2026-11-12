@@ -342,7 +342,14 @@ class MockRandFallbackModule:
         self.calls: dict[str, int] = {}
 
     def _get_fn(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-        """Return callable only on second check."""
+        """Return callable only on second check.
+
+        Args:
+            name (str): Input `name` value (name) for `_get_fn`.
+
+        Returns:
+            TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `_get_fn`.
+        """
         count: int = self.calls.get(name, 0)
         self.calls[name] = count + 1
         if count == 0:
@@ -351,17 +358,29 @@ class MockRandFallbackModule:
 
     @property
     def uniform(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-        """Dynamic uniform attribute."""
+        """Dynamic uniform attribute.
+
+        Returns:
+            TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `uniform`.
+        """
         return self._get_fn("uniform")
 
     @property
     def normal(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-        """Dynamic normal attribute."""
+        """Dynamic normal attribute.
+
+        Returns:
+            TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `normal`.
+        """
         return self._get_fn("normal")
 
     @property
     def randint(self) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-        """Dynamic randint attribute."""
+        """Dynamic randint attribute.
+
+        Returns:
+            TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `randint`.
+        """
         return self._get_fn("randint")
 
 

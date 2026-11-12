@@ -29,7 +29,7 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
         """Load pickle weights.
 
         Args:
-            filepath (str): The filepath parameter.
+            filepath (str): Input `filepath` argument (filepath).
 
         Returns:
             dict[str, TensorLike]: Loaded weight dictionary.
@@ -43,8 +43,8 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
         """Save pickle weights.
 
         Args:
-            weights_np (TensorOrScalar): The weights_np parameter.
-            filepath (str): The filepath parameter.
+            weights_np (TensorOrScalar): Input `weights_np` argument (weights np).
+            filepath (str): Input `filepath` argument (filepath).
         """
         with open(filepath, "wb") as f:
             pickle.dump(weights_np, f)

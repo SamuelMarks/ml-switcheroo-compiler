@@ -190,6 +190,9 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
         Args:
             obj: Test parameter `obj`.
+
+        Returns:
+            inspect.Signature: Computed output value from `smart_sig`.
         """
         if get_backend_member(obj, "fail_sig", False):
             raise ValueError("Signature failed")
@@ -206,6 +209,9 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            types.ModuleType: Computed output value from `mock_import`.
         """
         if name == "fake_fw":
             return fake_mod

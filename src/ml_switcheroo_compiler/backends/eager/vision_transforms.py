@@ -279,10 +279,10 @@ def _get_resize_interpolation_order(interpolation: str) -> int:
     """Get scipy ndimage order for interpolation string.
 
     Args:
-        interpolation (str): The interpolation parameter.
+        interpolation (str): Input `interpolation` argument (interpolation).
 
     Returns:
-        int: Result.
+        int: Computed `int` output.
     """
     if interpolation == "nearest":
         return 0

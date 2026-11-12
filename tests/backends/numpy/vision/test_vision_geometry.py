@@ -48,6 +48,9 @@ def test_np_iou() -> None:
             b1: Test parameter `b1`.
             b2: Test parameter `b2`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_iou`.
         """
         return np.ones((1,))
 
@@ -68,6 +71,9 @@ def test_np_nms() -> None:
             s: Test parameter `s`.
             max_out: Test parameter `max_out`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_nms`.
         """
         return np.ones((1,))
 

@@ -26,11 +26,14 @@ def test_np_mel_filterbank() -> None:
             bm: Test parameter `bm`.
             spec: Test parameter `spec`.
             config: Test parameter `config`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_mel_filterbank`.
         """
         return np.ones((2, 2))
 
-    _np_mel_filterbank(ensure_eager_tensor(np), None, config={})
-    assert callable(test_np_mel_filterbank)
+    _out = _np_mel_filterbank(ensure_eager_tensor(np), None, config={})
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (129, 40)
 
 
 def test_np_mfcc() -> None:
@@ -44,6 +47,9 @@ def test_np_mfcc() -> None:
             bm: Test parameter `bm`.
             spec: Test parameter `spec`.
             config: Test parameter `config`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_mfcc`.
         """
         return np.ones((2, 2))
 

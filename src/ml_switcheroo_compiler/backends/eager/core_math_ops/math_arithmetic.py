@@ -19,12 +19,12 @@ def _true_divide(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager true divide operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "divide", get_backend_member(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
@@ -35,12 +35,12 @@ def _fmod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager fmod operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fmod", get_backend_member(backend_module, "remainder", get_backend_member(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
@@ -51,12 +51,12 @@ def _accumulate_n(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager accumulate n operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     inputs = ensure_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
@@ -72,13 +72,13 @@ def _assign_add(backend_module: BackendModuleProtocol, ref: EagerValue, value: E
     """Execute the eager assign add operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        ref: The ref parameter.
-        value: The value parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        ref: Input `ref` argument (ref).
+        value: Input `value` argument (value).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ref) + ensure_eager_tensor(value)
 
@@ -88,13 +88,13 @@ def _assign_sub(backend_module: BackendModuleProtocol, ref: EagerValue, value: E
     """Execute the eager assign sub operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        ref: The ref parameter.
-        value: The value parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        ref: Input `ref` argument (ref).
+        value: Input `value` argument (value).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(ref) - ensure_eager_tensor(value)
 
@@ -104,12 +104,12 @@ def _add_n(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager add n operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     inputs = ensure_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
@@ -125,12 +125,12 @@ def _modf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager modf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     return mod.modf(*args, **kwargs)
@@ -141,12 +141,12 @@ def _ravelmultiindex(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager ravelmultiindex operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     return mod.ravel_multi_index(*args, **kwargs)
@@ -157,12 +157,12 @@ def _np_scattermul(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np scattermul operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "scattermul", get_backend_member(backend_module, "scattermul", None))
     if func is not None:
@@ -175,12 +175,12 @@ def _np_stringsubstr(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np stringsubstr operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringsubstr", get_backend_member(backend_module, "stringsubstr", None))
     if func is not None:
@@ -193,12 +193,12 @@ def _np_tensorscattersub(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np tensorscattersub operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tensorscattersub", get_backend_member(backend_module, "tensorscattersub", None))
     if func is not None:
@@ -211,12 +211,12 @@ def _np_truncatediv(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np truncatediv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "truncatediv", get_backend_member(backend_module, "truncatediv", None))
     if func is not None:
@@ -230,12 +230,12 @@ def _np_truncatemod(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np truncatemod operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "truncatemod", get_backend_member(backend_module, "truncatemod", None))
     if func is not None:
@@ -248,12 +248,12 @@ def _np_xdivy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np xdivy operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "xdivy", get_backend_member(backend_module, "xdivy", None))
     if func is not None:

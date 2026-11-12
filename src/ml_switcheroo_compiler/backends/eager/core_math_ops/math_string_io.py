@@ -14,12 +14,12 @@ def _as_string(backend_module: BackendModuleProtocol, arr: EagerValue, **kwargs:
     """Execute the eager as string operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        arr: The arr parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        arr: Input `arr` argument (arr).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return str(arr)
 
@@ -29,12 +29,12 @@ def _fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager fromfile operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "fromfile")(*args, **kwargs))
 
@@ -44,12 +44,12 @@ def _fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager fromstring operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fromstring", None)
     if func:
@@ -63,12 +63,12 @@ def _np_decodeimage(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np decodeimage operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "decodeimage", get_backend_member(backend_module, "decodeimage", None))
     if func is not None:
@@ -82,12 +82,12 @@ def _np_fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np fromfile operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fromfile", get_backend_member(backend_module, "fromfile", None))
     if func is not None:
@@ -100,12 +100,12 @@ def _np_fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np fromstring operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fromstring", get_backend_member(backend_module, "fromstring", None))
     if func is not None:
@@ -118,12 +118,12 @@ def _np_parsetensor(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np parsetensor operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "parsetensor", get_backend_member(backend_module, "parsetensor", None))
     if func is not None:
@@ -136,12 +136,12 @@ def _np_stringlower(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np stringlower operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringlower", get_backend_member(backend_module, "stringlower", None))
     if func is not None:
@@ -155,12 +155,12 @@ def _np_stringsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np stringsplit operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringsplit", get_backend_member(backend_module, "stringsplit", None))
     if func is not None:
@@ -174,12 +174,12 @@ def _np_stringtohash(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np stringtohash operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringtohash", get_backend_member(backend_module, "stringtohash", None))
     if func is not None:
@@ -193,12 +193,12 @@ def _np_stringtonumber(backend_module: BackendModuleProtocol, *args: EagerValue,
     """Execute the eager np stringtonumber operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringtonumber", get_backend_member(backend_module, "stringtonumber", None))
     if func is not None:
@@ -211,12 +211,12 @@ def _np_stringupper(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np stringupper operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "stringupper", get_backend_member(backend_module, "stringupper", None))
     if func is not None:
@@ -230,12 +230,12 @@ def _np_textvectorization(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np textvectorization operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "textvectorization", get_backend_member(backend_module, "textvectorization", None))
     if func is not None:
@@ -248,7 +248,7 @@ def _np_writefile(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Evaluate _np_writefile operation with atomic write and directory creation.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args (filename, contents).
         **kwargs: Keyword args.
 

@@ -66,11 +66,11 @@ class _ProfilerProtocol(typing.Protocol):
         """Profile a graph execution.
 
         Args:
-            graph: The graph parameter.
-            inputs: The inputs parameter.
-            device: The device parameter.
-            num_iters: The num_iters parameter.
-            warmup_iters: The warmup_iters parameter.
+            graph: Input `graph` argument (graph).
+            inputs: Input `inputs` argument (inputs).
+            device: Input `device` argument (device).
+            num_iters: Input `num_iters` argument (num iters).
+            warmup_iters: Input `warmup_iters` argument (warmup iters).
 
         Returns:
             ProfilerMetrics: Computed result.
@@ -302,10 +302,12 @@ class BenchmarkOrchestrator:
             raise BackendNotSupportedError(f"Backend '{backend_name}' is not registered.") from exc
 
         # Construct inputs from plan or graph declarations
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         inputs_dict: dict[str, EvalValue] = {}
         input_names: list[str] = list(graph.inputs) if graph.inputs else ["in_0"]
 
-        np_backend: TensorOrScalar = BackendRegistry.get("numpy")
+        active_backend: TensorOrScalar = get_active_backend()
         for inp in input_names:
             node = graph.nodes.get(inp) if graph.nodes else None
             node_attrs = (node.attributes or {}) if node is not None else {}
@@ -318,8 +320,8 @@ class BenchmarkOrchestrator:
             else:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
-            if isinstance(np_backend, _ExecuteOpBackendProtocol):
-                inputs_dict[inp] = np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32")
+            if isinstance(active_backend, _ExecuteOpBackendProtocol):
+                inputs_dict[inp] = active_backend.execute_op("Cast", active_backend.execute_op("Randn", *full_shape), dtype="float32")
             else:
                 inputs_dict[inp] = [0.0]
 

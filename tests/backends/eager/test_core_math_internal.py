@@ -47,6 +47,9 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             Args:
                 x: Test parameter `x`.
                 y: Test parameter `y`.
+
+            Returns:
+                float: Computed output value from `copysign`.
             """
             return math.copysign(x, y)
 
@@ -61,6 +64,9 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `abs`.
             """
             return ensure_eager_tensor(ensure_callable(np.abs)(val))
 
@@ -69,6 +75,9 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
 
             Args:
                 val: Test parameter `val`.
+
+            Returns:
+                EagerValue: Computed output value from `sign`.
             """
             return ensure_eager_tensor(ensure_callable(np.sign)(val))
 
@@ -85,6 +94,9 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                dict[str, EagerValue]: Computed output value from `get_printoptions`.
             """
             return {"precision": 4}
 

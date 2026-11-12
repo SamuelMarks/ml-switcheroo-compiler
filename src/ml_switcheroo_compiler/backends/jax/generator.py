@@ -66,8 +66,8 @@ class JAXCodeGenerator(BaseGenerator):
         """Initialize distributed context.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
         """
         import jax.distributed
 
@@ -88,13 +88,13 @@ class JAXCodeGenerator(BaseGenerator):
         """Load.
 
         Args:
-            filepath (str): The filepath parameter.
-            allow_pickle (bool): The allow_pickle parameter.
-            fix_imports (bool): The fix_imports parameter.
-            encoding (str): The encoding parameter.
+            filepath (str): Input `filepath` argument (filepath).
+            allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+            fix_imports (bool): Input `fix_imports` argument (fix imports).
+            encoding (str): Input `encoding` argument (encoding).
 
         Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
         """
         import jax.numpy as jnp
 
@@ -105,10 +105,10 @@ class JAXCodeGenerator(BaseGenerator):
         """Save.
 
         Args:
-            file (str): The file parameter.
-            arr: The arr parameter.
-            allow_pickle (bool): The allow_pickle parameter.
-            fix_imports (bool): The fix_imports parameter.
+            file (str): Input `file` argument (file).
+            arr: Input `arr` argument (arr).
+            allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+            fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
         import jax.numpy as jnp
 
@@ -119,7 +119,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Savez.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args: Positional args.
             **kwds: Keyword args.
         """
@@ -132,7 +132,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Savez compressed.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args: Positional args.
             **kwds: Keyword args.
         """
@@ -144,7 +144,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Init.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         super().__init__(graph)
         self.visitors.extend(
@@ -160,11 +160,11 @@ class JAXCodeGenerator(BaseGenerator):
         """Execute format zeros like for compiler processing.
 
         Args:
-            op (str): The op parameter.
-            kwargs: The kwargs parameter.
+            op (str): Input `op` argument (op).
+            kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         res: str = f"jnp.{op}({{shape}})"
         if "dtype" in kwargs:
@@ -175,10 +175,10 @@ class JAXCodeGenerator(BaseGenerator):
         """Execute format full for compiler processing.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         res: str = "jnp.full({shape}, {fill_value})"
         if "dtype" in kwargs:
@@ -201,7 +201,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Get the fallback prefix for generic operations.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         return "jnp"
 
@@ -231,8 +231,8 @@ class JAXCodeGenerator(BaseGenerator):
         """Execute emit constant assignment for compiler processing.
 
         Args:
-            var_name (str): The var_name parameter.
-            val_repr (str): The val_repr parameter.
+            var_name (str): Input `var_name` argument (var name).
+            val_repr (str): Input `val_repr` argument (val repr).
         """
         self.add_line(f"{var_name} = jnp.array({val_repr})")
 
@@ -240,7 +240,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Generate file header with module docstrings.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         return [self.header.strip()]
 
@@ -248,7 +248,7 @@ class JAXCodeGenerator(BaseGenerator):
         """Resolve and register required imports.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         tmpl_path: str = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
         with open(tmpl_path, encoding="utf-8") as f:

@@ -24,7 +24,7 @@ def _get_value_dtype(val: TensorOrScalar) -> DType | None:
     """Get the dtype from a constant value.
 
     Args:
-        val (TensorOrScalar): The val parameter.
+        val (TensorOrScalar): Input `val` argument (val).
 
     Returns:
         Optional[DType]: Inferred `DType` or None.
@@ -106,7 +106,7 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
     """Compute the promoted common data type across `valid_dtypes`.
 
     Args:
-        valid_dtypes (list[str]): The valid_dtypes parameter.
+        valid_dtypes (list[str]): Input `valid_dtypes` argument (valid dtypes).
 
     Returns:
         str: Promoted dtype string.
@@ -126,8 +126,8 @@ def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> str | None
     """Resolve output dtype for Cast and Bitcast nodes.
 
     Args:
-        node (LogicalNode): The node parameter.
-        valid_dtypes (list[str]): The valid_dtypes parameter.
+        node (LogicalNode): Input `node` argument (node).
+        valid_dtypes (list[str]): Input `valid_dtypes` argument (valid dtypes).
 
     Returns:
         Optional[str]: Target cast dtype string or None.
@@ -143,8 +143,8 @@ def _handle_boolean_dtype(node: LogicalNode, valid_dtypes: list[str]) -> str:
     """Resolve output dtype for boolean comparison and logical nodes.
 
     Args:
-        node (LogicalNode): The node parameter.
-        valid_dtypes (list[str]): The valid_dtypes parameter.
+        node (LogicalNode): Input `node` argument (node).
+        valid_dtypes (list[str]): Input `valid_dtypes` argument (valid dtypes).
 
     Returns:
         str: Boolean dtype string `'bool'`.
@@ -178,8 +178,8 @@ def _get_node_valid_dtypes(node: LogicalNode, dtypes: dict[str, str]) -> list[st
     """Collect known input dtypes for `node` from `dtypes`.
 
     Args:
-        node (LogicalNode): The node parameter.
-        dtypes (dict[str, str]): The dtypes parameter.
+        node (LogicalNode): Input `node` argument (node).
+        dtypes (dict[str, str]): Input `dtypes` argument (dtypes).
 
     Returns:
         list[str]: Known input dtype strings.

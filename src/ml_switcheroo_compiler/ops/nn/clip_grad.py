@@ -18,11 +18,11 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
     """Compute the global norm of an iterable of parameters.
 
     Args:
-        parameters (list[Tensor]): The parameters parameter.
-        norm_type (float): The norm_type parameter.
+        parameters (list[Tensor]): Input `parameters` argument (parameters).
+        norm_type (float): Input `norm_type` argument (norm type).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     norms = []
     for p in parameters:
@@ -47,12 +47,12 @@ def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tens
     """Scales gradients in-place based on maximum and total norm.
 
     Args:
-        parameters (list): The parameters parameter.
-        max_norm (float): The max_norm parameter.
-        total_norm (Tensor): The total_norm parameter.
+        parameters (list): Input `parameters` argument (parameters).
+        max_norm (float): Input `max_norm` argument (max norm).
+        total_norm (Tensor): Input `total_norm` argument (total norm).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     max_norm_t = max_norm
     clip_coef = divide(max_norm_t, add(total_norm, 1e-6))

@@ -69,8 +69,8 @@ def test_sort() -> None:
 def test_top_k() -> None:
     """Test function test_top_k."""
     a = np.array([1, 3, 2, 4])
-    _np_top_k(ensure_eager_tensor(np), a, 2)
-    assert callable(test_top_k)
+    _out = _np_top_k(ensure_eager_tensor(np), a, 2)
+    assert len(ensure_eager_tensor(_out)) == 2
 
 
 def test_search_sorted() -> None:

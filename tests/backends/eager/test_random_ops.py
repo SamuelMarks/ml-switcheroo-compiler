@@ -33,6 +33,9 @@ class DummyBackend:
 
                     Args:
                         s: Test parameter `s`.
+
+                    Returns:
+                        EagerValue: Computed output value from `rand`.
                     """
                     return "rand"
 
@@ -41,6 +44,9 @@ class DummyBackend:
 
                     Args:
                         s: Test parameter `s`.
+
+                    Returns:
+                        EagerValue: Computed output value from `randn`.
                     """
                     return "randn"
 
@@ -51,6 +57,9 @@ class DummyBackend:
                         low: Test parameter `low`.
                         h: Test parameter `h`.
                         size: Test parameter `size`.
+
+                    Returns:
+                        EagerValue: Computed output value from `randint`.
                     """
                     return "randint"
 
@@ -67,6 +76,9 @@ class DummyBackend:
         Args:
             data: Test parameter `data`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            EagerValue: Computed output value from `array`.
         """
         ensure_callable(self.arrays.append)((data, dtype))
         return "array_res"
@@ -136,6 +148,9 @@ def test_rand_coverage_auto() -> None:
 
             Args:
                 size: Test parameter `size`.
+
+            Returns:
+                EagerValue: Computed output value from `uniform`.
             """
             return "uniform_" + str(size)
 
@@ -156,6 +171,9 @@ def test_rand_coverage_auto() -> None:
 
             Args:
                 args: Test parameter `args`.
+
+            Returns:
+                EagerValue: Computed output value from `rand`.
             """
             return "rand_" + str(args)
 
@@ -173,6 +191,9 @@ def test_randn_coverage_auto() -> None:
 
             Args:
                 size: Test parameter `size`.
+
+            Returns:
+                EagerValue: Computed output value from `normal`.
             """
             return "normal_" + str(size)
 
@@ -193,6 +214,9 @@ def test_randn_coverage_auto() -> None:
 
             Args:
                 args: Test parameter `args`.
+
+            Returns:
+                EagerValue: Computed output value from `randn`.
             """
             return "randn_" + str(args)
 

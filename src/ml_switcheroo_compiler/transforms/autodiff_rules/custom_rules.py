@@ -183,10 +183,10 @@ def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: TensorOrScalar, id
     """Inline a subgraph into the main graph.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        subgraph (IRGraph): The subgraph parameter.
-        node (TensorOrScalar): The node parameter.
-        id_map (dict[str, str]): The id_map parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        subgraph (IRGraph): Input `subgraph` argument (subgraph).
+        node (TensorOrScalar): Input `node` argument (node).
+        id_map (dict[str, str]): Input `id_map` argument (id map).
     """
     _ = node
 
@@ -215,11 +215,11 @@ def _inline_grad_subgraph(
     """Inline the gradient subgraph into the main graph.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        sg_grad (IRGraph): The sg_grad parameter.
-        sg (IRGraph): The sg parameter.
-        node (IRNode): The node parameter.
-        cotangent_mapping (dict[str, str]): The cotangent_mapping parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        sg_grad (IRGraph): Input `sg_grad` argument (sg grad).
+        sg (IRGraph): Input `sg` argument (sg).
+        node (IRNode): Input `node` argument (node).
+        cotangent_mapping (dict[str, str]): Input `cotangent_mapping` argument (cotangent mapping).
 
     Returns:
         list[str]: Inlined output gradient node IDs.
@@ -254,12 +254,12 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """VJP for Checkpoint operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     import uuid
 
@@ -314,12 +314,12 @@ def _if_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...] | s
     """VJP for If operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
@@ -331,12 +331,12 @@ def _loop_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
     """VJP for Loop operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
@@ -472,9 +472,9 @@ def _assoc_scan_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str |
     """VJP for AssociativeScan operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients | None, ...]: Zero cotangents for each input.
@@ -490,9 +490,9 @@ def _if_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) -> str:
     """JVP for If operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        tangents (Sequence[str] | str): The tangents parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        tangents (Sequence[str] | str): Input `tangents` argument (tangents).
 
     Returns:
         str: Tangent output node ID.
@@ -622,9 +622,9 @@ def _loop_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
     """JVP for Loop operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (TensorOrScalar): The node parameter.
-        tangents (TensorOrScalar): The tangents parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (TensorOrScalar): Input `node` argument (node).
+        tangents (TensorOrScalar): Input `tangents` argument (tangents).
 
     Returns:
         str: Tangent node ID.
@@ -683,9 +683,9 @@ def _assoc_scan_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScal
     """JVP for AssociativeScan operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (TensorOrScalar): The node parameter.
-        tangents (TensorOrScalar): The tangents parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (TensorOrScalar): Input `node` argument (node).
+        tangents (TensorOrScalar): Input `tangents` argument (tangents).
 
     Returns:
         str: Tangent node ID.
@@ -701,12 +701,12 @@ def recompute_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> Sequence[str 
     Delegates to the original operation's VJP rule.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
@@ -729,12 +729,12 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """VJP for CustomVJP operation.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        node (IRNode): The node parameter.
-        cotangent (str): The cotangent parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        node (IRNode): Input `node` argument (node).
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     import uuid
 
@@ -763,9 +763,10 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
         id=bwd_node_id,
         op_type="ProcessCustomVJPCall",
         inputs=[cotangent],
-        attributes={"bwd_fn": bwd_fn},
+        attributes={},
         shape_metadata=node.shape_metadata,
     )
+    bwd_node.attributes["bwd_fn"] = bwd_fn
     graph.nodes[bwd_node_id] = bwd_node
 
     adjoints = []
@@ -824,9 +825,11 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
         id=call_id,
         op_type="ProcessCustomJVPCall",
         inputs=list(node.inputs) + tangents_list,
-        attributes={"jvp_rule": jvp_rule, "num_primals": len(node.inputs), "fun": node.attributes.get("fun")},
+        attributes={"num_primals": len(node.inputs)},
         shape_metadata=node.shape_metadata,
     )
+    call_node.attributes["jvp_rule"] = jvp_rule
+    call_node.attributes["fun"] = node.attributes.get("fun")
     graph.nodes[call_id] = call_node
 
     ext_id = f"cjvp_tan_{uuid.uuid4().hex[:6]}"
@@ -848,7 +851,7 @@ def custom_jvp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     Args:
         graph (IRGraph): The target IR graph.
         node (IRNode): The CustomJVP node.
-        cotangent (str): The cotangent parameter.
+        cotangent (str): Input `cotangent` argument (cotangent).
 
     Returns:
         tuple: Adjoints list for inputs.

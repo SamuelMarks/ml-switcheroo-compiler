@@ -50,10 +50,10 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
     """Compute the normalize k tensor operation.
 
     Args:
-        k (int | Tensor | tuple[int, ...] | None): The k parameter.
+        k (int | Tensor | tuple[int, ...] | None): Input `k` argument (k).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     raw_k: TensorOrScalar | _ArrayCallableProtocol | _ItemCallableProtocol = k
     if not isinstance(raw_k, tuple) and isinstance(raw_k, _ArrayCallableProtocol):
@@ -77,12 +77,12 @@ class TopK(OpDef):
         """Infer the output shape for the operation.
 
         Args:
-            x (EagerTensorProtocol): The x parameter.
-            k (TensorOrScalar): The k parameter.
+            x (EagerTensorProtocol): Input `x` argument (x).
+            k (TensorOrScalar): Input `k` argument (k).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if k is None:
             k = kwargs.get("k", 1)
@@ -112,13 +112,13 @@ class Argsort(OpDef):
         """Infer the output shape for sorting indices.
 
         Args:
-            x (EagerTensorProtocol): The x parameter.
-            dimension (TensorOrScalar): The dimension parameter.
-            is_stable (TensorOrScalar): The is_stable parameter.
+            x (EagerTensorProtocol): Input `x` argument (x).
+            dimension (TensorOrScalar): Input `dimension` argument (dimension).
+            is_stable (TensorOrScalar): Input `is_stable` argument (is stable).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(x)
 
@@ -139,13 +139,13 @@ class Sort(OpDef):
         """Infer the output shape for the sorting operation.
 
         Args:
-            x (EagerTensorProtocol): The x parameter.
-            dimension (TensorOrScalar): The dimension parameter.
-            is_stable (TensorOrScalar): The is_stable parameter.
+            x (EagerTensorProtocol): Input `x` argument (x).
+            dimension (TensorOrScalar): Input `dimension` argument (dimension).
+            is_stable (TensorOrScalar): Input `is_stable` argument (is stable).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(x)
         return _typed_ret_1
@@ -421,13 +421,13 @@ class Argpartition(OpDef):
         """Infer the output shape for the partitioned indices.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            kth (EagerTensorProtocol): The kth parameter.
-            axis (int): The axis parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            kth (EagerTensorProtocol): Input `kth` argument (kth).
+            axis (int): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(a)
 
@@ -443,13 +443,13 @@ class Partition(OpDef):
         """Infer the output shape for the partitioned array.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            kth (EagerTensorProtocol): The kth parameter.
-            axis (int): The axis parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            kth (EagerTensorProtocol): Input `kth` argument (kth).
+            axis (int): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(a)
 
@@ -465,14 +465,14 @@ class Compress(OpDef):
         """Infer the output shape for the compressed array.
 
         Args:
-            condition (EagerTensorProtocol): The condition parameter.
-            a (EagerTensorProtocol): The a parameter.
-            axis (int): The axis parameter.
-            out (TensorOrScalar): The out parameter.
+            condition (EagerTensorProtocol): Input `condition` argument (condition).
+            a (EagerTensorProtocol): Input `a` argument (a).
+            axis (int): Input `axis` argument (axis).
+            out (TensorOrScalar): Input `out` argument (out).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return (None,)
 
@@ -488,14 +488,14 @@ class Diagonal(OpDef):
         """Infer the output shape for the diagonal extraction.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            offset (int): The offset parameter.
-            axis1 (int): The axis1 parameter.
-            axis2 (int): The axis2 parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            offset (int): Input `offset` argument (offset).
+            axis1 (int): Input `axis1` argument (axis1).
+            axis2 (int): Input `axis2` argument (axis2).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return (None,)
 
@@ -511,12 +511,12 @@ class Diagflat(OpDef):
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
-            v (EagerTensorProtocol): The v parameter.
-            k (int): The k parameter.
+            v (EagerTensorProtocol): Input `v` argument (v).
+            k (int): Input `k` argument (k).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return (None, None)
 
@@ -532,12 +532,12 @@ class DiagIndices(OpDef):
         """Infer the output shape for the main diagonal indices.
 
         Args:
-            n (int): The n parameter.
-            naxis (int): The naxis parameter.
+            n (int): Input `n` argument (n).
+            naxis (int): Input `naxis` argument (naxis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return (None,)
 
@@ -571,13 +571,13 @@ class BooleanMask(OpDef):
         """Infer the output shape for the boolean masked array.
 
         Args:
-            tensor (EagerTensorProtocol): The tensor parameter.
-            mask (EagerTensorProtocol): The mask parameter.
-            axis (TensorOrScalar): The axis parameter.
+            tensor (EagerTensorProtocol): Input `tensor` argument (tensor).
+            mask (EagerTensorProtocol): Input `mask` argument (mask).
+            axis (TensorOrScalar): Input `axis` argument (axis).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Typically dynamic size
         return (None,)

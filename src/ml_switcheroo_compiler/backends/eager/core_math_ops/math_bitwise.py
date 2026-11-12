@@ -18,12 +18,12 @@ def _signbit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager signbit operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "signbit", None)
     if func:
@@ -37,12 +37,12 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np packbits operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "packbits", get_backend_member(backend_module, "packbits", None))
     if func is not None:
@@ -55,12 +55,12 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np unpackbits operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "unpackbits", get_backend_member(backend_module, "unpackbits", None))
     if func is not None:

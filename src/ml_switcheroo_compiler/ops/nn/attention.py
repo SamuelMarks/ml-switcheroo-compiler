@@ -20,7 +20,7 @@ def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: 
         scale_factor (Tensor): Scale factor.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -45,14 +45,14 @@ class ScaledDotProductAttention(OpDef):
         """Infer shape.
 
         Args:
-            q (EagerTensorProtocol): The q parameter.
-            k (EagerTensorProtocol): The k parameter.
-            v (EagerTensorProtocol): The v parameter.
+            q (EagerTensorProtocol): Input `q` argument (q).
+            k (EagerTensorProtocol): Input `k` argument (k).
+            v (EagerTensorProtocol): Input `v` argument (v).
             scale_factor (EagerTensorProtocol): The scale factor parameter.
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(q)
         return _typed_ret_1

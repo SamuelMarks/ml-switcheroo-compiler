@@ -122,9 +122,9 @@ def permutation(
     """Generate random permutation of a sequence.
 
     Args:
-        key (Tensor | str | int): The key parameter.
+        key (Tensor | str | int): Input `key` argument (key).
         x (Tensor | int): The input tensor or integer upper bound.
-        axis (int): The axis parameter.
+        axis (int): Input `axis` argument (axis).
         independent (bool): Whether permutations are independent across slices.
 
     Returns:
@@ -172,11 +172,11 @@ def binomial(
     """Sample binomial random values from a given key.
 
     Args:
-        key (Tensor | str | int): The key parameter.
+        key (Tensor | str | int): Input `key` argument (key).
         n (int | float | Tensor): Number of trials.
         p (float | Tensor): Probability of success.
-        shape (Sequence[int] | int | None): The shape parameter.
-        dtype (dtypes.DType | str | None): The dtype parameter.
+        shape (Sequence[int] | int | None): Input `shape` argument (shape).
+        dtype (dtypes.DType | str | None): Input `dtype` argument (dtype).
 
     Returns:
         Tensor: Sampled tensor.
@@ -210,10 +210,10 @@ def poisson(
     """Sample poisson random values from a given key.
 
     Args:
-        key (Tensor | str | int): The key parameter.
+        key (Tensor | str | int): Input `key` argument (key).
         lam (float | int | Tensor): Rate parameter lambda.
-        shape (Sequence[int] | int | None): The shape parameter.
-        dtype (dtypes.DType | str | None): The dtype parameter.
+        shape (Sequence[int] | int | None): Input `shape` argument (shape).
+        dtype (dtypes.DType | str | None): Input `dtype` argument (dtype).
 
     Returns:
         Tensor: Sampled tensor.

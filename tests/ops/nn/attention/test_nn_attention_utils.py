@@ -51,6 +51,9 @@ class _MockAttentionBackend:
             op_name: Test parameter `op_name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `execute_op`.
         """
         if op_name == "Concatenate":
             tensors = args[0]
@@ -63,6 +66,9 @@ class _MockAttentionBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `asarray`.
         """
         return np.asarray(x)
 
@@ -71,6 +77,9 @@ class _MockAttentionBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `array`.
         """
         return np.asarray(x)
 
@@ -80,6 +89,9 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
             axis: Test parameter `axis`.
+
+        Returns:
+            EagerValue: Computed output value from `expand_dims`.
         """
         return ensure_callable(np.expand_dims)(x, axis=axis)
 
@@ -89,6 +101,9 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `multiply`.
         """
         try:
             return ensure_eager_tensor(ensure_callable(np.multiply)(x, y))
@@ -101,6 +116,9 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `subtract`.
         """
         try:
             return ensure_eager_tensor(ensure_callable(np.subtract)(x, y))
@@ -113,6 +131,9 @@ class _MockAttentionBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `arange`.
         """
         return ensure_callable(np.arange)(*args, **kwargs)
 
@@ -121,6 +142,9 @@ class _MockAttentionBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `exp`.
         """
         return ensure_eager_tensor(ensure_callable(np.exp)(x))
 
@@ -129,6 +153,9 @@ class _MockAttentionBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `sin`.
         """
         return ensure_eager_tensor(ensure_callable(np.sin)(x))
 
@@ -137,6 +164,9 @@ class _MockAttentionBackend:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cos`.
         """
         return ensure_eager_tensor(ensure_callable(np.cos)(x))
 
@@ -146,6 +176,9 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
             axis: Test parameter `axis`.
+
+        Returns:
+            EagerValue: Computed output value from `concatenate`.
         """
         try:
             return ensure_callable(np.concatenate)([ensure_callable(np.atleast_1d)(arr) for arr in ensure_eager_tensor(x)], axis=axis)

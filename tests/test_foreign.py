@@ -79,7 +79,11 @@ class MockFXNode:
         self.args = args
 
     def __str__(self) -> str:
-        """Test function __str__."""
+        """Test function __str__.
+
+        Returns:
+            str: Computed output value from `__str__`.
+        """
         return self.name
 
 
@@ -291,6 +295,9 @@ def _sample_ast_tuple(x: EagerValue) -> EagerValue:
 
     Args:
         x: Test parameter `x`.
+
+    Returns:
+        EagerValue: Computed output value from `_sample_ast_tuple`.
     """
     return (11, 22, 33)
 
@@ -300,6 +307,9 @@ def _sample_ast_int(x: EagerValue) -> EagerValue:
 
     Args:
         x: Test parameter `x`.
+
+    Returns:
+        EagerValue: Computed output value from `_sample_ast_int`.
     """
     return 42
 
@@ -310,6 +320,9 @@ def _sample_ast_vars(a: EagerValue, b: EagerValue) -> EagerValue:
     Args:
         a: Test parameter `a`.
         b: Test parameter `b`.
+
+    Returns:
+        EagerValue: Computed output value from `_sample_ast_vars`.
     """
     return (a, b)
 
@@ -439,6 +452,9 @@ def test_foreign_coverage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[int, int]: Computed output value from `fn_hints`.
         """
         return (x, x)
 
@@ -457,7 +473,11 @@ def test_foreign_coverage() -> None:
 
     # 7c. hints with return not matching all(int or type)
     def fn_str_ret() -> tuple[str, ...]:
-        """Test function fn_str_ret."""
+        """Test function fn_str_ret.
+
+        Returns:
+            tuple[str, ...]: Computed output value from `fn_str_ret`.
+        """
         return ("a",)
 
     assert op.infer_shape(fn_str_ret) == ()

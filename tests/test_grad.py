@@ -52,6 +52,9 @@ def test_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fun`.
         """
         return x
 
@@ -164,6 +167,9 @@ def test_grad_branches() -> None:
         Args:
             t: Test parameter `t`.
             g: Test parameter `g`.
+
+        Returns:
+            EagerValue: Computed output value from `_overwrite_fwd`.
         """
         return (t, g)
 
@@ -173,6 +179,9 @@ def test_grad_branches() -> None:
         Args:
             g: Test parameter `g`.
             g_in: Test parameter `g_in`.
+
+        Returns:
+            EagerValue: Computed output value from `_overwrite_bwd`.
         """
         return (g, None)
 
@@ -233,6 +242,9 @@ def test_custom_vjp_function_none() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -248,6 +260,9 @@ def test_value_and_grad_wrt_vars() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -265,6 +280,9 @@ def test_custom_jvp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -301,6 +319,9 @@ def test_checkpoint_remat() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -317,6 +338,9 @@ def test_jvp_vjp_hvp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -325,6 +349,9 @@ def test_jvp_vjp_hvp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_aux`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(2), {"a": 1})
 
@@ -340,6 +367,9 @@ def test_jvp_vjp_hvp() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `hvp_test_func`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
 
@@ -382,6 +412,9 @@ def test_ir_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -548,6 +581,9 @@ def test_grad_missing_coverage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_func`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2.0)
 
@@ -565,6 +601,9 @@ def test_grad_missing_coverage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_bool`.
         """
         return x
 
@@ -603,6 +642,9 @@ def test_grad_missing_coverage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_aux`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2.0), {"info": "aux"}
 
@@ -617,6 +659,9 @@ def test_grad_missing_coverage() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `f_multi`.
         """
         return (ensure_eager_tensor(x) * ensure_eager_tensor(3.0)) + (ensure_eager_tensor(y) * ensure_eager_tensor(2.0))
 
@@ -630,6 +675,9 @@ def test_grad_missing_coverage() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_jac_aux`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3.0), {"aux": 1}
 

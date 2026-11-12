@@ -20,9 +20,10 @@ from ml_switcheroo_ir import DType as IRDType
 from ml_switcheroo_ir import LogicalGraph as IRGraph
 from ml_switcheroo_ir import SymInt as IRSymInt
 from ml_switcheroo_ir import SymNode as IRSymNode
-from ml_switcheroo_ir.types import _AttributeValuePydanticAnnotation
 
 from ml_switcheroo_compiler.core.dtype import DType
+
+_AttributeValuePydanticAnnotation = pydantic.PlainValidator(lambda val: val)
 
 DimT = typing.TypeVar("DimT", int, typing.Union[int, "str"])
 _R_co = typing.TypeVar("_R_co", covariant=True)

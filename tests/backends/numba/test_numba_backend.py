@@ -24,7 +24,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_numba_stub(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Provide a NumPy-backed numba stub when numba is not installed."""
+    """Provide a NumPy-backed numba stub when numba is not installed.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     import importlib.util
     import sys
     from unittest.mock import MagicMock
@@ -163,6 +167,9 @@ def test_numba_eager_execute_op() -> None:
             backend_mod: Test parameter `backend_mod`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            str: Computed output value from `fallback_op`.
         """
         return "fallback_op_result"
 
@@ -179,6 +186,9 @@ def test_numba_eager_execute_op() -> None:
             backend_mod: Test parameter `backend_mod`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            str: Computed output value from `custom_op`.
         """
         return "custom_numba_eager_ok"
 

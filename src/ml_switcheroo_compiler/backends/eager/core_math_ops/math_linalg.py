@@ -16,12 +16,12 @@ def _det(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager det operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "det"):
@@ -37,12 +37,12 @@ def _eig(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager eig operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "eig"):
@@ -58,12 +58,12 @@ def _eigh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager eigh operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "eigh"):
@@ -79,12 +79,12 @@ def _eigvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager eigvals operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "eigvals"):
@@ -100,12 +100,12 @@ def _eigvalsh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager eigvalsh operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "eigvalsh"):
@@ -121,12 +121,12 @@ def _cholesky(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager cholesky operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "cholesky"):
@@ -142,12 +142,12 @@ def _cholesky_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager cholesky ex operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     chol = _cholesky(backend_module, *args, **kwargs)
     info: EagerValue
@@ -163,12 +163,12 @@ def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager norm operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "norm"):
@@ -184,12 +184,12 @@ def _pinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager pinv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "pinv"):
@@ -205,12 +205,12 @@ def _qr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     """Execute the eager qr operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "qr"):
@@ -226,12 +226,12 @@ def _svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager svd operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "svd"):
@@ -247,12 +247,12 @@ def _tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager tensorinv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "tensorinv"):
@@ -268,12 +268,12 @@ def _inv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager inv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "inv"):
@@ -289,12 +289,12 @@ def _vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager vander operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "vander")(*args, **kwargs))
 
@@ -304,12 +304,12 @@ def _np_schur(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np schur operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _dispatch_special("Schur", "schur", backend_module, *args, **kwargs)
 
@@ -319,12 +319,12 @@ def _np_svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np svd operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "svd", get_backend_member(backend_module, "svd", None))
     if func is not None:
@@ -337,12 +337,12 @@ def _np_svdvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np svdvals operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "svdvals", get_backend_member(backend_module, "svdvals", None))
     if func is not None:
@@ -355,12 +355,12 @@ def _np_tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np tensorinv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tensorinv", get_backend_member(backend_module, "tensorinv", None))
     if func is not None:
@@ -373,12 +373,12 @@ def _np_triinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np triinv operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "triinv", get_backend_member(backend_module, "triinv", None))
     if func is not None:
@@ -391,12 +391,12 @@ def _np_uniqueinverse(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np uniqueinverse operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "uniqueinverse", get_backend_member(backend_module, "uniqueinverse", None))
     if func is not None:
@@ -409,12 +409,12 @@ def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np vander operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "vander", get_backend_member(backend_module, "vander", None))
     if func is not None:
@@ -427,12 +427,12 @@ def _np_vectornorm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np vectornorm operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "vectornorm", get_backend_member(backend_module, "vectornorm", None))
     if func is not None:

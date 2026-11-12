@@ -27,14 +27,14 @@ def slice(
     """Slice the input tensor along a specific dimension.
 
     Args:
-        input (Tensor): The input parameter.
-        axis (int): The axis parameter.
-        start (int | None): The start parameter.
-        end (int | None): The end parameter.
-        step (int): The step parameter.
+        input (Tensor): Input `input` argument (input).
+        axis (int): Input `axis` argument (axis).
+        start (int | None): Input `start` argument (start).
+        end (int | None): Input `end` argument (end).
+        step (int): Input `step` argument (step).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
@@ -86,13 +86,13 @@ def strided_slice(
     """Extract a strided slice from the input tensor.
 
     Args:
-        input (Tensor): The input parameter.
-        begin (Sequence): The begin parameter.
-        end (Sequence): The end parameter.
-        strides (Sequence): The strides parameter.
+        input (Tensor): Input `input` argument (input).
+        begin (Sequence): Input `begin` argument (begin).
+        end (Sequence): Input `end` argument (end).
+        strides (Sequence): Input `strides` argument (strides).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
@@ -136,7 +136,7 @@ class Slice(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -153,7 +153,7 @@ class StridedSlice(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         return ()
 
@@ -169,14 +169,14 @@ class Choose(OpDef):
         """Infer the output shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            choices (EagerTensorProtocol): The choices parameter.
-            out (TensorOrScalar): The out parameter.
-            mode (str): The mode parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            choices (EagerTensorProtocol): Input `choices` argument (choices).
+            out (TensorOrScalar): Input `out` argument (out).
+            mode (str): Input `mode` argument (mode).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return extract_shape(a)
 
@@ -195,7 +195,7 @@ class IndexInDim(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
@@ -235,7 +235,7 @@ class UpdateSlice(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         if operand is None:
@@ -251,7 +251,7 @@ def index_in_dim(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -266,7 +266,7 @@ def update_slice(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

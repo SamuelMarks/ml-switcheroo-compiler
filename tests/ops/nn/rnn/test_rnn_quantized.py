@@ -178,6 +178,9 @@ def _test_rnn_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             inputs: Test parameter `inputs`.
             state: Test parameter `state`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_cell`.
         """
         return ensure_callable(simple_rnn_cell)(inputs, state, w, rw, b)
 
@@ -216,6 +219,9 @@ def _test_rnn_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `scan_dummy`.
         """
         return dummy_cell(x, carry)
 
@@ -330,6 +336,9 @@ def test_time_distributed_inner_op_shape_inference(mocker: EagerTensorProtocol) 
             Args:
                 inp: Test parameter `inp`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                tuple[int, ...]: Computed output value from `infer_shape`.
             """
             return ensure_shape((ensure_eager_tensor(inp).shape[0], 64))
 

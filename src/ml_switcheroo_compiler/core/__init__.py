@@ -25,7 +25,7 @@ def image_data_format() -> str:
     """Execute image data format for compiler processing.
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     return "channels_last"
 

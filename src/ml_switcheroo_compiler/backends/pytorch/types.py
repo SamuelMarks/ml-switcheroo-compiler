@@ -29,10 +29,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
 
     Args:
         cls (type): The class.
-    shape (tuple): The shape parameter.
+    shape (tuple): Input `shape` argument (shape).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(torch.zeros(shape))
 
@@ -52,11 +52,11 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
     Args:
         cls (type): The class.
-    data (EagerValue): The data parameter.
-        dtype (EagerValue): The dtype parameter.
+    data (EagerValue): Input `data` argument (data).
+        dtype (EagerValue): Input `dtype` argument (dtype).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if dtype is not None:
         dtype_str = str(get_backend_member(dtype, "value", dtype)).split(".")[-1]
@@ -78,10 +78,10 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
 
     Args:
         cls (type): The class.
-    data (EagerValue): The data parameter.
+    data (EagerValue): Input `data` argument (data).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(torch.as_tensor(data))
 
@@ -99,9 +99,9 @@ def item(cls: type, data: EagerValue) -> float:
 
     Args:
         cls (type): The class.
-    data (EagerValue): The data parameter.
+    data (EagerValue): Input `data` argument (data).
 
     Returns:
-        float: Result.
+        float: Computed `float` output.
     """
     return float(torch.as_tensor(data).item())

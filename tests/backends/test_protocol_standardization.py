@@ -35,16 +35,28 @@ class MockEagerTensor:
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get shape."""
+        """Get shape.
+
+        Returns:
+            tuple[int, ...]: Computed output value from `shape`.
+        """
         return self._shape
 
     @property
     def dtype(self) -> EagerValue:
-        """Get dtype."""
+        """Get dtype.
+
+        Returns:
+            EagerValue: Computed output value from `dtype`.
+        """
         return self._dtype
 
     def __len__(self) -> int:
-        """Length of leading dim."""
+        """Length of leading dim.
+
+        Returns:
+            int: Computed output value from `__len__`.
+        """
         return self._shape[0]
 
     def __getitem__(self, key: EagerValue) -> MockEagerTensor:
@@ -52,6 +64,9 @@ class MockEagerTensor:
 
         Args:
             key: Test parameter `key`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__getitem__`.
         """
         return self
 
@@ -65,7 +80,11 @@ class MockEagerTensor:
         pass
 
     def __neg__(self) -> MockEagerTensor:
-        """Negation."""
+        """Negation.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__neg__`.
+        """
         return self
 
     def __add__(self, other: EagerValue) -> MockEagerTensor:
@@ -73,6 +92,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__add__`.
         """
         return self
 
@@ -81,6 +103,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__sub__`.
         """
         return self
 
@@ -89,6 +114,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__mul__`.
         """
         return self
 
@@ -97,6 +125,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__truediv__`.
         """
         return self
 
@@ -105,6 +136,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            EagerValue: Computed output value from `__lt__`.
         """
         return True
 
@@ -113,6 +147,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            EagerValue: Computed output value from `__le__`.
         """
         return True
 
@@ -121,6 +158,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            EagerValue: Computed output value from `__gt__`.
         """
         return False
 
@@ -129,6 +169,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            EagerValue: Computed output value from `__ge__`.
         """
         return True
 
@@ -137,6 +180,9 @@ class MockEagerTensor:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockEagerTensor: Computed output value from `__pow__`.
         """
         return self
 
@@ -153,26 +199,46 @@ class MockGradTensor:
 
     @property
     def dtype(self) -> EagerValue:
-        """Get dtype."""
+        """Get dtype.
+
+        Returns:
+            EagerValue: Computed output value from `dtype`.
+        """
         return self._dtype
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get shape."""
+        """Get shape.
+
+        Returns:
+            tuple[int, ...]: Computed output value from `shape`.
+        """
         return self._shape
 
     @property
     def id(self) -> str:
-        """Get id."""
+        """Get id.
+
+        Returns:
+            str: Computed output value from `id`.
+        """
         return self._id
 
     @property
     def data(self) -> EagerValue:
-        """Get data."""
+        """Get data.
+
+        Returns:
+            EagerValue: Computed output value from `data`.
+        """
         return self._data
 
     def __len__(self) -> int:
-        """Get leading dimension length."""
+        """Get leading dimension length.
+
+        Returns:
+            int: Computed output value from `__len__`.
+        """
         return 3
 
 
@@ -184,7 +250,11 @@ class MockInterpreterTensor(MockEagerTensor):
         super().__init__((1,))
 
     def item(self) -> int | float | bool:
-        """Get scalar item."""
+        """Get scalar item.
+
+        Returns:
+            int | float | bool: Computed output value from `item`.
+        """
         return 42.0
 
 
@@ -247,6 +317,9 @@ def test_custom_eager_eval_strategy() -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                int: Computed output value from `eager_eval`.
             """
             return a + b
 
@@ -259,6 +332,9 @@ def test_custom_eager_eval_strategy() -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                int: Computed output value from `forward`.
             """
             return a * b
 
@@ -278,6 +354,9 @@ def test_custom_eager_eval_strategy() -> None:
                 op_type: Test parameter `op_type`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `execute_op`.
             """
             return f"executed_{op_type}"
 

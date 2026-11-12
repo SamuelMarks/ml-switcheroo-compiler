@@ -108,6 +108,9 @@ def test_grad_utils_compute_grad_and_value_tracing_branch() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f_linear`.
         """
         return x
 

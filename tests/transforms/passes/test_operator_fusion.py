@@ -108,6 +108,9 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `is_fusion_valid`.
             """
             return True
 
@@ -138,6 +141,9 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `is_fusion_valid`.
             """
             return False
 
@@ -161,6 +167,9 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
             Args:
                 g: Test parameter `g`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, IRNode] | None: Computed output value from `apply`.
             """
             return {"n_a": IRNode(id="n_b", op_type="B", inputs=[])}
 
@@ -300,6 +309,9 @@ def test_operator_fusion_exhaustive_patch() -> None:
             Args:
                 g: Test parameter `g`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             new_node = IRNode(id="n2", op_type="OpB_Fused", inputs=[])
             return {"n2": new_node}
@@ -324,6 +336,9 @@ def test_operator_fusion_exhaustive_patch() -> None:
             Args:
                 g: Test parameter `g`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             new_node = IRNode(id="n4", op_type="OpC_Fused", inputs=[])
             new_node.shape_metadata = ("batch", 128)
@@ -356,6 +371,9 @@ def test_operator_fusion_symbolic_shape_coverage() -> None:
             Args:
                 g: Test parameter `g`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
 
             class FakeNode:
@@ -408,6 +426,9 @@ def test_operator_fusion_extra_coverage2() -> None:
             Args:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             node = ensure_eager_tensor(ensure_eager_tensor(match).get)("my_node")
             if node and ensure_eager_tensor(ensure_eager_tensor(node).id) == "a_id":
@@ -478,6 +499,9 @@ def test_operator_fusion_extra_coverage_3() -> None:
             Args:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, LogicalNode] | None: Computed output value from `apply`.
             """
             node = ensure_eager_tensor(ensure_eager_tensor(match).get)("my_node")
             if node and ensure_eager_tensor(ensure_eager_tensor(node).id) == "a_id":
@@ -540,6 +564,9 @@ def _test_operator_fusion_all_remaining_branches_part_1(_state: dict[str, EagerT
             Args:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
+
+            Returns:
+                dict[str, IRNode] | None: Computed output value from `apply`.
             """
             node = match.get("x")
             if isinstance(node, IRNode) and node.id == "a_id":

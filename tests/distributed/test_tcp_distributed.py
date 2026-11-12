@@ -117,6 +117,9 @@ def test_tcp_distributed_missing_funcs() -> None:
 
         Args:
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_all_gather`.
         """
         return [t, np.array([3.0])]
 
@@ -172,7 +175,11 @@ def test_tcp_distributed_context_none_connections_all_reduce() -> None:
         """Test class DummyConn."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return np.array([0])
 
         def send(self, data: EagerValue) -> None:
@@ -201,8 +208,8 @@ def test_tcp_distributed_context_none_listener_thread() -> None:
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as mock_listener:
         mock_listener.return_value = None
         with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
-            TCPDistributedContext(world_size=2, rank=0)
-    assert callable(test_tcp_distributed_context_none_listener_thread)
+            ctx = TCPDistributedContext(world_size=2, rank=0)
+            assert ctx.world_size == 2
 
 
 def test_tcp_distributed_context_none_listener_thread_fixed() -> None:
@@ -213,8 +220,8 @@ def test_tcp_distributed_context_none_listener_thread_fixed() -> None:
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener", side_effect=lambda *a, **kw: None):
         with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
-            TCPDistributedContext(world_size=2, rank=0)
-    assert callable(test_tcp_distributed_context_none_listener_thread_fixed)
+            ctx = TCPDistributedContext(world_size=2, rank=0)
+            assert ctx.world_size == 2
 
 
 def test_tcp_distributed_context_sync_thread() -> None:
@@ -247,8 +254,8 @@ def test_tcp_distributed_context_sync_thread() -> None:
     with patch("threading.Thread", new=SyncThread):
         with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener", side_effect=lambda *a, **kw: None):
             with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
-                TCPDistributedContext(world_size=2, rank=0)
-    assert callable(test_tcp_distributed_context_sync_thread)
+                ctx = TCPDistributedContext(world_size=2, rank=0)
+                assert ctx.world_size == 2
 
 
 def test_tcp_distributed_context_initialize_none_listener() -> None:
@@ -284,9 +291,4 @@ def test_tcp_distributed_context_initialize_none_listener() -> None:
                 with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
                     ctx = TCPDistributedContext(world_size=2, rank=0)
                     ctx.initialize()
-    assert callable(test_tcp_distributed_context_initialize_none_listener)
-
-
-def test_dummy() -> None:
-    """Test function test_dummy."""
-    assert callable(test_dummy)
+                    assert ctx.listener is None

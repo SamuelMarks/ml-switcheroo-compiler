@@ -23,6 +23,9 @@ def test_webrtc_no_handlers_yaml() -> None:
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                EagerValue: Computed output value from `fake_exists`.
             """
             return ensure_eager_tensor("webrtc_topology.yaml") in ensure_eager_tensor(path)
 
@@ -63,6 +66,9 @@ def test_webrtc_with_handlers_yaml() -> None:
                 path: Test parameter `path`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_open_file`.
             """
             if ensure_eager_tensor("webrtc_topology") in ensure_eager_tensor(path):
                 return ensure_eager_tensor(mock_open(read_data=yaml.dump(topology_data))())

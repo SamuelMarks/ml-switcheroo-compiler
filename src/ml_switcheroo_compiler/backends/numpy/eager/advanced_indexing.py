@@ -17,12 +17,12 @@ def _gather_nd(x: EagerValue, indices: EagerValue, **kwargs: EagerValue) -> Eage
     """Evaluate.
 
     Args:
-        x (EagerValue): The x parameter.
-        indices (EagerValue): The indices parameter.
+        x (EagerValue): Input `x` argument (x).
+        indices (EagerValue): Input `indices` argument (indices).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_eager_tensor(ensure_eager_tensor(x)[tuple(get_backend_member(np, "moveaxis")(indices, -1, 0))])
 
@@ -31,13 +31,13 @@ def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **k
     """Evaluate.
 
     Args:
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
-        shape (EagerValue): The shape parameter.
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
+        shape (EagerValue): Input `shape` argument (shape).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "zeros")(shape, dtype=get_backend_member(updates, "dtype")))
     res[tuple(get_backend_member(np, "moveaxis")(indices, -1, 0))] = ensure_ndarray(updates)
@@ -48,14 +48,14 @@ def _scatter(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **kwar
     """Evaluate.
 
     Args:
-        x (EagerValue): The x parameter.
-        index (EagerValue): The index parameter.
-        src (EagerValue): The src parameter.
-        dim (int): The dim parameter.
+        x (EagerValue): Input `x` argument (x).
+        index (EagerValue): Input `index` argument (index).
+        src (EagerValue): Input `src` argument (src).
+        dim (int): Input `dim` argument (dim).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(x))
     get_backend_member(np, "put_along_axis")(y, index, src, axis=dim)
@@ -66,14 +66,14 @@ def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **
     """Evaluate.
 
     Args:
-        x (EagerValue): The x parameter.
-        index (EagerValue): The index parameter.
-        src (EagerValue): The src parameter.
-        dim (int): The dim parameter.
+        x (EagerValue): Input `x` argument (x).
+        index (EagerValue): Input `index` argument (index).
+        src (EagerValue): Input `src` argument (src).
+        dim (int): Input `dim` argument (dim).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(x))
     it = np.nditer(np.asarray(index), flags=["multi_index"])
@@ -88,12 +88,12 @@ def _tensor_scatter_update(tensor: EagerValue, indices: EagerValue, updates: Eag
     """Tensor scatter update for numpy.
 
     Args:
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(tensor))
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -107,12 +107,12 @@ def _tensor_scatter_add(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter add for numpy.
 
     Args:
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(tensor))
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -126,12 +126,12 @@ def _tensor_scatter_max(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter max for numpy.
 
     Args:
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(tensor))
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -145,12 +145,12 @@ def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter min for numpy.
 
     Args:
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(tensor))
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -165,13 +165,13 @@ def _np_take_along_axis(backend_module: BackendModuleProtocol, x: EagerValue, in
     """Execute the eager np take along axis operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        indices (EagerValue): The indices parameter.
-        axis (EagerValue): The axis parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        indices (EagerValue): Input `indices` argument (indices).
+        axis (EagerValue): Input `axis` argument (axis).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.take_along_axis(x, indices, axis=axis)
 
@@ -181,13 +181,13 @@ def _np_tensor_scatter_update(backend_module: BackendModuleProtocol, tensor: Eag
     """Execute the eager np tensor scatter update operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
 
@@ -197,13 +197,13 @@ def _np_tensor_scatter_add(backend_module: BackendModuleProtocol, tensor: EagerV
     """Execute the eager np tensor scatter add operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -216,13 +216,13 @@ def _np_tensor_scatter_max(backend_module: BackendModuleProtocol, tensor: EagerV
     """Execute the eager np tensor scatter max operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -235,13 +235,13 @@ def _np_tensor_scatter_min(backend_module: BackendModuleProtocol, tensor: EagerV
     """Execute the eager np tensor scatter min operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -254,12 +254,12 @@ def _np_gather_nd(backend_module: BackendModuleProtocol, params: EagerValue, ind
     """Execute the eager np gather nd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        params (EagerValue): The params parameter.
-        indices (EagerValue): The indices parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        params (EagerValue): Input `params` argument (params).
+        indices (EagerValue): Input `indices` argument (indices).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return ensure_eager_tensor(ensure_eager_tensor(params)[idx])
@@ -270,14 +270,14 @@ def _np_scatter_nd(backend_module: BackendModuleProtocol, indices: EagerValue, u
     """Execute the eager np scatter nd operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
-        shape (EagerValue): The shape parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
+        shape (EagerValue): Input `shape` argument (shape).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "zeros")(shape, dtype=get_backend_member(updates, "dtype")))
     idx: tuple[EagerValue, ...] = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -290,12 +290,12 @@ def _np_scatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np scatter operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     input_data: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(args[0])
     index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(args[1])
@@ -311,12 +311,12 @@ def _np_scatter_add(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np scatter add operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     input_data: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(args[0]))
     index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(args[1])
@@ -331,16 +331,16 @@ def _np_scatter_apply(backend_module: BackendModuleProtocol, context: IndexingCo
     """Execute the eager np scatter apply operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     if len(args) == 0:
         return None
@@ -369,14 +369,14 @@ def _np_scatter_max(backend_module: BackendModuleProtocol, tensor: EagerValue, i
     """Execute the eager np scatter max operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
+        context (IndexingContext): Input `context` argument (context).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor = np.copy(np.asarray(tensor))
     np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
@@ -388,14 +388,14 @@ def _np_scatter_min(backend_module: BackendModuleProtocol, tensor: EagerValue, i
     """Execute the eager np scatter min operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
+        context (IndexingContext): Input `context` argument (context).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor = np.copy(np.asarray(tensor))
     np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
@@ -407,14 +407,14 @@ def _np_scatter_mul(backend_module: BackendModuleProtocol, tensor: EagerValue, i
     """Execute the eager np scatter mul operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        tensor (EagerValue): The tensor parameter.
-        indices (EagerValue): The indices parameter.
-        updates (EagerValue): The updates parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        tensor (EagerValue): Input `tensor` argument (tensor).
+        indices (EagerValue): Input `indices` argument (indices).
+        updates (EagerValue): Input `updates` argument (updates).
+        context (IndexingContext): Input `context` argument (context).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensor = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))

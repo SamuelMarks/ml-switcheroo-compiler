@@ -310,12 +310,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Conv2D WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -418,12 +418,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Emit WebRTC AllReduce.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -435,12 +435,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Emit WebRTC AllGather.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -452,12 +452,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Emit WebRTC AllToAll.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -469,12 +469,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Emit WebRTC ReduceScatter.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -486,12 +486,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Emit WebRTC Broadcast.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -568,12 +568,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Cond with dynamic subgraph lowering.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -639,12 +639,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate If (alias for Cond).
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self.visit_Cond(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -652,12 +652,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Scan using recursive subgraph execution.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -680,12 +680,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate MatMul WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -727,12 +727,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate MaxPool2D WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_pooling2d(node, clean_id, inputs, shape, "max_pool2d")
 
@@ -740,12 +740,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate AvgPool2D WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_pooling2d(node, clean_id, inputs, shape, "avg_pool2d")
 
@@ -753,11 +753,11 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Pooling 2D.
 
         Args:
-            node: The node parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            template_name: The template_name parameter.
+            node: Input `node` argument (node).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            template_name: Input `template_name` argument (template name).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -815,12 +815,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Linear (Dense) WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -847,12 +847,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Attention WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -875,12 +875,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate MaxPool WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self.visit_MaxPool2D(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -888,12 +888,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate LayerNorm WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -919,12 +919,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Trig (Sin/Cos) WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -932,12 +932,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Exp WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -945,12 +945,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Log WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -958,12 +958,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Tanh WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -971,12 +971,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Sigmoid WASM.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
@@ -1268,12 +1268,12 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate vector unrolled v128 operations with remainder loop peeling and bounds checking.
 
         Args:
-            node: The node parameter.
-            op_type: The op_type parameter.
-            clean_id: The clean_id parameter.
-            inputs: The inputs parameter.
-            shape: The shape parameter.
-            nelem: The nelem parameter.
+            node: Input `node` argument (node).
+            op_type: Input `op_type` argument (op type).
+            clean_id: Input `clean_id` argument (clean id).
+            inputs: Input `inputs` argument (inputs).
+            shape: Input `shape` argument (shape).
+            nelem: Input `nelem` argument (nelem).
         """
         in_id = inputs[0] if inputs else "dummy"
 

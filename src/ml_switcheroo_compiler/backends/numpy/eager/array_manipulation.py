@@ -21,14 +21,14 @@ def _np_resize(backend_module: BackendModuleProtocol, x: EagerValue, shape: Eage
     """Eager fallback for _np_resize.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        shape (EagerValue): The shape parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        shape (EagerValue): Input `shape` argument (shape).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.backends.numpy.eager.vision import resize_bilinear
 
@@ -41,12 +41,12 @@ def _np_band_part(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np band part operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(_band_part)(*args, **kwargs)
 
@@ -56,12 +56,12 @@ def _np_diag(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Eager fallback for _np_diag.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     kwargs["k"] = kwargs.pop("diagonal", kwargs.pop("k", 0))
     return backend_module.diag(*args, **kwargs)
@@ -72,14 +72,14 @@ def _np_unstack(backend_module: BackendModuleProtocol, x: EagerValue, axis: int 
     """Execute the eager np unstack operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axis (int): The axis parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axis (int): Input `axis` argument (axis).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, get_backend_member(x, "shape")[axis], axis=axis)]
 
@@ -89,13 +89,13 @@ def _np_reshape(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     """Execute the eager np reshape operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape"))
     return backend_module.reshape(x, shape)
@@ -106,13 +106,13 @@ def _np_squeeze(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     """Execute the eager np squeeze operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     axis: int | None = ensure_opt_int(kwargs.get("axis", args[0] if len(args) > 0 else None))
     return backend_module.squeeze(x, axis=axis)
@@ -123,13 +123,13 @@ def _np_transpose(backend_module: BackendModuleProtocol, x: EagerValue, *args: E
     """Execute the eager np transpose operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     axes = kwargs.get("axes", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=axes)
@@ -140,12 +140,12 @@ def _np_rot90(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np rot90 operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.rot90(*args, **kwargs)
 
@@ -155,12 +155,12 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Eager gather implementation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     t = args[0]
     axis: int | None = ensure_opt_int(args[1] if len(args) > 1 else kwargs.get("axis"))
@@ -177,12 +177,12 @@ def stack_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     """Eager stack implementation.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     raw_tensors = args[0] if len(args) > 0 else (kwargs.get("tensors") or [])
     tensors = ensure_eager_list(raw_tensors) if isinstance(raw_tensors, (list, tuple)) or has_backend_member(raw_tensors, "shape") else []
@@ -196,14 +196,14 @@ def _np_tile(backend_module: BackendModuleProtocol, x: EagerValue, reps: EagerVa
     """Execute the eager np tile operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        reps (EagerValue): The reps parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        reps (EagerValue): Input `reps` argument (reps).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.tile(x, reps)
 
@@ -213,13 +213,13 @@ def _np_permute(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     """Execute the eager np permute operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     dims = kwargs.get("dims", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=dims)
@@ -230,12 +230,12 @@ def _np_triu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Eager fallback for _np_triu.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     kwargs["k"] = kwargs.pop("diagonal", 0)
     return backend_module.triu(*args, **kwargs)
@@ -246,12 +246,12 @@ def _np_tril(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Eager fallback for _np_tril.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     kwargs["k"] = kwargs.pop("diagonal", 0)
     return backend_module.tril(*args, **kwargs)
@@ -262,13 +262,13 @@ def _np_expand_dims(backend_module: BackendModuleProtocol, x: EagerValue, *args:
     """Execute the eager np expand dims operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     axis: int | None = ensure_opt_int(args[0] if len(args) > 0 else kwargs.get("axis"))
     return backend_module.expand_dims(x, axis=axis)
@@ -279,13 +279,13 @@ def _np_atleast_1d(backend_module: BackendModuleProtocol, x: EagerValue, *args: 
     """Execute the eager np atleast 1d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.atleast_1d(x)
 
@@ -295,13 +295,13 @@ def _np_atleast_2d(backend_module: BackendModuleProtocol, x: EagerValue, *args: 
     """Execute the eager np atleast 2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.atleast_2d(x)
 
@@ -311,13 +311,13 @@ def _np_atleast_3d(backend_module: BackendModuleProtocol, x: EagerValue, *args: 
     """Execute the eager np atleast 3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.atleast_3d(x)
 
@@ -327,12 +327,12 @@ def _np_append(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_append.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.append(*args, **kwargs)
 
@@ -342,12 +342,12 @@ def _np_column_stack(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Eager fallback for _np_column_stack.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.column_stack(tup)
@@ -358,12 +358,12 @@ def _np_dsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_dsplit.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.dsplit(*args, **kwargs)
 
@@ -373,12 +373,12 @@ def _np_dstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_dstack.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.dstack(tup)
@@ -389,12 +389,12 @@ def _np_hsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_hsplit.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.hsplit(*args, **kwargs)
 
@@ -404,12 +404,12 @@ def _np_hstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_hstack.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.hstack(tup)
@@ -420,12 +420,12 @@ def _np_vsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_vsplit.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.vsplit(*args, **kwargs)
 
@@ -435,12 +435,12 @@ def _np_vstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_vstack.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.vstack(tup)
@@ -451,12 +451,12 @@ def _np_moveaxis(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Eager fallback for _np_moveaxis.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.moveaxis(*args, **kwargs)
 
@@ -466,12 +466,12 @@ def _np_swapaxes(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Eager fallback for _np_swapaxes.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.swapaxes(*args, **kwargs)
 
@@ -481,12 +481,12 @@ def _np_roll(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Eager fallback for _np_roll.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.roll(*args, **kwargs)
 
@@ -496,12 +496,12 @@ def _np_block(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Eager fallback for _np_block.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.block(*args, **kwargs)
 
@@ -511,12 +511,12 @@ def _np_delete(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_delete.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.delete(*args, **kwargs)
 
@@ -526,12 +526,12 @@ def _np_diag_indices(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Eager fallback for _np_diag_indices.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.diag_indices(*args, **kwargs)
 
@@ -541,12 +541,12 @@ def _np_diag_indices_from(backend_module: BackendModuleProtocol, *args: EagerVal
     """Eager fallback for _np_diag_indices_from.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.diag_indices_from(*args, **kwargs)
 
@@ -556,12 +556,12 @@ def _np_diagflat(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Eager fallback for _np_diagflat.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.diagflat(*args, **kwargs)
 
@@ -571,12 +571,12 @@ def _np_fill_diagonal(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Eager fallback for _np_fill_diagonal.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     a = args[0] if len(args) > 0 else kwargs.get("a")
     val = args[1] if len(args) > 1 else kwargs.get("val")
@@ -590,11 +590,11 @@ def _np_insert(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Eager fallback for _np_insert.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.insert(*args, **kwargs)

@@ -20,8 +20,8 @@ class RawOp(OpDef):
         """Infer shape dynamically or fallback to unknown.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             TensorOrScalar: Computed result.
@@ -45,8 +45,8 @@ class RawSwitch(RawOp):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             TensorOrScalar: Computed result.
@@ -65,8 +65,8 @@ class RawMerge(RawOp):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             TensorOrScalar: Computed result.
@@ -85,8 +85,8 @@ class RawConv2D(RawOp):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             TensorOrScalar: Computed result.
@@ -123,8 +123,8 @@ class RawMatMul(RawOp):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             TensorOrScalar: Computed result.

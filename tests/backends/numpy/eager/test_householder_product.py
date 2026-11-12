@@ -30,6 +30,9 @@ def test_householder_product_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `householder_product`.
             """
             return np.array([[1, 0], [0, 1]])
 
@@ -48,6 +51,9 @@ def test_householder_product_coverage() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `householder_product`.
                 """
                 return np.array([[1, 0], [0, 1]])
 

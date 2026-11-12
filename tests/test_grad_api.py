@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.api import grad, hook_gradient, jvp, value_and_grad
@@ -23,6 +24,9 @@ def test_value_and_grad_has_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, Tensor]: Computed output value from `func`.
         """
         return x, x
 
@@ -43,6 +47,9 @@ def test_hook_gradient() -> None:
 
         Args:
             g: Test parameter `g`.
+
+        Returns:
+            Tensor: Computed output value from `hook`.
         """
         return g * 2.0
 
@@ -51,6 +58,9 @@ def test_hook_gradient() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func`.
         """
         return ensure_tensor_obj(hook_gradient(x, hook))
 
@@ -59,6 +69,9 @@ def test_hook_gradient() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func2`.
         """
         return ensure_tensor_obj(hook_gradient(x, lambda g: None))
 
@@ -80,6 +93,9 @@ def test_value_and_grad_no_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `func`.
         """
         return x
 
@@ -101,6 +117,9 @@ def test_api_jvp_basic() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            float: Computed output value from `f`.
         """
         return x * x + 3.0 * y
 
@@ -116,15 +135,22 @@ def test_api_jvp_basic() -> None:
     np.testing.assert_allclose(np.asarray(ensure_tensor_obj(p_ten).numpy()), [4.0])
     np.testing.assert_allclose(np.asarray(t_ten), [12.0])
 
-    # Also test fallback when _symbolic_jvp returns non-pair or raises
+    # Also test fallback when _symbolic_jvp returns non-pair or raises RuntimeError, while propagating AutodiffError
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.jvp", return_value="not_a_tuple"):
         p_out2, t_out2 = jvp(f, primals, tangents)
         assert ensure_callable(np.isclose)(p_out2, 7.0)
         assert ensure_callable(np.isclose)(t_out2, 10.0, atol=1e-3)
 
+    from ml_switcheroo_compiler.core.errors import AutodiffError
+
+    with patch("ml_switcheroo_compiler.grad.jvp_vjp.jvp", side_effect=AutodiffError("missing rule")):
+        with pytest.raises(AutodiffError, match="missing rule"):
+            jvp(f, primals, tangents)
+
 
 def test_api_jvp_no_add_and_add_exception() -> None:
-    """Test jvp branch where primal lacks __add__ and where __add__ raises an Exception."""
+    """Test jvp leaves non-addable auxiliary primals unchanged and raises AutodiffError on broken __add__."""
+    from ml_switcheroo_compiler.core.errors import AutodiffError
 
     class NoAdd:
         """Object without __add__ method."""
@@ -137,6 +163,9 @@ def test_api_jvp_no_add_and_add_exception() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                EagerValue: Computed output value from `__add__`.
             """
             raise RuntimeError("Cannot add")
 
@@ -146,19 +175,24 @@ def test_api_jvp_no_add_and_add_exception() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            float: Computed output value from `f`.
         """
         _ = (a, b)
         return 42.0
 
-    primals = (NoAdd(), BrokenAdd())
-    tangents = (1.0, 1.0)
-    primal_out, tangent_out = ensure_callable(jvp)(f, primals, tangents)
+    primal_out, tangent_out = ensure_callable(jvp)(f, (NoAdd(), 1.0), (1.0, 0.0))
     assert primal_out == 42.0
     assert tangent_out == 0.0
 
+    with pytest.raises(AutodiffError, match="Failed to perturb primal operand"):
+        ensure_callable(jvp)(f, (NoAdd(), BrokenAdd()), (1.0, 1.0))
+
 
 def test_api_jvp_sub_exception() -> None:
-    """Test jvp branch where tangent subtraction fails and falls back to primal_out."""
+    """Test jvp raises AutodiffError when function output does not support tangent subtraction."""
+    from ml_switcheroo_compiler.core.errors import AutodiffError
 
     class NonDifferentiableOutput:
         """Output object that cannot be subtracted."""
@@ -176,10 +210,12 @@ def test_api_jvp_sub_exception() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            NonDifferentiableOutput: Computed output value from `f`.
         """
         _ = x
         return NonDifferentiableOutput("result")
 
-    primal_out, tangent_out = ensure_callable(jvp)(f, (1.0,), (1.0,))
-    assert type(primal_out).__name__ == "NonDifferentiableOutput"
-    assert tangent_out is primal_out
+    with pytest.raises(AutodiffError, match="Failed to compute directional derivative tangent"):
+        ensure_callable(jvp)(f, (1.0,), (1.0,))

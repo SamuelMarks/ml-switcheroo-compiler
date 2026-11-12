@@ -55,10 +55,12 @@ def test_proxy_tensor_dunders() -> None:
         _ = -p1
         _ = +p1
         _ = p1[0]
-        _ = p1 @ p2
+        matmul_out = p1 @ p2
+        assert matmul_out.shape == (2, 2)
+        assert global_tracing_state.active_graph is not None
+        assert len(global_tracing_state.active_graph.nodes) >= 20
     finally:
         global_tracing_state.stop_tracing()
-    assert callable(test_proxy_tensor_dunders)
 
 
 def test_proxy_tensor_outside_tracing() -> None:
@@ -87,7 +89,7 @@ def test_add_node_outside_tracing() -> None:
     """
     node = LogicalNode(id="dummy", op_type="Input")
     global_tracing_state.add_node(node)
-    assert callable(test_add_node_outside_tracing)
+    assert not global_tracing_state.is_tracing
 
 
 def test_matmul_invalid() -> None:

@@ -39,12 +39,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the Scan operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         # Natively, backends implement this as a specific scan.
@@ -54,12 +54,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the Switch operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         # Fallback to a custom runner
@@ -69,12 +69,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the TimeDistributed operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         # Fallback implementation: we assume the frontend has provided a TimeDistributed node.
         # Natively, backends might want to generate a loop or a vmap.
@@ -85,12 +85,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the Assert operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         data = kwargs.get("data", ["Assertion failed."])
@@ -100,12 +100,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the AssociativeScan operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
@@ -119,7 +119,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         cond_graph = node.attributes.get("cond")
         body_graph = node.attributes.get("body")
@@ -154,7 +154,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         cond_val: str = input_vars[0]
         true_graph = node.attributes.get("true_branch") or node.attributes.get("then_branch")
@@ -183,7 +183,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         lower_bound: str = input_vars[0]
         upper_bound: str = input_vars[1]
@@ -213,7 +213,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         xs: str = input_vars[0]
         f_graph = node.attributes.get("f")
@@ -236,7 +236,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         init: str = input_vars[0]
         xs: str = input_vars[1]
@@ -264,7 +264,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_vmap({', '.join(input_vars)})"
@@ -278,7 +278,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             **kwargs: Additional kwargs.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_pmap({', '.join(input_vars)})"

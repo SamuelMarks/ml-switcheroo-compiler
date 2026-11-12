@@ -36,12 +36,12 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
     """Execute the eager extract volume patches operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     mod = _resolve_filter_mod(backend_module)
     if not args:
@@ -113,14 +113,14 @@ def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: E
     """Execute the eager extract box channels operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        img: The img parameter.
-        out: The out parameter.
-        coords_and_i (tuple[tuple[tuple[int, int], tuple[int, int]], int]): The coords_and_i parameter.
-        config (BBoxConfig): The config parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        img: Input `img` argument (img).
+        out: Input `out` argument (out).
+        coords_and_i (tuple[tuple[tuple[int, int], tuple[int, int]], int]): Input `coords_and_i` argument (coords and i).
+        config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            None: Result.
+            None: Computed `None` output.
     """
     (y1_i, x1_i), (y2_i, x2_i) = coords_and_i[0]
     i = coords_and_i[1]
@@ -143,13 +143,13 @@ def _extract_single_box(np_mod: BackendModuleProtocol, batch_ctx: EagerValue, i:
     """Execute the eager extract single box operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        batch_ctx: The batch_ctx parameter.
-        i (int): The i parameter.
-        config (BBoxConfig): The config parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        batch_ctx: Input `batch_ctx` argument (batch ctx).
+        i (int): Input `i` argument (i).
+        config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            None: Result.
+            None: Computed `None` output.
     """
     imgs, bxs, bxs_idx, out = ensure_tensor_quad(batch_ctx)
     img_idx = int(bxs_idx[i])
@@ -195,14 +195,14 @@ def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue,
     """Execute the eager extract boxes tf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        boxes: The boxes parameter.
-        box_indices: The box_indices parameter.
-        config (BBoxConfig): The config parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        images: Input `images` argument (images).
+        boxes: Input `boxes` argument (boxes).
+        box_indices: Input `box_indices` argument (box indices).
+        config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = _resolve_filter_mod(backend_module)
     images_np = mod.asarray(images)
@@ -216,14 +216,14 @@ def extract_bounding_boxes_eager(backend_module: BackendModuleProtocol, images: 
     """Execute the eager extract bounding boxes eager operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        boxes: The boxes parameter.
-        box_indices: The box_indices parameter.
-        config (BBoxConfig): The config parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        images: Input `images` argument (images).
+        boxes: Input `boxes` argument (boxes).
+        box_indices: Input `box_indices` argument (box indices).
+        config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
@@ -232,15 +232,15 @@ def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: st
     """Execute the eager to xyxy format operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        boxes: The boxes parameter.
-        format (str): The format parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        boxes: Input `boxes` argument (boxes).
+        format (str): Input `format` argument (format).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     boxes = get_backend_member(np_mod, "asarray")(boxes)
     if format == "xyxy":
@@ -262,12 +262,12 @@ def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) 
     """Execute the eager compute iou operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        b1: The b1 parameter.
-        b2: The b2 parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        b1: Input `b1` argument (b1).
+        b2: Input `b2` argument (b2).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     b1 = get_backend_member(np_mod, "asarray")(b1)
     b2 = get_backend_member(np_mod, "asarray")(b2)
@@ -295,13 +295,13 @@ def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2:
     """Execute the eager iou eager operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        boxes1: The boxes1 parameter.
-        boxes2: The boxes2 parameter.
-        bounding_box_format (str): The bounding_box_format parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        boxes1: Input `boxes1` argument (boxes1).
+        boxes2: Input `boxes2` argument (boxes2).
+        bounding_box_format (str): Input `bounding_box_format` argument (bounding box format).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = _resolve_filter_mod(backend_module)
     b1 = _to_xyxy_format(mod, boxes1, bounding_box_format)
@@ -314,13 +314,13 @@ def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, score
     """Execute the eager sort boxes by score operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        boxes: The boxes parameter.
-        scores: The scores parameter.
-        score_threshold (float): The score_threshold parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        boxes: Input `boxes` argument (boxes).
+        scores: Input `scores` argument (scores).
+        score_threshold (float): Input `score_threshold` argument (score threshold).
 
     Returns:
-            tuple[object, object, object, object]: Result.
+            tuple[object, object, object, object]: Computed `tuple[object, object, object, object]` output.
     """
     boxes_arr: EagerTensorProtocol = get_backend_member(np_mod, "asarray")(boxes)
     scores_arr: EagerTensorProtocol = get_backend_member(np_mod, "asarray")(scores)
@@ -341,13 +341,13 @@ def _compute_overlap(np_mod: BackendModuleProtocol, bxs: EagerValue, i: int, ord
     """Execute the eager compute overlap operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        bxs: The bxs parameter.
-        i (int): The i parameter.
-        order: The order parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        bxs: Input `bxs` argument (bxs).
+        i (int): Input `i` argument (i).
+        order: Input `order` argument (order).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     bxs_arr = ensure_eager_tensor(bxs)
     order_arr = ensure_eager_tensor(order)
@@ -360,14 +360,14 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
     """Execute the eager apply suppression threshold operation on the active backend array.
 
     Args:
-        np_mod: The np_mod parameter.
-        bxs: The bxs parameter.
-        order: The order parameter.
-        max_output_size (int): The max_output_size parameter.
-        iou_threshold (float): The iou_threshold parameter.
+        np_mod: Input `np_mod` argument (np mod).
+        bxs: Input `bxs` argument (bxs).
+        order: Input `order` argument (order).
+        max_output_size (int): Input `max_output_size` argument (max output size).
+        iou_threshold (float): Input `iou_threshold` argument (iou threshold).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     bxs_arr = ensure_eager_tensor(bxs)
     keep: list[int] = []
@@ -393,13 +393,13 @@ def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
     """Execute the eager nms tf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        boxes: The boxes parameter.
-        scores: The scores parameter.
-        config (Optional[NMSConfig]): The config parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        boxes: Input `boxes` argument (boxes).
+        scores: Input `scores` argument (scores).
+        config (Optional[NMSConfig]): Input `config` argument (config).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if config is None:
         config = NMSConfig(max_output_size=ensure_eager_tensor(boxes).shape[0] if has_backend_member(boxes, "shape") else 100)
@@ -411,13 +411,13 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend
     """Execute the eager nms torch operation on the active backend array.
 
     Args:
-        boxes: The boxes parameter.
-        scores: The scores parameter.
-        config (NMSConfig): The config parameter.
+        boxes: Input `boxes` argument (boxes).
+        scores: Input `scores` argument (scores).
+        config (NMSConfig): Input `config` argument (config).
         backend_module: Optional execution backend module.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = _resolve_filter_mod(backend_module)
     boxes = mod.asarray(boxes)
@@ -433,12 +433,12 @@ def nms_eager(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: 
     """Execute the eager nms eager operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        boxes: The boxes parameter.
-        scores: The scores parameter.
-        config (Optional[NMSConfig]): The config parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        boxes: Input `boxes` argument (boxes).
+        scores: Input `scores` argument (scores).
+        config (Optional[NMSConfig]): Input `config` argument (config).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _nms_tf(backend_module, boxes, scores, config)

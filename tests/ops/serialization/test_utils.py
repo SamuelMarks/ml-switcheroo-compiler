@@ -41,7 +41,11 @@ class MockTensor:
         self._data = data
 
     def numpy(self) -> EagerValue:
-        """Test function numpy."""
+        """Test function numpy.
+
+        Returns:
+            EagerValue: Computed output value from `numpy`.
+        """
         return self._data
 
 
@@ -61,7 +65,11 @@ class MockListTensor:
     """Test class MockListTensor."""
 
     def tolist(self) -> EagerValue:
-        """Test function tolist."""
+        """Test function tolist.
+
+        Returns:
+            EagerValue: Computed output value from `tolist`.
+        """
         return [1, 2]
 
 
@@ -111,7 +119,11 @@ def test_is_numpy_array() -> None:
         """Test class Arr."""
 
         def __array__(self) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return np.array([1])
 
     assert ensure_callable(is_numpy_array)(ensure_callable(Arr)())
@@ -159,7 +171,11 @@ def test_get_shape_and_dtype() -> None:
         """Test class EvalTensor."""
 
         def eval(self) -> EagerValue:
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                EagerValue: Computed output value from `eval`.
+            """
 
             class Arr:
                 """Test class Arr."""
@@ -175,7 +191,11 @@ def test_get_shape_and_dtype() -> None:
         """Test class NpyTensor."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
 
             class Arr:
                 """Test class Arr."""
@@ -210,7 +230,11 @@ def test_extract_arr_bytes() -> None:
         """Test class T1."""
 
         def tobytes(self) -> EagerValue:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                EagerValue: Computed output value from `tobytes`.
+            """
             return b"t1"
 
     assert ensure_callable(_extract_arr_bytes)(ensure_callable(T1)()) == b"t1"
@@ -234,13 +258,21 @@ def test_get_data_bytes() -> None:
         """Test class EvalT."""
 
         def eval(self) -> EagerValue:
-            """Test function eval."""
+            """Test function eval.
+
+            Returns:
+                EagerValue: Computed output value from `eval`.
+            """
 
             class Arr:
                 """Test class Arr."""
 
                 def tobytes(self) -> EagerValue:
-                    """Test function tobytes."""
+                    """Test function tobytes.
+
+                    Returns:
+                        EagerValue: Computed output value from `tobytes`.
+                    """
                     return b"eval"
 
             return ensure_eager_tensor(Arr())
@@ -251,13 +283,21 @@ def test_get_data_bytes() -> None:
         """Test class NumpyT."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
 
             class Arr:
                 """Test class Arr."""
 
                 def tobytes(self) -> EagerValue:
-                    """Test function tobytes."""
+                    """Test function tobytes.
+
+                    Returns:
+                        EagerValue: Computed output value from `tobytes`.
+                    """
                     return b"npy"
 
             return ensure_eager_tensor(Arr())
@@ -286,14 +326,22 @@ def test_tensor_to_npy_bytes() -> None:
         dtype = type("D", (), {"name": "float32"})()
 
         def tobytes(self) -> EagerValue:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                EagerValue: Computed output value from `tobytes`.
+            """
             return b"12345678"
 
     class MockT:
         """Test class MockT."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return MockArr()
 
     b = ensure_callable(_tensor_to_npy_bytes)(ensure_callable(MockT)())
@@ -318,14 +366,22 @@ def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
         dtype = type("D", (), {"name": "float32"})()
 
         def tobytes(self) -> EagerValue:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                EagerValue: Computed output value from `tobytes`.
+            """
             return b"12345678"
 
     class MockT:
         """Test class MockT."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return MockArr()
 
     b = ensure_callable(get_npz_bytes)({"a": ensure_callable(MockT)(), "b.npy": ensure_callable(MockT)()})

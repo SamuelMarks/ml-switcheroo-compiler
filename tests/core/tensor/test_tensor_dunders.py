@@ -57,8 +57,8 @@ def test_tensor_dunders() -> None:
     ensure_mutable(config).enable_in_place = ensure_eager_tensor(True)
     t1[0] = 5
     ensure_mutable(config).enable_in_place = ensure_eager_tensor(False)
-    _ = np.array(t1)
-    assert callable(test_tensor_dunders)
+    arr_out = np.array(t1)
+    assert np.array_equal(arr_out, np.array([5, 2, 3]))
 
 
 def test_tensor_dunders_extra() -> None:

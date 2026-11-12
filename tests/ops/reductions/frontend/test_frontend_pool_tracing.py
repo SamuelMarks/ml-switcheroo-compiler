@@ -46,7 +46,11 @@ def test_frontend_pool_tracing() -> None:
                 self.device = Device("cpu")
 
             def eval(self) -> EagerValue:
-                """Test function eval."""
+                """Test function eval.
+
+                Returns:
+                    EagerValue: Computed output value from `eval`.
+                """
                 return ensure_eager_tensor(self)
 
         mt3 = MockTensor((1, 1, 1))

@@ -15,12 +15,12 @@ def _fromfunction(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager fromfunction operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "fromfunction")(*args, **kwargs))
 
@@ -30,12 +30,12 @@ def _from_dlpack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager from dlpack operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "from_dlpack")(*args, **kwargs))
 
@@ -45,12 +45,12 @@ def _fromiter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager fromiter operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "fromiter")(*args, **kwargs))
 
@@ -60,12 +60,12 @@ def _frompyfunc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager frompyfunc operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "frompyfunc")(*args, **kwargs))
 
@@ -75,12 +75,12 @@ def _geomspace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager geomspace operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "geomspace")(*args, **kwargs))
 
@@ -90,12 +90,12 @@ def _mgrid(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager mgrid operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "mgrid")(*args, **kwargs))
 
@@ -105,12 +105,12 @@ def _ogrid(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager ogrid operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "ogrid")(*args, **kwargs))
 
@@ -120,12 +120,12 @@ def _np_fromfunction(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np fromfunction operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fromfunction", None)
     if func:
@@ -138,12 +138,12 @@ def _np_fromiter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager np fromiter operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fromiter", None)
     if func:
@@ -156,12 +156,12 @@ def _np_frompyfunc(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np frompyfunc operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "frompyfunc", None)
     if func:

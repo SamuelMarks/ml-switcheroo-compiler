@@ -29,6 +29,9 @@ def test_binary_math_extra_coverage() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op
 
@@ -97,42 +100,3 @@ def test_binary_math_shapes_again() -> None:
         pass
         pass
     config.eager_mode = True
-
-
-def test_binary_math_clip_emit() -> None:
-    """Test function test_binary_math_clip_emit."""
-    from ml_switcheroo_compiler.core.config import config
-
-    config.eager_mode = False
-
-    class DummyTensor:
-        """Test class DummyTensor."""
-
-        shape_metadata = (1,)
-
-    import ml_switcheroo_compiler.tracing.state as state
-
-    class DummyGraph:
-        """Test class DummyGraph."""
-
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
-
-        def add_node(self, node: EagerValue) -> None:
-            """Test function add_node.
-
-            Args:
-                node: Test parameter `node`.
-            """
-            pass
-
-    state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
-    from unittest.mock import patch
-
-    with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):
-        pass
-        pass
-    assert callable(test_binary_math_clip_emit)

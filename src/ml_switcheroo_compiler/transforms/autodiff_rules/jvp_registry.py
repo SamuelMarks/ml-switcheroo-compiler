@@ -96,7 +96,7 @@ def register_jvp(op_name: str) -> Callable[[JVPRuleCallable], JVPRuleCallable]:
     """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical operation.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
         Callable[[JVPRuleCallable], JVPRuleCallable]: Decorator function.
@@ -106,10 +106,10 @@ def register_jvp(op_name: str) -> Callable[[JVPRuleCallable], JVPRuleCallable]:
         """Execute decorator for compiler processing.
 
         Args:
-            func (JVPRuleCallable): The func parameter.
+            func (JVPRuleCallable): Input `func` argument (func).
 
         Returns:
-            JVPRuleCallable: Result.
+            JVPRuleCallable: Computed `JVPRuleCallable` output.
         """
         if op_name in _JVP_REGISTRY:
             msg = f"JVP for operation '{op_name}' is already registered."
@@ -127,13 +127,13 @@ def get_jvp(op_name: str) -> JVPRuleCallable:
     """Get the JVP rule.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
-        Callable: Result.
+        Callable: Computed `Callable` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if op_name in _JVP_REGISTRY:
         return _JVP_REGISTRY[op_name]
@@ -149,10 +149,10 @@ def has_jvp(op_name: str) -> bool:
     """Check if a rule is registered.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     if op_name in _JVP_REGISTRY:
         return True

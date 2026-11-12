@@ -113,11 +113,6 @@ def test_conv_utils_frontend_funcs() -> None:
         config.eager_mode = orig_eager
 
 
-def test_conv_utils_calc_pad_list() -> None:
-    """Test function test_conv_utils_calc_pad_list."""
-    assert callable(test_conv_utils_calc_pad_list)
-
-
 def test_prepare_depthwise_conv() -> None:
     """Test function test_prepare_depthwise_conv."""
     import types
@@ -157,6 +152,9 @@ def test_prepare_depthwise_conv() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.ones((2, 2, 2))
 
@@ -166,6 +164,9 @@ def test_prepare_depthwise_conv() -> None:
 
                 Args:
                     data: Test parameter `data`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return data
 
@@ -226,6 +227,9 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.ones((2, 2, 2))
 
@@ -235,6 +239,9 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
 
                 Args:
                     data: Test parameter `data`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return data
 
@@ -390,25 +397,28 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "mock_op_called"
 
         ensure_mutable(base).get_op = ensure_eager_tensor(lambda name: MockOp)
+        out_ac = atrous_conv2d(t1, t1, 1, "VALID", None)
+        assert ensure_eager_tensor(out_ac) == "mock_op_called"
         try:
-            atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
             ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
             ensure_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
             ensure_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
-            assert e is not None
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError) as err:
+            assert str(err) != ""
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
             ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
-    assert callable(test_conv_utils_frontend_funcs_extra3)
 
 
 def test_conv_utils_frontend_funcs_extra4() -> None:
@@ -454,6 +464,9 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -469,9 +482,10 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
             ensure_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
-            assert e is not None
-        _build_conv_config({"padding": "VALID", "strides": 1, "lhs_dilation": 1, "rhs_dilation": 1}, ((0, 1), (0, 1), (0, 1)))
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError) as err:
+            assert str(err) != ""
+        built_cfg = _build_conv_config({"padding": "VALID", "strides": 1, "lhs_dilation": 1, "rhs_dilation": 1}, ((0, 1), (0, 1), (0, 1)))
+        assert built_cfg is not None
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
@@ -484,7 +498,6 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
             ensure_mutable(conv_utils).conv2d_transpose = ensure_eager_tensor(orig_conv2d_transpose)
         if orig_conv_nd:
             ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(orig_conv_nd)
-    assert callable(test_conv_utils_frontend_funcs_extra4)
 
 
 def _test_conv_utils_frontend_funcs_extra5_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -502,6 +515,9 @@ def _test_conv_utils_frontend_funcs_extra5_sub_1(_state: dict[str, EagerTensorPr
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_conv2d`.
         """
         return "conv2d_called"
 
@@ -511,6 +527,9 @@ def _test_conv_utils_frontend_funcs_extra5_sub_1(_state: dict[str, EagerTensorPr
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_conv2d_transpose`.
         """
         return "conv2d_transpose_called"
 
@@ -520,6 +539,9 @@ def _test_conv_utils_frontend_funcs_extra5_sub_1(_state: dict[str, EagerTensorPr
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_conv_nd`.
         """
         return "conv_nd_called"
 
@@ -671,6 +693,9 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "mock_op_instance_called"
 
@@ -683,22 +708,25 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return MockOpInstance()
 
         if orig_get_op:
             ensure_mutable(base).get_op = ensure_eager_tensor(MockOp())
+        out_ac6 = atrous_conv2d(t1, t1, 1, "VALID", None)
+        assert ensure_eager_tensor(out_ac6) == "mock_op_instance_called"
         try:
-            atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
             ensure_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
-            assert e is not None
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError) as err:
+            assert str(err) != ""
     finally:
         config.eager_mode = orig_eager
         if orig_get_op is not None:
             ensure_mutable(base).get_op = ensure_eager_tensor(orig_get_op)
-    assert callable(test_conv_utils_frontend_funcs_extra6)
 
 
 def test_conv_utils_frontend_funcs_extra7() -> None:
@@ -739,6 +767,9 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "mock_op_instance_called"
 
@@ -751,6 +782,9 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return MockOpInstance()
 
@@ -759,6 +793,9 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
 
             Args:
                 name: Test parameter `name`.
+
+            Returns:
+                EagerValue: Computed output value from `get_op_override`.
             """
             return MockOp()
 
@@ -815,6 +852,9 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "mock_op_instance_called"
 
@@ -831,6 +871,9 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return MockOpInstance()
 
@@ -839,6 +882,9 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
 
             Args:
                 name: Test parameter `name`.
+
+            Returns:
+                EagerValue: Computed output value from `get_op_override`.
             """
             return MockOp
 
@@ -893,6 +939,9 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
 
@@ -904,6 +953,9 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
 
                 Args:
                     name: Test parameter `name`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return MockOpInstance
 
@@ -953,8 +1005,8 @@ def test_conv_utils_frontend_funcs_extra10() -> None:
             self.device = None
 
     t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
-    ensure_callable(_prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
-    assert callable(test_conv_utils_frontend_funcs_extra10)
+    prep = ensure_callable(_prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
+    assert len(ensure_eager_tensor(prep)) == 3
 
 
 def test_conv_utils_frontend_funcs_extra11() -> None:
@@ -993,6 +1045,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_conv2d`.
             """
             return "conv2d_called"
 
@@ -1002,6 +1057,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_conv2d_transpose`.
             """
             return "conv2d_transpose_called"
 
@@ -1011,6 +1069,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_conv_nd`.
             """
             return "conv_nd_called"
 
@@ -1030,6 +1091,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return Tensor(None, TensorConfig(shape=(2, 2), dtype="float32", device=None, requires_grad=False, trainable=False))
 
@@ -1042,6 +1106,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return MockOpInstance()
 

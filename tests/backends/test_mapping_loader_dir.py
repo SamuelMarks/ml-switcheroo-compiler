@@ -24,6 +24,9 @@ def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_isdir`.
         """
         return True
 
@@ -32,6 +35,9 @@ def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_listdir`.
         """
         return ["test.yaml"]
 

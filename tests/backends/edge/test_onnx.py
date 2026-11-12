@@ -105,6 +105,9 @@ def test_onnx_build_methods() -> None:
                 name: Test parameter `name`.
                 dtype: Test parameter `dtype`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
@@ -117,6 +120,9 @@ def test_onnx_build_methods() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -128,6 +134,9 @@ def test_onnx_build_methods() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -139,6 +148,9 @@ def test_onnx_build_methods() -> None:
                 name: Test parameter `name`.
                 inputs: Test parameter `inputs`.
                 outputs: Test parameter `outputs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_graph`.
             """
 
             class Graph:
@@ -160,13 +172,20 @@ def test_onnx_build_methods() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_model`.
             """
 
             class Model:
                 """Test class Model."""
 
                 def SerializeToString(self) -> EagerValue:
-                    """Test function SerializeToString."""
+                    """Test function SerializeToString.
+
+                    Returns:
+                        EagerValue: Computed output value from `SerializeToString`.
+                    """
                     return b"model"
 
             return ensure_eager_tensor(Model())
@@ -176,6 +195,9 @@ def test_onnx_build_methods() -> None:
 
             Args:
                 graph: Test parameter `graph`.
+
+            Returns:
+                EagerValue: Computed output value from `printable_graph`.
             """
             return f"printable({graph})"
 
@@ -241,6 +263,9 @@ def test_onnx_export_and_missing() -> None:
                 name: Test parameter `name`.
                 dtype: Test parameter `dtype`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
@@ -253,6 +278,9 @@ def test_onnx_export_and_missing() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -264,6 +292,9 @@ def test_onnx_export_and_missing() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -275,6 +306,9 @@ def test_onnx_export_and_missing() -> None:
                 name: Test parameter `name`.
                 inputs: Test parameter `inputs`.
                 outputs: Test parameter `outputs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_graph`.
             """
 
             class Graph:
@@ -296,13 +330,20 @@ def test_onnx_export_and_missing() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_model`.
             """
 
             class Model:
                 """Test class Model."""
 
                 def SerializeToString(self) -> EagerValue:
-                    """Test function SerializeToString."""
+                    """Test function SerializeToString.
+
+                    Returns:
+                        EagerValue: Computed output value from `SerializeToString`.
+                    """
                     return b"model"
 
             return ensure_eager_tensor(Model())
@@ -354,6 +395,9 @@ def test_onnx_build_single_value_info_missing() -> None:
                 name: Test parameter `name`.
                 dtype: Test parameter `dtype`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
@@ -389,18 +433,15 @@ def test_onnx_generate_text_fallback() -> None:
 def test_onnx_node_attributes() -> None:
     """Test function test_onnx_node_attributes."""
     graph = IRGraph()
-    # Test all branches of attributes conversion in _build_onnx_nodes
-    node_const = IRNode("Constant", "c_1", inputs=[], shape_metadata=[1])
-    ensure_mutable(node_const).attributes = ensure_eager_tensor({"value": 5.0})
-
-    node_if = IRNode("If", "if_1", inputs=[])
+    node_const = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1], attributes={"value": 5.0})
+    node_if = IRNode("if_1", "If", inputs=[])
     ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
-
-    node_loop = IRNode("Loop", "loop_1", inputs=[])
+    node_loop = IRNode("loop_1", "Loop", inputs=[])
     ensure_mutable(node_loop).attributes = ensure_eager_tensor({"body": IRGraph()})
 
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node_const, node_if, node_loop])
+    graph.nodes = NodeDict(ensure_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
     generator = ONNXCodeGenerator(graph, [])
+    generator.schema = {"operations": {"If": {}, "Loop": {}}}
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -418,6 +459,9 @@ def test_onnx_node_attributes() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -430,8 +474,24 @@ def test_onnx_node_attributes() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
+
+        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+            """Construct mock ONNX ValueInfoProto.
+
+            Args:
+                name (EagerValue): Tensor name.
+                dtype (EagerValue): Tensor data type code.
+                shape (EagerValue): Tensor shape sequence.
+
+            Returns:
+                EagerValue: Mock value info identifier.
+            """
+            return f"vi({name})"
 
         def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
             """Test function make_graph.
@@ -441,6 +501,9 @@ def test_onnx_node_attributes() -> None:
                 name: Test parameter `name`.
                 inputs: Test parameter `inputs`.
                 outputs: Test parameter `outputs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_graph`.
             """
 
             class Graph:
@@ -466,9 +529,7 @@ def test_onnx_node_attributes() -> None:
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
             nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
-            assert len(nodes) >= 0
-            pass
-            pass
+            assert nodes == ["node(Constant, c_1)", "node(If, if_1)", "node(Loop, loop_1)"]
 
 
 def test_onnx_value_infos() -> None:
@@ -493,6 +554,9 @@ def test_onnx_value_infos() -> None:
                 name: Test parameter `name`.
                 dtype: Test parameter `dtype`.
                 shape: Test parameter `shape`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor_value_info`.
             """
             return "vi"
 
@@ -515,32 +579,42 @@ def test_onnx_value_infos() -> None:
 
 def test_onnx_node_attributes_2() -> None:
     """Test function test_onnx_node_attributes_2."""
+    from ml_switcheroo_ir import DType as IRDType
+
     graph = IRGraph()
-    # Test op specific logic
-    node1 = IRNode("BatchNorm", "bn_1", inputs=[])
-    ensure_mutable(node1).attributes = ensure_eager_tensor({"epsilon": 1e-5, "momentum": 0.9})
+    node1 = IRNode("bn_1", "BatchNorm", inputs=[], attributes={"epsilon": 1e-5, "momentum": 0.9})
+    node2 = IRNode("ru_1", "RandomUniform", inputs=[], shape_metadata=[2, 2], dtype=IRDType("float32"))
+    node3 = IRNode("split_1", "Split", inputs=[], attributes={"axis": 1, "split": [1, 1]})
+    node4 = IRNode("cast_1", "Cast", inputs=[], attributes={"to": "int32"})
+    node5 = IRNode("max_1", "MaxPool2D", inputs=[], attributes={"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
+    node6 = IRNode("res_1", "Reshape", inputs=[], shape_metadata=[4])
+    node7 = IRNode("br_1", "BroadcastTo", inputs=[], shape_metadata=[2, 2])
 
-    node2 = IRNode("RandomUniform", "ru_1", inputs=[])
-    ensure_mutable(node2).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(node2).dtype = ensure_eager_tensor("float32")
-
-    node3 = IRNode("Split", "split_1", inputs=[])
-    ensure_mutable(node3).attributes = ensure_eager_tensor({"axis": 1, "split": [1, 1]})
-
-    node4 = IRNode("Cast", "cast_1", inputs=[])
-    ensure_mutable(node4).attributes = ensure_eager_tensor({"to": "int32"})
-
-    node5 = IRNode("MaxPool2D", "max_1", inputs=[])
-    ensure_mutable(node5).attributes = ensure_eager_tensor({"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
-
-    node6 = IRNode("Reshape", "res_1", inputs=[])
-    ensure_mutable(node6).shape_metadata = ensure_eager_tensor([4])
-
-    node7 = IRNode("BroadcastTo", "br_1", inputs=[])
-    ensure_mutable(node7).shape_metadata = ensure_eager_tensor([2, 2])
-
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6, node7])
+    graph.nodes = NodeDict(
+        ensure_node_dict(
+            {
+                "bn_1": node1,
+                "ru_1": node2,
+                "split_1": node3,
+                "cast_1": node4,
+                "max_1": node5,
+                "res_1": node6,
+                "br_1": node7,
+            }
+        )
+    )
     generator = ONNXCodeGenerator(graph, [])
+    generator.schema = {
+        "operations": {
+            "BatchNorm": {},
+            "RandomUniform": {},
+            "Split": {},
+            "Cast": {},
+            "MaxPool2D": {},
+            "Reshape": {},
+            "BroadcastTo": {},
+        }
+    }
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -559,6 +633,9 @@ def test_onnx_node_attributes_2() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -571,6 +648,9 @@ def test_onnx_node_attributes_2() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -584,33 +664,43 @@ def test_onnx_node_attributes_2() -> None:
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
             nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
-            assert len(nodes) >= 0
+            assert len(nodes) == 7
+            assert "node(Reshape, res_1)" in nodes
 
 
 def test_onnx_node_attributes_3() -> None:
     """Test function test_onnx_node_attributes_3."""
     graph = IRGraph()
-    # Test more ops
-    node1 = IRNode("Dropout", "dr_1", inputs=[])
-    ensure_mutable(node1).attributes = ensure_eager_tensor({"rate": 0.5})
+    node1 = IRNode("dr_1", "Dropout", inputs=[], attributes={"rate": 0.5})
+    node2 = IRNode("ln_1", "LayerNorm", inputs=[], attributes={"epsilon": 1e-5, "axis": -1})
+    node3 = IRNode("tr_1", "Transpose", inputs=[], attributes={"axes": [1, 0]})
+    node4 = IRNode("sl_1", "Slice", inputs=[], attributes={"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
+    node5 = IRNode("ga_1", "Gather", inputs=[], attributes={"axis": 0})
+    node6 = IRNode("conv_1", "Conv2D", inputs=[], attributes={"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
 
-    node2 = IRNode("LayerNorm", "ln_1", inputs=[])
-    ensure_mutable(node2).attributes = ensure_eager_tensor({"epsilon": 1e-5, "axis": -1})
-
-    node3 = IRNode("Transpose", "tr_1", inputs=[])
-    ensure_mutable(node3).attributes = ensure_eager_tensor({"axes": [1, 0]})
-
-    node4 = IRNode("Slice", "sl_1", inputs=[])
-    ensure_mutable(node4).attributes = ensure_eager_tensor({"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
-
-    node5 = IRNode("Gather", "ga_1", inputs=[])
-    ensure_mutable(node5).attributes = ensure_eager_tensor({"axis": 0})
-
-    node6 = IRNode("Conv2D", "conv_1", inputs=[])
-    ensure_mutable(node6).attributes = ensure_eager_tensor({"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
-
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6])
+    graph.nodes = NodeDict(
+        ensure_node_dict(
+            {
+                "dr_1": node1,
+                "ln_1": node2,
+                "tr_1": node3,
+                "sl_1": node4,
+                "ga_1": node5,
+                "conv_1": node6,
+            }
+        )
+    )
     generator = ONNXCodeGenerator(graph, [])
+    generator.schema = {
+        "operations": {
+            "Dropout": {},
+            "LayerNorm": {},
+            "Transpose": {},
+            "Slice": {},
+            "Gather": {},
+            "Conv2D": {},
+        }
+    }
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -629,6 +719,9 @@ def test_onnx_node_attributes_3() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -641,6 +734,9 @@ def test_onnx_node_attributes_3() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -654,7 +750,8 @@ def test_onnx_node_attributes_3() -> None:
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
             nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
-            assert len(nodes) >= 0
+            assert len(nodes) == 6
+            assert "node(Transpose, tr_1)" in nodes
 
 
 def test_onnx_full_build_nodes() -> None:
@@ -689,6 +786,9 @@ def test_onnx_full_build_nodes() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
@@ -701,6 +801,9 @@ def test_onnx_full_build_nodes() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -712,6 +815,9 @@ def test_onnx_full_build_nodes() -> None:
                 name: Test parameter `name`.
                 inputs: Test parameter `inputs`.
                 outputs: Test parameter `outputs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_graph`.
             """
 
             class Graph:
@@ -808,6 +914,9 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return op_type
 
@@ -883,6 +992,9 @@ def test_onnx_build_onnx_nodes_branches() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return op_type
 
@@ -894,6 +1006,9 @@ def test_onnx_build_onnx_nodes_branches() -> None:
                 data_type: Test parameter `data_type`.
                 dims: Test parameter `dims`.
                 vals: Test parameter `vals`.
+
+            Returns:
+                EagerValue: Computed output value from `make_tensor`.
             """
             return "tensor"
 
@@ -903,6 +1018,9 @@ def test_onnx_build_onnx_nodes_branches() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_graph`.
             """
 
             class M:
@@ -940,6 +1058,9 @@ def test_onnx_printer_non_str() -> None:
 
             Args:
                 graph: Test parameter `graph`.
+
+            Returns:
+                EagerValue: Computed output value from `to_text`.
             """
             return b"bytes_result"
 
@@ -957,6 +1078,9 @@ def test_onnx_printer_non_str() -> None:
 
                 Args:
                     graph: Test parameter `graph`.
+
+                Returns:
+                    EagerValue: Computed output value from `printable_graph`.
                 """
                 return "printable"
 
@@ -983,6 +1107,9 @@ def test_onnx_import_error_printer() -> None:
 
             Args:
                 graph: Test parameter `graph`.
+
+            Returns:
+                EagerValue: Computed output value from `printable_graph`.
             """
             return "printable"
 
@@ -1045,6 +1172,9 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
                 outputs: Test parameter `outputs`.
                 name: Test parameter `name`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `make_node`.
             """
             return op_type
 
@@ -1080,7 +1210,11 @@ def test_onnx_remaining_serialization_branches() -> None:
         """Test class CustomNonPrimitive."""
 
         def __str__(self) -> str:
-            """Test function __str__."""
+            """Test function __str__.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return "custom_val"
 
     attr_custom = ensure_callable(serialize_attribute)("custom_attr", ensure_callable(CustomNonPrimitive)())

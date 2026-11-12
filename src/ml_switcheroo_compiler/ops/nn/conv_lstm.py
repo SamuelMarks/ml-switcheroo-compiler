@@ -30,16 +30,16 @@ def conv_lstm_cell(
     """Provide generic Convolutional LSTM cell.
 
     Args:
-        inputs (Tensor): The inputs parameter.
-        state (tuple): The state parameter.
-        weights (RNNWeights): The weights parameter.
-        config (Optional): The config parameter.
+        inputs (Tensor): Input `inputs` argument (inputs).
+        state (tuple): Input `state` argument (state).
+        weights (RNNWeights): Input `weights` argument (weights).
+        config (Optional): Input `config` argument (config).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     naxis = len(inputs.shape)
     if naxis == MIN_CONV_RANK:
@@ -62,14 +62,14 @@ def _apply_conv_lstm_gates(
     """Apply LSTM gates.
 
     Args:
-        x_conv (Tensor): The x_conv parameter.
-        h_conv (Tensor): The h_conv parameter.
-        state (tuple): The state parameter.
-        weights (RNNWeights): The weights parameter.
-        data_format (str): The data_format parameter.
+        x_conv (Tensor): Input `x_conv` argument (x conv).
+        h_conv (Tensor): Input `h_conv` argument (h conv).
+        state (tuple): Input `state` argument (state).
+        weights (RNNWeights): Input `weights` argument (weights).
+        data_format (str): Input `data_format` argument (data format).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     h_prev, c_prev = state
     gates = add(x_conv, h_conv)
@@ -209,10 +209,10 @@ def _sigmoid(x: Tensor) -> Tensor:
     """Sigmoid.
 
     Args:
-        x (Tensor): The x parameter.
+        x (Tensor): Input `x` argument (x).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 

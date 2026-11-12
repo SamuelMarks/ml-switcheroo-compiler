@@ -90,6 +90,9 @@ def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
                 op_name: Test parameter `op_name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op_name
 

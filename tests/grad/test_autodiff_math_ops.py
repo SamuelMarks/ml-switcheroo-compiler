@@ -73,6 +73,9 @@ def test_autodiff_unary_math_ops() -> None:
             Args:
                 inp: Test parameter `inp`.
                 op_bound: Test parameter `op_bound`.
+
+            Returns:
+                Tensor: Computed output value from `f`.
             """
             return ensure_tensor_obj(dispatch_op(op_bound, inp))
 
@@ -122,6 +125,9 @@ def test_autodiff_binary_math_ops() -> None:
                 in_a: Test parameter `in_a`.
                 in_b: Test parameter `in_b`.
                 op_bound: Test parameter `op_bound`.
+
+            Returns:
+                Tensor: Computed output value from `f`.
             """
             return ensure_tensor_obj(dispatch_op(op_bound, in_a, in_b))
 

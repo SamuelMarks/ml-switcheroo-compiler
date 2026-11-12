@@ -50,10 +50,10 @@ def _get_shape_list(x: TensorOrScalar) -> list[int]:
     """Help to convert shape to list.
 
     Args:
-        x (TensorOrScalar): The x parameter.
+        x (TensorOrScalar): Input `x` argument (x).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     s: Sequence[int] | TensorOrScalar = x.shape if _has_valid_shape(x) else x
     if isinstance(s, (tuple, list)):
@@ -65,11 +65,11 @@ def _normalize_axes(axes: TensorOrScalar, length: int) -> list[int]:
     """Help to normalize axes.
 
     Args:
-        axes (TensorOrScalar): The axes parameter.
-        length (int): The length parameter.
+        axes (TensorOrScalar): Input `axes` argument (axes).
+        length (int): Input `length` argument (length).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     a = [axes] if isinstance(axes, int) else (list(axes) if isinstance(axes, (list, tuple)) else [])
     return [ensure_int(x) + length if ensure_int(x) < 0 else ensure_int(x) for x in a]
@@ -79,11 +79,11 @@ def _resolve_reshape_minus_one(x_shape: Sequence[int | None], newshape: list[int
     """Resolve the -1 dimension in a reshape operation.
 
     Args:
-        x_shape (tuple): The x_shape parameter.
-        newshape (list): The newshape parameter.
+        x_shape (tuple): Input `x_shape` argument (x shape).
+        newshape (list): Input `newshape` argument (newshape).
 
     Returns:
-        list: Result.
+        list: Computed `list` output.
     """
     import math
 
@@ -106,7 +106,7 @@ class Reshape(OpDef):
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         newshape = args[1] if len(args) > 1 else kwargs["newshape"]
@@ -145,11 +145,11 @@ class Transpose(OpDef):
         """Compute the format args tensor operation.
 
         Args:
-        x (str): The x parameter.
-        axes (TensorOrScalar): The axes parameter.
+        x (str): Input `x` argument (x).
+        axes (TensorOrScalar): Input `axes` argument (axes).
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"{x}" if axes is None else f"{x}, {axes}"
 
@@ -162,15 +162,15 @@ class BroadcastTo(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (EagerTensorProtocol): The x parameter.
-            shape (EagerTensorProtocol): The shape parameter.
+            x (EagerTensorProtocol): Input `x` argument (x).
+            shape (EagerTensorProtocol): Input `shape` argument (shape).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
         """
         if not (isinstance(x, tuple) and isinstance(shape, tuple)):
             return shape
@@ -260,7 +260,7 @@ class Atleast1d(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not _has_valid_shape(x):
@@ -285,7 +285,7 @@ class Atleast2d(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not _has_valid_shape(x):
@@ -312,7 +312,7 @@ class Atleast3d(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not _has_valid_shape(x):
@@ -341,7 +341,7 @@ class ExpandDims(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
@@ -371,7 +371,7 @@ class Block(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arrays = args[0] if args else kwargs.get("arrays")
         if not isinstance(arrays, (list, tuple)):
@@ -393,7 +393,7 @@ class C(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -412,7 +412,7 @@ class Collapse(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -431,7 +431,7 @@ class Delete(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
         if not _has_valid_shape(arr):
@@ -453,7 +453,7 @@ class DiagIndices(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
@@ -474,7 +474,7 @@ class DiagIndicesFrom(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
         if not _has_valid_shape(arr):
@@ -496,7 +496,7 @@ class Diagflat(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         v = args[0] if args else kwargs.get("v")
         if not _has_valid_shape(v):
@@ -523,7 +523,7 @@ class FillDiagonal(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         a = args[0] if args else kwargs.get("a")
         if not _has_valid_shape(a):
@@ -545,7 +545,7 @@ class Insert(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
         if not _has_valid_shape(arr):
@@ -567,7 +567,7 @@ class Moveaxis(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not _has_valid_shape(x):
@@ -611,7 +611,7 @@ class Permute(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -637,7 +637,7 @@ class Roll(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -659,7 +659,7 @@ class Squeeze(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -698,7 +698,7 @@ class Swapaxes(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -726,7 +726,7 @@ class Flip(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -748,7 +748,7 @@ class Fliplr(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
@@ -770,7 +770,7 @@ class Flipud(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):

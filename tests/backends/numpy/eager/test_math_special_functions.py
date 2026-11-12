@@ -38,6 +38,9 @@ def test_math_matrix_utils_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return "hit"
 
@@ -64,12 +67,19 @@ def test_math_matrix_utils_coverage() -> None:
 
                 Args:
                     other: Test parameter `other`.
+
+                Returns:
+                    bool: Computed output value from `__eq__`.
                 """
                 _typed_ret_7: bool = ensure_eager_tensor(self).val == other
                 return _typed_ret_7
 
             def mean(self) -> EagerValue:
-                """Test function mean."""
+                """Test function mean.
+
+                Returns:
+                    EagerValue: Computed output value from `mean`.
+                """
                 return 0
 
     from unittest.mock import patch
@@ -92,6 +102,9 @@ def test_math_general_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return "hit"
 
@@ -118,6 +131,9 @@ def test_math_general_coverage() -> None:
 
                 Args:
                     other: Test parameter `other`.
+
+                Returns:
+                    bool: Computed output value from `__eq__`.
                 """
                 _typed_ret_8: bool = ensure_eager_tensor(self).val == other
                 return _typed_ret_8
@@ -147,6 +163,9 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `any`.
             """
             return ensure_callable(np.any)(x)
 
@@ -156,6 +175,9 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `isinf`.
             """
             return ensure_eager_tensor(ensure_callable(np.isinf)(x))
 
@@ -165,6 +187,9 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `isnan`.
             """
             return ensure_eager_tensor(ensure_callable(np.isnan)(x))
 
@@ -7478,6 +7503,9 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `my_rem`.
         """
         return "mock"
 
@@ -7487,6 +7515,9 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `my_cm`.
         """
         return "mock"
 
@@ -7496,6 +7527,9 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `my_desc`.
         """
         return "mock"
 
@@ -7505,6 +7539,9 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `my_dist`.
         """
         return "mock"
 
@@ -7624,6 +7661,9 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return x
 
@@ -7638,6 +7678,9 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return x
 
@@ -7849,7 +7892,11 @@ def _test_math_misc_coverage_part_381(_state: dict[str, EagerTensorProtocol]) ->
         """Test class Unpicklable."""
 
         def __reduce__(self) -> str:
-            """Test function __reduce__."""
+            """Test function __reduce__.
+
+            Returns:
+                str: Computed output value from `__reduce__`.
+            """
             raise ValueError("not picklable")
 
     mod._np_serialize_tensor_camel(bk, np.array([Unpicklable()], dtype="O"))
@@ -7876,6 +7923,9 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `iscomplexobj`.
             """
             return True
 
@@ -7885,6 +7935,9 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `conj`.
             """
             return x
 
@@ -7895,6 +7948,9 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 x: Test parameter `x`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `sum`.
             """
             return x
 
@@ -7909,6 +7965,9 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `test_desc_func`.
         """
         assert len(args) >= 1
         return args[0]
@@ -7989,6 +8048,9 @@ def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return "desc_bk"
 
@@ -7999,6 +8061,9 @@ def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return "dist_bk"
 
@@ -8030,6 +8095,9 @@ def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             a: Test parameter `a`.
             k: Test parameter `k`.
+
+        Returns:
+            EagerValue: Computed output value from `test_func`.
         """
         assert len(a) >= 1
         return a[0]
@@ -8173,6 +8241,9 @@ def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerTensorProtocol: Computed output value from `MockDescriptiveFunc`.
         """
         return ensure_eager_tensor("mock_desc")
 
@@ -8182,6 +8253,9 @@ def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) ->
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerTensorProtocol: Computed output value from `MockDistributionsFunc`.
         """
         return ensure_eager_tensor("mock_dist")
 
@@ -8221,6 +8295,9 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                ExplodingFunc: Computed output value from `__new__`.
             """
             raise ValueError("exploding")
 
@@ -8296,6 +8373,9 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return "desc_bk"
 
@@ -8306,6 +8386,9 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return "dist_bk"
 
@@ -8363,6 +8446,9 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return "desc_bk"
 
@@ -8373,6 +8459,9 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return "dist_bk"
 
@@ -8407,6 +8496,9 @@ def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                BadDesc: Computed output value from `__new__`.
             """
             raise RuntimeError("Boom")
 
@@ -8451,6 +8543,9 @@ def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `iscomplexobj`.
             """
             return False
 
@@ -8461,6 +8556,9 @@ def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 x: Test parameter `x`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `sum`.
             """
             return x
 
@@ -8486,6 +8584,9 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `iscomplexobj`.
             """
             return False
 
@@ -8495,6 +8596,9 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `conj`.
             """
             return x
 
@@ -8505,6 +8609,9 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 x: Test parameter `x`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `sum`.
             """
             return x
 
@@ -8527,7 +8634,11 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
         ndim = 0
 
         def __int__(self) -> EagerValue:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                EagerValue: Computed output value from `__int__`.
+            """
             return 5
 
     class DummyBkPermutation:
@@ -8539,6 +8650,9 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return x
 
@@ -8548,6 +8662,9 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -8576,6 +8693,9 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
                 x: Test parameter `x`.
                 y: Test parameter `y`.
                 axis: Test parameter `axis`.
+
+            Returns:
+                EagerValue: Computed output value from `vecdot`.
             """
             return x
 
@@ -8595,6 +8715,9 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
                     x: Test parameter `x`.
                     y: Test parameter `y`.
                     axis: Test parameter `axis`.
+
+                Returns:
+                    EagerValue: Computed output value from `vecdot`.
                 """
                 return x
 
@@ -8724,6 +8847,9 @@ def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) ->
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                ValErrClass: Computed output value from `__new__`.
             """
             raise ValueError("err")
 
@@ -8781,7 +8907,12 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
         """Test class Explosive."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                *args (EagerValue): Positional arguments forwarded to `__call__`.
+                **kwargs (EagerValue): Keyword arguments forwarded to `__call__`.
+            """
             raise ValueError("boom")
 
     _orig_desc = ensure_eager_tensor(get_backend_member(_ops, "descriptive", None))
@@ -8864,7 +8995,12 @@ def _test_math_misc_coverage_part_411(_state: dict[str, EagerTensorProtocol]) ->
         """Test class ExplodeOps."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                *args (EagerValue): Positional arguments forwarded to `__call__`.
+                **kwargs (EagerValue): Keyword arguments forwarded to `__call__`.
+            """
             raise ValueError("explode")
 
     import sys
@@ -9499,6 +9635,9 @@ def _test_math_matrix_utils_distributions_success_part_1(_state: dict[str, Eager
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return 42
 
@@ -9592,32 +9731,6 @@ def test_math_matrix_utils_distributions_success() -> None:
     assert len(_state) > 0
 
 
-def test_math_matrix_utils_distributions_success_2() -> None:
-    """Test function test_math_matrix_utils_distributions_success_2."""
-    from unittest.mock import patch
-
-    _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-
-    def _make_class(name: EagerValue) -> EagerValue:
-        """Test function _make_class.
-
-        Args:
-            name: Test parameter `name`.
-        """
-        return ensure_callable(type)(name, (), {"_" + "_call_" + "_": lambda self, *args, **kwargs: 42})
-
-    with patch.object(_ops, "OpDef", type, create=True):
-        with patch.object(_ops, "rem", _make_class("rem"), create=True):
-            pass
-        with patch.object(_ops, "descriptive", _make_class("descriptive"), create=True):
-            pass
-        with patch.object(_ops, "confusion_matrix", _make_class("confusion_matrix"), create=True):
-            pass
-        with patch.object(_ops, "distributions", _make_class("distributions"), create=True):
-            pass
-    assert callable(test_math_matrix_utils_distributions_success_2)
-
-
 def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
     """Test function test_fallback_branches_return.
 
@@ -9641,6 +9754,9 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                FakeDistributions: Computed output value from `__new__`.
             """
             return super().__new__(cls, "dist2")
 
@@ -9653,6 +9769,9 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                FakeCM: Computed output value from `__new__`.
             """
             return super().__new__(cls, "cm2")
 
@@ -9665,6 +9784,9 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                FakeDesc: Computed output value from `__new__`.
             """
             return super().__new__(cls, "desc2")
 
@@ -9677,6 +9799,9 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                FakeRem: Computed output value from `__new__`.
             """
             return super().__new__(cls, "rem2")
 
@@ -9787,6 +9912,9 @@ def test_fallback_exception() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `distributions`.
             """
             return "dist_exc"
 
@@ -9796,6 +9924,9 @@ def test_fallback_exception() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `confusion_matrix`.
             """
             return "cm_exc"
 
@@ -9805,6 +9936,9 @@ def test_fallback_exception() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `descriptive`.
             """
             return "desc_exc"
 
@@ -9814,6 +9948,9 @@ def test_fallback_exception() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `rem`.
             """
             return "rem_exc"
 
@@ -9826,6 +9963,9 @@ def test_fallback_exception() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import`.
         """
         if name == "ml_switcheroo_compiler.ops":
             raise Exception("boom")
@@ -9864,35 +10004,67 @@ def test_math_matrix_utils_simple_forwards() -> None:
         """Test class DummyBackend."""
 
         def diag_indices(self) -> EagerValue:
-            """Test function diag_indices."""
+            """Test function diag_indices.
+
+            Returns:
+                EagerValue: Computed output value from `diag_indices`.
+            """
             return 1
 
         def diag_indices_from(self) -> EagerValue:
-            """Test function diag_indices_from."""
+            """Test function diag_indices_from.
+
+            Returns:
+                EagerValue: Computed output value from `diag_indices_from`.
+            """
             return 2
 
         def diagflat(self) -> EagerValue:
-            """Test function diagflat."""
+            """Test function diagflat.
+
+            Returns:
+                EagerValue: Computed output value from `diagflat`.
+            """
             return 3
 
         def diagonal(self) -> EagerValue:
-            """Test function diagonal."""
+            """Test function diagonal.
+
+            Returns:
+                EagerValue: Computed output value from `diagonal`.
+            """
             return 4
 
         def indices(self) -> EagerValue:
-            """Test function indices."""
+            """Test function indices.
+
+            Returns:
+                EagerValue: Computed output value from `indices`.
+            """
             return 5
 
         def mask_indices(self) -> EagerValue:
-            """Test function mask_indices."""
+            """Test function mask_indices.
+
+            Returns:
+                EagerValue: Computed output value from `mask_indices`.
+            """
             return 6
 
         def linearoperatorblockdiag(self) -> EagerValue:
-            """Test function linearoperatorblockdiag."""
+            """Test function linearoperatorblockdiag.
+
+            Returns:
+                EagerValue: Computed output value from `linearoperatorblockdiag`.
+            """
             return 7
 
         def linearoperatordiag(self) -> EagerValue:
-            """Test function linearoperatordiag."""
+            """Test function linearoperatordiag.
+
+            Returns:
+                EagerValue: Computed output value from `linearoperatordiag`.
+            """
             return 8
 
     db = DummyBackend()
@@ -9983,6 +10155,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `applyoveraxes`.
         """
         return 0
 
@@ -9992,6 +10167,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `arrayrepr`.
         """
         return 1
 
@@ -10001,6 +10179,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `arraystr`.
         """
         return 2
 
@@ -10010,6 +10191,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `atleast1d`.
         """
         return 3
 
@@ -10019,6 +10203,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `atleast2d`.
         """
         return 4
 
@@ -10028,6 +10215,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `atleast3d`.
         """
         return 5
 
@@ -10037,6 +10227,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `average`.
         """
         return 6
 
@@ -10046,6 +10239,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `betainc`.
         """
         return 7
 
@@ -10055,6 +10251,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `block`.
         """
         return 8
 
@@ -10064,6 +10263,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `callable`.
         """
         return 9
 
@@ -10073,6 +10275,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `clip`.
         """
         return 10
 
@@ -10082,6 +10287,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `corrcoef`.
         """
         return 11
 
@@ -10091,6 +10299,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `cov`.
         """
         return 12
 
@@ -10100,6 +10311,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `debuginfs`.
         """
         return 13
 
@@ -10109,6 +10323,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `debugnans`.
         """
         return 14
 
@@ -10118,6 +10335,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `descriptive`.
         """
         return 15
 
@@ -10127,6 +10347,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `descriptive2`.
         """
         return 16
 
@@ -10136,6 +10359,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `diff`.
         """
         return 17
 
@@ -10145,6 +10371,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `digitize`.
         """
         return 18
 
@@ -10154,6 +10383,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dotgeneral`.
         """
         return 19
 
@@ -10163,6 +10395,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `ediff1d`.
         """
         return 20
 
@@ -10172,6 +10407,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `einsumpath`.
         """
         return 21
 
@@ -10181,6 +10419,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `fabs`.
         """
         return 22
 
@@ -10190,6 +10431,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `interp`.
         """
         return 23
 
@@ -10199,6 +10443,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `iterable`.
         """
         return 24
 
@@ -10208,6 +10455,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `ix`.
         """
         return 25
 
@@ -10217,6 +10467,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `key`.
         """
         return 26
 
@@ -10226,6 +10479,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `kron`.
         """
         return 27
 
@@ -10235,6 +10491,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `load`.
         """
         return 28
 
@@ -10244,6 +10503,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `modf`.
         """
         return 29
 
@@ -10253,6 +10515,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `onehot`.
         """
         return 30
 
@@ -10262,6 +10527,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `raggeddot`.
         """
         return 31
 
@@ -10271,6 +10539,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `ravelmultiindex`.
         """
         return 32
 
@@ -10280,6 +10551,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `rem`.
         """
         return 33
 
@@ -10289,6 +10563,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `rem2`.
         """
         return 34
 
@@ -10298,6 +10575,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `rem3`.
         """
         return 35
 
@@ -10307,6 +10587,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `serializetensor`.
         """
         return 36
 
@@ -10316,6 +10599,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `serializetensorcamel`.
         """
         return 37
 
@@ -10325,6 +10611,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `tensor`.
         """
         return 38
 
@@ -10334,6 +10623,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `trapz`.
         """
         return 39
 
@@ -10343,6 +10635,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `truncatediv`.
         """
         return 41
 
@@ -10352,6 +10647,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `truncatemod`.
         """
         return 42
 
@@ -10361,6 +10659,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `uint`.
         """
         return 43
 
@@ -10370,6 +10671,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `uint8`.
         """
         return 44
 
@@ -10379,6 +10683,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `unravelindex`.
         """
         return 45
 
@@ -10388,6 +10695,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `unwrap`.
         """
         return 46
 
@@ -10397,6 +10707,9 @@ class _SimpleForwardsDummyBackend:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `vectorize`.
         """
         return 47
 
@@ -10664,6 +10977,9 @@ def test_math_general_missing_forwards() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return 1
 

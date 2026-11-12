@@ -21,7 +21,7 @@ class Histogram(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         bins = kwargs.get("bins", 10)
         bins_shape = extract_shape(bins)
@@ -46,7 +46,7 @@ class Histogram2d(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         bins = kwargs.get("bins", 10)
         if isinstance(bins, (list, tuple)):
@@ -72,7 +72,7 @@ class HistogramBinEdges(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         bins = kwargs.get("bins", 10)
         bins_shape = extract_shape(bins)
@@ -97,7 +97,7 @@ class Histogramdd(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not args:
             return ()
@@ -114,7 +114,7 @@ def histogram(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -129,7 +129,7 @@ def histogram2d(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -144,7 +144,7 @@ def histogram_bin_edges(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -159,7 +159,7 @@ def histogramdd(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

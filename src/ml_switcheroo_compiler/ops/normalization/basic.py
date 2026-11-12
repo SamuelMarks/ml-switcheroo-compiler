@@ -59,8 +59,8 @@ class GroupMean(OpDef):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[int, ...]: Computed result.
@@ -82,8 +82,8 @@ class GroupVariance(OpDef):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[int, ...]: Computed result.
@@ -105,8 +105,8 @@ class GroupNorm(OpDef):
         """Infer shape.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
             tuple[int, ...]: Computed result.

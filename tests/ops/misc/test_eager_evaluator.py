@@ -24,6 +24,9 @@ def test_eager_evaluator() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eager_eval`.
             """
             return "custom_eager"
 
@@ -42,6 +45,9 @@ def test_eager_evaluator() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op
 
@@ -75,6 +81,9 @@ def test_eager_evaluator() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `eager_eval`.
             """
             return a[0] if a else None
 
@@ -84,6 +93,9 @@ def test_eager_evaluator() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `infer_shape`.
             """
             return ()
 

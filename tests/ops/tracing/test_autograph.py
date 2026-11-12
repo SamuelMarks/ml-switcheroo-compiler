@@ -17,14 +17,22 @@ def test_autograph_coverage() -> None:
 
     @do_not_convert
     def f() -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
+        """
         return 1
 
     assert ensure_callable(f)() == 1
     assert ensure_eager_tensor(ensure_eager_tensor(f)._autograph_do_not_convert)
 
     def f2() -> EagerValue:
-        """Test function f2."""
+        """Test function f2.
+
+        Returns:
+            EagerValue: Computed output value from `f2`.
+        """
         return 2
 
     f2_d = do_not_convert(f2)

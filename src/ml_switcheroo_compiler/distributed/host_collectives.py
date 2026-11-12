@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol,
 )
-from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -313,7 +312,9 @@ def _exec_collective_op(op_name: str, *args: TensorOrScalar, **kwargs: AttrValue
     Returns:
         TensorOrScalar: Evaluated tensor buffer.
     """
-    return BackendRegistry.get("numpy").execute_op(op_name, *args, **kwargs)
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    return get_active_backend().execute_op(op_name, *args, **kwargs)
 
 
 def _split_along_axis(data: TensorLike, num_splits: int, axis: int = 0) -> list[TensorLike]:

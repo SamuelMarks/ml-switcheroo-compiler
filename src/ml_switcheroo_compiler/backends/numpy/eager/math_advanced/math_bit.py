@@ -18,16 +18,16 @@ def _np_clz(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerVa
     """Count the number of leading zero bits in the integer representation of the input.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        TypeError: An exception.
+        TypeError: If invalid inputs or unsupported runtime conditions trigger `TypeError`.
     """
     x_arr = np.asarray(x)
     if not np.issubdtype(x_arr.dtype, np.integer):
@@ -38,10 +38,10 @@ def _np_clz(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerVa
         """Execute the eager clz scalar operation on the active backend array.
 
         Args:
-        val (EagerValue): The val parameter.
+        val (EagerValue): Input `val` argument (val).
 
         Returns:
-            int: Result.
+            int: Computed `int` output.
         """
         val_i: int = int(ensure_int(val))
         if val_i < 0:
@@ -57,9 +57,9 @@ def _np_bitcast_convert_type(backend_module: BackendModuleProtocol, x: EagerValu
     """Bitcast a tensor from one type to another without changing its underlying memory.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        new_dtype (EagerValue): The new_dtype parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        new_dtype (EagerValue): Input `new_dtype` argument (new dtype).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -75,7 +75,7 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Pack the elements of a binary-valued array into bits in a uint8 array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -89,7 +89,7 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Unpack elements of a uint8 array into a binary-valued output array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -103,12 +103,12 @@ def _np_bitwise_count(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np bitwise count operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 

@@ -1,4 +1,4 @@
-"""Module double_sided_maxwell.py."""
+"""Compiler `double sided maxwell` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -14,6 +14,6 @@ def double_sided_maxwell(*args: Tensor | float | int | str, **kwargs: Tensor | f
         **kwargs (Tensor | float | int | str): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     return _dispatch_random("double_sided_maxwell", *args, **kwargs)

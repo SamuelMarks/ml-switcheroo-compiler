@@ -23,6 +23,9 @@ def test_invoke_grouped_op_coverage() -> None:
             Args:
                 x: Test parameter `x`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `mean`.
             """
             if "axis" in kwargs:
                 raise TypeError()
@@ -34,6 +37,9 @@ def test_invoke_grouped_op_coverage() -> None:
             Args:
                 x: Test parameter `x`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `var`.
             """
             if "axis" in kwargs:
                 raise TypeError()

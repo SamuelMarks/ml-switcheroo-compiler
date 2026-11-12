@@ -25,7 +25,11 @@ def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None
         """Test class MockConnection."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
@@ -41,7 +45,11 @@ def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -76,7 +84,11 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             pass
 
         def accept(self) -> EagerValue:
-            """Test function accept."""
+            """Test function accept.
+
+            Returns:
+                EagerValue: Computed output value from `accept`.
+            """
             return MockConnection()
 
         def close(self) -> None:
@@ -84,7 +96,11 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -101,6 +117,9 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_client`.
         """
         return MockConnection()
 
@@ -179,7 +198,11 @@ def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
         """Test class MockConnection."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return [np.array([1]), np.array([2])]
 
         def send(self, data: EagerValue) -> None:
@@ -195,7 +218,11 @@ def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -230,7 +257,11 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
             pass
 
         def accept(self) -> EagerValue:
-            """Test function accept."""
+            """Test function accept.
+
+            Returns:
+                EagerValue: Computed output value from `accept`.
+            """
             return MockConnection()
 
         def close(self) -> None:
@@ -238,7 +269,11 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -255,6 +290,9 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_client`.
         """
         return MockConnection()
 
@@ -290,7 +328,11 @@ def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # fast forward time after one retry to hit both retry sleep and timeout
     def mock_time() -> EagerValue:
-        """Test function mock_time."""
+        """Test function mock_time.
+
+        Returns:
+            EagerValue: Computed output value from `mock_time`.
+        """
         ensure_mutable(mock_time).count = ensure_eager_tensor(ensure_eager_tensor(mock_time).count + 1)
         offset = 0.0 if ensure_eager_tensor(mock_time).count <= 2 else 10.0
         return ensure_eager_tensor(orig_time() + offset)
@@ -423,7 +465,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict
         """Test class MockConnection."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
@@ -439,7 +485,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -474,7 +524,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict
             pass
 
         def accept(self) -> EagerValue:
-            """Test function accept."""
+            """Test function accept.
+
+            Returns:
+                EagerValue: Computed output value from `accept`.
+            """
             return MockConnection()
 
         def close(self) -> None:
@@ -482,7 +536,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -519,7 +577,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state: dict
     orig_time = time.time
 
     def mock_time() -> EagerValue:
-        """Test function mock_time."""
+        """Test function mock_time.
+
+        Returns:
+            EagerValue: Computed output value from `mock_time`.
+        """
         ensure_mutable(mock_time).count = ensure_eager_tensor(ensure_eager_tensor(mock_time).count + 1)
         return ensure_eager_tensor(orig_time() + ensure_eager_tensor(mock_time).count * 10)
 
@@ -561,7 +623,11 @@ def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -
         """Test class MockConnection."""
 
         def recv(self) -> EagerValue:
-            """Test function recv."""
+            """Test function recv.
+
+            Returns:
+                EagerValue: Computed output value from `recv`.
+            """
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
@@ -577,7 +643,11 @@ def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -612,7 +682,11 @@ def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -
             pass
 
         def accept(self) -> EagerValue:
-            """Test function accept."""
+            """Test function accept.
+
+            Returns:
+                EagerValue: Computed output value from `accept`.
+            """
             return MockConnection()
 
         def close(self) -> None:
@@ -620,7 +694,11 @@ def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -
             pass
 
         def __enter__(self) -> EagerValue:
-            """Test function __enter__."""
+            """Test function __enter__.
+
+            Returns:
+                EagerValue: Computed output value from `__enter__`.
+            """
             return ensure_eager_tensor(self)
 
         def __exit__(self, *args: EagerValue) -> None:
@@ -657,7 +735,11 @@ def _test_ipc_coordinator_sleep_part_3(_state: dict[str, EagerTensorProtocol]) -
     orig_time = time.time
 
     def mock_time() -> EagerValue:
-        """Test function mock_time."""
+        """Test function mock_time.
+
+        Returns:
+            EagerValue: Computed output value from `mock_time`.
+        """
         ensure_mutable(mock_time).count = ensure_eager_tensor(ensure_eager_tensor(mock_time).count + 1)
         return ensure_eager_tensor(orig_time() + ensure_eager_tensor(mock_time).count * 0.001)
 

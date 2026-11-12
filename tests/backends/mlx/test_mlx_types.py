@@ -52,6 +52,9 @@ def test_mlx_types_asarray_fallback(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return "array_called"
 
@@ -78,6 +81,9 @@ def test_mlx_types_asarray_success(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
             return "asarray_called"
 

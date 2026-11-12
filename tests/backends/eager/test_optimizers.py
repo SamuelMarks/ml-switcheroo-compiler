@@ -27,6 +27,9 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `add`.
         """
         return ensure_eager_tensor(a) + ensure_eager_tensor(b)
 
@@ -36,6 +39,9 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `subtract`.
         """
         return ensure_eager_tensor(a) - ensure_eager_tensor(b)
 
@@ -45,6 +51,9 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `multiply`.
         """
         return ensure_eager_tensor(a) * ensure_eager_tensor(b)
 
@@ -54,6 +63,9 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `divide`.
         """
         return ensure_eager_tensor(a) / ensure_eager_tensor(b)
 
@@ -62,6 +74,9 @@ class MockBackend:
 
         Args:
             a: Test parameter `a`.
+
+        Returns:
+            EagerValue: Computed output value from `sqrt`.
         """
         return ensure_eager_tensor(ensure_callable(np.sqrt)(a))
 

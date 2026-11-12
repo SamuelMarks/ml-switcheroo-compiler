@@ -82,6 +82,9 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `_compile_aot_impl`.
             """
             del graph, kwargs
             return "compiled_output"

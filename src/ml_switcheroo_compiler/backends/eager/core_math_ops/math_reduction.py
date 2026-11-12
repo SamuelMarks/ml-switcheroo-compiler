@@ -24,12 +24,12 @@ def _psum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager psum operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.array(args[0])
 
@@ -179,12 +179,12 @@ def _pmean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager pmean operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.array(args[0])
 
@@ -255,12 +255,12 @@ def _segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager segment sum operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     if len(args) < 2:
@@ -278,11 +278,11 @@ def _apply_softmax(backend_module: BackendModuleProtocol, scores: EagerValue) ->
     """Apply softmax to attention scores.
 
     Args:
-        backend_module: The backend_module parameter.
-        scores: The scores parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        scores: Input `scores` argument (scores).
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     if has_backend_member(backend_module, "softmax"):
@@ -301,12 +301,12 @@ def _fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager fmax operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fmax", get_backend_member(backend_module, "maximum", None))
     return func(*args, **kwargs) if func else None
@@ -317,12 +317,12 @@ def _fmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager fmin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fmin", get_backend_member(backend_module, "minimum", None))
     return func(*args, **kwargs) if func else None
@@ -333,13 +333,13 @@ def _adaptive_max_pool2d(backend_module: BackendModuleProtocol, operand: EagerVa
     """Execute the eager adaptive max pool2d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -349,13 +349,13 @@ def _adaptive_max_pool3d(backend_module: BackendModuleProtocol, operand: EagerVa
     """Execute the eager adaptive max pool3d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -365,13 +365,13 @@ def _adaptive_max_pool3d_indices(backend_module: BackendModuleProtocol, operand:
     """Execute the eager adaptive max pool3d indices operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     res = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
     return (res, res)
@@ -382,14 +382,14 @@ def _adaptive_log_softmax_with_loss(backend_module: BackendModuleProtocol, input
     """Execute the eager adaptive log softmax with loss operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        input: The input parameter.
-        target: The target parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        input: Input `input` argument (input).
+        target: Input `target` argument (target).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     loss = backend_module.zeros((), dtype=get_backend_member(target, "dtype", None)) if has_backend_member(backend_module, "zeros") else 0.0
     return (target, loss)
@@ -400,12 +400,12 @@ def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager householder product operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "linalg", None)
@@ -443,12 +443,12 @@ def _cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager cummax operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "maximum", None)
@@ -463,12 +463,12 @@ def _cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager cummin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "minimum", None)
@@ -483,12 +483,12 @@ def _cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager cumlogsumexp operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "cumlogsumexp", None)
@@ -506,12 +506,12 @@ def _cumulative_logsumexp(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager cumulative logsumexp operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _cumlogsumexp(backend_module, *args, **kwargs)
 
@@ -521,12 +521,12 @@ def _psumscatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager psumscatter operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     if has_backend_member(backend_module, "lax") and has_backend_member(mod.lax, "psum_scatter"):
@@ -540,12 +540,12 @@ def _np_fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np fmax operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fmax", get_backend_member(backend_module, "fmax", None))
     if func is not None:
@@ -558,12 +558,12 @@ def _np_scattermax(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np scattermax operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "scattermax", get_backend_member(backend_module, "scattermax", None))
     if func is not None:
@@ -576,12 +576,12 @@ def _np_scattermin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np scattermin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "scattermin", get_backend_member(backend_module, "scattermin", None))
     if func is not None:
@@ -594,12 +594,12 @@ def _np_weibullmin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np weibullmin operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "weibullmin", get_backend_member(backend_module, "weibullmin", None))
     if func is not None:
@@ -612,12 +612,12 @@ def _np_windowhamming(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np windowhamming operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "windowhamming", get_backend_member(backend_module, "windowhamming", None))
     if func is not None:

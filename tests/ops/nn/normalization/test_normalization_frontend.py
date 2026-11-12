@@ -34,6 +34,9 @@ def test_normalization_frontend_brute() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.zeros((2, 4, 8, 8)).astype(np.float32)
 
@@ -42,6 +45,9 @@ def test_normalization_frontend_brute() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return x
 
@@ -69,6 +75,9 @@ def test_normalization_frontend_brute() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `dummy_op`.
             """
             return t_in
 

@@ -50,6 +50,9 @@ def test_shape_debugger() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_model`.
         """
         return x
 
@@ -77,6 +80,9 @@ def test_shape_debugger() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `unknown_model`.
         """
 
         class Dummy:

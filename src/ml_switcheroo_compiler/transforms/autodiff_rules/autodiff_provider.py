@@ -300,9 +300,9 @@ def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar,
     """Implement a generic finite difference fallback for JVP.
 
     Args:
-        graph (TensorOrScalar): The graph parameter.
-        node (TensorOrScalar): The node parameter.
-        tangents (TensorOrScalar): The tangents parameter.
+        graph (TensorOrScalar): Input `graph` argument (graph).
+        node (TensorOrScalar): Input `node` argument (node).
+        tangents (TensorOrScalar): Input `tangents` argument (tangents).
 
     Returns:
         str: Emitted finite-difference JVP node ID.
@@ -594,12 +594,12 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
         """Execute data vjp for compiler processing.
 
         Args:
-            graph (IRGraph): The graph parameter.
-            node (IRNode): The node parameter.
-            cotangent (str): The cotangent parameter.
+            graph (IRGraph): Input `graph` argument (graph).
+            node (IRNode): Input `node` argument (node).
+            cotangent (str): Input `cotangent` argument (cotangent).
 
         Returns:
-            tuple[str, ...]: Result.
+            tuple[str, ...]: Computed `tuple[str, ...]` output.
         """
         adjs = [_parse_expression(graph, expr, node, cotangent=cotangent) for expr in vjp_exprs_list]
         return tuple(adjs)
@@ -626,9 +626,9 @@ def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar,
         """Evaluate JVP expression for `node`.
 
         Args:
-            graph (TensorOrScalar): The graph parameter.
-            node (TensorOrScalar): The node parameter.
-            tangents (TensorOrScalar): The tangents parameter.
+            graph (TensorOrScalar): Input `graph` argument (graph).
+            node (TensorOrScalar): Input `node` argument (node).
+            tangents (TensorOrScalar): Input `tangents` argument (tangents).
 
         Returns:
             str: Emitted JVP tangent node ID.

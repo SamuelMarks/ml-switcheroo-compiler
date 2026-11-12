@@ -22,13 +22,13 @@ def _all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, *args
     """Execute the eager all gather operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if has_backend_member(backend_module, "stack"):
         return ensure_eager_tensor(get_backend_member(backend_module, "stack")([tensor]))
@@ -42,12 +42,12 @@ def _argwhere(backend_module: BackendModuleProtocol, a: EagerValue, **kwargs: Ea
     """Execute the eager argwhere operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
-        a: The a parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        a: Input `a` argument (a).
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "argwhere")(a))
 
@@ -57,12 +57,12 @@ def _extract(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager extract operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "extract", None)
     if func:
@@ -77,12 +77,12 @@ def _pswapaxes(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager pswapaxes operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     if has_backend_member(backend_module, "lax") and has_backend_member(get_backend_member(backend_module, "lax"), "pswapaxes"):
         return ensure_eager_tensor(get_backend_member(backend_module, "lax").pswapaxes(*args, **kwargs))
@@ -94,12 +94,12 @@ def _rot90(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager rot90 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "rot90")(*args, **kwargs))
 
@@ -109,12 +109,12 @@ def _nonzero(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager nonzero operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "nonzero")(*args, **kwargs))
 
@@ -124,12 +124,12 @@ def _repeat(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager repeat operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "repeat")(*args, **kwargs))
 
@@ -139,12 +139,12 @@ def _tile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager tile operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(get_backend_member(backend_module, "tile")(*args, **kwargs))
 
@@ -154,15 +154,15 @@ def _updateslice(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager updateslice operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     if not has_backend_member(backend_module, "array"):
         raise RuntimeError("Expected numpy-like backend")
@@ -181,12 +181,12 @@ def _flatnonzero(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager flatnonzero operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "flatnonzero", None)
     if func:
@@ -199,12 +199,12 @@ def _fliplr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager fliplr operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "fliplr", None)
     if func:
@@ -217,12 +217,12 @@ def _flipud(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager flipud operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "flipud", None)
     if func:
@@ -235,12 +235,12 @@ def _np_hsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np hsplit operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "hsplit", None)
     if func is not None:
@@ -253,15 +253,15 @@ def _np_scatterapply(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np scatterapply operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     func = get_backend_member(backend_module, "scatterapply", None)
     if func is not None:
@@ -274,12 +274,12 @@ def _np_scatternd(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np scatternd operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "scatternd", None)
     if func is not None:
@@ -292,12 +292,12 @@ def _np_tensorarraystack(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np tensorarraystack operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tensorarraystack", None)
     if func is not None:
@@ -310,12 +310,12 @@ def _np_tensorscatterupdate(backend_module: BackendModuleProtocol, *args: EagerV
     """Execute the eager np tensorscatterupdate operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "tensorscatterupdate", None)
     if func is not None:
@@ -328,12 +328,12 @@ def _np_unfold(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np unfold operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "unfold", None)
     if func is not None:
@@ -346,12 +346,12 @@ def _np_unstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np unstack operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "unstack", None)
     if func is not None:
@@ -365,15 +365,15 @@ def _np_updateslice(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np updateslice operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     func = get_backend_member(backend_module, "updateslice", None)
     if func is not None:
@@ -387,12 +387,12 @@ def _np_vsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager np vsplit operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "vsplit", None)
     if func is not None:
@@ -405,7 +405,7 @@ def _np_transpose(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np transpose operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
@@ -426,7 +426,7 @@ def _np_broadcast_to(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Evaluate BroadcastTo / Expand operation.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 

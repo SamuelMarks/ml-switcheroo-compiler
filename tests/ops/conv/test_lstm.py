@@ -41,6 +41,9 @@ def test_conv_lstm_cov() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return np.ones((2, 2, 2, 2))
 
@@ -50,6 +53,9 @@ def test_conv_lstm_cov() -> None:
 
                 Args:
                     data: Test parameter `data`.
+
+                Returns:
+                    EagerValue: Computed output value from `array`.
                 """
                 return data
 
@@ -167,13 +173,14 @@ class DummyTensor2D:
 def test_lstm_sigmoid() -> None:
     """Test function test_lstm_sigmoid."""
     from ml_switcheroo_compiler.ops.nn.conv_lstm import _sigmoid
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     orig_eager = config.eager_mode
+    global_tracing_state.start_tracing()
     try:
         config.eager_mode = False
-        ensure_callable(_sigmoid)(ensure_callable(Tensor)(ensure_callable(DummyTensor2D)(), ensure_callable(TensorConfig)(shape=(2, 2), dtype=ensure_callable(types.SimpleNamespace)(value="float32"), device=None, requires_grad=False, trainable=False)))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        out = ensure_callable(_sigmoid)(ensure_callable(Tensor)(ensure_callable(DummyTensor2D)(), ensure_callable(TensorConfig)(shape=(2, 2), dtype=ensure_callable(types.SimpleNamespace)(value="float32"), device=None, requires_grad=False, trainable=False)))
+        assert ensure_eager_tensor(out).shape == (2, 2)
     finally:
+        global_tracing_state.stop_tracing()
         config.eager_mode = orig_eager
-    assert callable(test_lstm_sigmoid)

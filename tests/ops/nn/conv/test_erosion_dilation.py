@@ -23,16 +23,28 @@ def test_conv_utils_extras() -> None:
         shape = (1, 1, 1, 1)
 
         def __array__(self) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Returns:
+                EagerValue: Computed output value from `__array__`.
+            """
             return np.ones((1, 1, 1, 1))
 
         @property
         def dtype(self) -> EagerValue:
-            """Test function dtype."""
+            """Test function dtype.
+
+            Returns:
+                EagerValue: Computed output value from `dtype`.
+            """
             return "float32"
 
         def asnumpy(self) -> EagerValue:
-            """Test function asnumpy."""
+            """Test function asnumpy.
+
+            Returns:
+                EagerValue: Computed output value from `asnumpy`.
+            """
             return np.ones((1, 1, 1, 1))
 
     t = DummyTensor()
@@ -42,6 +54,9 @@ def test_conv_utils_extras() -> None:
 
         Args:
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_get_op`.
         """
 
         class MockOp:
@@ -53,6 +68,9 @@ def test_conv_utils_extras() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return lambda *a, **kw: "dummy_node"
 
@@ -66,8 +84,3 @@ def test_conv_utils_extras() -> None:
 
     cfg = conv_utils._build_conv_config({"lhs_dilation": 1, "rhs_dilation": 1}, ((0, 1, 2, 3), (), ()))
     assert cfg.lhs_dilation == (1, 1)
-
-
-def test_erosion_dilation() -> None:
-    """Test function test_erosion_dilation."""
-    assert callable(test_erosion_dilation)

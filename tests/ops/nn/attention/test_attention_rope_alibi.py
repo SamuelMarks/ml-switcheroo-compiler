@@ -34,23 +34,24 @@ def test_rope() -> None:
     t = Tensor(np.array([[1.0, 2.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
     orig = config.eager_mode
     config.eager_mode = True
-    rope(t, 2)
+    eager_out = rope(t, 2)
+    assert isinstance(eager_out, Tensor) and eager_out.shape == (1, 2)
     config.eager_mode = False
     import ml_switcheroo_compiler.tracing.state as state
 
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    added_nodes: list[str] = []
+    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: added_nodes.append(str(ensure_eager_tensor(node).op_type)))
     try:
-        rope(t, 2)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        traced_out = rope(t, 2)
+        assert isinstance(traced_out, Tensor) and traced_out.shape == (1, 2)
+        assert len(added_nodes) >= 1
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
         ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
-    assert callable(test_rope)
 
 
 def test_sinusoidal() -> None:

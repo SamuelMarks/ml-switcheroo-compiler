@@ -37,11 +37,11 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
     """Execute the eager execute adaptive avg pool operation on the active backend array.
 
     Args:
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     import jax
     import jax.numpy as jnp
@@ -84,11 +84,11 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
     """Execute the eager execute adaptive max pool operation on the active backend array.
 
     Args:
-        operand: The operand parameter.
-        output_size: The output_size parameter.
+        operand: Input `operand` argument (operand).
+        output_size: Input `output_size` argument (output size).
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     import jax
     import jax.numpy as jnp
@@ -126,10 +126,10 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     inputs = ensure_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
@@ -202,7 +202,7 @@ def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(jax.scipy.special.bessel_jn(args[1], v=args[0]))
 
@@ -215,7 +215,7 @@ def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(jax.ops.segment_sum(*args, **kwargs))
 
@@ -228,7 +228,7 @@ def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(jax.ops.segment_max(*args, **kwargs))
 
@@ -241,7 +241,7 @@ def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(jax.ops.segment_min(*args, **kwargs))
 
@@ -254,7 +254,7 @@ def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return ensure_eager_tensor(jax.ops.segment_prod(*args, **kwargs))
 
@@ -267,7 +267,7 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     import jax.numpy as jnp
 
@@ -283,7 +283,7 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     tensor: EagerValue = args[0]
     dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -311,7 +311,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     rt: EagerValue = args[0]
     # Check shape/type via duck typing since jnp.ndarray might be masked
@@ -434,15 +434,15 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
     Args:
         cls (type): The class.
-        op_type (str): The op_type parameter.
+        op_type (str): Input `op_type` argument (op type).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
 
     Raises:
-        BackendNotSupportedError: An exception.
+        BackendNotSupportedError: If invalid inputs or unsupported runtime conditions trigger `BackendNotSupportedError`.
     """
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
 

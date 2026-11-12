@@ -87,12 +87,15 @@ def test_np_random_crop() -> None:
             img: Test parameter `img`.
             size: Test parameter `size`.
             seed: Test parameter `seed`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_crop`.
         """
         return ensure_callable(np.ones)(size)
 
     images = np.ones((4, 4, 3))
-    _np_random_crop(ensure_eager_tensor(np), images, size=(2, 2))
-    assert callable(test_np_random_crop)
+    _out = _np_random_crop(ensure_eager_tensor(np), images, size=(2, 2))
+    assert len(ensure_eager_tensor(_out)) == 2
 
 
 def test_np_random_erasing() -> None:
@@ -229,11 +232,11 @@ def test_np_random_rotation() -> None:
 
 def test_np_random_translation() -> None:
     """Test function test_np_random_translation."""
-    _np_random_translation(ensure_eager_tensor(np), np.ones((4, 4, 3)), 0.1, 0.1)
-    assert callable(test_np_random_translation)
+    out = _np_random_translation(ensure_eager_tensor(np), np.ones((4, 4, 3)), 0.1, 0.1)
+    assert ensure_eager_tensor(out).shape == (4, 4, 3)
 
 
 def test_np_random_zoom() -> None:
     """Test function test_np_random_zoom."""
-    _np_random_zoom(ensure_eager_tensor(np), np.ones((4, 4, 3)), 0.1, 0.1)
-    assert callable(test_np_random_zoom)
+    out = _np_random_zoom(ensure_eager_tensor(np), np.ones((4, 4, 3)), 0.1, 0.1)
+    assert ensure_eager_tensor(out).shape == (4, 4, 3)

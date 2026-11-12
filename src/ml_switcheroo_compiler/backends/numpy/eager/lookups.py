@@ -28,7 +28,7 @@ def _np_hashing(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        LookupInput: Result.
+        LookupInput: Computed `LookupInput` output.
     """
     return inputs
 
@@ -47,7 +47,7 @@ def _np_integer_lookup(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        LookupInput: Result.
+        LookupInput: Computed `LookupInput` output.
     """
     return inputs
 
@@ -93,6 +93,6 @@ def _np_string_lookup(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        LookupInput: Result.
+        LookupInput: Computed `LookupInput` output.
     """
     return inputs

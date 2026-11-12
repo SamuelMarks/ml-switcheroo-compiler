@@ -20,7 +20,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def global_wasm_mock() -> Iterator[None]:
-    """Test function global_wasm_mock."""
+    """Test function global_wasm_mock.
+
+    Yields:
+        None: Yielded test context or value from `global_wasm_mock`.
+    """
     import copy
 
     from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
@@ -52,6 +56,9 @@ def global_wasm_mock() -> Iterator[None]:
 
             Args:
                 template_name: Test parameter `template_name`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_template_resolver`.
             """
             return {"body": ensure_callable(mock_bodies.get)(template_name, ensure_eager_tensor("// ") + ensure_eager_tensor(template_name))}
 

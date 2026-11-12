@@ -110,7 +110,11 @@ def test_axis_translation_conv2d_no_shape() -> None:
     original_uuid4 = uuid.uuid4
 
     def mock_uuid4() -> EagerValue:
-        """Test function mock_uuid4."""
+        """Test function mock_uuid4.
+
+        Returns:
+            EagerValue: Computed output value from `mock_uuid4`.
+        """
 
         class MockUUID:
             """Test class MockUUID."""

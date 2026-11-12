@@ -40,7 +40,11 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
             self.shape = shape
 
         def tobytes(self) -> EagerValue:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                EagerValue: Computed output value from `tobytes`.
+            """
             return self._data
 
     with tempfile.NamedTemporaryFile() as f:
@@ -105,7 +109,11 @@ def test_safetensors_save_continue() -> None:
 
             @staticmethod
             def tobytes() -> EagerValue:
-                """Return empty bytes."""
+                """Return empty bytes.
+
+                Returns:
+                    EagerValue: Computed output value from `tobytes`.
+                """
                 return b""
 
         class MissingAttr4:
@@ -115,7 +123,11 @@ def test_safetensors_save_continue() -> None:
 
             @staticmethod
             def tobytes() -> EagerValue:
-                """Return empty bytes."""
+                """Return empty bytes.
+
+                Returns:
+                    EagerValue: Computed output value from `tobytes`.
+                """
                 return b""
 
         ensure_callable(fmt.save)({"a": ensure_callable(MissingAttr1)(), "b": ensure_callable(MissingAttr2)(), "c": ensure_callable(MissingAttr3)(), "d": ensure_callable(MissingAttr4)()}, f.name)

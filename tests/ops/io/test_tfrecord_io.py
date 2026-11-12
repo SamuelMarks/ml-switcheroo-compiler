@@ -157,7 +157,11 @@ def test_tfrecord_writer_edge_cases() -> None:
             """Test class DummyCompressor."""
 
             def flush(self) -> bytes:
-                """Test function flush."""
+                """Test function flush.
+
+                Returns:
+                    bytes: Computed output value from `flush`.
+                """
                 return b""
 
         zlib_empty_path = os.path.join(tmpdir, "zlib_empty.tfrecord")

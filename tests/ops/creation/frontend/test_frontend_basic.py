@@ -22,7 +22,11 @@ def test_frontend_basic() -> None:
         """Test class DummyItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1
 
     class DummyData:
@@ -46,6 +50,9 @@ def test_frontend_basic() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
 
             class T:
@@ -62,6 +69,9 @@ def test_frontend_basic() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
 
             class T:
@@ -152,6 +162,9 @@ def test_frontend_basic_functions() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
 
             class T:
@@ -168,6 +181,9 @@ def test_frontend_basic_functions() -> None:
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `asarray`.
             """
 
             class T:
@@ -184,6 +200,9 @@ def test_frontend_basic_functions() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
 
             class T:
@@ -200,6 +219,9 @@ def test_frontend_basic_functions() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `ones`.
             """
 
             class T:
@@ -217,6 +239,9 @@ def test_frontend_basic_functions() -> None:
                 s: Test parameter `s`.
                 v: Test parameter `v`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `full`.
             """
 
             class T:
@@ -233,6 +258,9 @@ def test_frontend_basic_functions() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `empty`.
             """
 
             class T:
@@ -251,6 +279,9 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
                 count: Test parameter `count`.
                 offset: Test parameter `offset`.
+
+            Returns:
+                EagerValue: Computed output value from `frombuffer`.
             """
 
             class T:
@@ -325,11 +356,19 @@ def test_frontend_basic_missing_branches() -> None:
         """Test class DummyItem2."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return "item"
 
         def __int__(self) -> EagerValue:
-            """Test function __int__."""
+            """Test function __int__.
+
+            Returns:
+                EagerValue: Computed output value from `__int__`.
+            """
             return 1
 
     class DummyTensor2:
@@ -368,6 +407,9 @@ def test_frontend_basic_missing_branches() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `empty`.
             """
 
             class T:
@@ -396,6 +438,9 @@ def test_frontend_basic_convert() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `convert_to_numpy`.
             """
             return "numpy_arr"
 
@@ -419,6 +464,9 @@ def test_frontend_basic_kwargs() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros`.
             """
 
             class T:
@@ -435,6 +483,9 @@ def test_frontend_basic_kwargs() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `ones`.
             """
 
             class T:
@@ -452,6 +503,9 @@ def test_frontend_basic_kwargs() -> None:
                 s: Test parameter `s`.
                 v: Test parameter `v`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `full`.
             """
 
             class T:
@@ -468,6 +522,9 @@ def test_frontend_basic_kwargs() -> None:
             Args:
                 s: Test parameter `s`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `empty`.
             """
 
             class T:
@@ -486,6 +543,9 @@ def test_frontend_basic_kwargs() -> None:
                 dtype: Test parameter `dtype`.
                 count: Test parameter `count`.
                 offset: Test parameter `offset`.
+
+            Returns:
+                EagerValue: Computed output value from `frombuffer`.
             """
 
             class T:
@@ -517,14 +577,14 @@ def test_frontend_basic_kwargs() -> None:
     state.global_tracing_state.is_tracing = True
     ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
     ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):
+    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted") as mock_emit:
         zeros((1,), dtype=DType.Float32)
         ones((1,), dtype=DType.Float32)
         full((1,), 0, dtype=DType.Float32)
         empty((1,), dtype=DType.Float32)
         frombuffer(b"test", dtype=DType.Float32)
+        assert mock_emit.call_count == 5
     config.eager_mode = True
-    assert callable(test_frontend_basic_kwargs)
 
 
 def test_frontend_basic_coverage() -> None:
@@ -540,7 +600,11 @@ def test_frontend_basic_coverage() -> None:
         """Test class DummyItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1
 
     class DummyData:
@@ -564,6 +628,9 @@ def test_frontend_basic_coverage() -> None:
                 op: Test parameter `op`.
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op
 

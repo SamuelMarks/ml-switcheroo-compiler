@@ -35,6 +35,9 @@ def test_math_random_sampling_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `pshuffle`.
             """
             return "pshuffle_val"
 
@@ -65,6 +68,9 @@ def test_math_random_sampling_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `gumbel`.
             """
             return "gumbel_val"
 
@@ -85,6 +91,9 @@ def test_math_random_sampling_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `rnguniform`.
             """
             return "rnguniform_val"
 
@@ -105,6 +114,9 @@ def test_math_random_sampling_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `wald`.
             """
             return "wald_val"
 

@@ -56,6 +56,9 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `f`.
             """
             return ops.multiply(x, ops.multiply(x, x))
 

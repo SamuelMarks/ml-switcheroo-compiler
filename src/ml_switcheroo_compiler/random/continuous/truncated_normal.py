@@ -1,4 +1,4 @@
-"""Module truncated_normal.py."""
+"""Compiler `truncated normal` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ def truncated_normal(
     """Return an initializer that generates arrays from a truncated normal distribution.
 
     Args:
-        key (Tensor | str): The key parameter.
-        lower (float): The lower parameter.
-        upper (float): The upper parameter.
-        shape (Sequence[int] | tuple[int, ...]): The shape parameter.
-        dtype (dtypes.DType | None): The dtype parameter.
+        key (Tensor | str): Input `key` argument (key).
+        lower (float): Input `lower` argument (lower).
+        upper (float): Input `upper` argument (upper).
+        shape (Sequence[int] | tuple[int, ...]): Input `shape` argument (shape).
+        dtype (dtypes.DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node(

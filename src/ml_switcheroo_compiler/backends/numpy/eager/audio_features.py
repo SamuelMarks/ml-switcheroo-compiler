@@ -13,15 +13,15 @@ def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tup
     """Execute the eager dct 1d matrix operation on the active backend array.
 
     Args:
-        N (int): The N parameter.
-        type (int): The type parameter.
-        norm (str): The norm parameter.
+        N (int): Input `N` argument (N).
+        type (int): Input `type` argument (type).
+        norm (str): Input `norm` argument (norm).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)[:, None]
@@ -66,12 +66,12 @@ def _np_dct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager np dct operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     type: int = ensure_int(kwargs.get("type", 2))
@@ -89,15 +89,15 @@ def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tu
     """Execute the eager idct 1d matrix operation on the active backend array.
 
     Args:
-        N (int): The N parameter.
-        type (int): The type parameter.
-        norm (str): The norm parameter.
+        N (int): Input `N` argument (N).
+        type (int): Input `type` argument (type).
+        norm (str): Input `norm` argument (norm).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if type == 1:
         m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _dct_1d_matrix(N, 1, norm)
@@ -127,12 +127,12 @@ def _np_idct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np idct operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     type: int = ensure_int(kwargs.get("type", 2))
@@ -151,15 +151,15 @@ def _np_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Implement MDCT eagerly in numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
@@ -180,12 +180,12 @@ def _np_inverse_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Inverse MDCT eagerly in numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     N = x.shape[-1]
@@ -202,12 +202,12 @@ def _np_frame(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Implement Frame eagerly in numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     frame_length: int = ensure_int(kwargs.get("frame_length", 1))
@@ -225,12 +225,12 @@ def _np_overlap_and_add(backend_module: BackendModuleProtocol, *args: EagerValue
     """Implement OverlapAndAdd eagerly in numpy.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     frame_step: int = ensure_int(kwargs.get("frame_step", 1))

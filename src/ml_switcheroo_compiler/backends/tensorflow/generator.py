@@ -20,13 +20,13 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Load.
 
         Args:
-        filepath (str): The filepath parameter.
-        allow_pickle (bool): The allow_pickle parameter.
-        fix_imports (bool): The fix_imports parameter.
-        encoding (str): The encoding parameter.
+        filepath (str): Input `filepath` argument (filepath).
+        allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+        fix_imports (bool): Input `fix_imports` argument (fix imports).
+        encoding (str): Input `encoding` argument (encoding).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         import pickle
 
@@ -38,10 +38,10 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Save.
 
         Args:
-            file (str): The file parameter.
-            arr (EagerValue): The arr parameter.
-            allow_pickle (bool): The allow_pickle parameter.
-            fix_imports (bool): The fix_imports parameter.
+            file (str): Input `file` argument (file).
+            arr (EagerValue): Input `arr` argument (arr).
+            allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+            fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
         import pickle
 
@@ -53,7 +53,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Savez.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """
@@ -69,7 +69,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Savez compressed.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """
@@ -85,7 +85,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Init.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
@@ -94,11 +94,11 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute format zeros like for compiler processing.
 
         Args:
-        op (str): The op parameter.
-        kwargs (EagerValue): The kwargs parameter.
+        op (str): Input `op` argument (op).
+        kwargs (EagerValue): Input `kwargs` argument (kwargs).
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         res = f"tf.{op}({{shape}})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
@@ -109,10 +109,10 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute format full for compiler processing.
 
         Args:
-        kwargs (EagerValue): The kwargs parameter.
+        kwargs (EagerValue): Input `kwargs` argument (kwargs).
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         res = "tf.full({shape}, {fill_value})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
@@ -123,10 +123,10 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute format transpose for compiler processing.
 
         Args:
-        kwargs (EagerValue): The kwargs parameter.
+        kwargs (EagerValue): Input `kwargs` argument (kwargs).
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         if isinstance(kwargs, dict) and "axes" in kwargs:
             return "tf.transpose({0}, perm={axes})"
@@ -136,12 +136,12 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Emit target backend code or IR transformation for the RaggedDot operation.
 
         Args:
-        node (LogicalNode): The node parameter.
-        input_vars (list[str]): The input_vars parameter.
+        node (LogicalNode): Input `node` argument (node).
+        input_vars (list[str]): Input `input_vars` argument (input vars).
         **kwargs (EagerValue): Keyword args.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return f"tf_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
@@ -176,7 +176,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Get the fallback prefix for generic operations.
 
         Returns:
-        str: Result.
+        str: Computed `str` output.
         """
         return "tf.math"
 
@@ -184,10 +184,10 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute get creation ops for compiler processing.
 
         Args:
-            kwargs (dict): The kwargs parameter.
+            kwargs (dict): Input `kwargs` argument (kwargs).
 
         Returns:
-            dict: Result.
+            dict: Computed `dict` output.
         """
         return {
             "Arange": "tf.range({0})",
@@ -200,8 +200,8 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute emit constant assignment for compiler processing.
 
         Args:
-            var_name (str): The var_name parameter.
-            val_repr (str): The val_repr parameter.
+            var_name (str): Input `var_name` argument (var name).
+            val_repr (str): Input `val_repr` argument (val repr).
         """
         self.add_line(f"{var_name} = tf.constant({val_repr})")
 
@@ -209,7 +209,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute generate file header for compiler processing.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return [self.header.strip()]
 
@@ -217,7 +217,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute resolve imports for compiler processing.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ["import tensorflow as tf\n"]
 
@@ -225,10 +225,10 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute generate function signature for compiler processing.
 
         Args:
-        self (TensorOrScalar): The self parameter.
+        self (TensorOrScalar): Input `self` argument (self).
 
         Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
         """
         self.indent_level = 0
         self.add_line("@tf.function")

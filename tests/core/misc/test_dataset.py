@@ -105,11 +105,6 @@ def test_dataset_exceptions() -> None:
         ds.dense_to_ragged_batch(0)
 
 
-def test_specialized_datasets() -> None:
-    """Test specialized datasets dummy."""
-    assert callable(test_specialized_datasets)
-
-
 def test_dataset_coverage_extras() -> None:
     """Test extras coverage."""
     backend = get_active_backend()
@@ -123,11 +118,11 @@ def test_dataset_coverage_extras() -> None:
 
 def test_split_dataset() -> None:
     """Test split dataset."""
-    from ml_switcheroo_compiler.utils.dataset_utils import split_dataset
+    from ml_switcheroo_compiler.utils.dataset_utils import NumpyDataset, split_dataset
 
-    (a, b) = ensure_callable(split_dataset)("test", 0.5, False)
-    assert a == "test"
-    assert b == "test"
+    (a, b) = split_dataset(NumpyDataset([1, 2, 3, 4]), 0.5, False)
+    assert a.x == [1, 2]
+    assert b.x == [3, 4]
 
 
 class DummyTensor:
@@ -344,6 +339,9 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
 
     Args:
         data: Test parameter `data`.
+
+    Returns:
+        EagerValue: Computed output value from `create_eager_tensor`.
     """
     backend = get_active_backend()
     data = backend.array(data)

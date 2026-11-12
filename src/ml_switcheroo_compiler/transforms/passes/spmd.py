@@ -126,7 +126,7 @@ def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
     """Extract non-None mesh axis names from `sharding`.
 
     Args:
-        sharding (ShardingValue): The sharding parameter.
+        sharding (ShardingValue): Input `sharding` argument (sharding).
 
     Returns:
         list[str]: Active sharding axis names.
@@ -140,8 +140,8 @@ def _is_boundary_transition(inp_sharding: ShardingValue, node_sharding: Sharding
     """Check whether `inp_sharding` and `node_sharding` are sharded.
 
     Args:
-        inp_sharding (ShardingValue): The inp_sharding parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        inp_sharding (ShardingValue): Input `inp_sharding` argument (inp sharding).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         tuple[bool, bool]: `(inp_sharded, node_sharded)` boolean flags.
@@ -155,8 +155,8 @@ def _create_all_gather_node(inp_id: str, node_sharding: ShardingValue) -> IRNode
     """Create an `AllGather` collective communication node.
 
     Args:
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Constructed `AllGather` node.
@@ -168,8 +168,8 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: ShardingValue) -> IR
     """Create a `ReduceScatter` collective communication node.
 
     Args:
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Constructed `ReduceScatter` node.
@@ -181,8 +181,8 @@ def _create_all_reduce_node(inp_id: str, node_sharding: ShardingValue) -> IRNode
     """Create an `AllReduce` collective communication node.
 
     Args:
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Constructed `AllReduce` node.
@@ -194,8 +194,8 @@ def _create_all_to_all_node(inp_id: str, node_sharding: ShardingValue) -> IRNode
     """Create an `AllToAll` collective communication node.
 
     Args:
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Constructed `AllToAll` node.
@@ -207,10 +207,10 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: Shard
     """Inject an `AllGather` node before `node.inputs[idx]`.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Injected `AllGather` node.
@@ -224,10 +224,10 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: S
     """Inject a `ReduceScatter` node before `node.inputs[idx]`.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Injected `ReduceScatter` node.
@@ -241,10 +241,10 @@ def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: Shard
     """Inject an `AllReduce` node before `node.inputs[idx]`.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Injected `AllReduce` node.
@@ -258,10 +258,10 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: Shard
     """Inject an `AllToAll` node before `node.inputs[idx]`.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode: Injected `AllToAll` node.
@@ -340,12 +340,12 @@ def _determine_spmd_communication(
     """Determine the type of SPMD communication needed using data-driven rules.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        node_sharding (SPMDShardingAnnotation | None): The node_sharding parameter.
-        inp_axes (list[str]): The inp_axes parameter.
-        node_axes (list[str]): The node_axes parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        node_sharding (SPMDShardingAnnotation | None): Input `node_sharding` argument (node sharding).
+        inp_axes (list[str]): Input `inp_axes` argument (inp axes).
+        node_axes (list[str]): Input `node_axes` argument (node axes).
 
     Returns:
         IRNode | None: Injected collective communication node or None.
@@ -385,11 +385,11 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     """Inspect a single node input and inject collective communication if sharding transitions require it.
 
     Args:
-        node (IRNode): The node parameter.
-        idx (int): The idx parameter.
-        inp_id (str): The inp_id parameter.
-        graph (IRGraph): The graph parameter.
-        node_sharding (ShardingValue): The node_sharding parameter.
+        node (IRNode): Input `node` argument (node).
+        idx (int): Input `idx` argument (idx).
+        inp_id (str): Input `inp_id` argument (inp id).
+        graph (IRGraph): Input `graph` argument (graph).
+        node_sharding (ShardingValue): Input `node_sharding` argument (node sharding).
 
     Returns:
         IRNode | None: Injected collective node or None.
@@ -420,8 +420,8 @@ def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]
     """Process all inputs of `node` for SPMD collective injection.
 
     Args:
-        node (IRNode): The node parameter.
-        graph (IRGraph): The graph parameter.
+        node (IRNode): Input `node` argument (node).
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         tuple[bool, list[IRNode]]: `(modified, injected_nodes)`.
@@ -446,7 +446,7 @@ def inject_spmd_communication_pass(graph: IRGraph) -> bool:
     """Injects all_gather, reduce_scatter, all_reduce for SPMD execution.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         bool: True if graph was modified.

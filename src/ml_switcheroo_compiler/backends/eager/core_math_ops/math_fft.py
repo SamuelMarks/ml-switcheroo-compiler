@@ -19,12 +19,12 @@ def _fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager fft operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fft(*args, **kwargs) if fft_mod else None
@@ -35,12 +35,12 @@ def _rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager rfft operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.rfft(*args, **kwargs) if fft_mod else None
@@ -51,12 +51,12 @@ def _fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager fft2 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fft2(*args, **kwargs) if fft_mod else None
@@ -103,7 +103,7 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Evaluate _fftconvolve operation using backend or native FFT/IFFT fallback.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args (in1, in2).
         **kwargs: Keyword args (mode, axes).
 
@@ -153,12 +153,12 @@ def _fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager fftfreq operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftfreq(*args, **kwargs) if fft_mod else None
@@ -169,12 +169,12 @@ def _fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager fftn operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
@@ -185,12 +185,12 @@ def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager fftnd operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     if has_backend_member(fft_mod, "fftnd"):
@@ -203,12 +203,12 @@ def _fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager fftshift operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.fftshift(*args, **kwargs) if fft_mod else None
@@ -219,12 +219,12 @@ def _ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager ifft operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifft(*args, **kwargs) if fft_mod else None
@@ -235,12 +235,12 @@ def _ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager ifft2 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifft2(*args, **kwargs) if fft_mod else None
@@ -251,12 +251,12 @@ def _ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager ifftn operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifftn(*args, **kwargs) if fft_mod else None
@@ -267,12 +267,12 @@ def _ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager ifftshift operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     return fft_mod.ifftshift(*args, **kwargs) if fft_mod else None
@@ -283,12 +283,12 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np hfft operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     fft_mod = get_backend_member(backend_module, "fft", None)
     if fft_mod and has_backend_member(fft_mod, "hfft"):

@@ -19,6 +19,9 @@ class DummyNp:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `asarray`.
         """
         return "np_asarray_res"
 
@@ -28,6 +31,9 @@ class DummyNp:
         Args:
             out: Test parameter `out`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            EagerValue: Computed output value from `array`.
         """
         if dtype:
             return f"np_array_res_{dtype}"
@@ -38,7 +44,11 @@ class DummyTensorWithNumpy:
     """Test class DummyTensorWithNumpy."""
 
     def numpy(self) -> EagerValue:
-        """Test function numpy."""
+        """Test function numpy.
+
+        Returns:
+            EagerValue: Computed output value from `numpy`.
+        """
         return "numpy_res"
 
 
@@ -46,19 +56,31 @@ class DummyTensorTorch:
     """Test class DummyTensorTorch."""
 
     def detach(self) -> EagerValue:
-        """Test function detach."""
+        """Test function detach.
+
+        Returns:
+            EagerValue: Computed output value from `detach`.
+        """
 
         class Cpu:
             """Test class Cpu."""
 
             def cpu(self) -> EagerValue:
-                """Test function cpu."""
+                """Test function cpu.
+
+                Returns:
+                    EagerValue: Computed output value from `cpu`.
+                """
 
                 class Numpy:
                     """Test class Numpy."""
 
                     def numpy(self) -> EagerValue:
-                        """Test function numpy."""
+                        """Test function numpy.
+
+                        Returns:
+                            EagerValue: Computed output value from `numpy`.
+                        """
                         return "torch_numpy_res"
 
                 return ensure_eager_tensor(Numpy())

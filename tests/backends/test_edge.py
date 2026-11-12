@@ -23,7 +23,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def global_wasm_mock() -> Iterator[None]:
-    """Test function global_wasm_mock."""
+    """Test function global_wasm_mock.
+
+    Yields:
+        None: Yielded test context or value from `global_wasm_mock`.
+    """
     import copy
 
     from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
@@ -43,6 +47,9 @@ def global_wasm_mock() -> Iterator[None]:
 
             Args:
                 template_name: Test parameter `template_name`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_template_resolver`.
             """
             body = ensure_eager_tensor("// ") + ensure_eager_tensor(template_name)
             if template_name == "mock_template_Add":
@@ -186,11 +193,6 @@ def test_edge_coverage2() -> None:
         out_code = mod(g).generate()
         assert isinstance(out_code, str)
         assert len(out_code) > 0
-
-
-def test_edge_compiler_numerical_equivalence() -> None:
-    """Test function test_edge_compiler_numerical_equivalence."""
-    assert callable(test_edge_compiler_numerical_equivalence)
 
 
 def test_webgpu_ndim_indexing() -> None:

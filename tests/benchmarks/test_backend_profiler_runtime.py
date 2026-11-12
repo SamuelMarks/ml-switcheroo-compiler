@@ -18,7 +18,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    """Ensure optional profiler backend stubs are installed when packages are missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     install_profiler_backend_stubs(monkeypatch)
 
 
@@ -528,7 +532,11 @@ def _test_cupy_profiler_runtime_part_6(_state: dict[str, EagerTensorProtocol]) -
     ensure_mutable(mod_cuda_err).cuda = ensure_eager_tensor(CustomMod())
 
     def _raise_cuda_error() -> int:
-        """Test function _raise_cuda_error."""
+        """Test function _raise_cuda_error.
+
+        Returns:
+            int: Computed output value from `_raise_cuda_error`.
+        """
         raise RuntimeError("boom")
 
     _state.update(ensure_tensor_dict({"_raise_cuda_error": _raise_cuda_error, "mod_cuda_err": mod_cuda_err, "mod_cuda_no_runtime": mod_cuda_no_runtime, "mod_cuda_zero": mod_cuda_zero}))

@@ -58,7 +58,7 @@ class BinaryMathOp(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         raw_shapes: Sequence[EagerTensorProtocol | TensorOrScalar] = shapes
         if raw_shapes and all(isinstance(s, tuple) for s in raw_shapes):
@@ -405,7 +405,7 @@ class Diff(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Typically out_shape is similar to input, maybe -1 on one axis
         return ()
@@ -425,7 +425,7 @@ class Digitize(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Returns indices matching input shape
         raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
@@ -448,7 +448,7 @@ class ArrayEquiv(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -505,13 +505,13 @@ class Betainc(OpDef):
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): The a parameter.
-            b (EagerTensorProtocol): The b parameter.
-            x (TensorOrScalar): The x parameter.
+            a (EagerTensorProtocol): Input `a` argument (a).
+            b (EagerTensorProtocol): Input `b` argument (b).
+            x (TensorOrScalar): Input `x` argument (x).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         shape_a = extract_shape(a)
         shape_b = extract_shape(b)
@@ -788,7 +788,7 @@ class Clip(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
         if raw_args and isinstance(raw_args[0], ShapeProtocol):
@@ -800,13 +800,13 @@ def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrSca
     """Clip values in a tensor.
 
     Args:
-        x (TensorOrScalar): The x parameter.
-        min_val (TensorOrScalar): The min_val parameter.
-        max_val (TensorOrScalar): The max_val parameter.
+        x (TensorOrScalar): Input `x` argument (x).
+        min_val (TensorOrScalar): Input `min_val` argument (min val).
+        max_val (TensorOrScalar): Input `max_val` argument (max val).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -830,7 +830,7 @@ def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
@@ -915,7 +915,7 @@ def igamma_grad_a(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSc
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -930,7 +930,7 @@ def random_gamma_grad(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -945,7 +945,7 @@ def sort_key_val(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

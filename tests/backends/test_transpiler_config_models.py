@@ -111,6 +111,9 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            str: Computed output value from `mock_join`.
         """
         if "rules" in args:
             if args[-1] == "rules":
@@ -123,6 +126,9 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `mock_isdir`.
         """
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return True
@@ -133,6 +139,9 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            list[str]: Computed output value from `mock_listdir`.
         """
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
@@ -150,6 +159,9 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `mock_isdir_false`.
         """
         if rules_dir_str in str(path) or "rules" in str(path):
             return False

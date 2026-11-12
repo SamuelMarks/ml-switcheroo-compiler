@@ -24,6 +24,9 @@ class DummyBackend:
 
         Args:
             shape: Test parameter `shape`.
+
+        Returns:
+            EagerValue: Computed output value from `zeros`.
         """
         return ensure_callable(np.zeros)(shape)
 

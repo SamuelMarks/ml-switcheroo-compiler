@@ -422,7 +422,7 @@ class Svdvals(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0]
         shape: tuple[int, ...] = extract_shape(x)
@@ -484,14 +484,14 @@ class TridiagonalMatmul(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-            dl (EagerTensorProtocol): The dl parameter.
-            d (EagerTensorProtocol): The d parameter.
-            du (EagerTensorProtocol): The du parameter.
-            b (EagerTensorProtocol): The b parameter.
+            dl (EagerTensorProtocol): Input `dl` argument (dl).
+            d (EagerTensorProtocol): Input `d` argument (d).
+            du (EagerTensorProtocol): Input `du` argument (du).
+            b (EagerTensorProtocol): Input `b` argument (b).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return b.shape
 
@@ -508,7 +508,7 @@ class Cond(OpDef):
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 

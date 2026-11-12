@@ -18,13 +18,13 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> TensorOrSca
     """Scatter values from a source tensor into the input tensor along a specified.
 
     Args:
-        input (Tensor): The input parameter.
-        axis (int): The axis parameter.
-        index (Tensor): The index parameter.
-        src (Tensor): The src parameter.
+        input (Tensor): Input `input` argument (input).
+        axis (int): Input `axis` argument (axis).
+        index (Tensor): Input `index` argument (index).
+        src (Tensor): Input `src` argument (src).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -47,12 +47,12 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
     """Scatter updates into a new tensor of specified shape using indices.
 
     Args:
-        indices (Tensor): The indices parameter.
-        updates (Tensor): The updates parameter.
-        shape (Sequence): The shape parameter.
+        indices (Tensor): Input `indices` argument (indices).
+        updates (Tensor): Input `updates` argument (updates).
+        shape (Sequence): Input `shape` argument (shape).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -73,13 +73,13 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> TensorO
     """Add values from a source tensor to the input tensor at specified indices along a.
 
     Args:
-        input (Tensor): The input parameter.
-        axis (int): The axis parameter.
-        index (Tensor): The index parameter.
-        src (Tensor): The src parameter.
+        input (Tensor): Input `input` argument (input).
+        axis (int): Input `axis` argument (axis).
+        index (Tensor): Input `index` argument (index).
+        src (Tensor): Input `src` argument (src).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -102,12 +102,12 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> T
     """Update the value of a tensor at given indices.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        indices (Tensor): The indices parameter.
-        updates (Tensor): The updates parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        indices (Tensor): Input `indices` argument (indices).
+        updates (Tensor): Input `updates` argument (updates).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -132,12 +132,12 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     """Update a tensor at given indices with the maximum of the current value and the update.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        indices (Tensor): The indices parameter.
-        updates (Tensor): The updates parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        indices (Tensor): Input `indices` argument (indices).
+        updates (Tensor): Input `updates` argument (updates).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -162,12 +162,12 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     """Update a tensor at given indices with the minimum of the current value and the update.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        indices (Tensor): The indices parameter.
-        updates (Tensor): The updates parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        indices (Tensor): Input `indices` argument (indices).
+        updates (Tensor): Input `updates` argument (updates).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -192,12 +192,12 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     """Add updates to a tensor at given indices.
 
     Args:
-        tensor (Tensor): The tensor parameter.
-        indices (Tensor): The indices parameter.
-        updates (Tensor): The updates parameter.
+        tensor (Tensor): Input `tensor` argument (tensor).
+        indices (Tensor): Input `indices` argument (indices).
+        updates (Tensor): Input `updates` argument (updates).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         backend = get_active_backend()

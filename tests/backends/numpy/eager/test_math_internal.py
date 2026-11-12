@@ -17,7 +17,11 @@ class MockBackend:
     """Mock backend module for testing math_internal functions."""
 
     def get_printoptions(self) -> dict[str, int]:
-        """Mock get_printoptions."""
+        """Mock get_printoptions.
+
+        Returns:
+            dict[str, int]: Computed output value from `get_printoptions`.
+        """
         return {"precision": 8}
 
     def rawmatmul(self, a: np.ndarray[tuple[int, ...], np.dtype[np.float64]], b: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -26,6 +30,9 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `rawmatmul`.
         """
         return ensure_ndarray((ensure_eager_tensor(a) @ ensure_eager_tensor(b)) + ensure_eager_tensor(1))
 

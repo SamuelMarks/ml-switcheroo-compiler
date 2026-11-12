@@ -1017,8 +1017,8 @@ class ONNXCodeGenerator(BaseGenerator):
         """Internal helper to serialize a subgraph into GraphProto bytes.
 
         Args:
-            graph_name: The graph_name parameter.
-            dynamic_axes: The dynamic_axes parameter.
+            graph_name: Input `graph_name` argument (graph name).
+            dynamic_axes: Input `dynamic_axes` argument (dynamic axes).
 
         Returns:
             bytes: Computed result.
@@ -1062,10 +1062,10 @@ class ONNXCodeGenerator(BaseGenerator):
         """Generate a readable string/text-proto representation of the ONNX Graph.
 
         Args:
-            dynamic_axes (Optional[dict[str, dict[int, str]]]): The dynamic_axes parameter.
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): Input `dynamic_axes` argument (dynamic axes).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         try:
             from onnx import helper
@@ -1090,8 +1090,8 @@ class ONNXCodeGenerator(BaseGenerator):
         """Export the IR Graph as a real, compliant binary .onnx file to disk.
 
         Args:
-            file_path (str): The file_path parameter.
-            dynamic_axes (Optional[dict[str, dict[int, str]]]): The dynamic_axes parameter.
+            file_path (str): Input `file_path` argument (file path).
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): Input `dynamic_axes` argument (dynamic axes).
             opset_version (int): Target ONNX opset version (14 to 20).
         """
         binary_data: bytes = self.serialize_model_to_bytes(dynamic_axes, opset_version=opset_version)

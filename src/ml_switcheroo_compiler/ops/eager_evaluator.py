@@ -5,8 +5,6 @@ from __future__ import annotations
 import abc
 import typing
 
-import pydantic
-
 from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.shape import (
@@ -86,26 +84,31 @@ def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_Execu
     return has_backend_member(val, "execute_op")
 
 
-class EvaluationContext(pydantic.BaseModel):
+class EvaluationContext:
     """Provide context for eager evaluation containing operation details."""
 
-    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
-
-    op_cls: type | EagerPayload | None = None
-    op_type: str = ""
-    args: list[EagerPayload] | tuple[EagerPayload, ...] = ()
-    kwargs: dict[str, EagerPayload] = pydantic.Field(default_factory=dict)
-    backend: type | EagerPayload | None = None
-
-    def __init__(self, *args: EagerPayload, **kwargs: EagerPayload) -> None:
+    def __init__(
+        self,
+        op_cls: type | EagerPayload | None = None,
+        op_type: str = "",
+        args: list[EagerPayload] | tuple[EagerPayload, ...] = (),
+        kwargs: dict[str, EagerPayload] | None = None,
+        backend: type | EagerPayload | None = None,
+    ) -> None:
         """Initialize EvaluationContext from positional or keyword arguments.
 
         Args:
-            *args (EagerPayload): Positional field values.
-            **kwargs (EagerPayload): Keyword field values.
+            op_cls (type | EagerPayload | None): Operation class or instance.
+            op_type (str): Canonical operation type name.
+            args (list[EagerPayload] | tuple[EagerPayload, ...]): Positional tensor or scalar operands.
+            kwargs (dict[str, EagerPayload] | None): Keyword operation attributes.
+            backend (type | EagerPayload | None): Target eager backend class or module.
         """
-        pos_kw: dict[str, EagerPayload] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
-        super().__init__(**{**pos_kw, **kwargs})
+        self.op_cls: type | EagerPayload | None = op_cls
+        self.op_type: str = op_type
+        self.args: list[EagerPayload] | tuple[EagerPayload, ...] = args
+        self.kwargs: dict[str, EagerPayload] = {} if kwargs is None else kwargs
+        self.backend: type | EagerPayload | None = backend
 
 
 class EvaluationStrategy(abc.ABC):
@@ -225,12 +228,12 @@ class EagerEvaluator:
         """Execute the eager evaluate operation on the active backend array.
 
         Args:
-            op_type (str): The op_type parameter.
+            op_type (str): Input `op_type` argument (op type).
             *args (TensorOrScalar): Positional args.
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.ops.registry import get_op

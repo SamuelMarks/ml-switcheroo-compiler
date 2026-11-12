@@ -1,4 +1,4 @@
-"""Module beta.py."""
+"""Compiler `beta` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ def beta(
     """Sample beta random values from a given key.
 
     Args:
-        key (Tensor | str): The key parameter.
-        a (Tensor | float): The a parameter.
-        b (Tensor | float): The b parameter.
-        shape (Sequence[int] | tuple[int, ...] | int | None): The shape parameter.
-        dtype (dtypes.DType | None): The dtype parameter.
+        key (Tensor | str): Input `key` argument (key).
+        a (Tensor | float): Input `a` argument (a).
+        b (Tensor | float): Input `b` argument (b).
+        shape (Sequence[int] | tuple[int, ...] | int | None): Input `shape` argument (shape).
+        dtype (dtypes.DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if shape is None:
         shape = ()

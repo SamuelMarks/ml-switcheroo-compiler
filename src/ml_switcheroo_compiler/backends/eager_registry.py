@@ -7,8 +7,8 @@ import typing
 from collections.abc import Callable, Generator, Sequence
 from types import ModuleType
 
+import pydantic
 from ml_switcheroo_ir import AttributeValue
-from ml_switcheroo_ir.types import _AttributeValuePydanticAnnotation
 
 from ml_switcheroo_compiler.core.shape import (
     ShapeProtocol as ShapeProtocol,
@@ -17,6 +17,8 @@ from ml_switcheroo_compiler.core.shape import (
     SliceProtocol,
     TensorOrScalar,
 )
+
+_AttributeValuePydanticAnnotation = pydantic.PlainValidator(lambda val: val)
 
 _ValT = typing.TypeVar("_ValT")
 
@@ -198,7 +200,7 @@ class _BaseTensorProto(typing.Protocol):
                 **kwargs (EagerOperand): Keyword arguments.
 
             Returns:
-                EagerTensorProtocol: Result.
+                EagerTensorProtocol: Computed `EagerTensorProtocol` output.
             """
             ...
 
@@ -2710,20 +2712,20 @@ class EagerOpRegistry:
         """Register an eager operation.
 
         Args:
-            op_type (str): The op_type parameter.
+            op_type (str): Input `op_type` argument (op type).
 
         Returns:
-            Callable[[_F], _F]: Result.
+            Callable[[_F], _F]: Computed `Callable[[_F], _F]` output.
         """
 
         def decorator(func: _F) -> _F:
             """Execute the eager decorator operation on the active backend array.
 
             Args:
-                func (_F): The func parameter.
+                func (_F): Input `func` argument (func).
 
             Returns:
-                _F: Result.
+                _F: Computed `_F` output.
             """
             cand_fn: _F = func
             assert _is_eager_callable_generic(cand_fn)

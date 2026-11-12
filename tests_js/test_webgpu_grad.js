@@ -28,6 +28,7 @@ from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad, jvp as graph_jvp
+from collections.abc import Mapping
 from ml_switcheroo_compiler.ir.core import LogicalGraph, IRNode
 
 def simple_fn(x):
@@ -39,7 +40,7 @@ with ConfigContext(backend="numpy"):
     # trace forward pass
     block = _trace_function(simple_fn, (x,), "fwd")
     fwd_graph = LogicalGraph(name="fwd")
-    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, Mapping) else block.nodes
     for node in nodes_iter:
         fwd_graph.nodes[node.id] = node
     fwd_graph.inputs = block.inputs

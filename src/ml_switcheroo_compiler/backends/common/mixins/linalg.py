@@ -46,12 +46,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the CholeskyVjp operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
         if not (isinstance(raw_gen, _CholeskyVjpImportedProtocol) and raw_gen._cholesky_vjp_imported):
@@ -65,12 +65,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the LuVjp operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
         if not (isinstance(raw_gen, _LuVjpImportedProtocol) and raw_gen._lu_vjp_imported):
@@ -84,12 +84,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the BandPart operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         num_lower: int = kwargs.get("num_lower", -1)
@@ -100,12 +100,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the BandedTriangularSolve operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         pfx: str = self.generator.get_fallback_prefix()
         lower: bool = kwargs.get("lower", False)
@@ -116,12 +116,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the GatherMm operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         args_str: str = f"{input_vars[0]}, {input_vars[1]}"
         if "lhs_indices" in node.attributes:
@@ -134,12 +134,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the SegmentedMm operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(ensure_int(node.attributes.get('segments', 2)))]})"
 
@@ -147,12 +147,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the BlockMaskedMm operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         a: str = input_vars[0]
         b: str = input_vars[1]
@@ -163,12 +163,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the Quantize operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
         bits: int = int(ensure_int(node.attributes.get("bits", 4)))
@@ -183,12 +183,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the QuantizedMatmul operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
         group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
@@ -207,12 +207,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the GatherQMM operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
         group_size: int = int(ensure_int(node.attributes.get("group_size", 64)))
@@ -232,12 +232,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the QrVjp operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
         if not (isinstance(raw_gen, _QrVjpImportedProtocol) and raw_gen._qr_vjp_imported):
@@ -250,12 +250,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """Emit target backend code or IR transformation for the SvdVjp operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         raw_gen: TensorOrScalar | FallbackPrefixProtocol = self.generator
         if not (isinstance(raw_gen, _SvdVjpImportedProtocol) and raw_gen._svd_vjp_imported):

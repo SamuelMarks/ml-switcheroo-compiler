@@ -14,12 +14,12 @@ def _expm1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager expm1 operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     x = args[0]
     if has_backend_member(backend_module, "expm1"):
@@ -32,12 +32,12 @@ def _float_power(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager float power operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "float_power", get_backend_member(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
@@ -48,12 +48,12 @@ def _frexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager frexp operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     import math
 
@@ -68,12 +68,12 @@ def _ldexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager ldexp operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     import math
 
@@ -88,12 +88,12 @@ def _slogdet(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager slogdet operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "linalg", None)
     if func and has_backend_member(func, "slogdet"):
@@ -110,12 +110,12 @@ def _np_xlog1py(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np xlog1py operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "xlog1py", get_backend_member(backend_module, "xlog1py", None))
     if func is not None:
@@ -129,12 +129,12 @@ def _np_xlogy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np xlogy operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "xlogy", get_backend_member(backend_module, "xlogy", None))
     if func is not None:

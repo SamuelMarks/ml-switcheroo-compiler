@@ -41,6 +41,9 @@ def test_np_tensor_scatter_update() -> None:
             t: Test parameter `t`.
             idx: Test parameter `idx`.
             u: Test parameter `u`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_update`.
         """
         out = ensure_callable(np.copy)(t)
         idx_tuple = tuple(np.moveaxis(np.asarray(idx), -1, 0))

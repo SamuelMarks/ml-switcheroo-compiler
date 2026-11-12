@@ -27,7 +27,7 @@ class Svd(OpDef):
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not args:
             return ()
@@ -55,12 +55,12 @@ def svd(
     """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:
-        input (Tensor): The input parameter.
-        full_matrices (bool): The full_matrices parameter.
-        compute_uv (bool): The compute_uv parameter.
+        input (Tensor): Input `input` argument (input).
+        full_matrices (bool): Input `full_matrices` argument (full matrices).
+        compute_uv (bool): Input `compute_uv` argument (compute uv).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

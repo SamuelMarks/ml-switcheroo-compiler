@@ -14,12 +14,12 @@ def _np_reduce_window(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np reduce window operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(_reduce_window)(*args, **kwargs)
 
@@ -29,12 +29,12 @@ def _np_segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np segment sum operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(_segment_sum)(*args, **kwargs)
 
@@ -44,13 +44,13 @@ def _np_segment_max(backend_module: BackendModuleProtocol, data: EagerValue, seg
     """Execute the eager np segment max operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
-        num_segments (EagerValue): The num_segments parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
+        num_segments (EagerValue): Input `num_segments` argument (num segments).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if num_segments is None:
         num_segments = get_backend_member(np, "max")(segment_ids) + 1
@@ -67,13 +67,13 @@ def _np_segment_min(backend_module: BackendModuleProtocol, data: EagerValue, seg
     """Execute the eager np segment min operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
-        num_segments (EagerValue): The num_segments parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
+        num_segments (EagerValue): Input `num_segments` argument (num segments).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if num_segments is None:
         num_segments = get_backend_member(np, "max")(segment_ids) + 1
@@ -90,13 +90,13 @@ def _np_segment_prod(backend_module: BackendModuleProtocol, data: EagerValue, se
     """Execute the eager np segment prod operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        data (EagerValue): The data parameter.
-        segment_ids (EagerValue): The segment_ids parameter.
-        num_segments (EagerValue): The num_segments parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        data (EagerValue): Input `data` argument (data).
+        segment_ids (EagerValue): Input `segment_ids` argument (segment ids).
+        num_segments (EagerValue): Input `num_segments` argument (num segments).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if num_segments is None:
         num_segments = get_backend_member(np, "max")(segment_ids) + 1
@@ -112,11 +112,11 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
     """Execute the eager adaptive pool 1d indices operation on the active backend array.
 
     Args:
-        input_dim (int): The input_dim parameter.
-        output_dim (int): The output_dim parameter.
+        input_dim (int): Input `input_dim` argument (input dim).
+        output_dim (int): Input `output_dim` argument (output dim).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     indices = []
     for i in range(output_dim):
@@ -133,13 +133,13 @@ def _np_adaptive_avg_pool2d(backend_module: BackendModuleProtocol, operand: Eage
     """Execute the eager np adaptive avg pool2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        output_size (tuple[int, int]): The output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        output_size (tuple[int, int]): Input `output_size` argument (output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -165,13 +165,13 @@ def _np_adaptive_avg_pool3d(backend_module: BackendModuleProtocol, operand: Eage
     """Execute the eager np adaptive avg pool3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        output_size (tuple[int, int, int]): The output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        output_size (tuple[int, int, int]): Input `output_size` argument (output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -199,13 +199,13 @@ def _np_adaptive_max_pool3d(backend_module: BackendModuleProtocol, operand: Eage
     """Execute the eager np adaptive max pool3d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        output_size (tuple[int, int, int]): The output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        output_size (tuple[int, int, int]): Input `output_size` argument (output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -233,13 +233,13 @@ def _np_adaptive_max_pool3d_indices(backend_module: BackendModuleProtocol, opera
     """Execute the eager np adaptive max pool3d indices operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        output_size (tuple[int, int, int]): The output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        output_size (tuple[int, int, int]): Input `output_size` argument (output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     res = _np_adaptive_max_pool3d(backend_module, operand, output_size, **kwargs)
     return (res, np.zeros_like(res, dtype=np.int64))
@@ -250,13 +250,13 @@ def _np_adaptive_max_pool2d(backend_module: BackendModuleProtocol, operand: Eage
     """Execute the eager np adaptive max pool2d operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        output_size (tuple[int, int]): The output_size parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        output_size (tuple[int, int]): Input `output_size` argument (output size).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -282,12 +282,12 @@ def _np_fractional_avg_pool(backend_module: BackendModuleProtocol, value: EagerV
     """Execute the eager np fractional avg pool operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        value (EagerValue): The value parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        value (EagerValue): Input `value` argument (value).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return np.asarray(value)
 
@@ -297,11 +297,11 @@ def _np_fractional_max_pool(backend_module: BackendModuleProtocol, value: EagerV
     """Execute the eager np fractional max pool operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        value (EagerValue): The value parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        value (EagerValue): Input `value` argument (value).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return np.asarray(value)

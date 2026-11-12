@@ -702,10 +702,10 @@ class MLXShapeOpsVisitor:
         """Format the MLX code for the full operation.
 
         Args:
-            kwargs (dict): The kwargs parameter.
+            kwargs (dict): Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         kw = ensure_mod(kwargs)
         raw_sh: EagerValue = kw.get("shape", ())
@@ -719,10 +719,10 @@ class MLXShapeOpsVisitor:
         """Format the MLX code for the transpose operation.
 
         Args:
-            kwargs (dict): The kwargs parameter.
+            kwargs (dict): Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         axes: EagerValue = ensure_mod(kwargs).get("axes", None)
         return f"axes={axes}" if axes is not None else ""
@@ -731,11 +731,11 @@ class MLXShapeOpsVisitor:
         """Format the MLX code for the random_categorical operation.
 
         Args:
-            input_vars (list): The input_vars parameter.
-            kwargs (dict): The kwargs parameter.
+            input_vars (list): Input `input_vars` argument (input vars).
+            kwargs (dict): Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         num_samples: int = ensure_int(ensure_mod(kwargs).get("num_samples", 1))
         return f"mx.random.categorical({input_vars[0]}, num_samples={num_samples})"

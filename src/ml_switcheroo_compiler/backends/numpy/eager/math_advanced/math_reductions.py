@@ -29,7 +29,7 @@ def _np_pmean(
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        ArrayInput: Result.
+        ArrayInput: Computed `ArrayInput` output.
     """
     return x
 

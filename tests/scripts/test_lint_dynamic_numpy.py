@@ -31,7 +31,7 @@ def test_dynamic_numpy_import_detection() -> None:
 
         bad_file3 = tmp_path / "bad3.py"
         bad_file3.write_text(
-            'mod = import_module("numpy")\nx = _np_mod()',
+            'mod = import_module("numpy")\nx = _np_mod()\nb1 = BackendRegistry.get("numpy")\nb2 = get_backend("numpy")',
             encoding="utf-8",
         )
 
@@ -57,7 +57,7 @@ def test_dynamic_numpy_import_detection() -> None:
         )
 
         violations = check_for_prohibited_numpy_imports(tmpdir)
-        assert len(violations) == 4
+        assert len(violations) == 6
         assert any("bad.py:2" in v for v in violations)
         assert any("bad2.py:1" in v for v in violations)
         assert any("bad3.py:1" in v for v in violations)

@@ -128,21 +128,40 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
             _arr: EagerTensorProtocol
 
             def __init__(self, arr: EagerValue) -> None:
-                """Initialize fake Dask array."""
+                """Initialize fake Dask array.
+
+                Args:
+                    arr (EagerValue): Input `arr` value (arr) for `__init__`.
+                """
                 raw: EagerValue = arr._arr if isinstance(arr, _FakeDaskArray) else arr
                 self._arr = ensure_eager_tensor(np.asarray(raw))
                 self.shape = self._arr.shape
 
             def compute(self) -> EagerValue:
-                """Compute underlying NumPy array."""
+                """Compute underlying NumPy array.
+
+                Returns:
+                    EagerValue: Computed output value from `compute`.
+                """
                 return self._arr
 
             def __getitem__(self, idx: int) -> _FakeDaskArray:
-                """Index fake Dask array."""
+                """Index fake Dask array.
+
+                Args:
+                    idx (int): Input `idx` value (idx) for `__getitem__`.
+
+                Returns:
+                    _FakeDaskArray: Computed output value from `__getitem__`.
+                """
                 return _FakeDaskArray(self._arr[idx])
 
             def item(self) -> float:
-                """Extract scalar float."""
+                """Extract scalar float.
+
+                Returns:
+                    float: Computed output value from `item`.
+                """
                 return ensure_float(self._arr.item())
 
         mock_da.zeros.side_effect = lambda s, dtype=None, **kw: _FakeDaskArray(np.zeros(s, dtype=dtype))

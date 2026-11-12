@@ -33,6 +33,9 @@ def test_math_polynomial_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `polyval`.
             """
             return "polyval_val"
 
@@ -57,6 +60,9 @@ def test_math_polynomial_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `polyint`.
             """
             return "polyint_val"
 

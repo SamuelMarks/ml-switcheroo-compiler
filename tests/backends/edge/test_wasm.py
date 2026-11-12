@@ -147,7 +147,11 @@ def test_wasm_coverage_methods() -> None:
 
 @pytest.fixture(autouse=True)
 def global_wasm_mock() -> Iterator[EagerValue]:
-    """Test function global_wasm_mock."""
+    """Test function global_wasm_mock.
+
+    Yields:
+        EagerValue: Yielded test context or value from `global_wasm_mock`.
+    """
     import copy
 
     from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
@@ -179,6 +183,9 @@ def global_wasm_mock() -> Iterator[EagerValue]:
 
             Args:
                 template_name: Test parameter `template_name`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_template_resolver`.
             """
             if template_name in ("Conv3D", "conv3d"):
                 from pathlib import Path
@@ -904,6 +911,9 @@ def test_webgpu_missing_shader() -> None:
                 shape: Test parameter `shape`.
                 nelem: Test parameter `nelem`.
                 clean_id: Test parameter `clean_id`.
+
+            Returns:
+                tuple[list[str], str, str, str]: Computed output value from `_get_wgsl_for_op`.
             """
             raise ValueError("Forced error")
 

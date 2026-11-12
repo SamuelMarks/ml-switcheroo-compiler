@@ -18,12 +18,12 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
     """Execute inject cast node for compiler processing.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        input_id (str): The input_id parameter.
-        target_dt (str): The target_dt parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        input_id (str): Input `input_id` argument (input id).
+        target_dt (str): Input `target_dt` argument (target dt).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     new_id = f"cast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
@@ -41,11 +41,11 @@ def _needs_cast(dt1: str | None, dt2: str | None) -> str | None:
     """Execute needs cast for compiler processing.
 
     Args:
-        dt1 (Optional[str]): The dt1 parameter.
-        dt2 (Optional[str]): The dt2 parameter.
+        dt1 (Optional[str]): Input `dt1` argument (dt1).
+        dt2 (Optional[str]): Input `dt2` argument (dt2).
 
     Returns:
-            Optional[str]: Result.
+            Optional[str]: Computed `Optional[str]` output.
     """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None

@@ -66,7 +66,11 @@ class MockGraphModule:
         self.modules = modules or {}
 
     def named_modules(self) -> EagerValue:
-        """Named modules."""
+        """Named modules.
+
+        Returns:
+            EagerValue: Computed output value from `named_modules`.
+        """
         return ensure_eager_tensor(ensure_eager_tensor(self.modules).items())
 
 
@@ -381,7 +385,11 @@ def test_fx_call_function_fallback() -> None:
             self.__name__ = name
 
         def __str__(self) -> str:
-            """Str."""
+            """Str.
+
+            Returns:
+                str: Computed output value from `__str__`.
+            """
             return ensure_str(self.__name__)
 
     arg_node = MockNode("placeholder", "x", "x")

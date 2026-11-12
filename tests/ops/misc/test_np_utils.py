@@ -44,7 +44,11 @@ def test_to_categorical_item(mocker: EagerTensorProtocol) -> None:
         """Test class M."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 2
 
     ensure_callable(mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=ensure_callable(M)())

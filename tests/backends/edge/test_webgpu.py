@@ -546,6 +546,9 @@ def test_webgpu_webrtc_empty_coverage() -> None:
 
         Args:
             stream: Test parameter `stream`.
+
+        Returns:
+            EagerValue: Computed output value from `_conditional_safe_load`.
         """
         name = ensure_eager_tensor(stream).name
         if "memory_schemas" in str(name):
@@ -725,6 +728,9 @@ def test_webgpu_additional_coverage() -> None:
 
             Args:
                 env: Test parameter `env`.
+
+            Returns:
+                EagerValue: Computed output value from `eval`.
             """
             if self.should_fail:
                 raise ValueError("eval failure")

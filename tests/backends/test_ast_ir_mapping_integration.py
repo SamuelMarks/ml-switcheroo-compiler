@@ -77,6 +77,9 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `direct_func`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -201,6 +204,9 @@ def _test_mapping_loader_resolution_and_dispatch_part_4(_state: dict[str, EagerT
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `run_method`.
             """
             return f"method_result_{a}_{b}"
 
@@ -484,17 +490,20 @@ def _test_ast_to_ir_lowering_and_scoping_part_4(_state: dict[str, EagerTensorPro
     # 9. Target attribute where target is not self (covers line 83)
     src_obj_attr = "obj.attr = 10\n"
     g_oa = parse_ast_to_ir(src_obj_attr)
-    assert len(g_oa.nodes) >= 0
+    assert len(g_oa.nodes) == 1
+    assert len(g_oa.outputs) == 1
 
     # 10. Unpack assignment with unmapped RHS (covers branch 99->112)
     src_unpack_unmapped = "a, b = unmapped_call()\n"
     g_uu = parse_ast_to_ir(src_unpack_unmapped)
-    assert len(g_uu.nodes) >= 0
+    assert len(g_uu.nodes) == 0
+    assert g_uu.outputs == []
 
     # 11. Regular assignment with unmapped RHS (covers branch 124->131)
     src_assign_unmapped = "a = unmapped_call()\n"
     g_au = parse_ast_to_ir(src_assign_unmapped)
-    assert len(g_au.nodes) >= 0
+    assert len(g_au.nodes) == 0
+    assert g_au.outputs == []
 
     # 12. Assignment to attribute target with valid node (covers branch 135->134)
     src_assign_attr = "obj.attr = torch.relu(x)\n"

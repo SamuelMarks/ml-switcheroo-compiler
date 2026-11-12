@@ -1,4 +1,4 @@
-"""Module normal.py."""
+"""Compiler `normal` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -17,12 +17,12 @@ def normal(
     """Sample standard normal random values from a given key.
 
     Args:
-        key (Tensor | str): The key parameter.
-        shape (Sequence[int] | tuple[int, ...]): The shape parameter.
-        dtype (dtypes.DType | None): The dtype parameter.
+        key (Tensor | str): Input `key` argument (key).
+        shape (Sequence[int] | tuple[int, ...]): Input `shape` argument (shape).
+        dtype (dtypes.DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomNormal", [key], shape, dtype)

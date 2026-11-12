@@ -125,6 +125,6 @@ class CommonASTVisitor:
         """Return the backend prefix (e.g., 'jax', 'pt', 'mx').
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         return ""

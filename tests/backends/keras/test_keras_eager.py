@@ -46,6 +46,9 @@ def test_get_keras_module_branches() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `failing_import`.
         """
         if name == "keras":
             raise ImportError("no keras")
@@ -105,6 +108,9 @@ def test_try_dispatch_mapped_op_branches() -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_func`.
         """
         ensure_callable(called_args.extend)(args)
         called_kwargs.update(kwargs)
@@ -131,6 +137,9 @@ def test_try_dispatch_mapped_op_branches() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `my_method`.
             """
             return "method_called"
 
@@ -172,6 +181,9 @@ def test_keras_eager_execute_op() -> None:
             keras_module: Test parameter `keras_module`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `_dummy_keras`.
         """
         return "keras_global"
 

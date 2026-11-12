@@ -27,12 +27,12 @@ def _nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager nan to num operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     x = args[0]
     kwargs.pop("copy", None)
@@ -83,7 +83,7 @@ def _axis_index(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager axis index operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args (axis identifier).
         **kwargs: Keyword args (axis_name).
 
@@ -99,12 +99,12 @@ def _divide_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager divide no nan operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "math", backend_module)
@@ -121,12 +121,12 @@ def _finfo(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager finfo operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.finfo(*args, **kwargs)
 
@@ -136,12 +136,12 @@ def _hardswish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager hardswish operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     x = ensure_eager_tensor(args[0])
@@ -153,12 +153,12 @@ def _heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager heaviside operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "heaviside", None)
@@ -173,12 +173,12 @@ def _histogram(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager histogram operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.histogram(*args, **kwargs)
 
@@ -188,12 +188,12 @@ def _histogram2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager histogram2d operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.histogram2d(*args, **kwargs)
 
@@ -203,12 +203,12 @@ def _histogrambinedges(backend_module: BackendModuleProtocol, *args: EagerValue,
     """Execute the eager histogrambinedges operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.histogram_bin_edges(*args, **kwargs)
 
@@ -218,12 +218,12 @@ def _histogramdd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Execute the eager histogramdd operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.histogramdd(*args, **kwargs)
 
@@ -233,12 +233,12 @@ def _iinfo(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager iinfo operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.iinfo(*args, **kwargs)
 
@@ -248,7 +248,7 @@ def _infeed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager infeed operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args (queue_name).
         **kwargs: Keyword args (queue_name).
 
@@ -271,12 +271,12 @@ def _isclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager isclose operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.isclose(*args, **kwargs)
 
@@ -286,12 +286,12 @@ def _iscomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager iscomplex operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "iscomplex", None)
     if func:
@@ -304,12 +304,12 @@ def _iscomplexobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager iscomplexobj operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "iscomplexobj", None)
     if func:
@@ -323,12 +323,12 @@ def _isnan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """Execute the eager isnan operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.isnan(*args, **kwargs)
 
@@ -338,12 +338,12 @@ def _isneginf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager isneginf operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "isneginf", None)
@@ -358,12 +358,12 @@ def _isreal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager isreal operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "isreal", None)
     if func:
@@ -376,12 +376,12 @@ def _isrealobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager isrealobj operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "isrealobj", None)
     if func:
@@ -395,12 +395,12 @@ def _isscalar(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager isscalar operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "isscalar", None)
     if func:
@@ -414,12 +414,12 @@ def _issubdtype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager issubdtype operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return _resolve_eager_mod(backend_module).issubdtype(*args, **kwargs)
 
@@ -429,12 +429,12 @@ def _kaiser(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Execute the eager kaiser operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.array(_resolve_eager_mod(backend_module).kaiser(*args, **kwargs))
 
@@ -444,12 +444,12 @@ def _mish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """Execute the eager mish operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     x = ensure_eager_tensor(args[0])
@@ -461,12 +461,12 @@ def _multiply_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager multiply no nan operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "math", backend_module)
@@ -482,12 +482,12 @@ def _np_heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np heaviside operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     mod = backend_module
     func = get_backend_member(backend_module, "heaviside", None)
@@ -502,12 +502,12 @@ def _np_takealongaxis(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np takealongaxis operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.take_along_axis(*args, **kwargs)
 
@@ -517,11 +517,11 @@ def _piecewise(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """Execute the eager piecewise operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     return backend_module.piecewise(*args, **kwargs)

@@ -41,6 +41,9 @@ def test_aot_compile_function_integration() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_func`.
         """
         return x
 

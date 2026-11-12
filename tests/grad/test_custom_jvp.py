@@ -39,6 +39,9 @@ def test_custom_jvp_decorator_and_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `square_scaled`.
         """
         return ops.multiply(x, x)
 
@@ -49,6 +52,9 @@ def test_custom_jvp_decorator_and_eager() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `square_scaled_jvp`.
         """
         (x,) = ensure_eager_tensor(primals)
         (t,) = ensure_eager_tensor(tangents)
@@ -78,6 +84,9 @@ def test_custom_jvp_graph_integration() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cube_custom`.
         """
         return ops.multiply(x, ops.multiply(x, x))
 
@@ -88,6 +97,9 @@ def test_custom_jvp_graph_integration() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `cube_custom_jvp`.
         """
         (x,) = ensure_eager_tensor(primals)
         (t,) = ensure_eager_tensor(tangents)
@@ -99,6 +111,9 @@ def test_custom_jvp_graph_integration() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `outer`.
         """
         return ops.add(cube_custom(x), 5.0)
 
@@ -121,6 +136,9 @@ def test_custom_jvp_reverse_mode_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f_custom`.
         """
         return ops.multiply(x, x)
 
@@ -131,6 +149,9 @@ def test_custom_jvp_reverse_mode_grad() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `f_custom_jvp`.
         """
         (x,) = ensure_eager_tensor(primals)
         (t,) = ensure_eager_tensor(tangents)
@@ -141,6 +162,9 @@ def test_custom_jvp_reverse_mode_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `outer`.
         """
         return f_custom(x)
 
@@ -159,6 +183,9 @@ def test_custom_jvp_has_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_with_aux`.
         """
         return ops.multiply(x, 2.0), "aux_data"
 
@@ -169,6 +196,9 @@ def test_custom_jvp_has_aux() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_with_aux_jvp`.
         """
         (x,) = ensure_eager_tensor(primals)
         (t,) = ensure_eager_tensor(tangents)
@@ -193,6 +223,9 @@ def test_custom_jvp_without_rule_fallback() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `standard_fn`.
         """
         return ops.multiply(x, 4.0)
 
@@ -214,6 +247,9 @@ def test_custom_jvp_equality_and_properties() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy`.
         """
         return ensure_eager_tensor(a) + ensure_eager_tensor(b)
 
@@ -226,6 +262,9 @@ def test_custom_jvp_equality_and_properties() -> None:
         Args:
             a: Test parameter `a`.
             b: Test parameter `b`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy2`.
         """
         return ensure_eager_tensor(a) - ensure_eager_tensor(b)
 
@@ -310,6 +349,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_1(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fn`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -320,6 +362,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_1(_state: dict[str, E
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `my_jvp`.
         """
         p = ensure_eager_tensor(primals)[0]
         t = ensure_eager_tensor(tangents)[0]
@@ -365,6 +410,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `unpack_fn`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(1)
 
@@ -374,6 +422,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
         Args:
             p: Test parameter `p`.
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `unpack_jvp`.
         """
         return t
 
@@ -389,6 +440,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `unpack4_fn`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(y)
 
@@ -417,6 +471,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, E
             p2: Test parameter `p2`.
             t1: Test parameter `t1`.
             t2: Test parameter `t2`.
+
+        Returns:
+            EagerValue: Computed output value from `unpack4_jvp`.
         """
         return (ensure_eager_tensor(p1) + ensure_eager_tensor(p2), ensure_eager_tensor(t1) + ensure_eager_tensor(t2))
 
@@ -431,6 +488,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `simple_f`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3.0)
 
@@ -483,6 +543,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_jvp_sub`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -495,6 +558,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_jvp_rule_graph`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -526,6 +592,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, E
             Args:
                 primals: Test parameter `primals`.
                 tangents: Test parameter `tangents`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return ensure_eager_tensor(primals)[0], ensure_eager_tensor(tangents)[0]
 
@@ -535,6 +604,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_jvp_hasattr_graph`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 
@@ -580,6 +652,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_vjp`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3)
 
@@ -592,6 +667,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_vjp_graph`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3)
 
@@ -622,6 +700,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state: dict[str, E
 
             Args:
                 args: Test parameter `args`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return args
 
@@ -631,6 +712,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state: dict[str, E
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn_vjp_hasattr`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(3)
 
@@ -673,6 +757,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `fn_vjp_nosub`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(4)
 
@@ -688,6 +775,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `fn_vjp_nofwd`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(5)
 

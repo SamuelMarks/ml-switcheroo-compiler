@@ -99,11 +99,19 @@ def test_tf_control_flow_and_vision_parity() -> None:
         pred = True
 
         def true_fn() -> EagerValue:
-            """Return true branch constant."""
+            """Return true branch constant.
+
+            Returns:
+                EagerValue: Computed output value from `true_fn`.
+            """
             return 1
 
         def false_fn() -> EagerValue:
-            """Return false branch constant."""
+            """Return false branch constant.
+
+            Returns:
+                EagerValue: Computed output value from `false_fn`.
+            """
             return 0
 
         assert ensure_callable(execute_op)(None, "Cond", pred, true_fn, false_fn) == "tf_cond"
@@ -114,6 +122,9 @@ def test_tf_control_flow_and_vision_parity() -> None:
 
             Args:
                 i: Test parameter `i`.
+
+            Returns:
+                EagerValue: Computed output value from `cond_fn`.
             """
             return ensure_eager_tensor(i) < ensure_eager_tensor(10)
 
@@ -122,6 +133,9 @@ def test_tf_control_flow_and_vision_parity() -> None:
 
             Args:
                 i: Test parameter `i`.
+
+            Returns:
+                EagerValue: Computed output value from `body_fn`.
             """
             return ensure_eager_tensor(i) + ensure_eager_tensor(1)
 

@@ -131,6 +131,59 @@ class PurePythonTensor:
         transformed: NestedList = _apply(self.data)
         return PurePythonTensor(transformed, shape=self.shape, dtype=self.dtype)
 
+    def _combine_nested(
+        self,
+        a: NestedList,
+        b: NestedList,
+        fn: Callable[[float, float], float],
+    ) -> NestedList:
+        """Recursively combine two identically-shaped nested structures elementwise.
+
+        Args:
+            a (NestedList): Left nested operand.
+            b (NestedList): Right nested operand.
+            fn (Callable[[float, float], float]): Scalar binary operator.
+
+        Returns:
+            NestedList: Elementwise combined nested result.
+
+        Raises:
+            ShapeMismatchError: If `a` and `b` differ in nesting rank or sequence length.
+        """
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            return fn(float(a), float(b))
+        if isinstance(a, Sequence) and isinstance(b, Sequence) and len(a) == len(b):
+            return [self._combine_nested(ai, bi, fn) for ai, bi in zip(a, b)]
+        from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+
+        raise ShapeMismatchError(f"Incompatible nested tensor structures for shapes {self.shape}.")
+
+    def _binary_op(
+        self,
+        other: PurePythonTensor | Numeric,
+        fn: Callable[[float, float], float],
+    ) -> PurePythonTensor:
+        """Apply a binary scalar or tensor operation elementwise.
+
+        Args:
+            other (PurePythonTensor | Numeric): Right-hand tensor or scalar operand.
+            fn (Callable[[float, float], float]): Scalar binary operator.
+
+        Returns:
+            PurePythonTensor: Elementwise binary result tensor.
+
+        Raises:
+            ShapeMismatchError: If tensor shapes are incompatible.
+        """
+        if isinstance(other, (int, float)):
+            rhs = float(other)
+            return self.apply_elementwise(lambda x: fn(x, rhs))
+        if self.shape != other.shape:
+            from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+
+            raise ShapeMismatchError(f"Shapes {self.shape} and {other.shape} are incompatible.")
+        return PurePythonTensor(self._combine_nested(self.data, other.data, fn), shape=self.shape, dtype=self.dtype)
+
     def __add__(self, other: PurePythonTensor | Numeric) -> PurePythonTensor:
         """Perform elementwise tensor addition.
 
@@ -140,26 +193,7 @@ class PurePythonTensor:
         Returns:
             PurePythonTensor: Result of addition.
         """
-        if isinstance(other, (int, float)):
-            return self.apply_elementwise(lambda x: x + float(other))
-
-        def _add(a: NestedList, b: NestedList) -> NestedList:
-            """Recursively add two nested lists elementwise.
-
-            Args:
-                a (NestedList): Left nested operand.
-                b (NestedList): Right nested operand.
-
-            Returns:
-                NestedList: Summed nested elements.
-            """
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-                return float(a) + float(b)
-            if isinstance(a, Sequence) and isinstance(b, Sequence):
-                return [_add(ai, bi) for ai, bi in zip(a, b)]
-            return 0.0  # pragma: no cover
-
-        return PurePythonTensor(_add(self.data, other.data), shape=self.shape, dtype=self.dtype)
+        return self._binary_op(other, lambda x, y: x + y)
 
     def __sub__(self, other: PurePythonTensor | Numeric) -> PurePythonTensor:
         """Perform elementwise tensor subtraction.
@@ -170,26 +204,7 @@ class PurePythonTensor:
         Returns:
             PurePythonTensor: Result of subtraction.
         """
-        if isinstance(other, (int, float)):
-            return self.apply_elementwise(lambda x: x - float(other))
-
-        def _sub(a: NestedList, b: NestedList) -> NestedList:
-            """Recursively subtract two nested lists elementwise.
-
-            Args:
-                a (NestedList): Left nested operand.
-                b (NestedList): Right nested operand.
-
-            Returns:
-                NestedList: Subtracted nested elements.
-            """
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-                return float(a) - float(b)
-            if isinstance(a, Sequence) and isinstance(b, Sequence):
-                return [_sub(ai, bi) for ai, bi in zip(a, b)]
-            return 0.0  # pragma: no cover
-
-        return PurePythonTensor(_sub(self.data, other.data), shape=self.shape, dtype=self.dtype)
+        return self._binary_op(other, lambda x, y: x - y)
 
     def __mul__(self, other: PurePythonTensor | Numeric) -> PurePythonTensor:
         """Perform elementwise tensor multiplication.
@@ -200,26 +215,7 @@ class PurePythonTensor:
         Returns:
             PurePythonTensor: Result of multiplication.
         """
-        if isinstance(other, (int, float)):
-            return self.apply_elementwise(lambda x: x * float(other))
-
-        def _mul(a: NestedList, b: NestedList) -> NestedList:
-            """Recursively multiply two nested lists elementwise.
-
-            Args:
-                a (NestedList): Left nested operand.
-                b (NestedList): Right nested operand.
-
-            Returns:
-                NestedList: Multiplied nested elements.
-            """
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-                return float(a) * float(b)
-            if isinstance(a, Sequence) and isinstance(b, Sequence):
-                return [_mul(ai, bi) for ai, bi in zip(a, b)]
-            return 0.0  # pragma: no cover
-
-        return PurePythonTensor(_mul(self.data, other.data), shape=self.shape, dtype=self.dtype)
+        return self._binary_op(other, lambda x, y: x * y)
 
     def __truediv__(self, other: PurePythonTensor | Numeric) -> PurePythonTensor:
         """Perform elementwise tensor true division.
@@ -230,27 +226,7 @@ class PurePythonTensor:
         Returns:
             PurePythonTensor: Result of division.
         """
-        if isinstance(other, (int, float)):
-            divisor: float = float(other)
-            return self.apply_elementwise(lambda x: x / divisor)
-
-        def _div(a: NestedList, b: NestedList) -> NestedList:
-            """Recursively divide two nested lists elementwise.
-
-            Args:
-                a (NestedList): Left nested operand.
-                b (NestedList): Right nested operand.
-
-            Returns:
-                NestedList: Divided nested elements.
-            """
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-                return float(a) / float(b)
-            if isinstance(a, Sequence) and isinstance(b, Sequence):
-                return [_div(ai, bi) for ai, bi in zip(a, b)]
-            return 0.0  # pragma: no cover
-
-        return PurePythonTensor(_div(self.data, other.data), shape=self.shape, dtype=self.dtype)
+        return self._binary_op(other, lambda x, y: x / y)
 
     def __neg__(self) -> PurePythonTensor:
         """Perform elementwise negation.

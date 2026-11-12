@@ -58,6 +58,7 @@ def test_misc_infer_shapes_all() -> None:
         shape = (2, 3)
         dtype = "float32"
 
+    checked = 0
     for cls in [
         Finfo,
         Iinfo,
@@ -99,9 +100,11 @@ def test_misc_infer_shapes_all() -> None:
     ]:
         op = cls()
         op.infer_shape()
-        op.infer_shape(DummyShape())
+        s1 = op.infer_shape(DummyShape())
         op.infer_shape(DummyShape(), DummyShape())
-    assert callable(test_misc_infer_shapes_all)
+        assert isinstance(s1, tuple)
+        checked += 1
+    assert checked == 38
 
 
 def test_misc_ops_edge_cases() -> None:

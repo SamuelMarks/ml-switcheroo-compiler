@@ -15,12 +15,12 @@ def _np_mel_filterbank(backend_module: BackendModuleProtocol, _: EagerValue, **k
     """Execute the eager np mel filterbank operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        _ (EagerValue): The _ parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        _ (EagerValue): Input `_` argument ( ).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(mel_filterbank_eager)(backend_module, None, kwargs.get("config", kwargs))
 
@@ -30,12 +30,12 @@ def _np_mfcc(backend_module: BackendModuleProtocol, spectrogram: EagerValue, **k
     """Execute the eager np mfcc operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        spectrogram (EagerValue): The spectrogram parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        spectrogram (EagerValue): Input `spectrogram` argument (spectrogram).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return ensure_callable(mfcc_eager)(backend_module, spectrogram, kwargs.get("config", kwargs))
 
@@ -45,13 +45,13 @@ def _np_power_iteration(backend_module: BackendModuleProtocol, w: EagerValue, *a
     """Execute the eager np power iteration operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        w (EagerValue): The w parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        w (EagerValue): Input `w` argument (w).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     num_iters = kwargs.get("num_iters", 1)
     u_raw = kwargs.get("u", None)

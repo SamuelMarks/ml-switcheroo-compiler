@@ -27,10 +27,10 @@ class _DotGraphVisitor:
         """Visit a node.
 
         Args:
-        node_id (str | None): The node_id parameter.
+        node_id (str | None): Input `node_id` argument (node id).
 
         Returns:
-        NoneType: Result.
+        NoneType: Computed `NoneType` output.
         """
         if not node_id or node_id not in self.graph.nodes or node_id in self.visited:
             return
@@ -55,12 +55,12 @@ def export_to_dot(file: str | typing.IO[str], *arrays: Tensor, **kwargs: TensorO
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
-        file (str | typing.IO[str]): The file parameter.
+        file (str | typing.IO[str]): Input `file` argument (file).
         *arrays (Tensor): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If invalid inputs or unsupported runtime conditions trigger `RuntimeError`.
     """
     graph = global_tracing_state.active_graph
     if graph is None:

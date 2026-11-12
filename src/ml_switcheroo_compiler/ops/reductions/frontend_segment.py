@@ -18,13 +18,13 @@ def _emit_segment_op(
     """Compute the emit segment op tensor operation.
 
     Args:
-        op_type (str): The op_type parameter.
-        data (Tensor): The data parameter.
-        segment_ids (Tensor): The segment_ids parameter.
-        num_segments (int | None): The num_segments parameter.
+        op_type (str): Input `op_type` argument (op type).
+        data (Tensor): Input `data` argument (data).
+        segment_ids (Tensor): Input `segment_ids` argument (segment ids).
+        num_segments (int | None): Input `num_segments` argument (num segments).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     inputs = [data, segment_ids]
     attributes = {}

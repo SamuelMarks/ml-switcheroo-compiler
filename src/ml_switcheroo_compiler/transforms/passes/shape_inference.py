@@ -125,11 +125,11 @@ def _infer_constant_shape(
     """Execute infer constant shape for compiler processing.
 
     Args:
-        node (IRNode): The node parameter.
-        shapes (dict): The shapes parameter.
+        node (IRNode): Input `node` argument (node).
+        shapes (dict): Input `shapes` argument (shapes).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     del shapes
     val = node.attributes.get("value")
@@ -146,11 +146,11 @@ def _infer_output_shape(
     """Execute infer output shape for compiler processing.
 
     Args:
-        node (IRNode): The node parameter.
-        shapes (dict): The shapes parameter.
+        node (IRNode): Input `node` argument (node).
+        shapes (dict): Input `shapes` argument (shapes).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if node.inputs:
         return shapes.get(node.inputs[0])
@@ -161,10 +161,10 @@ def _prepare_op_kwargs(node: IRNode) -> dict[str, AttributeValue]:
     """Execute prepare op kwargs for compiler processing.
 
     Args:
-        node (IRNode): The node parameter.
+        node (IRNode): Input `node` argument (node).
 
     Returns:
-        dict: Result.
+        dict: Computed `dict` output.
     """
     kwargs: dict[str, AttributeValue] = {**node.attributes}
     if node.shape_metadata:
@@ -182,11 +182,11 @@ def _infer_op_shape(
     """Execute infer op shape for compiler processing.
 
     Args:
-        node (IRNode): The node parameter.
-        shapes (dict): The shapes parameter.
+        node (IRNode): Input `node` argument (node).
+        shapes (dict): Input `shapes` argument (shapes).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     op_cls = get_op(node.op_type)
     op = op_cls()
@@ -259,14 +259,14 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     """Execute determine node shape for compiler processing.
 
     Args:
-        node (IRNode): The node parameter.
-        shapes (dict): The shapes parameter.
+        node (IRNode): Input `node` argument (node).
+        shapes (dict): Input `shapes` argument (shapes).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        CompilationError: An exception.
+        CompilationError: If invalid inputs or unsupported runtime conditions trigger `CompilationError`.
     """
     if node.op_type in _SPECIAL_OP_HANDLERS:
         return _SPECIAL_OP_HANDLERS[node.op_type](node, shapes)
@@ -353,10 +353,10 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     """In-place shape inference.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)

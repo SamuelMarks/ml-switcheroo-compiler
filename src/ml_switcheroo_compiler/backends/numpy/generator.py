@@ -251,7 +251,7 @@ class NumpyGenerator(
         """Execute get helper functions for compiler processing.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 

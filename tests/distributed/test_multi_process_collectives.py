@@ -183,6 +183,9 @@ def test_backend_collective_dispatchers() -> None:
             op: Test parameter `op`.
             tensor: Test parameter `tensor`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `custom_dispatcher`.
         """
         called.append(op)
         return ensure_ndarray(ensure_eager_tensor(tensor) * ensure_eager_tensor(2))

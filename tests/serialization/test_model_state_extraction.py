@@ -86,11 +86,24 @@ def test_init_classes_serialization() -> None:
 
             Args:
                 path: Test parameter `path`.
+
+            Returns:
+                SavedModel: Computed output value from `load`.
             """
             del path
             return cls()
 
-    assert callable(test_init_classes_serialization)
+    res = DummyRes()
+    res.initialize()
+    res.write_to_directory("/tmp")
+    st = DummyState()
+    st.serialize()
+    st.deserialize("s")
+    DummyMaxPolicy(1024).apply({})
+    DummyShardTask().apply({})
+    loaded = DummySavedModel.load("/tmp")
+    loaded.save("/tmp")
+    assert isinstance(loaded, DummySavedModel)
 
 
 def test_init_other_methods() -> None:
@@ -132,7 +145,11 @@ def test_extract_model_state_layers() -> None:
             self.name = n
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return 1
 
     class FakeModel:
@@ -180,7 +197,11 @@ def test_extract_model_state_submodules() -> None:
         """Test class FakeModelNT."""
 
         def get_config(self) -> EagerValue:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                EagerValue: Computed output value from `get_config`.
+            """
             return {"c": 1}
 
     st = ensure_callable(_extract_model_state)(ensure_callable(FakeModelNT)(), {})
@@ -233,7 +254,11 @@ def test_extract_model_state_parameters() -> None:
             self.name = n
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Test function numpy.
+
+            Returns:
+                EagerValue: Computed output value from `numpy`.
+            """
             return 1
 
     class FakeModelEMA:
@@ -302,7 +327,11 @@ def test_serialize_keras_object() -> None:
         """Test class MyC."""
 
         def get_config(self) -> EagerValue:
-            """Test function get_config."""
+            """Test function get_config.
+
+            Returns:
+                EagerValue: Computed output value from `get_config`.
+            """
             return {"a": 1}
 
     assert serialize_object() == {}
@@ -372,7 +401,11 @@ def test_export_methods() -> None:
         """Test class FakeGraph."""
 
         def to_json(self) -> EagerValue:
-            """Test function to_json."""
+            """Test function to_json.
+
+            Returns:
+                EagerValue: Computed output value from `to_json`.
+            """
             return "{}"
 
     g = FakeGraph()
@@ -423,12 +456,12 @@ def test_init_exports_mocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with (
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save"),
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load"),
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save"),
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load"),
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load"),
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load"),
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save") as m_h5_save,
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load") as m_h5_load,
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save") as m_st_save,
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load") as m_st_load,
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load") as m_pk_load,
+        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load") as m_npz_load,
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -436,7 +469,9 @@ def test_init_exports_mocked() -> None:
         _load_safetensors_weights("test.st")
         _load_npz_weights("test.npz")
         _load_pickle_weights("test.pk")
-    assert callable(test_init_exports_mocked)
+        assert ensure_eager_tensor(m_h5_save).called and ensure_eager_tensor(m_h5_load).called
+        assert ensure_eager_tensor(m_st_save).called and ensure_eager_tensor(m_st_load).called
+        assert ensure_eager_tensor(m_pk_load).called and ensure_eager_tensor(m_npz_load).called
 
 
 def test_init_exports_unmocked() -> None:
@@ -465,19 +500,24 @@ def test_init_module_exports() -> None:
     import ml_switcheroo_compiler.serialization as s
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save"):
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save") as m1:
         _save_as_h5({}, "test.h5")
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save"):
+        assert ensure_eager_tensor(m1).called
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save") as m2:
         _save_as_safetensors({}, "test.st")
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load"):
+        assert ensure_eager_tensor(m2).called
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load") as m3:
         _load_h5_weights("test.h5")
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load"):
+        assert ensure_eager_tensor(m3).called
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load") as m4:
         _load_safetensors_weights("test.st")
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load"):
+        assert ensure_eager_tensor(m4).called
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load") as m5:
         _load_npz_weights("test.npz")
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load"):
+        assert ensure_eager_tensor(m5).called
+    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load") as m6:
         _load_pickle_weights("test.pk")
-    assert callable(test_init_module_exports)
+        assert ensure_eager_tensor(m6).called
 
 
 def test_init_module_all_exports() -> None:

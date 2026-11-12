@@ -33,7 +33,7 @@ class Qr(OpDef):
         **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not args:
             return ()
@@ -60,7 +60,7 @@ class Hessenberg(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape, args[0].shape
 
@@ -96,7 +96,7 @@ class Schur(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape, args[0].shape
 
@@ -113,7 +113,7 @@ class Tridiagonal(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         a_shape = args[0].shape
         diag_shape = a_shape[:-1]
@@ -125,11 +125,11 @@ def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
     """Compute the QR decomposition of a matrix.
 
     Args:
-        input (Tensor): The input parameter.
-        mode (str): The mode parameter.
+        input (Tensor): Input `input` argument (input).
+        mode (str): Input `mode` argument (mode).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -160,10 +160,10 @@ def hessenberg(a: Tensor) -> TensorOrScalar:
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -181,11 +181,11 @@ def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
     """Compute the product of Householder reflectors.
 
     Args:
-        a (Tensor): The a parameter.
-        tau (Tensor): The tau parameter.
+        a (Tensor): Input `a` argument (a).
+        tau (Tensor): Input `tau` argument (tau).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -200,10 +200,10 @@ def schur(a: Tensor) -> TensorOrScalar:
     """Compute the Schur decomposition of a matrix.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -221,10 +221,10 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input `a` argument (a).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -253,7 +253,7 @@ class Qdwh(OpDef):
             **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
@@ -262,12 +262,12 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Ten
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:
-        a (Tensor): The a parameter.
-        is_hermitian (bool): The is_hermitian parameter.
-        max_iterations (int): The max_iterations parameter.
+        a (Tensor): Input `a` argument (a).
+        is_hermitian (bool): Input `is_hermitian` argument (is hermitian).
+        max_iterations (int): Input `max_iterations` argument (max iterations).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

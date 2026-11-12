@@ -120,6 +120,9 @@ def test_while_loop_tracing_with_loop_options() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                Tensor: Computed output value from `cond_fn`.
             """
             return x
 
@@ -128,6 +131,9 @@ def test_while_loop_tracing_with_loop_options() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                Tensor: Computed output value from `body_fn`.
             """
             return x
 

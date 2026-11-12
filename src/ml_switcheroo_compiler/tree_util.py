@@ -61,8 +61,6 @@ class TreeDef:
             return False
         return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
-    _eq = __eq__
-
 
 PyTree = typing.Union[TensorOrScalar, TreeDef]  # noqa: UP007
 
@@ -77,7 +75,7 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
         tuple[list[TensorOrScalar], TreeDef]: The flattened leaves and the tree definition.
     """
     if isinstance(tree, dict):
-        keys = sorted(tree.keys())
+        keys = sorted(tree.keys(), key=lambda k: (type(k).__name__, str(k)))
         leaves: list[TensorOrScalar] = []
         children_defs: list[TreeDef] = []
         for k in keys:
@@ -136,7 +134,7 @@ def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> dict
 
 
 def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
-    """Unflatten a list or tuple node.
+    """Unflatten a list, tuple, or NamedTuple node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
@@ -146,8 +144,12 @@ def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> 
         TensorOrScalar: The unflattened sequence.
     """
     children = [_unflatten_node(c_def, leaves_it) for c_def in t_def.children_defs]
-    res: TensorOrScalar = t_def.node_type(children)
-    return res
+    if t_def.node_type is list:
+        return list(children)
+    if t_def.node_type is tuple:
+        return tuple(children)
+    named_res: TensorOrScalar = invoke_callable(t_def.node_type, *children)
+    return named_res
 
 
 def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
@@ -167,7 +169,7 @@ def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> Tens
         return _unflatten_leaf(leaves_it)
     if t_def.node_type is dict:
         return _unflatten_dict(t_def, leaves_it)
-    if t_def.node_type in (list, tuple):
+    if t_def.node_type in (list, tuple) or issubclass(t_def.node_type, tuple):
         return _unflatten_sequence(t_def, leaves_it)
 
     msg = f"Unsupported treedef node_type: {t_def.node_type}"
@@ -190,12 +192,9 @@ def tree_unflatten(treedef: TreeDef, leaves: Iterable[TensorOrScalar]) -> Tensor
     leaves_it = iter(leaves)
     res = _unflatten_node(treedef, leaves_it)
 
-    try:
-        next(leaves_it)
+    for _ in leaves_it:
         msg = "Too many leaves for treedef"
         raise ValueError(msg)
-    except StopIteration:
-        _ = None
 
     return res
 

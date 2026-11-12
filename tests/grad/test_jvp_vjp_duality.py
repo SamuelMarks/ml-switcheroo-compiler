@@ -51,7 +51,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             return ensure_eager_tensor(ensure_eager_tensor(x) * ensure_eager_tensor(2.5))
 
         check_jvp_vjp_duality(scale_fn, (x_val,))
-    assert callable(test_jvp_vjp_duality_linear_ops)
+        assert np.allclose(ensure_eager_tensor(scale_fn(x_val.astype(np.float64))), x_val * 2.5)
 
 
 def test_jvp_vjp_duality_transcendental_ops() -> None:
@@ -75,7 +75,8 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
 
         arr = np.array([0.2, -0.5, 0.8, -1.2], dtype=np.float32)
         check_jvp_vjp_duality(poly_fn, (arr,))
-    assert callable(test_jvp_vjp_duality_transcendental_ops)
+        expected = (arr**3) - 2.0 * (arr**2) + 0.5 * arr
+        assert np.allclose(ensure_eager_tensor(poly_fn(arr.astype(np.float64))), expected)
 
 
 def test_jvp_vjp_duality_reductions() -> None:
@@ -99,7 +100,7 @@ def test_jvp_vjp_duality_reductions() -> None:
 
         arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         check_jvp_vjp_duality(linear_comb_fn, (arr,))
-    assert callable(test_jvp_vjp_duality_reductions)
+        assert np.allclose(ensure_eager_tensor(linear_comb_fn(arr.astype(np.float64))), arr * 2.25)
 
 
 def test_jvp_vjp_duality_failure_raises() -> None:
@@ -125,7 +126,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
         tan = np.array([0.5, 0.5], dtype=np.float32)
         cot = np.array([1.0, 1.0], dtype=np.float32)
         check_jvp_vjp_duality(simple_fn, (arr,), tangents=(tan,), cotangents=cot)
-    assert callable(test_jvp_vjp_duality_failure_raises)
+        assert np.allclose(ensure_eager_tensor(simple_fn(arr.astype(np.float64))), np.array([2.0, 4.0], dtype=np.float32))
 
 
 def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:

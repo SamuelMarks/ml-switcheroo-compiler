@@ -178,7 +178,7 @@ def _evaluate_constant_node(
 
 
 def _resolve_folding_backend() -> type | None:
-    """Resolve the active or fallback NumPy backend for constant evaluation.
+    """Resolve the active or fallback reference backend for constant evaluation.
 
     Returns:
         type | None: Backend class or None if unavailable.
@@ -186,7 +186,7 @@ def _resolve_folding_backend() -> type | None:
     backend: type | None = get_active_backend()
     if backend is None:
         try:
-            backend = BackendRegistry.get("numpy")
+            backend = BackendRegistry.get("pure_python")
         except Exception:
             backend = None
     return backend
@@ -262,7 +262,7 @@ def constant_folding_pass(graph: IRGraph) -> bool:
     Evaluates compile-time known constant nodes until fixpoint is reached.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         bool: True if any nodes were folded into constants.

@@ -383,16 +383,16 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], co
     """Execute grad for compiler processing.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
-        wrt (list[str]): The wrt parameter.
-        output_id (str | Sequence[str]): The output_id parameter.
-        cotangent_id (str | Sequence[str] | dict[str, str] | None): The cotangent_id parameter.
+        graph (LogicalGraph): Input `graph` argument (graph).
+        wrt (list[str]): Input `wrt` argument (wrt).
+        output_id (str | Sequence[str]): Input `output_id` argument (output id).
+        cotangent_id (str | Sequence[str] | dict[str, str] | None): Input `cotangent_id` argument (cotangent id).
 
     Returns:
-        LogicalGraph: Result.
+        LogicalGraph: Computed `LogicalGraph` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     graph = _maybe_vectorize_graph(graph)
 
@@ -686,16 +686,16 @@ def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
     """Execute jvp for compiler processing.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
-        primals (list): The primals parameter.
-        tangents (list): The tangents parameter.
-        outputs (list): The outputs parameter.
+        graph (LogicalGraph): Input `graph` argument (graph).
+        primals (list): Input `primals` argument (primals).
+        tangents (list): Input `tangents` argument (tangents).
+        outputs (list): Input `outputs` argument (outputs).
 
     Returns:
-        LogicalGraph: Result.
+        LogicalGraph: Computed `LogicalGraph` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     if len(primals) != len(tangents):
         raise ValueError("primals and tangents must have the same length")
@@ -866,9 +866,9 @@ def _conv2d_vjp_rule(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> 
     """Exact VJP rule for Conv2D.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str, ...]: Computed result.
@@ -889,9 +889,9 @@ def _max_pool2d_with_argmax_vjp(graph: LogicalGraph, node: LogicalNode, cotangen
     """Exact VJP rule for MaxPool2DWithArgmax.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients, ...]: Computed result.
@@ -911,9 +911,9 @@ def _avg_pool2d_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
     """Exact VJP rule for AvgPool2D.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str, ...]: Computed result.
@@ -930,9 +930,9 @@ def _batch_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
     """Exact VJP rule for BatchNorm.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients, ...]: Computed result.
@@ -966,9 +966,9 @@ def _layer_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
     """Exact VJP rule for LayerNorm.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients, ...]: Computed result.
@@ -1002,9 +1002,9 @@ def _rms_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tup
     """Exact VJP rule for RMSNorm.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients, ...]: Computed result.
@@ -1033,9 +1033,9 @@ def _group_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
     """Exact VJP rule for GroupNorm.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        cotangent: The cotangent parameter.
+        graph: Input `graph` argument (graph).
+        node: Input `node` argument (node).
+        cotangent: Input `cotangent` argument (cotangent).
 
     Returns:
         tuple[str | UnconnectedGradients, ...]: Computed result.

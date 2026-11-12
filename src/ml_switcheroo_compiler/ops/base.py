@@ -80,7 +80,7 @@ class OpDef:
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            Tensor: Result.
+            Tensor: Computed `Tensor` output.
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
@@ -104,7 +104,7 @@ class OpDef:
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            OpArgValue: Result.
+            OpArgValue: Computed `OpArgValue` output.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -169,11 +169,11 @@ def emit_ir_node(
     """Emit a new node into the IR graph directly.
 
     Args:
-        graph (LogicalGraph | None): The graph parameter.
-        op_type (str): The op_type parameter.
-        inputs (list[str]): The inputs parameter.
-        shape_metadata (tuple[int | str, ...] | list[int | str] | _DimsShapeProtocol | TensorOrScalar): The shape_metadata parameter.
-        attributes (Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None): The attributes parameter.
+        graph (LogicalGraph | None): Input `graph` argument (graph).
+        op_type (str): Input `op_type` argument (op type).
+        inputs (list[str]): Input `inputs` argument (inputs).
+        shape_metadata (tuple[int | str, ...] | list[int | str] | _DimsShapeProtocol | TensorOrScalar): Input `shape_metadata` argument (shape metadata).
+        attributes (Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None): Input `attributes` argument (attributes).
 
     Returns:
         str: Emitted node ID.
@@ -211,20 +211,20 @@ def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
     """Compute the dispatch eager tensor operation.
 
     Args:
-        op_name (str): The op_name parameter.
+        op_name (str): Input `op_name` argument (op name).
 
     Returns:
-        Callable: Result.
+        Callable: Computed `Callable` output.
     """
 
     def decorator(func: _F) -> _F:
         """Compute the decorator tensor operation.
 
         Args:
-            func (Callable): The func parameter.
+            func (Callable): Input `func` argument (func).
 
         Returns:
-            Callable: Result.
+            Callable: Computed `Callable` output.
         """
         cand_func: _F = func
         assert _is_typed_variadic_op(cand_func)
@@ -239,7 +239,7 @@ def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
             **kwargs: Keyword args.
 
             Returns:
-            OpArgValue: Result.
+            OpArgValue: Computed `OpArgValue` output.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

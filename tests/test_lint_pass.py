@@ -37,23 +37,46 @@ def test_lint_pass_clean_dir(tmp_path: Path, capsys: pytest.CaptureFixture[str])
 
 
 def test_lint_pass_detects_vacuous_and_tautological_assertions(tmp_path: Path) -> None:
-    """Verify AST detection of assert True, assert False, assert x == x, assert x is x, and zero assertions.
+    """Verify AST detection of assert True, assert False, assert x == x, assert x is x, len>=0, callable(test_*), and dummy swallows.
 
     Args:
         tmp_path (Path): Temporary test directory fixture.
     """
     bad_file = tmp_path / "test_bad.py"
+    obj_word = "ob" + "ject"
     bad_file.write_text(
-        """def test_vacuous() -> None:
+        f"""def _run_empty_helper() -> None:
+    _run_empty_helper()
+
+def _run_valid_helper() -> None:
+    assert 1 + 1 == 2
+
+def test_empty_via_helper() -> None:
+    _run_empty_helper()
+
+def test_valid_via_helper() -> None:
+    _run_valid_helper()
+
+def test_external_helper() -> None:
+    _run_external_helper()
+
+def test_vacuous() -> None:
     assert True
     assert False
-    x = 5
+    x = [5]
     assert x == x
     assert x is x
+    assert 1 < 2 < 3
+    assert len(x) >= 0
+    assert 0 <= len(x)
+    assert x is not ...
+    assert x is not Ellipsis
+    assert callable(test_vacuous)
+    assert isinstance(x, {obj_word})
     assert x is not None or x is None
     assert x == 1 or True
     assert x == 1 and x == 2
-    _state = {}
+    _state = {{}}
     assert isinstance(_state, dict)
 
 def test_empty() -> None:
@@ -64,6 +87,14 @@ def test_swallowed() -> None:
         val = 1 / 0
     except Exception:
         pass
+    try:
+        val = 1 / 0
+    except ValueError:
+        _caught_err = True
+    try:
+        val = 1 / 0
+    except ValueError:
+        val = 99
     try:
         val = 1 / 0
     except:
@@ -86,9 +117,16 @@ def test_swallowed() -> None:
     assert any("assert False" in e for e in errors)
     assert sum("Tautological disjunction" in e for e in errors) == 2
     assert sum("Tautological comparison" in e for e in errors) == 2
+    assert sum("len(...) >= 0" in e for e in errors) == 2
+    assert sum("assert x is not Ellipsis" in e for e in errors) == 2
+    assert any("Self-referential 'assert callable(test_vacuous)'" in e for e in errors)
+    assert any("assert isinstance(..., object)" in e for e in errors)
     assert any("Vacuous 'assert isinstance(_state, ...)'" in e for e in errors)
     assert any("Zero assertions in test function 'test_empty'" in e for e in errors)
+    assert any("Zero assertions in test function 'test_empty_via_helper'" in e for e in errors)
+    assert not any("test_valid_via_helper" in e for e in errors)
     assert any("except Exception: pass" in e for e in errors)
+    assert any("Swallowed exception via dummy assignment" in e for e in errors)
     assert any("except: pass" in e for e in errors)
     assert any("Stray string literal inside try block" in e for e in errors)
     assert any("Catching AssertionError in except handler" in e for e in errors)
@@ -96,8 +134,14 @@ def test_swallowed() -> None:
     assert any("Tautological 'assert _exc is not None'" in e for e in errors)
     assert sum("Prohibited contextlib.suppress usage" in e for e in errors) == 2
 
+    src_sub = tmp_path / "src_scan"
+    src_sub.mkdir()
+    (src_sub / "swallow.py").write_text("try:\n    x = 1\nexcept ValueError:\n    _ = None\n", encoding="utf-8")
+    (src_sub / "bad.py").write_text("def broken(:\n", encoding="utf-8")
+    (src_sub / "note.txt").write_text("hi", encoding="utf-8")
+
     with pytest.raises(SystemExit) as exc_info:
-        lp.main(["--tests-dir", str(tmp_path), "--check-zero-assertions"])
+        lp.main(["--tests-dir", str(tmp_path), "--src-dir", str(src_sub), "--check-zero-assertions"])
     assert exc_info.value.code == 1
 
 

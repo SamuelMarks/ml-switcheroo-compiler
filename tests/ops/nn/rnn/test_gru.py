@@ -32,6 +32,9 @@ def test_gru_coverage() -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_matmul`.
         """
         return Tensor(np.ones((1, 12)), TensorConfig(shape=(1, 12), dtype=DType("float32"), device=Device("cpu")))
 
@@ -40,6 +43,9 @@ def test_gru_coverage() -> None:
 
         Args:
             args: Test parameter `args`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_gates`.
         """
         return "hidden"
 
@@ -68,6 +74,9 @@ def test_gru_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return "gru_res"
 
@@ -87,6 +96,9 @@ def test_gru_coverage() -> None:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_emit`.
         """
         return "emitted"
 

@@ -534,6 +534,9 @@ def test_image_decoding(tmp_path: EagerTensorProtocol, mocker: EagerTensorProtoc
             Args:
                 data: Test parameter `data`.
                 channels: Test parameter `channels`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_image_bytes`.
             """
             return np.array([])
 
@@ -584,8 +587,3 @@ def test_missing_io_functions_from() -> None:
         fromstring("1 2")
     fromiter([1, 2], float)
     fromfunction(lambda i, j: i == j, (3, 3), dtype=int)
-
-
-def test_numpy_io_eager_and_lazy_shapes() -> None:
-    """Test function test_numpy_io_eager_and_lazy_shapes."""
-    assert callable(test_numpy_io_eager_and_lazy_shapes)

@@ -208,6 +208,9 @@ def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -240,6 +243,9 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -256,6 +262,9 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -265,6 +274,9 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
 
             Args:
                 a: Test parameter `a`.
+
+            Returns:
+                EagerValue: Computed output value from `exp`.
             """
             return a
 
@@ -276,6 +288,9 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
                 a: Test parameter `a`.
                 axis: Test parameter `axis`.
                 keepdims: Test parameter `keepdims`.
+
+            Returns:
+                EagerValue: Computed output value from `sum`.
             """
             return a
 
@@ -287,6 +302,9 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
                 a: Test parameter `a`.
                 axis: Test parameter `axis`.
                 keepdims: Test parameter `keepdims`.
+
+            Returns:
+                EagerValue: Computed output value from `max`.
             """
             return a
 
@@ -354,6 +372,9 @@ def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
                 Args:
                     x: Test parameter `x`.
                     axis: Test parameter `axis`.
+
+                Returns:
+                    EagerValue: Computed output value from `softmax`.
                 """
                 return x
 
@@ -367,14 +388,22 @@ def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
         """Test class HasItem."""
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 5
 
     class HasToList:
         """Test class HasToList."""
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return 5
 
     _state.update(ensure_tensor_dict({"BkSoftmax2": BkSoftmax2, "HasItem": HasItem, "HasToList": HasToList, "_allclose": _allclose}))
@@ -557,7 +586,11 @@ def test_math_reduction_full_coverage() -> None:
         """Test class HasNumel."""
 
         def numel(self) -> EagerValue:
-            """Test function numel."""
+            """Test function numel.
+
+            Returns:
+                EagerValue: Computed output value from `numel`.
+            """
             return 15
 
     assert _numel(ensure_eager_tensor(np), ensure_eager_tensor(HasSize())) == 12.0

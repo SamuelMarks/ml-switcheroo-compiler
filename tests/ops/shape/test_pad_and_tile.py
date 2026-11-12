@@ -54,6 +54,9 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None
             attrs: Test parameter `attrs`.
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
+
+        Returns:
+            str: Computed output value from `mock_emit`.
         """
         captured_shapes[op_name] = shape
         return op_name

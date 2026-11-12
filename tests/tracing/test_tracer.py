@@ -57,6 +57,9 @@ def test_trace_counts() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `dummy_fn`.
         """
         return x
 

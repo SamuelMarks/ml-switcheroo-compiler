@@ -150,13 +150,13 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
     """Eager fallback for _np_ctc_beam_search_decoder.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        inputs (EagerValue): The inputs parameter.
-        sequence_length (EagerValue): The sequence_length parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        inputs (EagerValue): Input `inputs` argument (inputs).
+        sequence_length (EagerValue): Input `sequence_length` argument (sequence length).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        EagerValue: Result.
+        EagerValue: Computed `EagerValue` output.
     """
     arr = np.asarray(inputs)
     seq_len = np.asarray(sequence_length)
@@ -217,12 +217,12 @@ def _np_ctc_unique_labels(backend_module: BackendModuleProtocol, labels: EagerVa
     """Eager fallback for _np_ctc_unique_labels.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        labels (EagerValue): The labels parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        labels (EagerValue): Input `labels` argument (labels).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray]` output.
     """
     arr = np.asarray(labels)
     unique, indices = np.unique(arr, return_inverse=True)
@@ -234,15 +234,15 @@ def _np_normalize_moments(backend_module: BackendModuleProtocol, counts: EagerVa
     """Eager fallback for _np_normalize_moments.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        counts (EagerValue): The counts parameter.
-        mean_ss (EagerValue): The mean_ss parameter.
-        variance_ss (EagerValue): The variance_ss parameter.
-        shift (EagerValue): The shift parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        counts (EagerValue): Input `counts` argument (counts).
+        mean_ss (EagerValue): Input `mean_ss` argument (mean ss).
+        variance_ss (EagerValue): Input `variance_ss` argument (variance ss).
+        shift (EagerValue): Input `shift` argument (shift).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray]` output.
     """
     c = np.asarray(counts)
     m = np.asarray(mean_ss)
@@ -260,13 +260,13 @@ def _np_sufficient_statistics(
     """Eager fallback for _np_sufficient_statistics.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axes (EagerValue): The axes parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axes (EagerValue): Input `axes` argument (axes).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]` output.
     """
     arr = np.asarray(x)
     axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
@@ -285,14 +285,14 @@ def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, a
     """Eager fallback for _np_weighted_moments.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axes (EagerValue): The axes parameter.
-        frequency_weights (EagerValue): The frequency_weights parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axes (EagerValue): Input `axes` argument (axes).
+        frequency_weights (EagerValue): Input `frequency_weights` argument (frequency weights).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray]` output.
     """
     arr = np.asarray(x)
     fw = np.asarray(frequency_weights)
@@ -309,12 +309,12 @@ def _np_max_pool_with_argmax(backend_module: BackendModuleProtocol, input: Eager
     """Eager fallback for _np_max_pool_with_argmax.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        input (EagerValue): The input parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        input (EagerValue): Input `input` argument (input).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray]` output.
     """
     arr = np.asarray(input)
     try:
@@ -336,12 +336,12 @@ def _np_collapse_repeated(backend_module: BackendModuleProtocol, labels: EagerVa
     """Eager fallback for _np_collapse_repeated.
 
     Args:
-        backend_module (EagerValue): The backend_module parameter.
-        labels (EagerValue): The labels parameter.
+        backend_module (EagerValue): Input `backend_module` argument (backend module).
+        labels (EagerValue): Input `labels` argument (labels).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Result.
+        tuple[np.ndarray, np.ndarray]: Computed `tuple[np.ndarray, np.ndarray]` output.
     """
     arr = np.asarray(labels)
     if arr.size == 0:

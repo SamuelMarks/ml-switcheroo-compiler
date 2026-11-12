@@ -61,6 +61,9 @@ class MockGPUArray:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockGPUArray: Computed output value from `__add__`.
         """
         return MockGPUArray(shape=self.shape, dtype=self.dtype, data=MockGPUData("cuda:0"))
 
@@ -69,6 +72,9 @@ class MockGPUArray:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockGPUArray: Computed output value from `__mul__`.
         """
         return MockGPUArray(shape=self.shape, dtype=self.dtype, data=MockGPUData("cuda:0"))
 
@@ -77,6 +83,9 @@ class MockGPUArray:
 
         Args:
             other: Test parameter `other`.
+
+        Returns:
+            MockGPUArray: Computed output value from `__truediv__`.
         """
         return MockGPUArray(shape=self.shape, dtype=self.dtype, data=MockGPUData("cuda:0"))
 
@@ -85,6 +94,9 @@ class MockGPUArray:
 
         Args:
             key: Test parameter `key`.
+
+        Returns:
+            MockGPUArray: Computed output value from `__getitem__`.
         """
         return MockGPUArray(shape=(2, 2), dtype=self.dtype, data=MockGPUData("cuda:0"))
 
@@ -105,6 +117,9 @@ def _create_mock_cupy() -> MagicMock:
             x: Test parameter `x`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `asarray_fn`.
         """
         if type(x).__name__ == "MockGPUArray":
             return x

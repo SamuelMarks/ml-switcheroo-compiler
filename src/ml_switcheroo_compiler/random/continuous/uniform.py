@@ -1,4 +1,4 @@
-"""Module uniform.py."""
+"""Compiler `uniform` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ def uniform(
     """Sample uniform random values from a given key.
 
     Args:
-        key (Tensor | str): The key parameter.
-        shape (Sequence[int] | tuple[int, ...]): The shape parameter.
-        dtype (dtypes.DType | None): The dtype parameter.
-        minval (float): The minval parameter.
-        maxval (float): The maxval parameter.
+        key (Tensor | str): Input `key` argument (key).
+        shape (Sequence[int] | tuple[int, ...]): Input `shape` argument (shape).
+        dtype (dtypes.DType | None): Input `dtype` argument (dtype).
+        minval (float): Input `minval` argument (minval).
+        maxval (float): Input `maxval` argument (maxval).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node(

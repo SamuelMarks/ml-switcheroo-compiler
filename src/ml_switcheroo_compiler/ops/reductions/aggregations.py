@@ -137,7 +137,7 @@ class NaryMathOp(OpDef):
             **kwargs (Tensor | list[Tensor] | tuple[Tensor, ...] | int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         inputs = args[0] if len(args) > 0 else kwargs.get("inputs")
         # Assume all inputs have the same shape

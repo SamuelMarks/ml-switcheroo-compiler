@@ -272,6 +272,9 @@ def test_pass_manager_cyclic_oscillation_detection_and_rollback() -> None:
 
         Args:
             g: Test parameter `g`.
+
+        Returns:
+            bool: Computed output value from `oscillating_pass`.
         """
         node = g.nodes["A"]
         if node.op_type == "Op1":

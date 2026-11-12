@@ -31,6 +31,9 @@ def test_do_not_convert() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            int: Computed output value from `dummy_func`.
         """
         return x + 1
 
@@ -43,6 +46,9 @@ def test_do_not_convert() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            int: Computed output value from `dummy_func2`.
         """
         return x + 2
 

@@ -14,12 +14,12 @@ def _polyval(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager polyval operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "polyval", None)
     return func(*args, **kwargs) if func else None
@@ -30,12 +30,12 @@ def _np_polyint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np polyint operation on the active backend array.
 
     Args:
-        backend_module: The backend_module parameter.
+        backend_module: Input `backend_module` argument (backend module).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+            EagerValue: Computed `EagerValue` output.
     """
     func = get_backend_member(backend_module, "polyint", get_backend_member(backend_module, "polyint", None))
     if func is not None:

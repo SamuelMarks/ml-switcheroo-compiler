@@ -257,6 +257,9 @@ def test_clip_eager() -> None:
                     op_name: Test parameter `op_name`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `execute_op`.
                 """
                 return "eager_clip"
 

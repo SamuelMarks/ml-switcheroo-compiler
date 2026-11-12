@@ -77,6 +77,9 @@ def test_foreign_call_shape_introspection() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[int, int]: Computed output value from `annotated_fn`.
         """
         return (x, x)
 

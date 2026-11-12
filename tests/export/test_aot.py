@@ -23,6 +23,9 @@ def test_aot() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(1)
 
@@ -39,6 +42,9 @@ def test_aot_tensor_caching() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(y)
 
@@ -63,6 +69,9 @@ def test_aot_list_output() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return [x, ensure_eager_tensor(x) + ensure_eager_tensor(x)]
 
@@ -81,6 +90,9 @@ def test_aot_backend_missing_generator() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -106,6 +118,9 @@ def test_aot_compile_aot_hasattr() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `compile_aot`.
             """
             return lambda *args, **kw: "mock_aot"
 
@@ -116,6 +131,9 @@ def test_aot_compile_aot_hasattr() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(x)
 
@@ -141,12 +159,20 @@ def test_aot_apply_model() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(params, *args, **kwargs):\n    return 'apply_model'"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
     ensure_callable(BackendRegistry.register)("mock_apply", MockBackendApply)
@@ -156,6 +182,9 @@ def test_aot_apply_model() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -180,12 +209,20 @@ def test_aot_execution_failure() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(params, *args, **kwargs):\n    raise ValueError('fail')"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
     ensure_callable(BackendRegistry.register)("mock_fail", MockBackendFail)
@@ -195,6 +232,9 @@ def test_aot_execution_failure() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return "fallback"
 
@@ -217,6 +257,9 @@ def test_aot_caching_success() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `compile_aot`.
             """
             return lambda *args, **kw: "success_cache"
 
@@ -227,6 +270,9 @@ def test_aot_caching_success() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -244,6 +290,9 @@ def test_aot_list_output_no_tensors() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return [1, 2, 3]
 
@@ -289,12 +338,20 @@ def test_aot_fallback() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(params, *args, **kwargs):\n    return 'no_mod'"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
     ensure_callable(BackendRegistry.register)("mock_no_mod", MockBackendNoModule)
@@ -304,6 +361,9 @@ def test_aot_fallback() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -328,17 +388,29 @@ def test_aot_evaluate_wrapper() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def evaluate(args):\n    return 'evaluate_success'"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
         @classmethod
         def get_module(cls) -> EagerValue:
-            """Test function get_module."""
+            """Test function get_module.
+
+            Returns:
+                EagerValue: Computed output value from `get_module`.
+            """
             return "mock_module"
 
     ensure_callable(BackendRegistry.register)("mock_eval", MockBackendEvaluate)
@@ -348,6 +420,9 @@ def test_aot_evaluate_wrapper() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -372,12 +447,20 @@ def test_aot_no_func_wrapper() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "x = 1"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
     ensure_callable(BackendRegistry.register)("mock_empty", MockBackendEmpty)
@@ -387,6 +470,9 @@ def test_aot_no_func_wrapper() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return "fallback_empty"
 
@@ -415,6 +501,9 @@ def test_aot_custom_dtype_string_prefix() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -448,12 +537,20 @@ def test_aot_no_func_wrapper_tensor() -> None:
             self.graph = graph
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "x = 1"
 
         @classmethod
         def get_generator(cls) -> EagerValue:
-            """Test function get_generator."""
+            """Test function get_generator.
+
+            Returns:
+                EagerValue: Computed output value from `get_generator`.
+            """
             return cls
 
     ensure_callable(BackendRegistry.register)("mock_empty_tensor", MockBackendEmptyTensor)
@@ -463,6 +560,9 @@ def test_aot_no_func_wrapper_tensor() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return x
 
@@ -493,6 +593,9 @@ def _test_aot_all_remaining_branches_part_1(_state: dict[str, EagerTensorProtoco
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `simple_identity`.
         """
         return x
 
@@ -526,6 +629,9 @@ def _test_aot_all_remaining_branches_part_2(_state: dict[str, EagerTensorProtoco
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `compile_aot`.
             """
             return "not_a_callable"
 
@@ -538,7 +644,11 @@ def _test_aot_all_remaining_branches_part_2(_state: dict[str, EagerTensorProtoco
             pass
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(x): return x"
 
     BackendRegistry.register("backend_static_non_callable", BackendStaticNonCallable)
@@ -579,7 +689,11 @@ def _test_aot_all_remaining_branches_part_3(_state: dict[str, EagerTensorProtoco
             pass
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(x): return x"
 
     BackendRegistry.register("backend_static_raises", BackendStaticRaises)
@@ -634,6 +748,9 @@ def _test_aot_all_remaining_branches_part_4(_state: dict[str, EagerTensorProtoco
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `compile_aot`.
             """
             if self.mode == "non_callable":
                 return 123
@@ -643,7 +760,11 @@ def _test_aot_all_remaining_branches_part_4(_state: dict[str, EagerTensorProtoco
                 raise RuntimeError("instance aot fail")
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(x): return x"
 
     BackendRegistry.register("backend_instance_aot", BackendInstanceAot)
@@ -683,6 +804,9 @@ def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtoco
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                CompiledArtifact: Computed output value from `compile_aot`.
             """
             ensure_callable(ensure_eager_tensor(BackendInstanceAot_cls).compile_aot)(self, *args, **kwargs)
             return CompiledArtifact()
@@ -710,6 +834,9 @@ def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtoco
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                CompiledArtifact: Computed output value from `compile_aot`.
             """
             ensure_callable(ensure_eager_tensor(BackendInstanceAot_cls).compile_aot)(self, *args, **kwargs)
             return CompiledArtifact()
@@ -746,7 +873,11 @@ def _test_aot_all_remaining_branches_part_6(_state: dict[str, EagerTensorProtoco
             pass
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "some_var = 1"
 
     BackendRegistry.register("backend_no_entrypoint", BackendNoEntrypoint)
@@ -765,7 +896,11 @@ def _test_aot_all_remaining_branches_part_6(_state: dict[str, EagerTensorProtoco
             pass
 
         def generate(self) -> EagerValue:
-            """Test function generate."""
+            """Test function generate.
+
+            Returns:
+                EagerValue: Computed output value from `generate`.
+            """
             return "def apply_model(x):\n    raise RuntimeError('runtime execution fail')"
 
     BackendRegistry.register("backend_exec_fails", BackendExecFails)

@@ -38,6 +38,9 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
                 a: Test parameter `a`.
                 b: Test parameter `b`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                bool: Computed output value from `allclose`.
             """
             return True
 
@@ -64,7 +67,11 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             self.val = val
 
         def item(self) -> float:
-            """Return item val."""
+            """Return item val.
+
+            Returns:
+                float: Computed output value from `item`.
+            """
             return self.val
 
     _state.update(ensure_tensor_dict({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb}))
@@ -91,7 +98,11 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             self.val = val
 
         def tolist(self) -> float:
-            """Return first item from list."""
+            """Return first item from list.
+
+            Returns:
+                float: Computed output value from `tolist`.
+            """
             return self.val[0]
 
     class DataObj:
@@ -129,6 +140,9 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 a1: Test parameter `a1`.
                 a2: Test parameter `a2`.
+
+            Returns:
+                str: Computed output value from `allclose`.
             """
             return "allclose_equiv"
 
@@ -183,6 +197,9 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `promote_types`.
             """
             return "promoted"
 
@@ -192,6 +209,9 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `result_type`.
             """
             return "result_type"
 

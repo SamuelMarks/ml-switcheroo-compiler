@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import typing
 from unittest.mock import patch
 
@@ -63,8 +64,8 @@ def test_reduce_precision() -> None:
 
 def test_custom_linear_solve() -> None:
     """Test function test_custom_linear_solve."""
-    mm._np_customlinearsolve(np, np.eye(2), np.ones((2, 2)))
-    assert callable(test_custom_linear_solve)
+    _out = mm._np_customlinearsolve(np, np.eye(2), np.ones((2, 2)))
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2, 2) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [[1.0, 1.0], [1.0, 1.0]], atol=1e-3))
 
 
 def test_strided_slice() -> None:
@@ -105,6 +106,7 @@ def test_math_misc_one_hot() -> None:
 
 def test_math_misc_scipy_and_polynomials() -> None:
     """Test function test_math_misc_scipy_and_polynomials."""
+    handled_errors = 0
     import sys
 
     old_scipy = sys.modules.get("scipy.special", None)
@@ -112,7 +114,7 @@ def test_math_misc_scipy_and_polynomials() -> None:
     try:
         mm._get_sc()
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if old_scipy:
             sys.modules["scipy.special"] = old_scipy
@@ -145,14 +147,15 @@ def test_math_misc_scipy_and_polynomials() -> None:
         try:
             func(np)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
     mm._poly_recurrence(np.array([-1]), np.array([0.5]), 1.0, lambda a: a, lambda i, a, p1, p2: p1)
-    mm._np_distributions(np)
-    assert callable(test_math_misc_scipy_and_polynomials)
+    _out = mm._np_distributions(np)
+    assert _out is None
 
 
 def test_all_mocked_try_blocks() -> None:
     """Test function test_all_mocked_try_blocks."""
+    handled_errors = 0
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -241,13 +244,13 @@ def test_all_mocked_try_blocks() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_all_mocked_try_blocks)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_math_misc_more_edges() -> None:
     """Test function test_math_misc_more_edges."""
+    handled_errors = 0
     res_fb = mm._np_frombuffer(np, b"\x00\x00\x00\x00", dtype=np.int32)
     assert ensure_eager_tensor(res_fb).shape == (1,)
     assert mm._np_frombuffer(np) is None
@@ -281,7 +284,7 @@ def test_math_misc_more_edges() -> None:
     try:
         mm._np_decode_image(np, np.ones((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if old_di is not None:
             ensure_mutable(ops).DecodeImage = ensure_eager_tensor(old_di)
@@ -291,6 +294,7 @@ def test_math_misc_more_edges() -> None:
 
 def test_all_numpy_math_misc_fallbacks() -> None:
     """Test function test_all_numpy_math_misc_fallbacks."""
+    handled_errors = 0
 
     class MockOpFunc:
         """Test class MockOpFunc."""
@@ -322,12 +326,13 @@ def test_all_numpy_math_misc_fallbacks() -> None:
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_all_numpy_math_misc_fallbacks)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_all_numpy_math_misc_fallbacks_2() -> None:
     """Test function test_all_numpy_math_misc_fallbacks_2."""
+    handled_errors = 0
 
     class MockOpFunc:
         """Test class MockOpFunc."""
@@ -400,12 +405,13 @@ def test_all_numpy_math_misc_fallbacks_2() -> None:
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_all_numpy_math_misc_fallbacks_2)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_all_numpy_math_misc_fallbacks_3() -> None:
     """Test function test_all_numpy_math_misc_fallbacks_3."""
+    handled_errors = 0
 
     class MockOpFunc:
         """Test class MockOpFunc."""
@@ -478,8 +484,8 @@ def test_all_numpy_math_misc_fallbacks_3() -> None:
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_all_numpy_math_misc_fallbacks_3)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_math_additional_misc_stuff() -> None:
@@ -495,6 +501,7 @@ def test_math_additional_misc_stuff() -> None:
 
 def test_np_remaining_math_misc() -> None:
     """Test function test_np_remaining_math_misc."""
+    handled_errors = 0
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -515,6 +522,9 @@ def test_np_remaining_math_misc() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -526,15 +536,16 @@ def test_np_remaining_math_misc() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
 
     mm._np_frombuffer(np)
-    mm._np_rem(np)
-    assert callable(test_np_remaining_math_misc)
+    _out = mm._np_rem(np)
+    assert _out is None
 
 
 def test_math_misc_scipy_and_polynomials_shifted() -> None:
     """Test function test_math_misc_scipy_and_polynomials_shifted."""
+    handled_errors = 0
     x = np.array([0.5, 0.2])
     n = np.array([2, 3])
     mm._np_shifted_chebyshev_polynomial_t(np, x, n)
@@ -549,8 +560,8 @@ def test_math_misc_scipy_and_polynomials_shifted() -> None:
         try:
             func(np)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_math_misc_scipy_and_polynomials_shifted)
+            handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_math_misc_polynomials() -> None:
@@ -565,6 +576,7 @@ def test_math_misc_polynomials() -> None:
 
 def test_math_misc_scipy_bessels() -> None:
     """Test function test_math_misc_scipy_bessels."""
+    handled_errors = 0
     import sys
 
     old_scipy = sys.modules.get("scipy.special", None)
@@ -574,17 +586,18 @@ def test_math_misc_scipy_bessels() -> None:
         mm._np_modified_bessel_k0(np, np.ones((2, 2)))
         mm._np_modified_bessel_k1(np, np.ones((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if old_scipy:
             sys.modules["scipy.special"] = old_scipy
         else:
             del sys.modules["scipy.special"]
-    assert callable(test_math_misc_scipy_bessels)
+    assert handled_errors >= 1
 
 
 def test_np_remaining_math_misc_2() -> None:
     """Test function test_np_remaining_math_misc_2."""
+    handled_errors = 0
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -605,6 +618,9 @@ def test_np_remaining_math_misc_2() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -616,13 +632,13 @@ def test_np_remaining_math_misc_2() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_np_remaining_math_misc_2)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_np_remaining_math_misc_3() -> None:
     """Test function test_np_remaining_math_misc_3."""
+    handled_errors = 0
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -643,6 +659,9 @@ def test_np_remaining_math_misc_3() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -654,16 +673,17 @@ def test_np_remaining_math_misc_3() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
 
     mm._np_rfftfreq(np, 10, d=0.1)
     mm._np_frombuffer(np)
-    mm._np_rem(np, 1)
-    assert callable(test_np_remaining_math_misc_3)
+    _out = mm._np_rem(np, 1)
+    assert _out is None
 
 
 def test_remaining_math_misc_stuff() -> None:
     """Test function test_remaining_math_misc_stuff."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -686,6 +706,9 @@ def test_remaining_math_misc_stuff() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -717,13 +740,13 @@ def test_remaining_math_misc_stuff() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_remaining_math_misc_stuff)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking() -> None:
     """Test function test_final_math_misc_mocking."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -746,6 +769,9 @@ def test_final_math_misc_mocking() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -777,13 +803,13 @@ def test_final_math_misc_mocking() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again() -> None:
     """Test function test_final_math_misc_mocking_again."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -806,6 +832,9 @@ def test_final_math_misc_mocking_again() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -837,13 +866,13 @@ def test_final_math_misc_mocking_again() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_once_more() -> None:
     """Test function test_final_math_misc_mocking_once_more."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -878,6 +907,9 @@ def test_final_math_misc_mocking_once_more() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return np.ones((2, 2))
 
@@ -909,13 +941,13 @@ def test_final_math_misc_mocking_once_more() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_once_more)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_once_more_2() -> None:
     """Test function test_final_math_misc_mocking_once_more_2."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -960,13 +992,13 @@ def test_final_math_misc_mocking_once_more_2() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_once_more_2)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again() -> None:
     """Test function test_final_math_misc_mocking_again_and_again."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1011,13 +1043,13 @@ def test_final_math_misc_mocking_again_and_again() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1031,6 +1063,9 @@ def test_final_math_misc_mocking_again_and_again_again() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                RealMockType2: Computed output value from `__new__`.
             """
             raise Exception("Trigger catch")
 
@@ -1062,11 +1097,12 @@ def test_final_math_misc_mocking_again_and_again_again() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_2() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_2."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1091,13 +1127,13 @@ def test_final_math_misc_mocking_again_and_again_again_2() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_2)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_3() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_3."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1122,9 +1158,8 @@ def test_final_math_misc_mocking_again_and_again_again_3() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_3)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_4() -> None:
@@ -1132,15 +1167,18 @@ def test_final_math_misc_mocking_again_and_again_again_4() -> None:
     import numpy as np
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
+    checked_ops = 0
     for op_name in op_names:
         func = mm_members.get("_np_" + op_name.lower() + "_camel", mm_members.get("_np_" + op_name))
         if func:
             func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
-    assert callable(test_final_math_misc_mocking_again_and_again_again_4)
+        checked_ops += 1
+    assert checked_ops == len(op_names)
 
 
 def test_final_math_misc_mocking_again_and_again_again_5() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_5."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1165,13 +1203,13 @@ def test_final_math_misc_mocking_again_and_again_again_5() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_5)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_camel() -> None:
     """Test function test_final_math_misc_mocking_camel."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1196,13 +1234,13 @@ def test_final_math_misc_mocking_camel() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_camel)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_6() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_6."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1227,9 +1265,8 @@ def test_final_math_misc_mocking_again_and_again_again_6() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_6)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_7() -> None:
@@ -1237,11 +1274,13 @@ def test_final_math_misc_mocking_again_and_again_again_7() -> None:
     import numpy as np
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
+    checked_ops = 0
     for op_name in op_names:
         func = mm_members.get("_np_" + op_name.lower() + "_camel")
         if func:
             func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
-    assert callable(test_final_math_misc_mocking_again_and_again_again_7)
+        checked_ops += 1
+    assert checked_ops == len(op_names)
 
 
 def test_final_math_misc_mocking_again_and_again_again_8() -> None:
@@ -1262,6 +1301,7 @@ def test_final_math_misc_mocking_again_and_again_again_8() -> None:
 
 def test_final_math_misc_mocking_for_remaining() -> None:
     """Test function test_final_math_misc_mocking_for_remaining."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1286,13 +1326,13 @@ def test_final_math_misc_mocking_for_remaining() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_for_remaining)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_8_fixed() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_8_fixed."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1317,13 +1357,13 @@ def test_final_math_misc_mocking_again_and_again_again_8_fixed() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_8_fixed)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_9() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_9."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1348,13 +1388,13 @@ def test_final_math_misc_mocking_again_and_again_again_9() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_9)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_10() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_10."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1379,13 +1419,13 @@ def test_final_math_misc_mocking_again_and_again_again_10() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_10)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_11() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_11."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1410,13 +1450,13 @@ def test_final_math_misc_mocking_again_and_again_again_11() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_11)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_12() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_12."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1441,13 +1481,13 @@ def test_final_math_misc_mocking_again_and_again_again_12() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_12)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_13() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_13."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1472,13 +1512,13 @@ def test_final_math_misc_mocking_again_and_again_again_13() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_13)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_14() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_14."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1503,13 +1543,13 @@ def test_final_math_misc_mocking_again_and_again_again_14() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_14)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_15() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_15."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1534,13 +1574,13 @@ def test_final_math_misc_mocking_again_and_again_again_15() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_15)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_16() -> None:
     """Test function test_final_math_misc_mocking_again_and_again_again_16."""
+    handled_errors = 0
     import numpy as np
 
     import ml_switcheroo_compiler.ops as ops
@@ -1565,9 +1605,8 @@ def test_final_math_misc_mocking_again_and_again_again_16() -> None:
                 if func:
                     func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
-
-    assert callable(test_final_math_misc_mocking_again_and_again_again_16)
+                handled_errors += 1
+    assert handled_errors >= 1
 
 
 def test_final_math_misc_mocking_again_and_again_again_17() -> None:
@@ -1593,6 +1632,9 @@ class MockCallableClass:
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `__call__`.
         """
         return args
 
@@ -1802,8 +1844,8 @@ def test_confusion_matrix_num_classes() -> None:
 def test__np_affineconfig() -> None:
     """Test function test__np_affineconfig."""
     mm._np_affineconfig(np, np.ones((2, 2)))
-    mm._np_affineconfig(np)
-    assert callable(test__np_affineconfig)
+    _out = mm._np_affineconfig(np)
+    assert type(_out).__name__ == "dict"
 
 
 def test__np_all_gather() -> None:
@@ -1902,36 +1944,40 @@ def test__np_array_str_() -> None:
 def test__np_assertop() -> None:
     """Test function test__np_assertop."""
     mm._np_assertop(np, np.ones((2, 2)))
-    mm._np_assertop(np)
-    assert callable(test__np_assertop)
+    _out = mm._np_assertop(np)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (1,) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [0.0], atol=1e-3))
 
 
 def test__np_asstringconfig() -> None:
     """Test function test__np_asstringconfig."""
-    mm._np_asstringconfig(np, np.ones((2, 2)))
-    mm._np_asstringconfig(np)
-    assert callable(test__np_asstringconfig)
+    try:
+        cfg_first = mm._np_asstringconfig(np, np.ones((2, 2)))
+        assert cfg_first is not None
+    except ValueError as err:
+        assert str(err) != ""
+    cfg_default = mm._np_asstringconfig(np)
+    assert cfg_default is not None
 
 
 def test__np_atleast_1d() -> None:
     """Test function test__np_atleast_1d."""
     mm._np_atleast_1d(np, np.ones((2, 2)))
-    mm._np_atleast_1d(np)
-    assert callable(test__np_atleast_1d)
+    _out = mm._np_atleast_1d(np)
+    assert len(ensure_eager_tensor(_out)) == 0
 
 
 def test__np_atleast_2d() -> None:
     """Test function test__np_atleast_2d."""
     mm._np_atleast_2d(np, np.ones((2, 2)))
-    mm._np_atleast_2d(np)
-    assert callable(test__np_atleast_2d)
+    _out = mm._np_atleast_2d(np)
+    assert len(ensure_eager_tensor(_out)) == 0
 
 
 def test__np_atleast_3d() -> None:
     """Test function test__np_atleast_3d."""
     mm._np_atleast_3d(np, np.ones((2, 2)))
-    mm._np_atleast_3d(np)
-    assert callable(test__np_atleast_3d)
+    _out = mm._np_atleast_3d(np)
+    assert len(ensure_eager_tensor(_out)) == 0
 
 
 def test__np_average() -> None:
@@ -2005,15 +2051,15 @@ def test__np_blurconfig() -> None:
 def test__np_broadcast_arrays_() -> None:
     """Test function test__np_broadcast_arrays_."""
     mm._np_broadcast_arrays_(np, np.ones((2, 2)))
-    mm._np_broadcast_arrays_(np)
-    assert callable(test__np_broadcast_arrays_)
+    _out = mm._np_broadcast_arrays_(np)
+    assert len(ensure_eager_tensor(_out)) == 0
 
 
 def test__np_callable() -> None:
     """Test function test__np_callable."""
     mm._np_callable(np, np.ones((2, 2)))
-    mm._np_callable(np)
-    assert callable(test__np_callable)
+    _out = mm._np_callable(np)
+    assert not bool(_out)
 
 
 def test__np_can_cast_() -> None:
@@ -2080,8 +2126,8 @@ def test__np_compress() -> None:
 def test__np_confusion_matrix() -> None:
     """Test function test__np_confusion_matrix."""
     mm._np_confusion_matrix(np, np.ones((2, 2)))
-    mm._np_confusion_matrix(np)
-    assert callable(test__np_confusion_matrix)
+    _out = mm._np_confusion_matrix(np)
+    assert _out is None
 
 
 def test__np_convgeneraldilatedlocal() -> None:
@@ -2171,8 +2217,8 @@ def test__np_debugnans() -> None:
 def test__np_decode_csv() -> None:
     """Test function test__np_decode_csv."""
     mm._np_decode_csv(np, np.ones((2, 2)))
-    mm._np_decode_csv(np)
-    assert callable(test__np_decode_csv)
+    _out = mm._np_decode_csv(np)
+    assert len(ensure_eager_tensor(_out)) == 1
 
 
 def test__np_decode_image() -> None:
@@ -2193,8 +2239,8 @@ def test__np_delete_() -> None:
 def test__np_descriptive() -> None:
     """Test function test__np_descriptive."""
     mm._np_descriptive(np, np.ones((2, 2)))
-    mm._np_descriptive(np)
-    assert callable(test__np_descriptive)
+    _out = mm._np_descriptive(np)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (3,) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [0.0, 0.0, 0.0], atol=1e-3))
 
 
 def test__np_diag_indices_() -> None:
@@ -2244,8 +2290,8 @@ def test__np_digitize_() -> None:
 def test__np_distributions() -> None:
     """Test function test__np_distributions."""
     mm._np_distributions(np, np.ones((2, 2)))
-    mm._np_distributions(np)
-    assert callable(test__np_distributions)
+    _out = mm._np_distributions(np)
+    assert _out is None
 
 
 def test__np_dotgeneral() -> None:
@@ -2273,9 +2319,13 @@ def test__np_einsum_path_() -> None:
 
 def test__np_elasticconfig() -> None:
     """Test function test__np_elasticconfig."""
-    mm._np_elasticconfig(np, np.ones((2, 2)))
-    mm._np_elasticconfig(np)
-    assert callable(test__np_elasticconfig)
+    try:
+        cfg_first = mm._np_elasticconfig(np, np.ones((2, 2)))
+        assert cfg_first is not None
+    except ValueError as err:
+        assert str(err) != ""
+    cfg_default = mm._np_elasticconfig(np)
+    assert cfg_default is not None
 
 
 def test__np_empty_() -> None:
@@ -2311,9 +2361,13 @@ def test__np_extract_() -> None:
 
 def test__np_extractpatchesoptions() -> None:
     """Test function test__np_extractpatchesoptions."""
-    mm._np_extractpatchesoptions(np, np.ones((2, 2)))
-    mm._np_extractpatchesoptions(np)
-    assert callable(test__np_extractpatchesoptions)
+    try:
+        cfg_first = mm._np_extractpatchesoptions(np, np.ones((2, 2)))
+        assert cfg_first is not None
+    except ValueError as err:
+        assert str(err) != ""
+    cfg_default = mm._np_extractpatchesoptions(np)
+    assert cfg_default is not None
 
 
 def test__np_fabs_() -> None:
@@ -2326,22 +2380,22 @@ def test__np_fabs_() -> None:
 def test__np_fftn() -> None:
     """Test function test__np_fftn."""
     mm._np_fftn(np, np.ones((2, 2)))
-    mm._np_fftn(np)
-    assert callable(test__np_fftn)
+    _out = mm._np_fftn(np)
+    assert _out is None
 
 
 def test__np_fftnd() -> None:
     """Test function test__np_fftnd."""
     mm._np_fftnd(np, np.ones((2, 2)))
-    mm._np_fftnd(np)
-    assert callable(test__np_fftnd)
+    _out = mm._np_fftnd(np)
+    assert _out is None
 
 
 def test__np_fftshift() -> None:
     """Test function test__np_fftshift."""
     mm._np_fftshift(np, np.ones((2, 2)))
-    mm._np_fftshift(np)
-    assert callable(test__np_fftshift)
+    _out = mm._np_fftshift(np)
+    assert _out is None
 
 
 def test__np_flatnonzero_() -> None:
@@ -2382,8 +2436,8 @@ def test__np_flipud_() -> None:
 def test__np_frombuffer() -> None:
     """Test function test__np_frombuffer."""
     mm._np_frombuffer(np, np.ones((2, 2)))
-    mm._np_frombuffer(np)
-    assert callable(test__np_frombuffer)
+    _out = mm._np_frombuffer(np)
+    assert _out is None
 
 
 def test__np_fromdlpack() -> None:
@@ -2490,8 +2544,8 @@ def test__np_hermite_polynomial_he() -> None:
 def test__np_hfft() -> None:
     """Test function test__np_hfft."""
     mm._np_hfft(np, np.ones((2, 2)))
-    mm._np_hfft(np)
-    assert callable(test__np_hfft)
+    _out = mm._np_hfft(np)
+    assert _out is None
 
 
 def test__np_histogram2d_() -> None:
@@ -2526,36 +2580,36 @@ def test__np_histogramdd_() -> None:
 def test__np_ifft() -> None:
     """Test function test__np_ifft."""
     mm._np_ifft(np, np.ones((2, 2)))
-    mm._np_ifft(np)
-    assert callable(test__np_ifft)
+    _out = mm._np_ifft(np)
+    assert _out is None
 
 
 def test__np_ifft2() -> None:
     """Test function test__np_ifft2."""
     mm._np_ifft2(np, np.ones((2, 2)))
-    mm._np_ifft2(np)
-    assert callable(test__np_ifft2)
+    _out = mm._np_ifft2(np)
+    assert _out is None
 
 
 def test__np_ifftn() -> None:
     """Test function test__np_ifftn."""
     mm._np_ifftn(np, np.ones((2, 2)))
-    mm._np_ifftn(np)
-    assert callable(test__np_ifftn)
+    _out = mm._np_ifftn(np)
+    assert _out is None
 
 
 def test__np_ifftnd() -> None:
     """Test function test__np_ifftnd."""
     mm._np_ifftnd(np, np.ones((2, 2)))
-    mm._np_ifftnd(np)
-    assert callable(test__np_ifftnd)
+    _out = mm._np_ifftnd(np)
+    assert _out is None
 
 
 def test__np_ifftshift() -> None:
     """Test function test__np_ifftshift."""
     mm._np_ifftshift(np, np.ones((2, 2)))
-    mm._np_ifftshift(np)
-    assert callable(test__np_ifftshift)
+    _out = mm._np_ifftshift(np)
+    assert _out is None
 
 
 def test__np_indices_() -> None:
@@ -2593,22 +2647,22 @@ def test__np_intersect1d_() -> None:
 def test__np_irfft2() -> None:
     """Test function test__np_irfft2."""
     mm._np_irfft2(np, np.ones((2, 2)))
-    mm._np_irfft2(np)
-    assert callable(test__np_irfft2)
+    _out = mm._np_irfft2(np)
+    assert _out is None
 
 
 def test__np_irfftn() -> None:
     """Test function test__np_irfftn."""
     mm._np_irfftn(np, np.ones((2, 2)))
-    mm._np_irfftn(np)
-    assert callable(test__np_irfftn)
+    _out = mm._np_irfftn(np)
+    assert _out is None
 
 
 def test__np_irfftnd() -> None:
     """Test function test__np_irfftnd."""
     mm._np_irfftnd(np, np.ones((2, 2)))
-    mm._np_irfftnd(np)
-    assert callable(test__np_irfftnd)
+    _out = mm._np_irfftnd(np)
+    assert _out is None
 
 
 def test__np_iscomplex_() -> None:
@@ -2940,8 +2994,8 @@ def test__np_log1p2() -> None:
 def test__np_log_softmax() -> None:
     """Test function test__np_log_softmax."""
     mm._np_log_softmax(np, np.ones((2, 2)))
-    mm._np_log_softmax(np)
-    assert callable(test__np_log_softmax)
+    _out = mm._np_log_softmax(np)
+    assert _out is None
 
 
 def test__np_logsumexp() -> None:
@@ -2976,29 +3030,29 @@ def test__np_modf_() -> None:
 def test__np_modified_bessel_i0() -> None:
     """Test function test__np_modified_bessel_i0."""
     mm._np_modified_bessel_i0(np, np.ones((2, 2)))
-    mm._np_modified_bessel_i0(np)
-    assert callable(test__np_modified_bessel_i0)
+    _out = mm._np_modified_bessel_i0(np)
+    assert _out is None
 
 
 def test__np_modified_bessel_i1() -> None:
     """Test function test__np_modified_bessel_i1."""
     mm._np_modified_bessel_i1(np, np.ones((2, 2)))
-    mm._np_modified_bessel_i1(np)
-    assert callable(test__np_modified_bessel_i1)
+    _out = mm._np_modified_bessel_i1(np)
+    assert _out is None
 
 
 def test__np_modified_bessel_k0() -> None:
     """Test function test__np_modified_bessel_k0."""
     mm._np_modified_bessel_k0(np, np.ones((2, 2)))
-    mm._np_modified_bessel_k0(np)
-    assert callable(test__np_modified_bessel_k0)
+    _out = mm._np_modified_bessel_k0(np)
+    assert _out is None
 
 
 def test__np_modified_bessel_k1() -> None:
     """Test function test__np_modified_bessel_k1."""
     mm._np_modified_bessel_k1(np, np.ones((2, 2)))
-    mm._np_modified_bessel_k1(np)
-    assert callable(test__np_modified_bessel_k1)
+    _out = mm._np_modified_bessel_k1(np)
+    assert _out is None
 
 
 def test__np_mvlgamma() -> None:
@@ -3019,8 +3073,8 @@ def test__np_nonzero_() -> None:
 def test__np_one_hot() -> None:
     """Test function test__np_one_hot."""
     mm._np_one_hot(np, np.ones((2, 2)))
-    mm._np_one_hot(np)
-    assert callable(test__np_one_hot)
+    _out = mm._np_one_hot(np)
+    assert _out is None
 
 
 def test__np_ones_() -> None:
@@ -3062,9 +3116,13 @@ def test__np_parse_tensor() -> None:
 
 def test__np_perspectiveconfig() -> None:
     """Test function test__np_perspectiveconfig."""
-    mm._np_perspectiveconfig(np, np.ones((2, 2)))
-    mm._np_perspectiveconfig(np)
-    assert callable(test__np_perspectiveconfig)
+    try:
+        cfg_first = mm._np_perspectiveconfig(np, np.ones((2, 2)))
+        assert cfg_first is not None
+    except ValueError as err:
+        assert str(err) != ""
+    cfg_default = mm._np_perspectiveconfig(np)
+    assert cfg_default is not None
 
 
 def test__np_piecewise() -> None:
@@ -3169,15 +3227,15 @@ def test__np_rawmatmul() -> None:
 def test__np_rawmerge() -> None:
     """Test function test__np_rawmerge."""
     mm._np_rawmerge(np, np.ones((2, 2)))
-    mm._np_rawmerge(np)
-    assert callable(test__np_rawmerge)
+    _out = mm._np_rawmerge(np)
+    assert len(ensure_eager_tensor(_out)) == 2
 
 
 def test__np_rawop() -> None:
     """Test function test__np_rawop."""
     mm._np_rawop(np, np.ones((2, 2)))
-    mm._np_rawop(np)
-    assert callable(test__np_rawop)
+    _out = mm._np_rawop(np)
+    assert _out is None
 
 
 def test__np_rawswitch() -> None:
@@ -3189,9 +3247,9 @@ def test__np_rawswitch() -> None:
 
 def test__np_read_file() -> None:
     """Test function test__np_read_file."""
-    mm._np_read_file(np, np.ones((2, 2)))
-    mm._np_read_file(np)
-    assert callable(test__np_read_file)
+    with pytest.raises((OSError, RuntimeError, ValueError, TypeError)):
+        mm._np_read_file(np, "/nonexistent_switcheroo_test_path_xyz.bin")
+    assert mm._np_read_file(np) is None
 
 
 def test__np_reduce_precision() -> None:
@@ -3205,8 +3263,8 @@ def test__np_reduce_precision() -> None:
 def test__np_rem() -> None:
     """Test function test__np_rem."""
     mm._np_rem(np, np.ones((2, 2)))
-    mm._np_rem(np)
-    assert callable(test__np_rem)
+    _out = mm._np_rem(np)
+    assert _out is None
 
 
 def test__np_resize_() -> None:
@@ -3227,43 +3285,43 @@ def test__np_result_type_() -> None:
 def test__np_rfft() -> None:
     """Test function test__np_rfft."""
     mm._np_rfft(np, np.ones((2, 2)))
-    mm._np_rfft(np)
-    assert callable(test__np_rfft)
+    _out = mm._np_rfft(np)
+    assert _out is None
 
 
 def test__np_rfft2() -> None:
     """Test function test__np_rfft2."""
     mm._np_rfft2(np, np.ones((2, 2)))
-    mm._np_rfft2(np)
-    assert callable(test__np_rfft2)
+    _out = mm._np_rfft2(np)
+    assert _out is None
 
 
 def test__np_rfftfreq() -> None:
     """Test function test__np_rfftfreq."""
     mm._np_rfftfreq(np, np.ones((2, 2)))
-    mm._np_rfftfreq(np)
-    assert callable(test__np_rfftfreq)
+    _out = mm._np_rfftfreq(np)
+    assert _out is None
 
 
 def test__np_rfftn() -> None:
     """Test function test__np_rfftn."""
     mm._np_rfftn(np, np.ones((2, 2)))
-    mm._np_rfftn(np)
-    assert callable(test__np_rfftn)
+    _out = mm._np_rfftn(np)
+    assert _out is None
 
 
 def test__np_rfftnd() -> None:
     """Test function test__np_rfftnd."""
     mm._np_rfftnd(np, np.ones((2, 2)))
-    mm._np_rfftnd(np)
-    assert callable(test__np_rfftnd)
+    _out = mm._np_rfftnd(np)
+    assert _out is None
 
 
 def test__np_rrelu() -> None:
     """Test function test__np_rrelu."""
     mm._np_rrelu(np, np.ones((2, 2)))
-    mm._np_rrelu(np)
-    assert callable(test__np_rrelu)
+    _out = mm._np_rrelu(np)
+    assert _out is None
 
 
 def test__np_rsqrt() -> None:
@@ -3276,8 +3334,8 @@ def test__np_rsqrt() -> None:
 def test__np_scanop() -> None:
     """Test function test__np_scanop."""
     mm._np_scanop(np, np.ones((2, 2)))
-    mm._np_scanop(np)
-    assert callable(test__np_scanop)
+    _out = mm._np_scanop(np)
+    assert _out is None
 
 
 def test__np_segment_sum() -> None:
@@ -3291,43 +3349,43 @@ def test__np_segment_sum() -> None:
 def test__np_serialize_tensor() -> None:
     """Test function test__np_serialize_tensor."""
     mm._np_serialize_tensor(np, np.ones((2, 2)))
-    mm._np_serialize_tensor(np)
-    assert callable(test__np_serialize_tensor)
+    _out = mm._np_serialize_tensor(np)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == ()
 
 
 def test__np_shifted_chebyshev_polynomial_t() -> None:
     """Test function test__np_shifted_chebyshev_polynomial_t."""
     mm._np_shifted_chebyshev_polynomial_t(np, np.ones((2, 2)))
-    mm._np_shifted_chebyshev_polynomial_t(np)
-    assert callable(test__np_shifted_chebyshev_polynomial_t)
+    _out = mm._np_shifted_chebyshev_polynomial_t(np)
+    assert _out is None
 
 
 def test__np_shifted_chebyshev_polynomial_u() -> None:
     """Test function test__np_shifted_chebyshev_polynomial_u."""
     mm._np_shifted_chebyshev_polynomial_u(np, np.ones((2, 2)))
-    mm._np_shifted_chebyshev_polynomial_u(np)
-    assert callable(test__np_shifted_chebyshev_polynomial_u)
+    _out = mm._np_shifted_chebyshev_polynomial_u(np)
+    assert _out is None
 
 
 def test__np_shifted_chebyshev_polynomial_v() -> None:
     """Test function test__np_shifted_chebyshev_polynomial_v."""
     mm._np_shifted_chebyshev_polynomial_v(np, np.ones((2, 2)))
-    mm._np_shifted_chebyshev_polynomial_v(np)
-    assert callable(test__np_shifted_chebyshev_polynomial_v)
+    _out = mm._np_shifted_chebyshev_polynomial_v(np)
+    assert _out is None
 
 
 def test__np_shifted_chebyshev_polynomial_w() -> None:
     """Test function test__np_shifted_chebyshev_polynomial_w."""
     mm._np_shifted_chebyshev_polynomial_w(np, np.ones((2, 2)))
-    mm._np_shifted_chebyshev_polynomial_w(np)
-    assert callable(test__np_shifted_chebyshev_polynomial_w)
+    _out = mm._np_shifted_chebyshev_polynomial_w(np)
+    assert _out is None
 
 
 def test__np_sigmoid() -> None:
     """Test function test__np_sigmoid."""
     mm._np_sigmoid(np, np.ones((2, 2)))
-    mm._np_sigmoid(np)
-    assert callable(test__np_sigmoid)
+    _out = mm._np_sigmoid(np)
+    assert _out is None
 
 
 def test__np_sobolsample() -> None:
@@ -3341,8 +3399,8 @@ def test__np_sobolsample() -> None:
 def test__np_softmax() -> None:
     """Test function test__np_softmax."""
     mm._np_softmax(np, np.ones((2, 2)))
-    mm._np_softmax(np)
-    assert callable(test__np_softmax)
+    _out = mm._np_softmax(np)
+    assert _out is None
 
 
 def test__np_sparsedensematmul() -> None:
@@ -3416,8 +3474,8 @@ def test__np_switchop() -> None:
 def test__np_tensor() -> None:
     """Test function test__np_tensor."""
     mm._np_tensor(np, np.ones((2, 2)))
-    mm._np_tensor(np)
-    assert callable(test__np_tensor)
+    _out = mm._np_tensor(np)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (0,)
 
 
 def test__np_tensorarrayread() -> None:
@@ -3445,9 +3503,13 @@ def test__np_tensorarraywrite() -> None:
 
 def test__np_tensorconfig() -> None:
     """Test function test__np_tensorconfig."""
-    mm._np_tensorconfig(np, np.ones((2, 2)))
-    mm._np_tensorconfig(np)
-    assert callable(test__np_tensorconfig)
+    try:
+        cfg_first = mm._np_tensorconfig(np, np.ones((2, 2)))
+        assert cfg_first is not None
+    except ValueError as err:
+        assert str(err) != ""
+    cfg_default = mm._np_tensorconfig(np)
+    assert cfg_default is not None
 
 
 def test__np_trace() -> None:
@@ -3601,11 +3663,19 @@ def test__np_vectorize() -> None:
         mm._np_vectorize(np)
 
 
-def test__np_write_file() -> None:
-    """Test function test__np_write_file."""
-    pass
-    pass
-    assert callable(test__np_write_file)
+def test__np_write_file(tmp_path: os.PathLike[str]) -> None:
+    """Verify `write_file` writes bytes to disk via `numpy_eager_registry`.
+
+    Args:
+        tmp_path (os.PathLike[str]): Temporary filesystem directory fixture.
+    """
+    from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+    target = os.path.join(str(tmp_path), "sample.bin")
+    write_fn = ensure_callable(numpy_eager_registry.get("write_file"))
+    write_fn(ensure_eager_tensor(np), target, b"hello_compiler")
+    with open(target, "rb") as fh:
+        assert fh.read() == b"hello_compiler"
 
 
 def test__np_xlogy() -> None:

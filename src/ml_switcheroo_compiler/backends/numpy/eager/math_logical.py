@@ -13,12 +13,12 @@ def _np_not_equal(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np not equal operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.not_equal(*args, **kwargs)
 
@@ -28,12 +28,12 @@ def _np_greater(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np greater operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.greater(*args, **kwargs)
 
@@ -43,12 +43,12 @@ def _np_greater_equal(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np greater equal operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.greater_equal(*args, **kwargs)
 
@@ -58,12 +58,12 @@ def _np_less(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """Execute the eager np less operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.less(*args, **kwargs)
 
@@ -73,12 +73,12 @@ def _np_less_equal(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np less equal operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.less_equal(*args, **kwargs)
 
@@ -88,12 +88,12 @@ def _np_logical_and(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np logical and operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.logical_and(*args, **kwargs)
 
@@ -103,12 +103,12 @@ def _np_logical_or(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Execute the eager np logical or operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.logical_or(*args, **kwargs)
 
@@ -118,12 +118,12 @@ def _np_logical_not(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np logical not operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.logical_not(*args, **kwargs)
 
@@ -133,12 +133,12 @@ def _np_logical_xor(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np logical xor operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.logical_xor(*args, **kwargs)
 
@@ -148,12 +148,12 @@ def _np_where(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """Execute the eager np where operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.where(*args, **kwargs)
 
@@ -163,15 +163,15 @@ def _np_assert(backend_module: BackendModuleProtocol, condition: EagerValue, **k
     """Execute the eager np assert operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        condition (EagerValue): The condition parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        condition (EagerValue): Input `condition` argument (condition).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        AssertionError: An exception.
+        AssertionError: If invalid inputs or unsupported runtime conditions trigger `AssertionError`.
     """
     if not get_backend_member(np, "all")(condition):
         data = kwargs.get("data", ["Assertion failed."])

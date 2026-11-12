@@ -21,6 +21,7 @@ def test_math_binary_coverage() -> None:
 
     ops = [ensure_callable(fn) for name, fn in get_test_members(mb).items() if name.startswith("_") and callable(fn)]
     arg = np.array([1.0, 2.0])
+    evaluated_outputs = 0
     for op in ops:
         sig = inspect.signature(op)
         args_to_pass = []
@@ -32,14 +33,18 @@ def test_math_binary_coverage() -> None:
             else:
                 ensure_callable(args_to_pass.append)(arg)
         try:
-            op(*args_to_pass)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            out = op(*args_to_pass)
+            if out is not None:
+                evaluated_outputs += 1
+        except (ValueError, TypeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError):
+            evaluated_outputs += 0
         try:
-            op(*args_to_pass[:-1])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_math_binary_coverage)
+            out2 = op(*args_to_pass[:-1])
+            if out2 is not None:
+                evaluated_outputs += 1
+        except (ValueError, TypeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError):
+            evaluated_outputs += 0
+    assert evaluated_outputs >= 5
 
 
 def test_polygamma_zeta_missing_args() -> None:
@@ -48,8 +53,8 @@ def test_polygamma_zeta_missing_args() -> None:
 
     arg = np.array([1.0, 2.0])
     mb._np_polygamma(ensure_eager_tensor(np), arg)
-    mb._np_zeta(ensure_eager_tensor(np), arg)
-    assert callable(test_polygamma_zeta_missing_args)
+    _out = mb._np_zeta(ensure_eager_tensor(np), arg)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2,) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [0.0, 0.0], atol=1e-3))
 
 
 def test_missing_math_binary() -> None:
@@ -64,6 +69,9 @@ def test_missing_math_binary() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `zeros_like`.
             """
             return np.zeros_like(x)
 
@@ -72,6 +80,9 @@ def test_missing_math_binary() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return np.asarray(x)
 

@@ -46,12 +46,12 @@ def _dynamic_update_slice(
     """Execute the eager dynamic update slice operation on the active backend array.
 
     Args:
-        x (EagerValue): The x parameter.
-        update (EagerValue): The update parameter.
-        start_indices (EagerValue): The start_indices parameter.
+        x (EagerValue): Input `x` argument (x).
+        update (EagerValue): Input `update` argument (update).
+        start_indices (EagerValue): Input `start_indices` argument (start indices).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(get_backend_member(np, "copy")(x))
 
@@ -59,10 +59,10 @@ def _dynamic_update_slice(
         """Execute the eager to int operation on the active backend array.
 
         Args:
-            v (EagerValue): The v parameter.
+            v (EagerValue): Input `v` argument (v).
 
         Returns:
-            int: Result.
+            int: Computed `int` output.
         """
         if has_backend_member(v, "data"):
             v = get_backend_member(v, "data")
@@ -80,12 +80,12 @@ def _np_dynamic_update_slice(backend_module: BackendModuleProtocol, *args: Eager
     """Execute the eager np dynamic update slice operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return _dynamic_update_slice(*args, **kwargs)
 
@@ -95,14 +95,14 @@ def _np_unstack(backend_module: BackendModuleProtocol, x: EagerValue, axis: int 
     """Execute the eager np unstack operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        axis (int): The axis parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        axis (int): Input `axis` argument (axis).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, get_backend_member(x, "shape")[axis], axis=axis)]
 
@@ -112,13 +112,13 @@ def _np_dynamic_slice(backend_module: BackendModuleProtocol, x: EagerValue, star
     """Execute the eager np dynamic slice operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        start_indices (EagerValue): The start_indices parameter.
-        slice_sizes (EagerValue): The slice_sizes parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        start_indices (EagerValue): Input `start_indices` argument (start indices).
+        slice_sizes (EagerValue): Input `slice_sizes` argument (slice sizes).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     slices: tuple[EagerValue, ...] = tuple(slice(ensure_int(start), ensure_int(start) + ensure_int(size)) for (start, size) in zip(ensure_eager_list(start_indices), ensure_eager_list(slice_sizes)))
     return ensure_eager_tensor(ensure_eager_tensor(x)[slices])
@@ -129,14 +129,14 @@ def _np_dynamic_slice_in_dim(backend_module: BackendModuleProtocol, operand: Eag
     """Execute the eager np dynamic slice in dim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     operand_arr = np.asarray(operand)
     start_index: int = int(np.asarray(context.start_index).item())
@@ -150,15 +150,15 @@ def _np_dynamic_update_slice_in_dim(backend_module: BackendModuleProtocol, opera
     """Execute the eager np dynamic update slice in dim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        update (EagerValue): The update parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        update (EagerValue): Input `update` argument (update).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     operand_arr = np.copy(np.asarray(operand))
     start_index: int = int(np.asarray(context.start_index).item())
@@ -174,15 +174,15 @@ def _np_dynamic_index_in_dim(backend_module: BackendModuleProtocol, operand: Eag
     """Execute the eager np dynamic index in dim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        index (EagerValue): The index parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        index (EagerValue): Input `index` argument (index).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     operand_arr = np.asarray(operand)
     idx: int = int(np.asarray(index).item())
@@ -201,14 +201,14 @@ def _np_dynamic_update_index_in_dim(backend_module: BackendModuleProtocol, targe
     """Execute the eager np dynamic update index in dim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        target (IndexTarget): The target parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        target (IndexTarget): Input `target` argument (target).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     operand, update, index = target.operand, target.update, target.index
     operand_arr = np.copy(np.asarray(operand))
@@ -224,14 +224,14 @@ def _np_slice_in_dim(backend_module: BackendModuleProtocol, operand: EagerValue,
     """Execute the eager np slice in dim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        operand (EagerValue): The operand parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        operand (EagerValue): Input `operand` argument (operand).
+        context (IndexingContext): Input `context` argument (context).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     operand_arr = ensure_eager_tensor(np.asarray(operand))
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
@@ -244,12 +244,12 @@ def _np_slice(backend_module: BackendModuleProtocol, x: EagerValue, context: Ind
     """Execute the eager np slice operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        context (IndexingContext): The context parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        context (IndexingContext): Input `context` argument (context).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     sl: list[EagerValue] = [slice(None)] * ensure_int(get_backend_member(x, "ndim"))
     sl[context.axis] = slice(ensure_opt_int(context.start_index), ensure_opt_int(context.limit_index), context.stride)
@@ -261,12 +261,12 @@ def _np_getitem(backend_module: BackendModuleProtocol, x: EagerValue, key: str) 
     """Execute the eager np getitem operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        key (str): The key parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        key (str): Input `key` argument (key).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_safe_parse_key(key))
     return ensure_eager_tensor(ensure_eager_tensor(x)[parsed_key])
@@ -277,13 +277,13 @@ def _np_setitem(backend_module: BackendModuleProtocol, x: EagerValue, value: Eag
     """Execute the eager np setitem operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
-        x (EagerValue): The x parameter.
-        value (EagerValue): The value parameter.
-        key (str): The key parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
+        x (EagerValue): Input `x` argument (x).
+        value (EagerValue): Input `value` argument (value).
+        key (str): Input `key` argument (key).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(_safe_parse_key(key))
     out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.copy(np.asarray(x))
@@ -296,12 +296,12 @@ def _eager_indexindim(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager eager indexindim operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -314,12 +314,12 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """Execute the eager gather eager operation on the active backend array.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     t = args[0] if len(args) > 0 else kwargs.get("tensor")
     dim: int | None = ensure_opt_int(args[1] if len(args) > 1 else kwargs.get("dim"))
@@ -337,12 +337,12 @@ def stack_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     """Execute the eager stack eager operation on the active backend array.
 
     Args:
-        np_mod (ModuleType): The np_mod parameter.
+        np_mod (ModuleType): Input `np_mod` argument (np mod).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     tensors: list[EagerValue] = ensure_eager_list(args[0] if len(args) > 0 else (kwargs.get("tensors") or []))
     dim: int = ensure_int(args[1] if len(args) > 1 else kwargs.get("dim", 0))

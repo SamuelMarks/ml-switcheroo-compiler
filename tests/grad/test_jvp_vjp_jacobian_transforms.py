@@ -44,6 +44,9 @@ def test_jvp_has_aux_and_backend_execution() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, str]: Computed output value from `f_aux`.
         """
         return x * x, "aux_info"
 
@@ -103,6 +106,9 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, str]: Computed output value from `f_aux`.
         """
         return x * x * x, "aux_meta"
 
@@ -117,6 +123,9 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f_cube`.
         """
         return x * x * x
 
@@ -149,6 +158,9 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            Tensor: Computed output value from `f_scalar`.
         """
         return x[0]
 
@@ -161,6 +173,9 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, str]: Computed output value from `f_aux_fwd`.
         """
         return x * x, "aux_info_fwd"
 
@@ -174,6 +189,9 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, str]: Computed output value from `f_aux_rev`.
         """
         return x * x, "aux_info"
 
@@ -187,6 +205,9 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            tuple[Tensor, Tensor]: Computed output value from `f_multi`.
         """
         return x * 2.0, x * 3.0
 

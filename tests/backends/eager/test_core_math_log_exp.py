@@ -37,6 +37,9 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `expm1`.
             """
             return "expm1_val"
 
@@ -51,6 +54,9 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                float: Computed output value from `exp`.
             """
             return 2.0
 
@@ -66,6 +72,9 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `float_power`.
             """
             return "float_power_val"
 
@@ -78,6 +87,9 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `power`.
             """
             return "power_val"
 
@@ -112,6 +124,9 @@ def _test_math_log_exp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `frexp`.
             """
             return "frexp_val"
 
@@ -121,6 +136,9 @@ def _test_math_log_exp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `ldexp`.
             """
             return "ldexp_val"
 
@@ -149,6 +167,9 @@ def _test_math_log_exp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `slogdet`.
             """
             return "linalg_slogdet"
 
@@ -169,6 +190,9 @@ def _test_math_log_exp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `slogdet`.
             """
             return "root_slogdet"
 
@@ -192,7 +216,11 @@ def _test_math_log_exp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -
 
         @property
         def slogdet(self) -> EagerValue:
-            """Dynamic slogdet property raising on first check."""
+            """Dynamic slogdet property raising on first check.
+
+            Returns:
+                EagerValue: Computed output value from `slogdet`.
+            """
             self.calls += 1
             if self.calls == 1:
                 raise AttributeError("Not yet")
@@ -210,6 +238,9 @@ def _test_math_log_exp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `asarray`.
             """
             return np.asarray(x)
 
@@ -234,6 +265,9 @@ def _test_math_log_exp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `xlog1py`.
             """
             return "xlog1py_val"
 
@@ -255,6 +289,9 @@ def _test_math_log_exp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `xlogy`.
             """
             return "xlogy_val"
 

@@ -141,12 +141,12 @@ def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | Non
     """Execute ipc all gather for compiler processing.
 
     Args:
-        tensor: The tensor parameter.
-        axis (Optional[int]): The axis parameter.
-        mesh: The mesh parameter.
+        tensor: Input `tensor` argument (tensor).
+        axis (Optional[int]): Input `axis` argument (axis).
+        mesh: Input `mesh` argument (mesh).
 
     Returns:
-            IpcPayload: Result.
+            IpcPayload: Computed `IpcPayload` output.
     """
     if isinstance(tensor, str):
         return tensor
@@ -167,13 +167,13 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
     """Execute ipc reduce scatter for compiler processing.
 
     Args:
-        tensor: The tensor parameter.
-        op (str): The op parameter.
-        axis (Optional[int]): The axis parameter.
-        mesh: The mesh parameter.
+        tensor: Input `tensor` argument (tensor).
+        op (str): Input `op` argument (op).
+        axis (Optional[int]): Input `axis` argument (axis).
+        mesh: Input `mesh` argument (mesh).
 
     Returns:
-            IpcPayload: Result.
+            IpcPayload: Computed `IpcPayload` output.
     """
     if isinstance(tensor, str):
         return tensor
@@ -208,12 +208,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
     """Execute ipc all reduce for compiler processing.
 
     Args:
-        tensor: The tensor parameter.
-        op (str): The op parameter.
-        mesh: The mesh parameter.
+        tensor: Input `tensor` argument (tensor).
+        op (str): Input `op` argument (op).
+        mesh: Input `mesh` argument (mesh).
 
     Returns:
-            IpcPayload: Result.
+            IpcPayload: Computed `IpcPayload` output.
     """
     if isinstance(tensor, str):
         return tensor

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import importlib
-import sys
-import typing
+import os
 from unittest import mock
 
 import pytest
@@ -28,10 +27,8 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     set_random_seed,
     standardize_dtype,
 )
-from tests.testing_utils import ensure_attr_val, ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import ensure_attr_val, ensure_callable, ensure_eager_tensor
 
-if typing.TYPE_CHECKING:
-    pass
 CustomObjectScope = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).CustomObjectScope)
 custom_object_scope = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).custom_object_scope)
 deserialize_object = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils")).deserialize_object)
@@ -50,16 +47,17 @@ def test_configs() -> None:
 
 
 def test_set_random_seed() -> None:
-    """Test global random seed assignment across random and numpy modules."""
-    import types
+    """Test global random seed assignment across config, stdlib random, and active backend."""
+    mock_seeded_backend = mock.MagicMock()
+    with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_seeded_backend):
+        set_random_seed(42)
+        mock_seeded_backend.seed.assert_called_once_with(42)
 
-    m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
-    ensure_mutable(m).set_numpy_seed = ensure_eager_tensor(mock.Mock())
-    with mock.patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.numpy.utils": m}):
-        set_random_seed(42)
-    with mock.patch("random.seed", side_effect=ImportError):
-        set_random_seed(42)
-    assert ensure_eager_tensor(m).set_numpy_seed.called
+    class _SeedlessBackend:
+        """Backend stub without `.seed()` method."""
+
+    with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=_SeedlessBackend()):
+        set_random_seed(99)
 
 
 def test_validate_cache() -> None:
@@ -83,38 +81,85 @@ def test_download_remote_file() -> None:
             _download_remote_file("http://dummy", "dummy")
 
 
-def test_extract_archive() -> None:
-    """Test archive extraction for tar, tar.gz, and zip formats."""
-    with mock.patch("tarfile.open"):
-        _extract_archive("test.tar.gz", "dir")
-        _extract_archive("test.tar", "dir")
+def test_extract_archive(tmp_path: os.PathLike[str]) -> None:
+    """Test safe archive extraction and ZipSlip/TarSlip path traversal rejection.
 
-    with mock.patch("zipfile.ZipFile"):
-        _extract_archive("test.zip", "dir")
+    Args:
+        tmp_path (os.PathLike[str]): Temporary filesystem directory fixture.
+    """
+    import tarfile
 
-    _extract_archive("test.txt", "dir")  # nothing happens
-    assert callable(_extract_archive)
+    safe_member = tarfile.TarInfo(name="subdir/file.txt")
+    evil_member = tarfile.TarInfo(name="../../etc/passwd")
+
+    with mock.patch("tarfile.open") as mock_tar:
+        mock_tar.return_value.__enter__.return_value.getmembers.return_value = [safe_member]
+        _extract_archive("test.tar.gz", str(tmp_path))
+        _extract_archive("test.tar", str(tmp_path))
+
+    with mock.patch("tarfile.open") as mock_tar_evil:
+        mock_tar_evil.return_value.__enter__.return_value.getmembers.return_value = [evil_member]
+        with pytest.raises(ValueError, match="Unsafe archive member path traversal"):
+            _extract_archive("evil.tar.gz", str(tmp_path))
+
+    with mock.patch("zipfile.ZipFile") as mock_zip:
+        mock_zip.return_value.__enter__.return_value.namelist.return_value = ["ok.txt"]
+        _extract_archive("test.zip", str(tmp_path))
+
+    with mock.patch("zipfile.ZipFile") as mock_zip_evil:
+        mock_zip_evil.return_value.__enter__.return_value.namelist.return_value = ["../escape.txt"]
+        with pytest.raises(ValueError, match="Unsafe archive member path traversal"):
+            _extract_archive("evil.zip", str(tmp_path))
+
+    _extract_archive("test.txt", str(tmp_path))
 
 
-def test_get_file() -> None:
-    """Test file download and extraction caching utility."""
+def test_get_file(tmp_path: os.PathLike[str]) -> None:
+    """Test file download, caching, extraction, and MD5/SHA256 checksum verification.
+
+    Args:
+        tmp_path (os.PathLike[str]): Temporary filesystem directory fixture.
+    """
+    import hashlib
+    import os
+
     with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True):
         res = get_file("test", "http://test")
         assert res.endswith("test")
 
     with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False), mock.patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file"), mock.patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive") as mock_extract:
-        # Extract True
         cfg = GetFileConfig(archive_config=ArchiveConfig(extract=True))
         get_file("test", "http://test", cfg)
         mock_extract.assert_called_once()
 
-        # Extract False and untar False with custom cache_dir
         cfg_no_extract = GetFileConfig(
-            cache_config=CacheConfig(cache_dir="/tmp/custom_cache"),
+            cache_config=CacheConfig(cache_dir=str(tmp_path)),
             archive_config=ArchiveConfig(extract=False, untar=False),
         )
         res_no_extract = get_file("test2", "http://test", cfg_no_extract)
         assert res_no_extract.endswith("test2")
+
+    # Verify real MD5 and SHA256 validation and mismatch deletion
+    payload = b"verified_weights_payload"
+    md5_hex = hashlib.md5(payload).hexdigest()
+    sha_hex = hashlib.sha256(payload).hexdigest()
+    datasets_dir = os.path.join(str(tmp_path), "datasets")
+    os.makedirs(datasets_dir, exist_ok=True)
+    cached_path = os.path.join(datasets_dir, "weights.bin")
+    with open(cached_path, "wb") as fh:
+        fh.write(payload)
+
+    assert get_file("weights.bin", "http://test", GetFileConfig(cache_config=CacheConfig(cache_dir=str(tmp_path)), hash_config=HashConfig(md5_hash=md5_hex))) == cached_path
+    assert get_file("weights.bin", "http://test", GetFileConfig(cache_config=CacheConfig(cache_dir=str(tmp_path)), hash_config=HashConfig(file_hash=sha_hex, hash_algorithm="auto"))) == cached_path
+
+    with pytest.raises(ValueError, match="File hash mismatch"):
+        get_file("weights.bin", "http://test", GetFileConfig(cache_config=CacheConfig(cache_dir=str(tmp_path)), hash_config=HashConfig(md5_hash="0" * 32)))
+    assert not os.path.exists(cached_path)
+
+    # Mismatch when file no longer exists on disk before remove check
+    with mock.patch("builtins.open", mock.mock_open(read_data=b"abc")), mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True), mock.patch("os.path.exists", return_value=False):
+        with pytest.raises(ValueError, match="File hash mismatch"):
+            get_file("ghost.bin", "http://test", GetFileConfig(cache_config=CacheConfig(cache_dir=str(tmp_path)), hash_config=HashConfig(file_hash="deadbeef", hash_algorithm="sha256")))
 
 
 def test_progbar() -> None:
@@ -220,7 +265,11 @@ def test_custom_object_scope_and_serialization() -> None:
             self.units = units
 
         def get_config(self) -> dict[str, int]:
-            """Get configuration dictionary."""
+            """Get configuration dictionary.
+
+            Returns:
+                dict[str, int]: Computed output value from `get_config`.
+            """
             return {"units": self.units}
 
         @classmethod
@@ -229,6 +278,9 @@ def test_custom_object_scope_and_serialization() -> None:
 
             Args:
                 config: Test parameter `config`.
+
+            Returns:
+                CustomDense: Computed output value from `from_config`.
             """
             return cls(**config)
 
@@ -414,7 +466,11 @@ def test_framework_agnostic_serialization_separation() -> None:
             self.size = size
 
         def get_config(self) -> dict[str, int]:
-            """Get configuration dictionary."""
+            """Get configuration dictionary.
+
+            Returns:
+                dict[str, int]: Computed output value from `get_config`.
+            """
             return {"size": self.size}
 
         @classmethod
@@ -423,6 +479,9 @@ def test_framework_agnostic_serialization_separation() -> None:
 
             Args:
                 config: Test parameter `config`.
+
+            Returns:
+                AgnosticLayer: Computed output value from `from_config`.
             """
             return cls(**config)
 

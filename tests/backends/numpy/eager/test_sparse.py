@@ -26,16 +26,3 @@ def test_sparse_ops_coverage() -> None:
     assert ensure_callable(np.array_equal)(ensure_callable(_np_sparsesampledadd)(np, a, b), a + b)
     assert ensure_callable(np.array_equal)(ensure_callable(_np_sparsesegmentsum)(np, a, ensure_callable(np.array)([0, 1]), ensure_callable(np.array)([0, 0])), ensure_callable(np.array)([[4, 6]]))
     assert ensure_callable(np.array_equal)(ensure_callable(_np_sparsetranspose)(np, a), a.T)
-
-
-def test_ragged_tensor_to_dense_jax() -> None:
-    """Test function test_ragged_tensor_to_dense_jax."""
-
-    class MockJnpArray:
-        """Test class MockJnpArray."""
-
-        pass
-
-    # Not testing actual JAX import to avoid dependencies issues, just passing mock
-    # Wait, JAX numpy might be imported
-    assert callable(test_ragged_tensor_to_dense_jax)

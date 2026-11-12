@@ -143,7 +143,11 @@ def test_axis_index_and_infeed() -> None:
 
     # Infeed from generator / iterator
     def dummy_gen() -> Iterator[EagerValue]:
-        """Test function dummy_gen."""
+        """Test function dummy_gen.
+
+        Yields:
+            EagerValue: Yielded test context or value from `dummy_gen`.
+        """
         yield 100
         yield 200
 
@@ -222,6 +226,9 @@ def test_writefile_operation() -> None:
                 Args:
                     a: Test parameter `a`.
                     k: Test parameter `k`.
+
+                Returns:
+                    EagerValue: Computed output value from `writefile`.
                 """
                 return 42
 
@@ -286,6 +293,9 @@ def test_fftconvolve_fallback() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftconvolve`.
             """
             return np.array([77.0])
 
@@ -307,6 +317,9 @@ def test_fftconvolve_fallback() -> None:
             Args:
                 a: Test parameter `a`.
                 k: Test parameter `k`.
+
+            Returns:
+                EagerValue: Computed output value from `fftconvolve`.
             """
             return np.array([88.0])
 
@@ -347,6 +360,9 @@ def test_math_fft_edge_cases() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `fftnd`.
             """
             return np.array([123.0])
 
@@ -368,6 +384,9 @@ def test_math_fft_edge_cases() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `hfft`.
             """
             return np.array([456.0])
 
@@ -405,7 +424,11 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
         """Test class DummyWithToBytes."""
 
         def tobytes(self) -> bytes:
-            """Test function tobytes."""
+            """Test function tobytes.
+
+            Returns:
+                bytes: Computed output value from `tobytes`.
+            """
             return b"dummy_bytes"
 
     assert _np_writefile(ensure_mod(_BareMod()), str(target_file), ensure_eager_tensor(DummyWithToBytes())) == 1
@@ -431,6 +454,9 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_open_error`.
         """
         raise OSError("Cannot open error")
 

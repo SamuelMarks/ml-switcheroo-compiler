@@ -9,9 +9,9 @@ def exists(path: str) -> bool:
     """Return True if path exists.
 
     Args:
-        path (str): The path parameter.
+        path (str): Input `path` argument (path).
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     return os.path.exists(path)

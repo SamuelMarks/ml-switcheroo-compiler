@@ -74,6 +74,9 @@ def test_np_time_distributed() -> None:
                 name: Test parameter `name`.
                 x: Test parameter `x`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return ensure_eager_tensor(x) * ensure_eager_tensor(2)
 

@@ -29,11 +29,11 @@ class RopeOp(OpDef):
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): The input parameter.
+            input (EagerTensorProtocol): Input `input` argument (input).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         _typed_ret_1: TensorOrScalar = extract_shape(input)
         return _typed_ret_1

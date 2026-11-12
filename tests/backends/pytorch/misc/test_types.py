@@ -38,7 +38,11 @@ class MockTensor:
         self.data = data
 
     def item(self) -> EagerValue:
-        """Item."""
+        """Item.
+
+        Returns:
+            EagerValue: Computed output value from `item`.
+        """
         return ensure_eager_tensor(self.data)[0]
 
 
@@ -50,7 +54,11 @@ mock_torch.unknown_dtype = None
 
 @pytest.fixture(autouse=True)
 def _patch_pytorch_types() -> Iterator[None]:
-    """Temporarily patch pytorch_types.torch and restore afterwards."""
+    """Temporarily patch pytorch_types.torch and restore afterwards.
+
+    Yields:
+        None: Yielded test context or value from `_patch_pytorch_types`.
+    """
     orig = ensure_eager_tensor(ensure_eager_tensor(pytorch_types).torch)
     ensure_mutable(pytorch_types).torch = ensure_eager_tensor(mock_torch)
     try:

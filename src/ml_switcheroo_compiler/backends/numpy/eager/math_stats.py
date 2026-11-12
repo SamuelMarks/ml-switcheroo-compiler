@@ -11,12 +11,12 @@ def _np_average(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Execute the eager np average operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return backend_module.average(*args, **kwargs)
 
@@ -26,7 +26,7 @@ def _np_corrcoef(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """Return Pearson product-moment correlation coefficients.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -40,7 +40,7 @@ def _np_correlate(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -54,7 +54,7 @@ def _np_cov(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -68,7 +68,7 @@ def _np_histogram_(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """Implement Histogram via histogram.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -82,7 +82,7 @@ def _np_histogram2d_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Histogram2d via histogram2d.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -96,7 +96,7 @@ def _np_histogram_bin_edges_(backend_module: BackendModuleProtocol, *args: Eager
     """Implement HistogramBinEdges via histogram_bin_edges.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -110,7 +110,7 @@ def _np_histogramdd_(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Implement Histogramdd via histogramdd.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -124,7 +124,7 @@ def _np_median_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """Implement Median via median.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Variable positional arguments.
         **kwargs (EagerValue): Arbitrary keyword arguments.
 
@@ -138,15 +138,15 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, *args: EagerValu
     """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     import numpy as np
 
@@ -180,15 +180,15 @@ def _np_descriptive(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """Execute the eager np descriptive operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
     import numpy as np
 
@@ -207,12 +207,12 @@ def _np_distributions(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np distributions operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -224,12 +224,12 @@ def _np_randomcategorical(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np randomcategorical operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -258,12 +258,12 @@ def _np_randompermutation(backend_module: BackendModuleProtocol, *args: EagerVal
     """Execute the eager np randompermutation operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -286,12 +286,12 @@ def _np_randomtruncatednormal(backend_module: BackendModuleProtocol, *args: Eage
     """Execute the eager np randomtruncatednormal operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
@@ -302,12 +302,12 @@ def _np_randombernoulli(backend_module: BackendModuleProtocol, *args: EagerValue
     """Execute the eager np randombernoulli operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
@@ -319,12 +319,12 @@ def _np_randomuniform(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np randomuniform operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     low = kwargs.get("minval", args[1] if len(args) > 1 else 0.0)
@@ -337,12 +337,12 @@ def _np_randomchoice(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """Execute the eager np randomchoice operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -364,12 +364,12 @@ def _np_randomshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """Execute the eager np randomshuffle operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 
@@ -386,12 +386,12 @@ def _np_dirichlet(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """Execute the eager np dirichlet operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         *args (EagerValue): Positional args.
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
 

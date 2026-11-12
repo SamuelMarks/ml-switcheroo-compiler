@@ -111,13 +111,13 @@ def scan(
     """Scan loop construct.
 
     Args:
-        f (TensorOrScalar): The f parameter.
-        init (tuple): The init parameter.
-        xs (Tensor): The xs parameter.
-        config (Optional): The config parameter.
+        f (TensorOrScalar): Input `f` argument (f).
+        init (tuple): Input `init` argument (init).
+        xs (Tensor): Input `xs` argument (xs).
+        config (Optional): Input `config` argument (config).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     conf = config if config is not None else ScanConfig()
     fn_callable = f
@@ -214,10 +214,10 @@ def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
     """Swap batch and time dimensions.
 
     Args:
-        inputs (Tensor): The inputs parameter.
+        inputs (Tensor): Input `inputs` argument (inputs).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dims = list(range(len(inputs.shape)))
     dims[0], dims[1] = 1, 0
@@ -233,13 +233,13 @@ def rnn(
     """Define base recurrent loop evaluation.
 
     Args:
-        inputs (Tensor): The inputs parameter.
-        initial_state (tuple): The initial_state parameter.
-        cell_fn (TensorOrScalar): The cell_fn parameter.
-        config (Optional): The config parameter.
+        inputs (Tensor): Input `inputs` argument (inputs).
+        initial_state (tuple): Input `initial_state` argument (initial state).
+        cell_fn (TensorOrScalar): Input `cell_fn` argument (cell fn).
+        config (Optional): Input `config` argument (config).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     conf = config if config is not None else RNNConfig()
     cell_callable = ensure_callable(cell_fn)
@@ -250,11 +250,11 @@ def rnn(
         """Compute the scan fn tensor operation.
 
         Args:
-            carry (Tensor): The carry parameter.
-            x (Tensor): The x parameter.
+            carry (Tensor): Input `carry` argument (carry).
+            x (Tensor): Input `x` argument (x).
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         out, new_carry = _unpack_pair(cell_callable(x, carry))
         return new_carry, out
@@ -282,8 +282,8 @@ class RNNCellDeviceWrapper:
         """Init.
 
         Args:
-            cell (TensorOrScalar): The cell parameter.
-            device (TensorOrScalar): The device parameter.
+            cell (TensorOrScalar): Input `cell` argument (cell).
+            device (TensorOrScalar): Input `device` argument (device).
             **kwargs (TensorOrScalar): Keyword args.
         """
         self._cell = cell
@@ -293,12 +293,12 @@ class RNNCellDeviceWrapper:
         """Call.
 
         Args:
-        inputs (TensorOrScalar): The inputs parameter.
-        state (TensorOrScalar): The state parameter.
+        inputs (TensorOrScalar): Input `inputs` argument (inputs).
+        state (TensorOrScalar): Input `state` argument (state).
         **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
         """
         return ensure_eager_tensor(ensure_callable(self._cell)(inputs, state, **kwargs))
 
@@ -363,8 +363,8 @@ class RNNCellResidualWrapper:
         """Init.
 
         Args:
-            cell (TensorOrScalar): The cell parameter.
-            residual_fn (TensorOrScalar): The residual_fn parameter.
+            cell (TensorOrScalar): Input `cell` argument (cell).
+            residual_fn (TensorOrScalar): Input `residual_fn` argument (residual fn).
             **kwargs (TensorOrScalar): Keyword args.
         """
         self._cell = cell
@@ -374,12 +374,12 @@ class RNNCellResidualWrapper:
         """Call.
 
         Args:
-            inputs (TensorOrScalar): The inputs parameter.
-            state (TensorOrScalar): The state parameter.
+            inputs (TensorOrScalar): Input `inputs` argument (inputs).
+            state (TensorOrScalar): Input `state` argument (state).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple: Computed `tuple` output.
         """
         out, new_state = _unpack_pair(ensure_callable(self._cell)(inputs, state, **kwargs))
         if self._residual_fn is not None:

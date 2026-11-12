@@ -14,7 +14,11 @@ if typing.TYPE_CHECKING:
 
 
 def test_jax_ragged_eager(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_jax_ragged_eager."""
+    """Test function test_jax_ragged_eager.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     import types
 
     import ml_switcheroo_compiler.backends.jax.eager as jax_eager

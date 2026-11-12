@@ -68,11 +68,11 @@ def _np_degeneration(
 
     Args:
         backend_module (ModuleType): The backend module.
-        images (np.ndarray): The images parameter.
+        images (np.ndarray): Input `images` argument (images).
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(images)
 
@@ -87,11 +87,11 @@ def _np_gaussian_blur(
 
     Args:
         backend_module (ModuleType): The backend module.
-        images (np.ndarray): The images parameter.
+        images (np.ndarray): Input `images` argument (images).
         **kwargs (Union[BlurConfig, dict[str, Union[tuple[int, int], tuple[float, float], str, None]], float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
@@ -111,11 +111,11 @@ def _np_median_filter(
 
     Args:
         backend_module (ModuleType): The backend module.
-        images (np.ndarray): The images parameter.
+        images (np.ndarray): Input `images` argument (images).
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(np.asarray(ensure_callable(median_filter_eager)(backend_module, images, **kwargs)))
 
@@ -130,11 +130,11 @@ def _np_sharpen(
 
     Args:
         backend_module (ModuleType): The backend module.
-        images (np.ndarray): The images parameter.
+        images (np.ndarray): Input `images` argument (images).
         **kwargs (Union[float, int, str, bool, None]): Keyword args.
 
     Returns:
-        np.ndarray: Result.
+        np.ndarray: Computed `np.ndarray` output.
     """
     return ensure_ndarray(images)
 

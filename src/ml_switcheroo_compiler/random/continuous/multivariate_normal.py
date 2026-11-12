@@ -1,4 +1,4 @@
-"""Module multivariate_normal.py."""
+"""Compiler `multivariate normal` operations and primitives for the `continuous` subsystem."""
 
 from __future__ import annotations
 
@@ -30,13 +30,13 @@ def multivariate_normal(
     """Sample from a multivariate normal distribution.
 
     Args:
-        key (Tensor | str): The key parameter.
-        mean (Tensor | float): The mean parameter.
-        cov (Tensor | float): The cov parameter.
-        options (MultivariateNormalOptions | None): The options parameter.
+        key (Tensor | str): Input `key` argument (key).
+        mean (Tensor | float): Input `mean` argument (mean).
+        cov (Tensor | float): Input `cov` argument (cov).
+        options (MultivariateNormalOptions | None): Input `options` argument (options).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     options = options or MultivariateNormalOptions()
     shape = options.shape

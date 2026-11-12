@@ -23,13 +23,13 @@ class SpaceToBatchND(OpDef):
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): The input parameter.
-            block_shape (EagerTensorProtocol): The block_shape parameter.
-            paddings (EagerTensorProtocol): The paddings parameter.
+            input (EagerTensorProtocol): Input `input` argument (input).
+            block_shape (EagerTensorProtocol): Input `block_shape` argument (block shape).
+            paddings (EagerTensorProtocol): Input `paddings` argument (paddings).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -44,13 +44,13 @@ class SpaceToBatch(OpDef):
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): The input parameter.
-            block_size (EagerTensorProtocol): The block_size parameter.
-            paddings (EagerTensorProtocol): The paddings parameter.
+            input (EagerTensorProtocol): Input `input` argument (input).
+            block_size (EagerTensorProtocol): Input `block_size` argument (block size).
+            paddings (EagerTensorProtocol): Input `paddings` argument (paddings).
             **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -59,13 +59,13 @@ def space_to_batch(input: TensorOrScalar, block_size: TensorOrScalar, paddings: 
     """Space to batch operation.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        block_size (TensorOrScalar): The block_size parameter.
-        paddings (TensorOrScalar): The paddings parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        block_size (TensorOrScalar): Input `block_size` argument (block size).
+        paddings (TensorOrScalar): Input `paddings` argument (paddings).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config
@@ -85,13 +85,13 @@ def space_to_batch_nd(input: TensorOrScalar, block_shape: TensorOrScalar, paddin
     """Space to batch ND operation.
 
     Args:
-        input (TensorOrScalar): The input parameter.
-        block_shape (TensorOrScalar): The block_shape parameter.
-        paddings (TensorOrScalar): The paddings parameter.
+        input (TensorOrScalar): Input `input` argument (input).
+        block_shape (TensorOrScalar): Input `block_shape` argument (block shape).
+        paddings (TensorOrScalar): Input `paddings` argument (paddings).
         **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config

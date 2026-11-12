@@ -707,8 +707,8 @@ def test_jax_generator_coverage_brute() -> None:
     g = IRGraph()
     gen = JAXCodeGenerator(g)
     node1 = IRNode(id="n1", op_type="Zeros", inputs=[], attributes={"fake": 1, "shape": "(2, 2)", "fake2": 2}, shape_metadata=None)
-    gen.visit(node1, [], shape="(2, 2)", fake=1, fake2=2)
-    assert callable(test_jax_generator_coverage_brute)
+    _out = gen.visit(node1, [], shape="(2, 2)", fake=1, fake2=2)
+    assert _out == "jnp.zeros((2, 2))"
 
 
 def test_mlx_generator_coverage_brute() -> None:
@@ -722,11 +722,6 @@ def test_mlx_generator_coverage_brute() -> None:
     node1 = IRNode(id="n1", op_type="Zeros", inputs=[], attributes={"fake": 1}, shape_metadata=None)
     res1 = gen_mlx.visit(node1, [], shape="(2, 2)", fake=1)
     assert "mx.zeros" in res1
-
-
-def test_base_visitor_empty_methods() -> None:
-    """Test function test_base_visitor_empty_methods."""
-    assert callable(test_base_visitor_empty_methods)
 
 
 def test_base_generator_import_header() -> None:
@@ -765,6 +760,9 @@ class MyGen(BaseGenerator):
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            dict[str, str]: Computed output value from `get_ops_map`.
         """
         return {}
 
@@ -780,6 +778,9 @@ class MyPyGen(PythonStringGenerator):
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            dict[str, str]: Computed output value from `get_ops_map`.
         """
         return {}
 
@@ -801,6 +802,9 @@ class MyClassGen(ClassBasedGenerator):
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            dict[str, str]: Computed output value from `get_ops_map`.
         """
         return {}
 

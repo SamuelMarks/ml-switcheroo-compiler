@@ -35,7 +35,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    """Ensure optional profiler backend stubs are installed when packages are missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for temporary attribute and environment overrides.
+    """
     install_profiler_backend_stubs(monkeypatch)
 
 
@@ -315,6 +319,9 @@ def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) ->
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `mock_exists_no_standard`.
         """
         if "standard_workloads.yaml" in path:
             return False
@@ -329,6 +336,9 @@ def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) ->
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            bool: Computed output value from `mock_exists_fallback`.
         """
         if "standard_workloads.yaml" in path or ("workloads.yaml" in path and "model_workloads.yaml" not in path):
             return False

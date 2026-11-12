@@ -19,7 +19,11 @@ class Dummy:
     shape = (2, 2)
 
     def __iter__(self) -> EagerValue:
-        """Test function __iter__."""
+        """Test function __iter__.
+
+        Returns:
+            EagerValue: Computed output value from `__iter__`.
+        """
         return ensure_eager_tensor(iter(self.shape))
 
 

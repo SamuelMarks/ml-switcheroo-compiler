@@ -108,9 +108,9 @@ def test_text_eager_mode_exceptions() -> None:
                 string_join([img, img])
                 string_length(img)
                 string_substr(img, 0, 1)
+                assert mock_backend.return_value.execute_op.call_count == 8
     except Exception as e:
         raise e
-    assert callable(test_text_eager_mode_exceptions)
 
 
 def test_text_tracing_mode() -> None:
@@ -156,10 +156,11 @@ def test_text_new_ops() -> None:
             string_join([hypothesis, truth], separator=",")
             string_length(hypothesis)
             string_substr(hypothesis, pos=0, len=1)
+            assert global_tracing_state.active_graph is not None
+            assert len(global_tracing_state.active_graph.nodes) == 6
             global_tracing_state.stop_tracing()
     except Exception as e:
         raise e
-    assert callable(test_text_new_ops)
 
 
 def test_text_new_ops_eager() -> None:
@@ -172,7 +173,7 @@ def test_text_new_ops_eager() -> None:
             mock_backend.return_value.array.return_value = np.zeros((1,))
             edit_distance(img, img)
             as_string(img)
-    assert callable(test_text_new_ops_eager)
+            assert mock_backend.return_value.execute_op.call_count == 2
 
 
 def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:

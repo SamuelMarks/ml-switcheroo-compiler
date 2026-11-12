@@ -176,10 +176,10 @@ def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
     """Compute the unpack shape tensor operation.
 
     Args:
-        shape (tuple): The shape parameter.
+        shape (tuple): Input `shape` argument (shape).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     unpacked_shape: list[int] = []
     for s in shape:
@@ -200,10 +200,10 @@ def _infer_dtype(val_arr: TensorOrScalar) -> DType:
     """Infers the DType from a backend array.
 
     Args:
-        val_arr (TensorOrScalar): The val_arr parameter.
+        val_arr (TensorOrScalar): Input `val_arr` argument (val arr).
 
     Returns:
-        DType: Result.
+        DType: Computed `DType` output.
     """
     dtype_str = str(extract_dtype(val_arr, "float32"))
     if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
@@ -217,10 +217,10 @@ def _get_dtype_val(dtype: DType | str | type | None) -> str | type | None:
     """Get the backend dtype value.
 
     Args:
-        dtype (DType | str | type | None): The dtype parameter.
+        dtype (DType | str | type | None): Input `dtype` argument (dtype).
 
     Returns:
-        str | type | None: Result.
+        str | type | None: Computed `str | type | None` output.
     """
     raw_dtype: TensorOrScalar = dtype
     if _is_value_holder_obj(raw_dtype):
@@ -238,12 +238,12 @@ def _try_create_array(
     """Try create array.
 
     Args:
-        backend (TensorOrScalar): The backend parameter.
-        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The obj parameter.
-        dtype_val (str | type | None): The dtype_val parameter.
+        backend (TensorOrScalar): Input `backend` argument (backend).
+        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): Input `obj` argument (obj).
+        dtype_val (str | type | None): Input `dtype_val` argument (dtype val).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     assert _is_array_backend(backend)
     if dtype_val is None:
@@ -264,11 +264,11 @@ def _create_backend_array(
     """Create the backend array.
 
     Args:
-        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The obj parameter.
-        dtype (DType | str | type | None): The dtype parameter.
+        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): Input `obj` argument (obj).
+        dtype (DType | str | type | None): Input `dtype` argument (dtype).
 
     Returns:
-        TensorOrScalar: Result.
+        TensorOrScalar: Computed `TensorOrScalar` output.
     """
     backend = get_active_backend()
     dtype_val = None
@@ -287,11 +287,11 @@ def array(
     """Create an array.
 
     Args:
-        obj (TensorOrScalar): The obj parameter.
-        dtype (DType | None): The dtype parameter.
+        obj (TensorOrScalar): Input `obj` argument (obj).
+        dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     val_arr = _create_backend_array(obj, dtype)
     if dtype is None:
@@ -314,11 +314,11 @@ def asarray(
     """Convert the input to an array.
 
     Args:
-        a (TensorOrScalar): The a parameter.
-        dtype (DType | None): The dtype parameter.
+        a (TensorOrScalar): Input `a` argument (a).
+        dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
@@ -407,10 +407,10 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
     """Extract fill value.
 
     Args:
-        fill_value (float | int | bool | Tensor): The fill_value parameter.
+        fill_value (float | int | bool | Tensor): Input `fill_value` argument (fill value).
 
     Returns:
-        float | int | bool: Result.
+        float | int | bool: Computed `float | int | bool` output.
     """
     raw_fill: TensorOrScalar = fill_value
     val: TensorOrScalar = raw_fill.data if _is_data_holder_obj(raw_fill) else raw_fill
@@ -424,13 +424,13 @@ def _full_eager(shape: tuple[int, ...], fill_value: TensorOrScalar, dtype: DType
     """Full eager.
 
     Args:
-        shape (tuple): The shape parameter.
-        fill_value (TensorOrScalar): The fill_value parameter.
-        dtype (DType): The dtype parameter.
-        device (Device): The device parameter.
+        shape (tuple): Input `shape` argument (shape).
+        fill_value (TensorOrScalar): Input `fill_value` argument (fill value).
+        dtype (DType): Input `dtype` argument (dtype).
+        device (Device): Input `device` argument (device).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dt_val = _dtype_to_str(dtype)
     data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dt_val)
@@ -446,13 +446,13 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-        shape (int | Sequence[int]): The shape parameter.
-        fill_value (float): The fill_value parameter.
-        dtype (DType | None): The dtype parameter.
-        device (Device | None): The device parameter.
+        shape (int | Sequence[int]): Input `shape` argument (shape).
+        fill_value (float): Input `fill_value` argument (fill value).
+        dtype (DType | None): Input `dtype` argument (dtype).
+        device (Device | None): Input `device` argument (device).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -535,13 +535,13 @@ def full_like(
     """Return a tensor filled with `fill_value`, with the same size as `input`.
 
     Args:
-        input (Tensor): The input parameter.
-        fill_value (float): The fill_value parameter.
-        dtype (DType | None): The dtype parameter.
-        device (Device | None): The device parameter.
+        input (Tensor): Input `input` argument (input).
+        fill_value (float): Input `fill_value` argument (fill value).
+        dtype (DType | None): Input `dtype` argument (dtype).
+        device (Device | None): Input `device` argument (device).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     dtype = dtype or input.dtype
     device = device or input.device

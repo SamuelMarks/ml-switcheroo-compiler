@@ -81,6 +81,9 @@ def test_frontend_utils_constant() -> None:
             Args:
                 value: Test parameter `value`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
 
             class T:
@@ -90,7 +93,11 @@ def test_frontend_utils_constant() -> None:
                 ndim = 1
 
                 def tolist(self) -> EagerValue:
-                    """Test function tolist."""
+                    """Test function tolist.
+
+                    Returns:
+                        EagerValue: Computed output value from `tolist`.
+                    """
                     return [value]
 
             return T()
@@ -141,6 +148,9 @@ def test_frontend_utils_constant_scalar() -> None:
             Args:
                 value: Test parameter `value`.
                 dtype: Test parameter `dtype`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
 
             class T:
@@ -150,7 +160,11 @@ def test_frontend_utils_constant_scalar() -> None:
                 ndim = 0
 
                 def item(self) -> EagerValue:
-                    """Test function item."""
+                    """Test function item.
+
+                    Returns:
+                        EagerValue: Computed output value from `item`.
+                    """
                     return value
 
             return T()

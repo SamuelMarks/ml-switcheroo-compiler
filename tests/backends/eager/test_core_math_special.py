@@ -62,6 +62,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                float: Computed output value from `erf`.
             """
             return math.erf(x)
 
@@ -76,6 +79,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sign`.
             """
             return ensure_eager_tensor(ensure_callable(np.sign)(x))
 
@@ -84,6 +90,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `abs`.
             """
             return ensure_eager_tensor(ensure_callable(np.abs)(x))
 
@@ -92,6 +101,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `exp`.
             """
             return ensure_eager_tensor(ensure_callable(np.exp)(x))
 
@@ -100,6 +112,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `log`.
             """
             return ensure_eager_tensor(ensure_callable(np.log)(x))
 
@@ -108,6 +123,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `sqrt`.
             """
             return ensure_eager_tensor(ensure_callable(np.sqrt)(x))
 
@@ -125,6 +143,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                float: Computed output value from `erfc`.
             """
             return math.erfc(x)
 
@@ -144,6 +165,9 @@ def test_math_special_all_branches() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                str: Computed output value from `erfinv`.
             """
             return "erfinv_result"
 

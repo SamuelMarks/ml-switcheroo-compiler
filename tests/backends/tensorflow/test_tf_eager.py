@@ -28,6 +28,9 @@ def test_tf_not_installed() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `failing_import`.
         """
         if name == "tensorflow":
             raise ImportError("No module named tensorflow")
@@ -69,6 +72,9 @@ def test_tf_eager_execute_op_fallback() -> None:
                 module: Test parameter `module`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `dummy_func`.
             """
             return "dummy_res"
 

@@ -23,12 +23,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the ElasticTransform operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
         df_str: str = "None" if data_format is None else f'"{data_format}"'
@@ -38,12 +38,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the GaussianBlur operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
         df_str: str = "None" if data_format is None else f'"{data_format}"'
@@ -53,12 +53,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the MedianFilter operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
         df_str: str = "None" if data_format is None else f'"{data_format}"'
@@ -68,12 +68,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the ExtractBoundingBoxes operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         crop_size, interpolation, extrapolation_value, data_format = _extract_extract_boxes_attributes(node)
         df_str: str = "None" if data_format is None else f'"{data_format}"'
@@ -83,12 +83,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the IoU operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         bounding_box_format: str = str(_node_attrs(node).get("bounding_box_format", "xyxy"))
         return f"keras_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
@@ -97,12 +97,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the NonMaxSuppression operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         attrs = _node_attrs(node)
         max_output_size = attrs.get("max_output_size")
@@ -114,12 +114,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the ResizeBicubic operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         attrs = _node_attrs(node)
         size = attrs.get("size")
@@ -130,12 +130,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the ResizeLanczos3 operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         attrs = _node_attrs(node)
         size = attrs.get("size")
@@ -146,12 +146,12 @@ class KerasVisionVisitor:
         """Emit target backend code or IR transformation for the PerspectiveTransform operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
         df_str: str = "None" if data_format is None else f'"{data_format}"'
@@ -165,12 +165,12 @@ class KerasAudioVisitor:
         """Emit target backend code or IR transformation for the Istft operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)
         return f"keras_istft({input_vars[0]}, STFTConfig(frame_length={frame_length}, frame_step={frame_step}, fft_length={fft_len_str}, window='{window}', center={center}))"
@@ -179,12 +179,12 @@ class KerasAudioVisitor:
         """Emit target backend code or IR transformation for the MelFilterbank operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         (
             num_mel_bins,
@@ -200,12 +200,12 @@ class KerasAudioVisitor:
         """Emit target backend code or IR transformation for the Mfcc operation.
 
         Args:
-            node (IRNode): The node parameter.
-            input_vars (list[str]): The input_vars parameter.
+            node (IRNode): Input `node` argument (node).
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Keyword args.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         (
             num_mel_bins,

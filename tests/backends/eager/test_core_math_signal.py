@@ -33,6 +33,9 @@ def test_math_signal_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `correlate`.
             """
             return "correlate_val"
 
@@ -73,6 +76,9 @@ def test_math_signal_coverage() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                str: Computed output value from `windowhann`.
             """
             return "windowhann_val"
 

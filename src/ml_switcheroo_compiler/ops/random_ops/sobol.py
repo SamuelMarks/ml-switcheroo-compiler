@@ -28,13 +28,13 @@ class SobolSample(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-            dim (int): The dim parameter.
-            num_results (int): The num_results parameter.
-            skip (int): The skip parameter.
+            dim (int): Input `dim` argument (dim).
+            num_results (int): Input `num_results` argument (num results).
+            skip (int): Input `skip` argument (skip).
             **kwargs (int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return (num_results, dim)
 

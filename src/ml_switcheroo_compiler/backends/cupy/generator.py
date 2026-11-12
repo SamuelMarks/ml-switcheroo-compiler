@@ -25,7 +25,7 @@ class CupyGenerator(PythonStringGenerator):
         """Init.
 
         Args:
-            graph (IRGraph): The graph parameter.
+            graph (IRGraph): Input `graph` argument (graph).
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
@@ -42,7 +42,7 @@ class CupyGenerator(PythonStringGenerator):
         """Get helper functions.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         res: list[str] = []
         return res
@@ -55,7 +55,7 @@ class CupyGenerator(PythonStringGenerator):
 
         Args:
             node (IRNode): The node to process.
-            input_vars (list[str]): The input_vars parameter.
+            input_vars (list[str]): Input `input_vars` argument (input vars).
             **kwargs: Extra attributes.
 
         Returns:

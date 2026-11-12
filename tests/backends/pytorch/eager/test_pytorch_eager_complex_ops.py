@@ -123,20 +123,13 @@ def _test_pytorch_eager_additional_sub_4(_state: dict[str, EagerTensorProtocol])
         pytorch_eager._execute_accumulate_n(inputs=[])
     ensure_callable(pytorch_eager.execute_op)(None, "Add", ensure_callable(torch.tensor)(1), ensure_callable(torch.tensor)(2))
     ensure_callable(pytorch_eager.execute_op)(None, "RaggedTensorToDense", 1)
-    try:
+    with pytest.raises((ValueError, TypeError, RuntimeError, NotImplementedError)):
         ensure_callable(pytorch_eager.execute_op)(None, "unknownop", ensure_callable(torch.tensor)(1))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
     ensure_callable(pytorch_eager.execute_op)(None, "Zeros", 2)
-    try:
+    with pytest.raises((ValueError, TypeError, RuntimeError, NotImplementedError)):
         ensure_callable(pytorch_eager.execute_op)(None, "Descriptive", ensure_callable(torch.tensor)([1.0]))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
-    try:
+    with pytest.raises((ValueError, TypeError, RuntimeError, NotImplementedError)):
         ensure_callable(pytorch_eager.execute_op)(None, "totally_unknown_and_unregistered", 1)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
-    pass
 
 
 def test_pytorch_eager_additional() -> None:

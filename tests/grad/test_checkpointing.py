@@ -25,6 +25,9 @@ def test_checkpointing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy`.
         """
         return ensure_eager_tensor(x) + ensure_eager_tensor(1)
 
@@ -60,6 +63,9 @@ def test_checkpointing() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_dtype`.
         """
         return x
 
@@ -99,6 +105,9 @@ def test_remat_and_recompute_grad() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy`.
         """
         return x
 

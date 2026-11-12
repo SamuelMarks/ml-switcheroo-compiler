@@ -51,7 +51,11 @@ if typing.TYPE_CHECKING:
 
 
 def _make_mock_tf() -> MagicMock:
-    """Construct a fallback mock tensorflow module when tensorflow is not installed."""
+    """Construct a fallback mock tensorflow module when tensorflow is not installed.
+
+    Returns:
+        MagicMock: Computed output value from `_make_mock_tf`.
+    """
     m = MagicMock()
     m.convert_to_tensor.side_effect = lambda v, dtype=None: np.asarray(v, dtype=np.float32)
     m.zeros.side_effect = lambda shape, dtype=None: np.zeros(shape, dtype=np.float32)
@@ -63,7 +67,11 @@ def _make_mock_tf() -> MagicMock:
 
 
 def _make_mock_da() -> MagicMock:
-    """Construct a fallback mock dask.array module when dask is not installed."""
+    """Construct a fallback mock dask.array module when dask is not installed.
+
+    Returns:
+        MagicMock: Computed output value from `_make_mock_da`.
+    """
     m = MagicMock()
     m.from_array.side_effect = lambda v, chunks="auto": np.asarray(v)
     m.zeros.side_effect = lambda shape, dtype=None: np.zeros(shape, dtype=np.float32)
@@ -74,7 +82,11 @@ def _make_mock_da() -> MagicMock:
 
 
 def _make_mock_keras() -> MagicMock:
-    """Construct a fallback mock keras module when keras is not installed."""
+    """Construct a fallback mock keras module when keras is not installed.
+
+    Returns:
+        MagicMock: Computed output value from `_make_mock_keras`.
+    """
     m = MagicMock()
     m.ops.convert_to_tensor.side_effect = lambda v, dtype=None: np.asarray(v, dtype=np.float32)
     m.ops.convert_to_numpy.side_effect = lambda v: np.asarray(v)
@@ -87,7 +99,11 @@ def _make_mock_keras() -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def _ensure_optional_profiler_backends() -> Iterator[None]:
-    """Ensure dask, tensorflow, and keras profiler modules have non-None backend objects when not installed."""
+    """Ensure dask, tensorflow, and keras profiler modules have non-None backend objects when not installed.
+
+    Yields:
+        None: Yielded test context or value from `_ensure_optional_profiler_backends`.
+    """
     import ml_switcheroo_compiler.backends.dask.profiler as dask_prof
     import ml_switcheroo_compiler.backends.keras.profiler as k_prof
     import ml_switcheroo_compiler.backends.tensorflow.profiler as tf_prof
@@ -701,7 +717,11 @@ def test_keras_profiler_branches() -> None:
         """Mock tensor with numpy export."""
 
         def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-            """Return numpy array."""
+            """Return numpy array.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `numpy`.
+            """
             return np.array([1.0])
 
     ensure_callable(_sync_keras_result)(ensure_callable(MockTensor)())
@@ -857,7 +877,11 @@ def test_sparse_profiler_branches() -> None:
             self.arr = arr
 
         def todense(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
-            """Test function todense."""
+            """Test function todense.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float32]]: Computed output value from `todense`.
+            """
             return self.arr
 
         @classmethod
@@ -866,6 +890,9 @@ def test_sparse_profiler_branches() -> None:
 
             Args:
                 arr: Test parameter `arr`.
+
+            Returns:
+                MockCOO: Computed output value from `from_numpy`.
             """
             return cls(arr)
 
@@ -877,6 +904,9 @@ def test_sparse_profiler_branches() -> None:
 
             Args:
                 other: Test parameter `other`.
+
+            Returns:
+                AddCOO: Computed output value from `__add__`.
             """
             return self
 

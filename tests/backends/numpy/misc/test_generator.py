@@ -113,8 +113,8 @@ def test_cupy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
-    assert callable(test_cupy_generator_kwargs_only)
+    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    assert _out == "out.zeros(shape=(2, 2))"
 
 
 def test_dask_generator_kwargs_only() -> None:
@@ -136,8 +136,8 @@ def test_dask_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
-    assert callable(test_dask_generator_kwargs_only)
+    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    assert _out == "out.zeros(shape=(2, 2))"
 
 
 def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
@@ -159,8 +159,8 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
-    assert callable(test_cupy_generator_fallback_empty_args_str_with_kwargs)
+    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    assert _out == "out.zeros(shape=(2, 2))"
 
 
 def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:

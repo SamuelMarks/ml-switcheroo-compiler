@@ -101,10 +101,19 @@ def test_state_lowering_pass_class() -> None:
     assert "self.linear_weight = jnp.zeros" in code_jax
     assert "def __call__(self, x):" in code_jax
 
+    # Keras emission
+    pass_keras = StateLoweringPass(target_framework="keras")
+    code_keras = pass_keras.emit_stateful_class(g, class_name="KerasLinear")
+    assert "class KerasLinear(keras.layers.Layer):" in code_keras
+    assert "self.add_weight(name='linear_weight'" in code_keras
+    assert "trainable=False" in code_keras
+    assert "def call(self, x):" in code_keras
+
     # Generic emission
     pass_gen = StateLoweringPass(target_framework="generic")
     code_gen = pass_gen.emit_stateful_class(g, class_name="GenericModel")
     assert "class GenericModel:" in code_gen
+    assert "return out" in code_gen
 
     # Empty graph emission
     g_empty = IRGraph()
@@ -115,6 +124,10 @@ def test_state_lowering_pass_class() -> None:
     code_empty_jax = pass_jax.emit_stateful_class(g_empty)
     assert "pass" in code_empty_jax
     assert "return None" in code_empty_jax
+
+    code_empty_keras = pass_keras.emit_stateful_class(g_empty)
+    assert "pass" in code_empty_keras
+    assert "return None" in code_empty_keras
 
     # Run pass
     assert pass_pt.run(g) is True

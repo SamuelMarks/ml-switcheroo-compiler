@@ -43,12 +43,12 @@ class TensorArrayRead(OpDef):
         """Infer shape.
 
         Args:
-            handle (Tensor | TensorArray): The handle parameter.
-            index (Tensor | int): The index parameter.
+            handle (Tensor | TensorArray): Input `handle` argument (handle).
+            index (Tensor | int): Input `index` argument (index).
             **kwargs (Tensor | int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         raw_h: Tensor | TensorArray | _ElementShapeProtocol = handle
         elem_shape = raw_h.element_shape if isinstance(raw_h, _ElementShapeProtocol) else ()
@@ -71,13 +71,13 @@ class TensorArrayWrite(OpDef):
         """Infer shape.
 
         Args:
-            handle (Tensor | TensorArray): The handle parameter.
-            index (Tensor | int): The index parameter.
-            value (Tensor): The value parameter.
+            handle (Tensor | TensorArray): Input `handle` argument (handle).
+            index (Tensor | int): Input `index` argument (index).
+            value (Tensor): Input `value` argument (value).
             **kwargs (Tensor | int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         return ()
 
@@ -96,11 +96,11 @@ class TensorArrayStack(OpDef):
         """Infer shape.
 
         Args:
-            handle (Tensor | TensorArray): The handle parameter.
+            handle (Tensor | TensorArray): Input `handle` argument (handle).
             **kwargs (Tensor | int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         raw_h: Tensor | TensorArray | _ElementShapeProtocol | _SizeAttrProtocol = handle
         raw_elem = raw_h.element_shape if isinstance(raw_h, _ElementShapeProtocol) and raw_h.element_shape is not None else ()

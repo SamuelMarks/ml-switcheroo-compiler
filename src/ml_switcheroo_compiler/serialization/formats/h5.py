@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
-from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.backends.protocols import ensure_callable, get_backend_member, has_backend_member
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
@@ -115,7 +114,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         """Load h5 weights.
 
         Args:
-            filepath (str): The filepath parameter.
+            filepath (str): Input `filepath` argument (filepath).
 
         Returns:
             dict[str, TensorLike]: Loaded weights dictionary.
@@ -132,7 +131,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         if h5py is None:
             raise ImportError("h5py is required for H5 weight loading. Please install h5py.")
 
-        np_mod = BackendRegistry.get("numpy").get_module()
+        has_asarray = has_backend_member(backend, "asarray")
         result: dict[str, TensorLike] = {}
         with h5py.File(filepath, "r") as f:
 
@@ -144,7 +143,8 @@ class H5WeightFormat(WeightLoader, WeightSaver):
                     node (h5py_types.Group | h5py_types.Dataset): The node object.
                 """
                 if isinstance(node, h5py.Dataset):
-                    result[name] = np_mod.asarray(node[()])
+                    raw_val = node[()]
+                    result[name] = ensure_callable(get_backend_member(backend, "asarray"))(raw_val) if has_asarray else raw_val
 
             f.visititems(_visit)
         return result

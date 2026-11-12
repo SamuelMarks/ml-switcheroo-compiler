@@ -436,6 +436,9 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
             Args:
                 prog: Test parameter `prog`.
                 size_ptr: Test parameter `size_ptr`.
+
+            Returns:
+                EagerValue: Computed output value from `get_ptx_size_side_effect`.
             """
             ensure_mutable(ensure_eager_tensor(size_ptr)._obj).value = ensure_eager_tensor(64)
             return 0
@@ -448,6 +451,9 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
             Args:
                 prog: Test parameter `prog`.
                 buf: Test parameter `buf`.
+
+            Returns:
+                EagerValue: Computed output value from `get_ptx_side_effect`.
             """
             ensure_mutable(buf).value = ensure_eager_tensor(b"compiled_ptx_code")
             return 0
@@ -476,6 +482,9 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
             Args:
                 prog: Test parameter `prog`.
                 size_ptr: Test parameter `size_ptr`.
+
+            Returns:
+                EagerValue: Computed output value from `get_log_size_side_effect`.
             """
             ensure_mutable(ensure_eager_tensor(size_ptr)._obj).value = ensure_eager_tensor(64)
             return 0
@@ -488,6 +497,9 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
             Args:
                 prog: Test parameter `prog`.
                 buf: Test parameter `buf`.
+
+            Returns:
+                EagerValue: Computed output value from `get_log_side_effect`.
             """
             ensure_mutable(buf).value = ensure_eager_tensor(b"syntax error in kernel")
             return 0
@@ -840,6 +852,9 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
 
                 Args:
                     count_ref: Test parameter `count_ref`.
+
+                Returns:
+                    EagerValue: Computed output value from `set_count_positive`.
                 """
                 ensure_mutable(ensure_eager_tensor(count_ref)._obj).value = ensure_eager_tensor(1)
                 return 0
@@ -853,6 +868,9 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
 
                 Args:
                     count_ref: Test parameter `count_ref`.
+
+                Returns:
+                    EagerValue: Computed output value from `set_count_zero`.
                 """
                 ensure_mutable(ensure_eager_tensor(count_ref)._obj).value = ensure_eager_tensor(0)
                 return 0
@@ -1039,6 +1057,9 @@ def _test_cuda_streams_and_events_part_1(_state: dict[str, EagerTensorProtocol])
             ptr: Test parameter `ptr`.
             s: Test parameter `s`.
             e: Test parameter `e`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_elapsed`.
         """
         ensure_mutable(ensure_eager_tensor(ptr).contents).value = ensure_eager_tensor(12.5)
         return 0

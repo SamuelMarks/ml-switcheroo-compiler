@@ -78,11 +78,11 @@ class ReductionOp(OpDef):
         """Format args.
 
         Args:
-            x (str): The x parameter.
+            x (str): Input `x` argument (x).
             **kwargs (int | float | str | bool | tuple[int, ...] | list[int] | None): Keyword arguments.
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         args = [x]
         if "axis" in kwargs and kwargs["axis"] is not None:

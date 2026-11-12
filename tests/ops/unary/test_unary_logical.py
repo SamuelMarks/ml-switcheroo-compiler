@@ -8,27 +8,23 @@ from tests.testing_utils import ensure_callable, get_test_members
 
 def test_unary_logical_functions() -> None:
     """Test unary logical coverage."""
+    import inspect
 
     class DummyNode:
         """Test class DummyNode."""
 
         shape = (10, 20)
+        dtype = "float32"
 
     a = DummyNode()
+    evaluated = 0
     for attr, val in get_test_members(unary_logical).items():
-        if attr.startswith("_infer_shape_") or attr.startswith("_infer_dtype_"):
-            if callable(val):
-                fn = ensure_callable(val)
-                try:
-                    fn(a)
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
-                try:
-                    fn(a, a)
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
-                try:
-                    fn()
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                    _caught_err = True
-    assert callable(test_unary_logical_functions)
+        if (attr.startswith("_infer_shape_") or attr.startswith("_infer_dtype_")) and callable(val):
+            fn = ensure_callable(val)
+            params = list(inspect.signature(fn).parameters.values())
+            req = [p for p in params if p.default is inspect.Parameter.empty and p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+            args = [a] * max(1, len(req))
+            res = fn(*args)
+            assert res is not None
+            evaluated += 1
+    assert evaluated >= 1

@@ -23,7 +23,11 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def enable_eager_mode() -> Iterator[None]:
-    """Test function enable_eager_mode."""
+    """Test function enable_eager_mode.
+
+    Yields:
+        None: Yielded test context or value from `enable_eager_mode`.
+    """
     config.eager_mode = True
     config.backend = "numpy"
     yield
@@ -36,11 +40,19 @@ def test_cond_eager_true() -> None:
     pred = Tensor(np.array(True), TensorConfig((), DType.Bool, Device("cpu")))
 
     def true_fn() -> EagerValue:
-        """Test function true_fn."""
+        """Test function true_fn.
+
+        Returns:
+            EagerValue: Computed output value from `true_fn`.
+        """
         return Tensor(np.array(1.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     def false_fn() -> EagerValue:
-        """Test function false_fn."""
+        """Test function false_fn.
+
+        Returns:
+            EagerValue: Computed output value from `false_fn`.
+        """
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
@@ -52,11 +64,19 @@ def test_cond_eager_false() -> None:
     pred = Tensor(np.array(False), TensorConfig((), DType.Bool, Device("cpu")))
 
     def true_fn() -> EagerValue:
-        """Test function true_fn."""
+        """Test function true_fn.
+
+        Returns:
+            EagerValue: Computed output value from `true_fn`.
+        """
         return Tensor(np.array(1.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     def false_fn() -> EagerValue:
-        """Test function false_fn."""
+        """Test function false_fn.
+
+        Returns:
+            EagerValue: Computed output value from `false_fn`.
+        """
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
@@ -71,6 +91,9 @@ def test_while_loop_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cond_fn`.
         """
         return Tensor(ensure_eager_tensor(ensure_eager_tensor(x)[0].numpy)() < 5, TensorConfig((), DType.Bool, Device("cpu")))
 
@@ -79,6 +102,9 @@ def test_while_loop_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `body_fn`.
         """
         return [Tensor(ensure_eager_tensor(ensure_eager_tensor(x)[0].numpy)() + 1, TensorConfig((), DType.Float32, Device("cpu")))]
 
@@ -97,6 +123,9 @@ def test_scan_eager() -> None:
         Args:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `scan_fn`.
         """
         new_carry = Tensor(ensure_eager_tensor(ensure_eager_tensor(carry)[0].numpy)() + ensure_eager_tensor(ensure_eager_tensor(x).numpy)(), TensorConfig((), DType.Float32, Device("cpu")))
         return [new_carry], [new_carry]
@@ -117,6 +146,9 @@ def test_map_fn_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn`.
         """
         return Tensor(ensure_eager_tensor(x).numpy() * 2, TensorConfig((), DType.Float32, Device("cpu")))
 
@@ -136,6 +168,9 @@ def test_pmap_eager() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `fn`.
         """
         return Tensor(ensure_eager_tensor(x).numpy() * 2, TensorConfig((), DType.Float32, Device("cpu")))
 
@@ -170,6 +205,9 @@ def test_while_loop_eager_non_tuple() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `cond_fn`.
         """
         return Tensor(ensure_eager_tensor(x).numpy() < 5, TensorConfig((), DType.Bool, Device("cpu")))
 
@@ -178,6 +216,9 @@ def test_while_loop_eager_non_tuple() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `body_fn`.
         """
         return Tensor(ensure_eager_tensor(x).numpy() + 1, TensorConfig((), DType.Float32, Device("cpu")))
 
@@ -196,6 +237,9 @@ def test_scan_tuple_return() -> None:
         Args:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return carry, (x, x)
 
@@ -219,6 +263,9 @@ def test_map_fn_tuple_return() -> None:
 
         Args:
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `f`.
         """
         return (x, x)
 

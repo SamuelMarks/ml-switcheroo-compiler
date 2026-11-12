@@ -144,6 +144,9 @@ def test_lift_module_state_and_functionalize() -> None:
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `__call__`.
             """
             return ensure_ndarray((ensure_eager_tensor(x) @ ensure_eager_tensor(self.w.T)) + ensure_eager_tensor(self.b))
 

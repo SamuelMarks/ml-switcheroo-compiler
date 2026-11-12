@@ -26,7 +26,7 @@ class Psum(ReductionOp):
             **kwargs (Tensor | int | float | str | bool | tuple[int, ...] | list[int] | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return extract_shape(x)
@@ -50,7 +50,7 @@ class Pmean(ReductionOp):
             **kwargs (Tensor | int | float | str | bool | tuple[int, ...] | list[int] | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return extract_shape(x)

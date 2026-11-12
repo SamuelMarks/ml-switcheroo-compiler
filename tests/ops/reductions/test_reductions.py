@@ -63,6 +63,9 @@ def test_reductions_coverage() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `__call__`.
                 """
                 return "reduction"
 
@@ -72,6 +75,9 @@ def test_reductions_coverage() -> None:
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    EagerValue: Computed output value from `infer_shape`.
                 """
                 return ()
 

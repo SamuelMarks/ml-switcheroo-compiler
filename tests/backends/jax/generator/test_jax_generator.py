@@ -165,6 +165,9 @@ def test_jax_generator_imports() -> None:
             path: Test parameter `path`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_open`.
         """
         if "jax_prefix.py.tmpl" in str(path):
             from io import StringIO

@@ -294,7 +294,7 @@ class CSTTransformer(cst.CSTTransformer):
         """Initialize the CSTTransformer.
 
         Args:
-            target_framework (str): The target_framework parameter.
+            target_framework (str): Input `target_framework` argument (target framework).
         """
         super().__init__()
         self.target_framework = target_framework
@@ -312,8 +312,8 @@ class CSTTransformer(cst.CSTTransformer):
             cst.ImportFrom: The inferred shape or computed result
 
         Args:
-            original_node (cst.ImportFrom): The original_node parameter.
-            updated_node (cst.ImportFrom): The updated_node parameter.
+            original_node (cst.ImportFrom): Input `original_node` argument (original node).
+            updated_node (cst.ImportFrom): Input `updated_node` argument (updated node).
         """
         if not updated_node.module or not self.target_config:
             return updated_node
@@ -533,8 +533,8 @@ class CSTTransformer(cst.CSTTransformer):
             cst.BaseExpression: The inferred shape or computed result
 
         Args:
-            original_node (cst.Call): The original_node parameter.
-            updated_node (cst.Call): The updated_node parameter.
+            original_node (cst.Call): Input `original_node` argument (original node).
+            updated_node (cst.Call): Input `updated_node` argument (updated node).
         """
         if not self.target_config:
             return updated_node

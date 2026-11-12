@@ -21,12 +21,12 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     """Execute inject broadcast node for compiler processing.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        input_id (str): The input_id parameter.
-        target_shape (tuple): The target_shape parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        input_id (str): Input `input_id` argument (input id).
+        target_shape (tuple): Input `target_shape` argument (target shape).
 
     Returns:
-        str: Result.
+        str: Computed `str` output.
     """
     new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
@@ -62,11 +62,11 @@ def _needs_broadcast(
     """Execute needs broadcast for compiler processing.
 
     Args:
-        shape1 (Sequence[int | SymbolicDim | None] | None): The shape1 parameter.
-        shape2 (Sequence[int | SymbolicDim | None] | None): The shape2 parameter.
+        shape1 (Sequence[int | SymbolicDim | None] | None): Input `shape1` argument (shape1).
+        shape2 (Sequence[int | SymbolicDim | None] | None): Input `shape2` argument (shape2).
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None
@@ -84,7 +84,7 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
         node (LogicalNode): Node.
 
     Returns:
-        bool: Result.
+        bool: Computed `bool` output.
     """
     try:
         get_op(node.op_type)

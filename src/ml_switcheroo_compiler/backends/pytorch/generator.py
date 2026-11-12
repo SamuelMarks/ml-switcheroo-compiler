@@ -63,8 +63,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Initialize distributed context.
 
         Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
+            *args: Input `args` argument (args).
+            **kwargs: Input `kwargs` argument (kwargs).
         """
         import torch.distributed
 
@@ -217,8 +217,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Emit the code to assign a constant parameter to a local variable.
 
         Args:
-            var_name (str): The var_name parameter.
-            val_repr (str): The val_repr parameter.
+            var_name (str): Input `var_name` argument (var name).
+            val_repr (str): Input `val_repr` argument (val repr).
         """
         self.add_line(f"{var_name} = self.{var_name}")
 
@@ -253,13 +253,13 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Load.
 
         Args:
-        filepath (str): The filepath parameter.
-        allow_pickle (bool): The allow_pickle parameter.
-        fix_imports (bool): The fix_imports parameter.
-        encoding (str): The encoding parameter.
+        filepath (str): Input `filepath` argument (filepath).
+        allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+        fix_imports (bool): Input `fix_imports` argument (fix imports).
+        encoding (str): Input `encoding` argument (encoding).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         import torch
 
@@ -270,10 +270,10 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Save.
 
         Args:
-            file (str): The file parameter.
-            arr (EagerValue): The arr parameter.
-            allow_pickle (bool): The allow_pickle parameter.
-            fix_imports (bool): The fix_imports parameter.
+            file (str): Input `file` argument (file).
+            arr (EagerValue): Input `arr` argument (arr).
+            allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
+            fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
         import torch
 
@@ -284,7 +284,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Savez.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """
@@ -299,7 +299,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Savez compressed.
 
         Args:
-            file (str): The file parameter.
+            file (str): Input `file` argument (file).
             *args (EagerValue): Positional args.
             **kwds (EagerValue): Keyword args.
         """

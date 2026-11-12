@@ -108,6 +108,9 @@ def test_all_distributed_ops() -> None:
                 op: Test parameter `op`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return DummyData()
 

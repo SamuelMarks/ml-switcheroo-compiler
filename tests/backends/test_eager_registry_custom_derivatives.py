@@ -38,6 +38,9 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `my_fun`.
         """
         return ensure_eager_tensor(x) * ensure_eager_tensor(y)
 
@@ -55,6 +58,9 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `rule_packed`.
         """
         return (ensure_eager_tensor(primals)[0] * 2, ensure_eager_tensor(tangents)[0] * 2)
 
@@ -68,6 +74,9 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
         Args:
             p: Test parameter `p`.
             t: Test parameter `t`.
+
+        Returns:
+            EagerValue: Computed output value from `rule_unpacked`.
         """
         return (ensure_eager_tensor(p) + ensure_eager_tensor(1), ensure_eager_tensor(t) + ensure_eager_tensor(1))
 
@@ -81,6 +90,9 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
         Args:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
+
+        Returns:
+            EagerValue: Computed output value from `rule_single`.
         """
         return 999
 

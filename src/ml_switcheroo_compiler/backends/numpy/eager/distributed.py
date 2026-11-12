@@ -20,11 +20,11 @@ def _np_axis_index(backend_module: BackendModuleProtocol, **kwargs: EagerValue) 
     """Execute the eager np axis index operation on the active backend array.
 
     Args:
-        backend_module (ModuleType): The backend_module parameter.
+        backend_module (ModuleType): Input `backend_module` argument (backend module).
         **kwargs (EagerValue): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     return np.array(0)
 
@@ -36,11 +36,11 @@ class TCPDistributedContext:
         """Init.
 
         Args:
-            world_size: The world_size parameter.
-            rank: The rank parameter.
-            addr: The addr parameter.
-            port: The port parameter.
-            topology: The topology parameter.
+            world_size: Input `world_size` argument (world size).
+            rank: Input `rank` argument (rank).
+            addr: Input `addr` argument (addr).
+            port: Input `port` argument (port).
+            topology: Input `topology` argument (topology).
         """
         self.world_size = world_size
         self.rank = rank
@@ -106,9 +106,9 @@ class TCPDistributedContext:
         """Evaluate all_reduce_ring.
 
         Args:
-            tensor: The tensor parameter.
-            op_type: The op_type parameter.
-            backend_module: The backend_module parameter.
+            tensor: Input `tensor` argument (tensor).
+            op_type: Input `op_type` argument (op type).
+            backend_module: Input `backend_module` argument (backend module).
 
         Returns:
             np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed result.
@@ -152,7 +152,7 @@ class TCPDistributedContext:
         """Perform AllGather over TCP Ring.
 
         Args:
-            tensor: The tensor parameter.
+            tensor: Input `tensor` argument (tensor).
 
         Returns:
             list[EagerValue]: Computed result.
@@ -191,10 +191,10 @@ def set_np_distributed_context(world_size: int, rank: int, addr: str = "localhos
     """Set mock distributed context.
 
     Args:
-        world_size (int): The world_size parameter.
-        rank (int): The rank parameter.
-        addr (str): The addr parameter.
-        port (int): The port parameter.
+        world_size (int): Input `world_size` argument (world size).
+        rank (int): Input `rank` argument (rank).
+        addr (str): Input `addr` argument (addr).
+        port (int): Input `port` argument (port).
     """
     global _tcp_dist_ctx
     _tcp_dist_ctx.shutdown()
@@ -209,11 +209,11 @@ def _np_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, op
     """Eager eval _np_all_reduce.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        op_type: The op_type parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        op_type: Input `op_type` argument (op type).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -230,11 +230,11 @@ def _np_all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, ax
     """Eager eval _np_all_gather.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        axis: The axis parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        axis: Input `axis` argument (axis).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -252,11 +252,11 @@ def _np_broadcast(backend_module: BackendModuleProtocol, tensor: EagerValue, roo
     """Eager eval _np_broadcast.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        root_rank: The root_rank parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        root_rank: Input `root_rank` argument (root rank).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -274,12 +274,12 @@ def _np_reduce_scatter(backend_module: BackendModuleProtocol, tensor: EagerValue
     """Eager eval _np_reduce_scatter.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        op_type: The op_type parameter.
-        axis: The axis parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        op_type: Input `op_type` argument (op type).
+        axis: Input `axis` argument (axis).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -312,12 +312,12 @@ def _np_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, root_r
     """Eager eval _np_reduce.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        root_rank: The root_rank parameter.
-        op_type: The op_type parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        root_rank: Input `root_rank` argument (root rank).
+        op_type: Input `op_type` argument (op type).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -349,10 +349,10 @@ def _np_all_to_all(backend_module: BackendModuleProtocol, tensor: EagerValue, *a
     """Eager eval AllToAll.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.
@@ -372,10 +372,10 @@ def _np_shard_tensor(backend_module: BackendModuleProtocol, tensor: EagerValue, 
     """Eager eval _np_shard_tensor.
 
     Args:
-        backend_module: The backend_module parameter.
-        tensor: The tensor parameter.
-        *args: The args parameter.
-        **kwargs: The kwargs parameter.
+        backend_module: Input `backend_module` argument (backend module).
+        tensor: Input `tensor` argument (tensor).
+        *args: Input `args` argument (args).
+        **kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
         EagerValue: Computed result.

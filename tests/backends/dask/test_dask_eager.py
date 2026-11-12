@@ -63,6 +63,9 @@ def test_dask_import_error() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import`.
         """
         if "dask" in name:
             raise ImportError("Mocked missing dask")

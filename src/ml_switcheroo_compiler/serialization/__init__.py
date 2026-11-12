@@ -233,7 +233,7 @@ def graph_to_json(graph: IRGraph) -> str:
     """Convert graph to JSON.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         str: JSON representation of the graph.
@@ -284,8 +284,8 @@ def _save_as_h5(weights_np: TensorOrScalar, filepath: str) -> None:
     """Save the given weights dictionary to an HDF5 file.
 
     Args:
-        weights_np (TensorOrScalar): The weights_np parameter.
-        filepath (str): The filepath parameter.
+        weights_np (TensorOrScalar): Input `weights_np` argument (weights np).
+        filepath (str): Input `filepath` argument (filepath).
     """
     w_dict = {str(k): _ensure_ser_tensor(v) for k, v in weights_np.items()} if isinstance(weights_np, Mapping) else {}
     H5WeightFormat().save(w_dict, filepath)
@@ -295,8 +295,8 @@ def _save_as_safetensors(weights_np: TensorOrScalar, filepath: str) -> None:
     """Save the given weights dictionary to a safetensors file.
 
     Args:
-        weights_np (TensorOrScalar): The weights_np parameter.
-        filepath (str): The filepath parameter.
+        weights_np (TensorOrScalar): Input `weights_np` argument (weights np).
+        filepath (str): Input `filepath` argument (filepath).
     """
     SafetensorsWeightFormat().save(weights_np, filepath)
 
@@ -356,8 +356,8 @@ def _validate_and_map_weights(
     """Validate the loaded weights and map them to the target model if provided.
 
     Args:
-        weights_dict (Mapping[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]): The weights_dict parameter.
-        target_model (LoadedModel | TensorOrScalar | None): The target_model parameter.
+        weights_dict (Mapping[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]): Input `weights_dict` argument (weights dict).
+        target_model (LoadedModel | TensorOrScalar | None): Input `target_model` argument (target model).
 
     Returns:
         dict[str, EagerTensorProtocol | Tensor | list[AttributeValue] | dict[str, AttributeValue]]: Validated weights dict.
@@ -373,8 +373,8 @@ def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOr
     """Load weights from a specified file path and map them to a target model.
 
     Args:
-        filepath (str): The filepath parameter.
-        target_model (TensorOrScalar): The target_model parameter.
+        filepath (str): Input `filepath` argument (filepath).
+        target_model (TensorOrScalar): Input `target_model` argument (target model).
 
     Returns:
         TensorOrScalar: Loaded weights dictionary.
@@ -389,9 +389,9 @@ def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, *
     """Save the weights of a given model to a specified file path.
 
     Args:
-        model (TensorOrScalar): The model parameter.
-        filepath (str): The filepath parameter.
-        overwrite (bool): The overwrite parameter.
+        model (TensorOrScalar): Input `model` argument (model).
+        filepath (str): Input `filepath` argument (filepath).
+        overwrite (bool): Input `overwrite` argument (overwrite).
         **kwargs (AttrValue): Keyword args.
     """
     _ = (overwrite, kwargs)
@@ -409,8 +409,8 @@ def export_to_onnx(graph: IRGraph | TensorOrScalar, filepath: str) -> None:
     """Export the internal representation graph to ONNX format.
 
     Args:
-        graph (IRGraph | TensorOrScalar): The graph parameter.
-        filepath (str): The filepath parameter.
+        graph (IRGraph | TensorOrScalar): Input `graph` argument (graph).
+        filepath (str): Input `filepath` argument (filepath).
     """
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph as CoreIRGraph
@@ -426,8 +426,8 @@ def export_to_tflite(graph: IRGraph | TensorOrScalar, filepath: str) -> None:
     """Export the internal representation graph to TFLite format.
 
     Args:
-        graph (IRGraph | TensorOrScalar): The graph parameter.
-        filepath (str): The filepath parameter.
+        graph (IRGraph | TensorOrScalar): Input `graph` argument (graph).
+        filepath (str): Input `filepath` argument (filepath).
     """
     from ml_switcheroo_compiler.ir.core import IRGraph as CoreIRGraph
 
@@ -444,8 +444,8 @@ def export_model_topology(graph: IRGraph, filepath: str) -> None:
     """Export the model topology and IR specifications to a JSON file.
 
     Args:
-        graph (IRGraph): The graph parameter.
-        filepath (str): The filepath parameter.
+        graph (IRGraph): Input `graph` argument (graph).
+        filepath (str): Input `filepath` argument (filepath).
     """
     json_str = graph_to_json(graph)
     with open(filepath, "w") as f:
@@ -478,8 +478,8 @@ def _extract_optimizer_state(
     """Extract optimizer momentums and variables into a flat numpy dictionary.
 
     Args:
-        model (TensorOrScalar): The model parameter.
-        state_store (TensorOrScalar): The state_store parameter.
+        model (TensorOrScalar): Input `model` argument (model).
+        state_store (TensorOrScalar): Input `state_store` argument (state store).
     """
     if isinstance(model, _OptimizerModelProtocol):
         opt = model.optimizer
@@ -501,9 +501,9 @@ def _extract_non_trainable_state(
     """Extract batch normalization statistics and non-trainable state.
 
     Args:
-        model (TensorOrScalar): The model parameter.
-        state_store (TensorOrScalar): The state_store parameter.
-        weights_store (TensorOrScalar | Mapping[str, TensorOrScalar]): The weights_store parameter.
+        model (TensorOrScalar): Input `model` argument (model).
+        state_store (TensorOrScalar): Input `state_store` argument (state store).
+        weights_store (TensorOrScalar | Mapping[str, TensorOrScalar]): Input `weights_store` argument (weights store).
     """
     if isinstance(model, _NonTrainableModelProtocol):
         existing_keys = set(weights_store) if isinstance(weights_store, Iterable) else set()
@@ -520,8 +520,8 @@ def _extract_ema_state(
     """Extract Exponential Moving Average (EMA) variables from the model.
 
     Args:
-        model (TensorOrScalar): The model parameter.
-        state_store (TensorOrScalar): The state_store parameter.
+        model (TensorOrScalar): Input `model` argument (model).
+        state_store (TensorOrScalar): Input `state_store` argument (state store).
     """
     if isinstance(model, _EmaModelProtocol):
         for i, w in enumerate(model.ema_variables):
@@ -575,9 +575,9 @@ def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: TensorOrScalar) 
     """Write HDF5 data from a dictionary store into a zip file.
 
     Args:
-        zf (zipfile.ZipFile): The zf parameter.
-        filename (str): The filename parameter.
-        store (TensorOrScalar): The store parameter.
+        zf (zipfile.ZipFile): Input `zf` argument (zf).
+        filename (str): Input `filename` argument (filename).
+        store (TensorOrScalar): Input `store` argument (store).
     """
     zinfo = zipfile.ZipInfo(filename)
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
@@ -612,7 +612,7 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
     """Write the collected stores to a zipped keras file.
 
     Args:
-        ctx (KerasSerializationContext): The ctx parameter.
+        ctx (KerasSerializationContext): Input `ctx` argument (ctx).
     """
     with zipfile.ZipFile(ctx.filepath, "w", zipfile.ZIP_DEFLATED) as zf:
         if ctx.weights_store:
@@ -627,10 +627,10 @@ def save_model(model: TensorOrScalar, filepath: str, overwrite: bool = True, zip
     """Save the model to a .keras zip format, including state and weights.
 
     Args:
-        model (TensorOrScalar): The model parameter.
-        filepath (str): The filepath parameter.
-        overwrite (bool): The overwrite parameter.
-        zipped (TensorOrScalar): The zipped parameter.
+        model (TensorOrScalar): Input `model` argument (model).
+        filepath (str): Input `filepath` argument (filepath).
+        overwrite (bool): Input `overwrite` argument (overwrite).
+        zipped (TensorOrScalar): Input `zipped` argument (zipped).
         **kwargs (AttrValue): Keyword args.
     """
     _ = (overwrite, zipped, kwargs)
@@ -1274,8 +1274,8 @@ def load_variable(path: str, name: str) -> Tensor:
     """Load variable from V2 checkpoint.
 
     Args:
-        path (str): The path parameter.
-        name (str): The name parameter.
+        path (str): Input `path` argument (path).
+        name (str): Input `name` argument (name).
 
     Returns:
         Tensor: Reconstructed tensor with loaded data.

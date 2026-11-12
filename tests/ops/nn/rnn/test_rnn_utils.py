@@ -43,6 +43,9 @@ def test_rnn_utils_branches() -> None:
             Args:
                 c: Test parameter `c`.
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `my_f`.
             """
             return (c, x)
 
@@ -81,6 +84,9 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
 
     Args:
         data: Test parameter `data`.
+
+    Returns:
+        EagerValue: Computed output value from `create_eager_tensor`.
     """
     return ensure_callable(Tensor)(data, ensure_callable(TensorConfig)(ensure_eager_tensor(data).shape, ensure_callable(DType)("float32"), ensure_callable(Device)("cpu")))
 
@@ -98,6 +104,9 @@ def test_rnn_utils_missing_branches() -> None:
                 inputs: Test parameter `inputs`.
                 state: Test parameter `state`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return (inputs, state)
 
@@ -139,6 +148,9 @@ def _test_rnn_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             x: Test parameter `x`.
             state: Test parameter `state`.
+
+        Returns:
+            EagerValue: Computed output value from `my_cell`.
         """
         return ensure_callable(simple_rnn_cell)(x, state, kernel, rec_kernel, bias)
 
@@ -177,6 +189,9 @@ def _test_rnn_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             x: Test parameter `x`.
             state: Test parameter `state`.
+
+        Returns:
+            EagerValue: Computed output value from `my_cell_res`.
         """
         return ensure_callable(simple_rnn_cell)(
             x,
@@ -195,6 +210,9 @@ def _test_rnn_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         Args:
             x: Test parameter `x`.
             y: Test parameter `y`.
+
+        Returns:
+            EagerValue: Computed output value from `my_res_fn`.
         """
         return y
 
@@ -228,6 +246,9 @@ def _test_rnn_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
             Args:
                 x: Test parameter `x`.
                 state: Test parameter `state`.
+
+            Returns:
+                EagerValue: Computed output value from `my_cell_trace`.
             """
             return (x, (x,))
 
@@ -256,6 +277,9 @@ def _test_rnn_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
             Args:
                 carry: Test parameter `carry`.
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `my_f`.
             """
             return (carry, x)
 
@@ -323,6 +347,9 @@ def _test_rnn_utils_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
         Args:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_cell`.
         """
         return (carry, x)
 
@@ -340,6 +367,9 @@ def _test_rnn_utils_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
             state: Test parameter `state`.
             cell_fn: Test parameter `cell_fn`.
             config: Test parameter `config`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_rnn`.
         """
         return (inputs, state)
 
@@ -373,6 +403,9 @@ def _test_rnn_utils_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             init: Test parameter `init`.
             xs: Test parameter `xs`.
             config: Test parameter `config`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_scan`.
         """
         (c, out) = ensure_callable(fn)(init, xs)
 
@@ -386,6 +419,9 @@ def _test_rnn_utils_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
 
                 Args:
                     key: Test parameter `key`.
+
+                Returns:
+                    EagerValue: Computed output value from `__getitem__`.
                 """
                 return self
 
@@ -418,6 +454,9 @@ def _test_rnn_utils_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
             Args:
                 x: Test parameter `x`.
                 state: Test parameter `state`.
+
+            Returns:
+                EagerValue: Computed output value from `__call__`.
             """
             return (x, state)
 
@@ -493,6 +532,9 @@ def test_rnn_utils_coverage2() -> None:
             Args:
                 carry: Test parameter `carry`.
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_cell`.
             """
             return (carry, x)
 
@@ -506,6 +548,9 @@ def test_rnn_utils_coverage2() -> None:
                 init: Test parameter `init`.
                 xs: Test parameter `xs`.
                 length: Test parameter `length`.
+
+            Returns:
+                EagerValue: Computed output value from `mock_cf_scan`.
             """
             return (init, xs)
 

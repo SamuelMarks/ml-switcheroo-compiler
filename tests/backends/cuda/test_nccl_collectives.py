@@ -222,6 +222,9 @@ def test_nccl_driver_dll_fallback() -> None:
 
         Args:
             path: Test parameter `path`.
+
+        Returns:
+            MagicMock: Computed output value from `mock_cdll`.
         """
         if path == "nccl.dll":
             return mock_lib

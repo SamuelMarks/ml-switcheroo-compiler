@@ -20,6 +20,7 @@ def test_math_advanced_coverage() -> None:
     from tests.testing_utils import get_test_members
 
     ops = [ensure_callable(fn) for name, fn in get_test_members(ma).items() if name.startswith("_") and callable(fn)]
+    evaluated_outputs = 0
     for op in ops:
         arg = np.array([1.0, 2.0])
         sig = inspect.signature(op)
@@ -32,18 +33,21 @@ def test_math_advanced_coverage() -> None:
             else:
                 ensure_callable(args_to_pass.append)(arg)
         try:
-            op(*args_to_pass)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            if op(*args_to_pass) is not None:
+                evaluated_outputs += 1
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError):
+            evaluated_outputs += 0
         try:
-            op(*args_to_pass[:-1])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
-    assert callable(test_math_advanced_coverage)
+            if op(*args_to_pass[:-1]) is not None:
+                evaluated_outputs += 1
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError):
+            evaluated_outputs += 0
+    assert evaluated_outputs >= 5
 
 
 def test_math_special_coverage() -> None:
     """Test function test_math_special_coverage."""
+    handled_errors = 0
     from tests.testing_utils import get_test_members
 
     ops = [ensure_callable(fn) for name, fn in get_test_members(ms).items() if name.startswith("_") and callable(fn)]
@@ -61,11 +65,11 @@ def test_math_special_coverage() -> None:
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         try:
             op(*args_to_pass[:-1])
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
     ms._np_expint(ensure_eager_tensor(np), np.array([1.0, 2.0]))
-    ensure_callable(ms._np_expint)(np, x=np.array([1.0, 2.0]), n=1)
-    assert callable(test_math_special_coverage)
+    _out = ensure_callable(ms._np_expint)(np, x=np.array([1.0, 2.0]), n=1)
+    assert np.asarray(ensure_eager_tensor(_out)).shape == (2,) and bool(np.allclose(np.asarray(ensure_eager_tensor(_out), dtype=float), [0.219384, 0.048901], atol=1e-3))

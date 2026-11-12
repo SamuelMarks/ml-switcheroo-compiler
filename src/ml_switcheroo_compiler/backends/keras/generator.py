@@ -59,11 +59,11 @@ class KerasTensorManipulator:
         """Execute format zeros like for compiler processing.
 
         Args:
-            op (str): The op parameter.
-            kwargs: The kwargs parameter.
+            op (str): Input `op` argument (op).
+            kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         res: str = f"keras.ops.{op}({{shape}})"
         if "dtype" in kwargs:
@@ -75,10 +75,10 @@ class KerasTensorManipulator:
         """Execute format full for compiler processing.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         res: str = "keras.ops.full({shape}, {fill_value})"
         if "dtype" in kwargs:
@@ -90,10 +90,10 @@ class KerasTensorManipulator:
         """Execute format transpose for compiler processing.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            str: Result.
+            str: Computed `str` output.
         """
         if "axes" in kwargs:
             return "keras.ops.transpose({0}, {axes})"
@@ -283,10 +283,10 @@ class KerasCodeGenerator(BaseGenerator):
         """Execute emit input assignment for compiler processing.
 
         Args:
-            var_name (str): The var_name parameter.
-            node (IRNode): The node parameter.
-            input_prefix (str): The input_prefix parameter.
-            input_idx (int): The input_idx parameter.
+            var_name (str): Input `var_name` argument (var name).
+            node (IRNode): Input `node` argument (node).
+            input_prefix (str): Input `input_prefix` argument (input prefix).
+            input_idx (int): Input `input_idx` argument (input idx).
         """
         self.add_line(KerasSignatureBuilder.get_input_assignment(var_name, node))
         self.keras_input_vars.append(var_name)
@@ -295,7 +295,7 @@ class KerasCodeGenerator(BaseGenerator):
         """Execute emit body return for compiler processing.
 
         Args:
-            returns (list[str]): The returns parameter.
+            returns (list[str]): Input `returns` argument (returns).
         """
         self.keras_output_vars.extend(returns)
 
@@ -304,8 +304,8 @@ class KerasCodeGenerator(BaseGenerator):
 
         Args:
             node (IRNode): The node to process.
-            input_vars (list[str]): The input_vars parameter.
-            returns (str): The returns parameter.
+            input_vars (list[str]): Input `input_vars` argument (input vars).
+            returns (str): Input `returns` argument (returns).
         """
         self.keras_output_vars.extend(input_vars)
 
@@ -313,7 +313,7 @@ class KerasCodeGenerator(BaseGenerator):
         """Execute generate file header for compiler processing.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         return [self.header.strip()]
 
@@ -321,7 +321,7 @@ class KerasCodeGenerator(BaseGenerator):
         """Execute resolve imports for compiler processing.
 
         Returns:
-            list[str]: Result.
+            list[str]: Computed `list[str]` output.
         """
         import yaml
 

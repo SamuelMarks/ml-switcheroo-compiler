@@ -52,13 +52,14 @@ def test_check_for_numpy_leaks() -> None:
 
         with open(os.path.join(eager_dir, "bad_eager.py"), "w") as f:
             f.write("res = _np_mod().add(1, 2)\n")
+            f.write("be = BackendRegistry.get('numpy')\n")
 
         with open(os.path.join(grad_dir, "bad.py"), "w") as f:
             f.write("import numpy\n")
 
         violations: list[str] = check_for_numpy_leaks(d)
 
-        assert len(violations) == 5
+        assert len(violations) == 6
         # check if grad and mlx violations are recorded
         # The exact text match depends on order, but we can verify substrings
         violation_texts: str = " ".join(violations)
@@ -66,6 +67,7 @@ def test_check_for_numpy_leaks() -> None:
         assert "res = np.add(1, 2)" in violation_texts
         assert "from numpy import array" in violation_texts
         assert "_np_mod" in violation_texts
+        assert "BackendRegistry.get('numpy')" in violation_texts
         # one from grad/bad.py
         assert "import numpy" in violation_texts
 
@@ -167,6 +169,9 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
             name: Test parameter `name`.
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_import`.
         """
         nonlocal first_call
         if "scripts.lint_dependencies" in name and first_call:

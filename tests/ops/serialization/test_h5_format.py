@@ -31,7 +31,11 @@ def test_h5_load_save(mocker: EagerTensorProtocol) -> None:
             """Test class MockNumpy."""
 
             def numpy(self) -> EagerValue:
-                """Test function numpy."""
+                """Test function numpy.
+
+                Returns:
+                    EagerValue: Computed output value from `numpy`.
+                """
                 return np.array([1, 2])
 
         class MockData:
@@ -45,7 +49,11 @@ def test_h5_load_save(mocker: EagerTensorProtocol) -> None:
             """Test class MockList."""
 
             def tolist(self) -> EagerValue:
-                """Test function tolist."""
+                """Test function tolist.
+
+                Returns:
+                    EagerValue: Computed output value from `tolist`.
+                """
                 return [3, 4]
 
         weights = {"a": np.array([1, 2]), "b": MockNumpy(), "c": MockData(), "d": MockList()}

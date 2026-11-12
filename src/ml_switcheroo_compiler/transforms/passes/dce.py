@@ -104,7 +104,7 @@ def _build_reachable_set(graph: IRGraph, initial_reachable: Set[str]) -> set[str
     """Build the set of reachable nodes via backward traversal from initial roots.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
         initial_reachable (Set[str]): Initial reachable node IDs (e.g. outputs, side effects).
 
     Returns:
@@ -125,7 +125,7 @@ def dce_pass(graph: IRGraph) -> bool:
     Prunes unused subgraph outputs, side-effect-free loops, and orphaned constants.
 
     Args:
-        graph (IRGraph): The graph parameter.
+        graph (IRGraph): Input `graph` argument (graph).
 
     Returns:
         bool: True if the graph or any nested subgraphs were modified.

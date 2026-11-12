@@ -677,6 +677,9 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
         Args:
             a: Test parameter `a`.
             k: Test parameter `k`.
+
+        Returns:
+            EagerValue: Computed output value from `dummy_fn`.
         """
         return (ensure_callable(called.append)((a, k)), 42)[1]
 
@@ -710,6 +713,9 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
             Args:
                 graph: Test parameter `graph`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `_compile_aot_impl`.
             """
             self.call_count += 1
             return CompiledArtifact(callable_fn=lambda *a: 100, binary_bytes=b"bin")

@@ -69,21 +69,22 @@ def _disabled_test_core_math_ops_branches_sub_2(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, empty_backend) = (_state["dummy_input"], _state["empty_backend"])
     for _name, func in global_eager_registry._registry.items():
         if func.__module__ == "ml_switcheroo_compiler.backends.eager.core_math_ops":
             try:
                 func(empty_backend, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(empty_backend, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(empty_backend, dummy_input, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
     _state.update(ensure_tensor_dict({"dummy_input": dummy_input, "empty_backend": empty_backend}))
 
 
@@ -93,21 +94,22 @@ def _disabled_test_core_math_ops_branches_sub_3(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, full_backend) = (_state["dummy_input"], _state["full_backend"])
     for _name, func in global_eager_registry._registry.items():
         if func.__module__ == "ml_switcheroo_compiler.backends.eager.core_math_ops":
             try:
                 func(full_backend, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(full_backend, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(full_backend, dummy_input, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
     _state.update(ensure_tensor_dict({"dummy_input": dummy_input, "full_backend": full_backend}))
 
 
@@ -117,21 +119,22 @@ def _disabled_test_core_math_ops_branches_sub_4(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, nested_backend) = (_state["dummy_input"], _state["nested_backend"])
     for _name, func in global_eager_registry._registry.items():
         if func.__module__ == "ml_switcheroo_compiler.backends.eager.core_math_ops":
             try:
                 func(nested_backend, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(nested_backend, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
             try:
                 func(nested_backend, dummy_input, dummy_input, dummy_input)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-                _caught_err = True
+                handled_errors += 1
     _state.update(ensure_tensor_dict({"dummy_input": dummy_input, "nested_backend": nested_backend}))
 
 
@@ -141,23 +144,24 @@ def _disabled_test_core_math_ops_branches_sub_5(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, full_backend, nested_backend) = (_state["dummy_input"], _state["full_backend"], _state["nested_backend"])
     try:
         mod._apply_causal_mask(full_backend, dummy_input)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     try:
         mod._apply_softmax(nested_backend, dummy_input)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     try:
         ensure_eager_tensor(ensure_eager_tensor(mod)._global_adaptive_pool_mock)(full_backend, dummy_input, 1)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     try:
         ensure_eager_tensor(ensure_eager_tensor(mod)._global_adaptive_pool_mock)(full_backend, dummy_input, (1, 1))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     _state.update(ensure_tensor_dict({"dummy_input": dummy_input, "full_backend": full_backend, "nested_backend": nested_backend}))
 
 
@@ -167,11 +171,12 @@ def _disabled_test_core_math_ops_branches_sub_6(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, empty_backend, full_backend) = (_state["dummy_input"], _state["empty_backend"], _state["full_backend"])
     try:
         mod._gamma(empty_backend, 1.0)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
 
     class MockData:
         """Test class MockData."""
@@ -180,17 +185,25 @@ def _disabled_test_core_math_ops_branches_sub_6(_state: dict[str, EagerTensorPro
         dtype = float
 
         def item(self) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Returns:
+                EagerValue: Computed output value from `item`.
+            """
             return 1.0
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1.0]
 
     try:
         mod._allclose(full_backend, dummy_input, dummy_input, rtol=ensure_eager_tensor(MockData()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     _state.update(ensure_tensor_dict({"MockData": MockData}))
     _state.update(ensure_tensor_dict({"dummy_input": dummy_input, "empty_backend": empty_backend, "full_backend": full_backend}))
 
@@ -201,6 +214,7 @@ def _disabled_test_core_math_ops_branches_sub_7(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, full_backend) = (_state["dummy_input"], _state["full_backend"])
 
     class MockData2:
@@ -210,13 +224,17 @@ def _disabled_test_core_math_ops_branches_sub_7(_state: dict[str, EagerTensorPro
         dtype = float
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1.0]
 
     try:
         mod._allclose(full_backend, dummy_input, dummy_input, rtol=ensure_eager_tensor(MockData2()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
 
     class MockData3:
         """Test class MockData3."""
@@ -225,7 +243,11 @@ def _disabled_test_core_math_ops_branches_sub_7(_state: dict[str, EagerTensorPro
         dtype = float
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1.0]
 
     _state.update(ensure_tensor_dict({"MockData2": MockData2, "MockData3": MockData3}))
@@ -238,11 +260,12 @@ def _disabled_test_core_math_ops_branches_sub_8(_state: dict[str, EagerTensorPro
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (MockData3, dummy_input, full_backend) = (_state["MockData3"], _state["dummy_input"], _state["full_backend"])
     try:
         mod._allclose(full_backend, dummy_input, dummy_input, rtol=MockData3(), atol=MockData3(), equal_nan=MockData3())
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
 
     class NoTriuBackend:
         """Test class NoTriuBackend."""
@@ -252,11 +275,11 @@ def _disabled_test_core_math_ops_branches_sub_8(_state: dict[str, EagerTensorPro
     try:
         ensure_callable(mod._apply_causal_mask)(ensure_callable(NoTriuBackend)(), ensure_callable(np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     try:
         ensure_callable(mod._apply_softmax)(ensure_callable(NoTriuBackend)(), ensure_callable(np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     _state.update(ensure_tensor_dict({"NoTriuBackend": NoTriuBackend}))
     _state.update(ensure_tensor_dict({"MockData3": MockData3, "dummy_input": dummy_input, "full_backend": full_backend}))
 
@@ -277,6 +300,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -287,6 +313,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `transpose`.
             """
             return a
 
@@ -297,6 +326,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `triu`.
             """
             return a
 
@@ -306,6 +338,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `ones`.
             """
             return np.ones((2, 2))
 
@@ -315,6 +350,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return np.ones((2, 2))
 
@@ -325,6 +363,9 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `softmax`.
             """
             return a
 
@@ -337,23 +378,24 @@ def _disabled_test_core_math_ops_branches_sub_10(_state: dict[str, EagerTensorPr
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (AttnBackend, empty_backend) = (_state["AttnBackend"], _state["empty_backend"])
     mod._scaled_dot_product_attention_eager(AttnBackend(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), is_causal=True, mask=np.ones((2, 2)))
     try:
         mod._np_bandpart(empty_backend, x=None)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     try:
         mod._np_betapdf(empty_backend, x=None)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     original_gcd = ensure_eager_tensor(np).gcd
     try:
         if original_gcd:
             del np.gcd
         mod._np_gcd(empty_backend, np.array([2]), np.array([4]))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if original_gcd:
             ensure_mutable(np).gcd = ensure_eager_tensor(original_gcd)
@@ -371,6 +413,7 @@ def _disabled_test_core_math_ops_branches_sub_11(_state: dict[str, EagerTensorPr
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (empty_backend, original_scipy, sys) = (_state["empty_backend"], _state["original_scipy"], _state["sys"])
     try:
         if has_backend_member(mod, "_np_gamma"):
@@ -382,7 +425,7 @@ def _disabled_test_core_math_ops_branches_sub_11(_state: dict[str, EagerTensorPr
         if has_backend_member(mod, "_np_xlogy"):
             mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         if ensure_eager_tensor(original_scipy) is not None:
             sys.modules["scipy.special"] = original_scipy
@@ -408,6 +451,9 @@ def _disabled_test_core_math_ops_branches_sub_12(_state: dict[str, EagerTensorPr
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `stack`.
             """
             return x
 
@@ -419,6 +465,9 @@ def _disabled_test_core_math_ops_branches_sub_12(_state: dict[str, EagerTensorPr
 
             Args:
                 x: Test parameter `x`.
+
+            Returns:
+                EagerValue: Computed output value from `array`.
             """
             return x
 
@@ -434,6 +483,7 @@ def _disabled_test_core_math_ops_branches_sub_13(_state: dict[str, EagerTensorPr
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (dummy_input, full_backend) = (_state["dummy_input"], _state["full_backend"])
 
     class MockData3:
@@ -443,7 +493,11 @@ def _disabled_test_core_math_ops_branches_sub_13(_state: dict[str, EagerTensorPr
         dtype = float
 
         def tolist(self) -> EagerValue:
-            """Test function tolist."""
+            """Test function tolist.
+
+            Returns:
+                EagerValue: Computed output value from `tolist`.
+            """
             return [1.0]
 
     class MockData4:
@@ -454,7 +508,7 @@ def _disabled_test_core_math_ops_branches_sub_13(_state: dict[str, EagerTensorPr
     try:
         mod._allclose(full_backend, dummy_input, dummy_input, rtol=ensure_eager_tensor(MockData4()), atol=ensure_eager_tensor(MockData4()), equal_nan=ensure_eager_tensor(MockData4()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     import sys
 
     try:
@@ -487,6 +541,7 @@ def _disabled_test_core_math_ops_branches_sub_14(_state: dict[str, EagerTensorPr
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (empty_backend, scipy_installed, sys) = (_state["empty_backend"], _state["scipy_installed"], _state["sys"])
     original_scipy: EagerValue = None
     if scipy_installed:
@@ -497,7 +552,7 @@ def _disabled_test_core_math_ops_branches_sub_14(_state: dict[str, EagerTensorPr
         try:
             _run_scipy_special_ops(empty_backend)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-            _caught_err = True
+            handled_errors += 1
         finally:
             if ensure_eager_tensor(original_scipy) is not None:
                 sys.modules["scipy.special"] = original_scipy
@@ -551,6 +606,9 @@ def _disabled_test_core_math_ops_branches_sub_16(_state: dict[str, EagerTensorPr
         Args:
             obj: Test parameter `obj`.
             name: Test parameter `name`.
+
+        Returns:
+            EagerValue: Computed output value from `mock_hasattr`.
         """
         if obj is np and name == "take_along_axis":
             return False
@@ -568,6 +626,7 @@ def _disabled_test_core_math_ops_branches_sub_17(_state: dict[str, EagerTensorPr
     Args:
         _state: Shared test state dictionary.
     """
+    handled_errors = 0
     (builtins, empty_backend, mock_hasattr, original_hasattr) = (_state["builtins"], _state["empty_backend"], _state["mock_hasattr"], _state["original_hasattr"])
     try:
         ensure_mutable(builtins).hasattr = ensure_eager_tensor(mock_hasattr)
@@ -576,7 +635,7 @@ def _disabled_test_core_math_ops_branches_sub_17(_state: dict[str, EagerTensorPr
         if has_backend_member(mod, "_np_triangular"):
             mod._np_triangular(empty_backend, left=0, mode=0.5, right=1, size=1)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
-        _caught_err = True
+        handled_errors += 1
     finally:
         ensure_mutable(builtins).hasattr = ensure_eager_tensor(original_hasattr)
     if has_backend_member(mod, "_np_modifiedbesseli1"):
@@ -616,6 +675,7 @@ def test_core_math_ops_branches() -> None:
 
 def test_core_math_ops_missing_coverage_new() -> None:
     """Test function disabled_test_core_math_ops_missing_coverage_new."""
+    handled_errors = 0
     import sys
 
     import numpy as np
@@ -645,7 +705,7 @@ def test_core_math_ops_missing_coverage_new() -> None:
             mod._np_xlog1py(ensure_mod(empty_backend), np.array([1.0]), np.array([1.0]))
             mod._np_xlogy(ensure_mod(empty_backend), np.array([1.0]), np.array([1.0]))
         except (AttributeError, TypeError, ValueError):
-            _caught_err = True
+            handled_errors += 1
     finally:
         if original_scipy is not None:
             sys.modules["scipy.special"] = original_scipy
@@ -665,6 +725,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
             Args:
                 a: Test parameter `a`.
                 b: Test parameter `b`.
+
+            Returns:
+                EagerValue: Computed output value from `matmul`.
             """
             return a
 
@@ -675,6 +738,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `transpose`.
             """
             return a
 
@@ -685,6 +751,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `triu`.
             """
             return a
 
@@ -694,6 +763,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `ones`.
             """
             return np.ones((2, 2))
 
@@ -703,6 +775,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `where`.
             """
             return np.ones((2, 2))
 
@@ -713,8 +788,10 @@ def test_core_math_ops_missing_coverage_new() -> None:
                 a: Test parameter `a`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `softmax`.
             """
             return a
 
     mod._scaled_dot_product_attention_eager(ensure_mod(AttnBackend()), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), scale=1.0)
-    assert callable(test_core_math_ops_missing_coverage_new)

@@ -54,6 +54,9 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
             Args:
                 data: Test parameter `data`.
                 channels: Test parameter `channels`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_image_bytes`.
             """
             return ensure_eager_tensor(DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
 
@@ -89,6 +92,9 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_png`.
             """
             return "png"
 
@@ -99,6 +105,9 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_gif`.
             """
             return "gif"
 
@@ -109,6 +118,9 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_bmp`.
             """
             return "bmp"
 
@@ -158,6 +170,9 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
                 op_name: Test parameter `op_name`.
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `execute_op`.
             """
             return op_name
 
@@ -169,6 +184,9 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
                 contents: Test parameter `contents`.
                 channels: Test parameter `channels`.
                 ratio: Test parameter `ratio`.
+
+            Returns:
+                EagerValue: Computed output value from `decode_jpeg`.
             """
             return "jpeg"
 

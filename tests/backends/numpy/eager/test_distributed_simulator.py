@@ -66,6 +66,9 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
                 Args:
                     x: Test parameter `x`.
                     sz: Test parameter `sz`.
+
+                Returns:
+                    EagerValue: Computed output value from `array_split`.
                 """
                 return [np.array([1]), np.array([2])]
 
@@ -74,6 +77,9 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
 
                 Args:
                     x: Test parameter `x`.
+
+                Returns:
+                    EagerValue: Computed output value from `concatenate`.
                 """
                 return np.array([1, 2])
 

@@ -29,6 +29,9 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `load`.
             """
             return "mock_load"
 
@@ -39,6 +42,9 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `save`.
             """
             return "mock_save"
 
@@ -49,6 +55,9 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Returns:
+                EagerValue: Computed output value from `save_safetensors`.
             """
             return "mock_save_safetensors"
 

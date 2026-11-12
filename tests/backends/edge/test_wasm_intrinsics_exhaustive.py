@@ -16,7 +16,11 @@ if typing.TYPE_CHECKING:
 
 
 def get_all_ops() -> EagerValue:
-    """Extract all operations from the registry."""
+    """Extract all operations from the registry.
+
+    Returns:
+        EagerValue: Computed output value from `get_all_ops`.
+    """
     return list(OPS_REGISTRY.keys())
 
 
@@ -26,6 +30,7 @@ def test_wasm_scalar_fallback_and_simd() -> None:
     in_node = IRNode(id="Input", op_type="Input", shape_metadata=(10, 10))
     graph.nodes[in_node.id] = in_node
     ops_to_test = ["Sin", "Cos", "Exp", "Add", "Mul", "Relu", "Sigmoid", "Tanh"]
+    generated_modules = 0
     for op in ops_to_test:
         test_node = IRNode(id=f"test_{op}", op_type=op, inputs=[in_node.id], shape_metadata=(10, 10))
         if op in ["Add", "Mul"]:
@@ -33,9 +38,11 @@ def test_wasm_scalar_fallback_and_simd() -> None:
         graph.nodes[test_node.id] = test_node
         try:
             generator = WasmCodeGenerator(graph)
-            generator.generate()
+            wat_code = generator.generate()
+            assert "(module" in wat_code
+            generated_modules += 1
         except UnimplementedMathError as e:
             pytest.fail(f"Operation {op} triggered UnimplementedMathError: {e}")
         finally:
             del graph.nodes[test_node.id]
-    assert callable(test_wasm_scalar_fallback_and_simd)
+    assert generated_modules == len(ops_to_test)

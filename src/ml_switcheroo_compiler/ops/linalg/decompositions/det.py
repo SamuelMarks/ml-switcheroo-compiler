@@ -66,10 +66,10 @@ def det(input: Tensor) -> TensorOrScalar:
     """Compute the determinant of a square matrix.
 
     Args:
-        input (Tensor): The input parameter.
+        input (Tensor): Input `input` argument (input).
 
     Returns:
-        Tensor: Result.
+        Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -88,10 +88,10 @@ def slogdet(input: Tensor) -> TensorOrScalar:
     """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:
-        input (Tensor): The input parameter.
+        input (Tensor): Input `input` argument (input).
 
     Returns:
-        tuple: Result.
+        tuple: Computed `tuple` output.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
