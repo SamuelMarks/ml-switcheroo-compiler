@@ -646,6 +646,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                 "sum": torch.sum,
                 "mean": torch.mean,
                 "reshape": torch.reshape,
+                "transpose": torch.permute,
                 "asarray": torch.asarray,
                 "array": torch.tensor,
                 "zeros": torch.zeros,

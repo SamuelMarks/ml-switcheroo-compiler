@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import collections
 import threading
 import typing
+import weakref
 from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalGraph
@@ -39,7 +41,10 @@ class _ActiveGraphSpecsProtocol(typing.Protocol):
     input_specs: dict[str, TensorSpec]
 
 
-_TRACE_COUNTS: dict[int, int] = {}
+_TRACE_COUNTS_LOCK = threading.Lock()
+_WEAK_TRACE_COUNTS: weakref.WeakKeyDictionary[OpValue, int] = weakref.WeakKeyDictionary()
+_FALLBACK_TRACE_COUNTS: collections.OrderedDict[int, int] = collections.OrderedDict()
+_MAX_FALLBACK_TRACE_ENTRIES = 1024
 
 
 def get_trace_count(func: OpValue) -> int:
@@ -51,7 +56,11 @@ def get_trace_count(func: OpValue) -> int:
     Returns:
         int: The number of times the function has been traced.
     """
-    return _TRACE_COUNTS.get(id(func), 0)
+    with _TRACE_COUNTS_LOCK:
+        try:
+            return _WEAK_TRACE_COUNTS.get(func, 0)
+        except TypeError:
+            return _FALLBACK_TRACE_COUNTS.get(id(func), 0)
 
 
 def increment_trace_count(func: OpValue) -> None:
@@ -60,7 +69,15 @@ def increment_trace_count(func: OpValue) -> None:
     Args:
         func (OpValue): The function to increment the trace count for.
     """
-    _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
+    with _TRACE_COUNTS_LOCK:
+        try:
+            _WEAK_TRACE_COUNTS[func] = _WEAK_TRACE_COUNTS.get(func, 0) + 1
+        except TypeError:
+            fid = id(func)
+            _FALLBACK_TRACE_COUNTS[fid] = _FALLBACK_TRACE_COUNTS.get(fid, 0) + 1
+            _FALLBACK_TRACE_COUNTS.move_to_end(fid)
+            while len(_FALLBACK_TRACE_COUNTS) > _MAX_FALLBACK_TRACE_ENTRIES:
+                _FALLBACK_TRACE_COUNTS.popitem(last=False)
 
 
 def reset_trace_count(func: OpValue) -> None:
@@ -69,16 +86,18 @@ def reset_trace_count(func: OpValue) -> None:
     Args:
         func (OpValue): The function to reset the trace count for.
     """
-    if id(func) in _TRACE_COUNTS:
-        del _TRACE_COUNTS[id(func)]
+    with _TRACE_COUNTS_LOCK:
+        try:
+            _WEAK_TRACE_COUNTS.pop(func, None)
+        except TypeError:
+            _FALLBACK_TRACE_COUNTS.pop(id(func), None)
 
 
-class TracerTape(threading.local):
-    """Thread-local tape for tracking active graph construction."""
+class TracerTape:
+    """Context-isolated tape facade delegating to `ContextVar`-backed `global_tracing_state`."""
 
     def __init__(self) -> None:
         """Initialize the tracer tape."""
-        super().__init__()
 
     def start_tracing(self, name: str = "Model") -> LogicalGraph:
         """Begin tracking operations and constructing a new computational graph.

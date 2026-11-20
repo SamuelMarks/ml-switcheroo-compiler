@@ -64,8 +64,20 @@ class ConfigState(pydantic.BaseModel):
         return copy.deepcopy(self)
 
 
-_config_state_var: ContextVar[ConfigState] = ContextVar("config_state")
-_config_state_var.set(ConfigState())
+_config_state_var: ContextVar[ConfigState | None] = ContextVar("config_state", default=None)
+
+
+def _get_config_state() -> ConfigState:
+    """Return the active context configuration state, lazily initializing per thread.
+
+    Returns:
+        ConfigState: Active context-local configuration state.
+    """
+    state = _config_state_var.get()
+    if state is None:
+        state = ConfigState()
+        _config_state_var.set(state)
+    return state
 
 
 class Config:
@@ -87,12 +99,40 @@ class Config:
     def __init__(self) -> None:
         """Initialize the Config."""
 
+    def _set_execution_field(self, field: str, value: IRAttrValue) -> None:
+        """Update an `ExecutionConfig` field using copy-on-write `ContextVar` state.
+
+        Args:
+            field (str): Field name on `ExecutionConfig`.
+            value (IRAttrValue): Replacement value.
+        """
+        cur = _get_config_state()
+        updated = ConfigState(
+            execution=cur.execution.model_copy(update={field: value}),
+            env=cur.env.model_copy(),
+        )
+        _config_state_var.set(updated)
+
+    def _set_env_field(self, field: str, value: OpValue) -> None:
+        """Update an `EnvironmentConfig` field using copy-on-write `ContextVar` state.
+
+        Args:
+            field (str): Field name on `EnvironmentConfig`.
+            value (OpValue): Replacement value.
+        """
+        cur = _get_config_state()
+        updated = ConfigState(
+            execution=cur.execution.model_copy(),
+            env=cur.env.model_copy(update={field: value}),
+        )
+        _config_state_var.set(updated)
+
     @property
     def seed(self) -> int | None:
         """Get the global random seed.
 
         Returns:
-            int: The random seed.
+            int | None: The random seed.
         """
         return self._state.env.seed
 
@@ -103,7 +143,7 @@ class Config:
         Args:
             value (int | None): The random seed value.
         """
-        self._state.env.seed = value
+        self._set_env_field("seed", value)
 
     @property
     def _state(self) -> ConfigState:
@@ -112,7 +152,7 @@ class Config:
         Returns:
             ConfigState: The state object.
         """
-        return _config_state_var.get()
+        return _get_config_state()
 
     @property
     def backend(self) -> str:
@@ -130,7 +170,7 @@ class Config:
         Args:
             value (str): The name of the backend (e.g., 'numpy', 'mlx').
         """
-        self._state.execution.backend = value
+        self._set_execution_field("backend", value)
 
     @property
     def default_float_dtype(self) -> DType:
@@ -148,7 +188,7 @@ class Config:
         Args:
             value (DType): The default float dtype.
         """
-        self._state.env.default_float_dtype = value
+        self._set_env_field("default_float_dtype", value)
 
     @property
     def default_int_dtype(self) -> DType:
@@ -166,7 +206,7 @@ class Config:
         Args:
             value (DType): The default int dtype.
         """
-        self._state.env.default_int_dtype = value
+        self._set_env_field("default_int_dtype", value)
 
     @property
     def default_device(self) -> Device:
@@ -184,7 +224,7 @@ class Config:
         Args:
             value (Device): The default device.
         """
-        self._state.env.default_device = value
+        self._set_env_field("default_device", value)
 
     @property
     def current_stream(self) -> str:
@@ -202,7 +242,7 @@ class Config:
         Args:
             value (str): The current stream name.
         """
-        self._state.execution.current_stream = value
+        self._set_execution_field("current_stream", value)
 
     @property
     def layout_map(self) -> OpValue:
@@ -220,7 +260,7 @@ class Config:
         Args:
             value (OpValue): The layout map.
         """
-        self._state.env.layout_map = value
+        self._set_env_field("layout_map", value)
 
     @property
     def enable_x64(self) -> bool:
@@ -238,7 +278,7 @@ class Config:
         Args:
             value (bool): True to retain 64-bit precision; False to clamp to 32-bit.
         """
-        self._state.env.enable_x64 = value
+        self._set_env_field("enable_x64", value)
 
     @property
     def op_determinism(self) -> bool:
@@ -256,7 +296,7 @@ class Config:
         Args:
             value (bool): True to enable op determinism.
         """
-        self._state.execution.op_determinism = value
+        self._set_execution_field("op_determinism", value)
 
     @property
     def tensor_float_32_execution(self) -> bool:
@@ -274,7 +314,7 @@ class Config:
         Args:
             value (bool): True to enable TF32.
         """
-        self._state.execution.tensor_float_32_execution = value
+        self._set_execution_field("tensor_float_32_execution", value)
 
     def clear_cache(self) -> None:
         """Clear memory cache. Hook for backends like MLX."""
@@ -304,7 +344,7 @@ class Config:
         Args:
             value (bool): The value to set or add.
         """
-        self._state.execution.eager_mode = value
+        self._set_execution_field("eager_mode", value)
 
     def clone(self) -> ConfigState:
         """Clone the current configuration.
@@ -332,7 +372,7 @@ def ConfigContext(**kwargs: IRAttrValue) -> Iterator[None]:
     Raises:
         ValueError: If any of the provided keys do not exist in the configuration.
     """
-    old_state = _config_state_var.get()
+    old_state = _get_config_state()
     new_state = old_state.clone()
 
     for k, v in kwargs.items():

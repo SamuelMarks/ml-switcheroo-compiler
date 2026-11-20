@@ -19,6 +19,12 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     coerce_shape,
     require_callable,
 )
+from ml_switcheroo_compiler.backends.typeclasses import (
+    CORE_EAGER_REQUIRED_OPS,
+    CoreEagerTypeclass,
+    build_core_eager_dictionary_from_ops,
+    build_typeclass_op_table,
+)
 from ml_switcheroo_compiler.core.shape import (
     CallableLike,
     CallableObjectProtocol,
@@ -373,6 +379,7 @@ class StaticEagerBackendAdapter:
         dtypes: Mapping[str, BackendArg] | None = None,
         submodules: Mapping[str, BackendModuleProtocol | types.ModuleType] | None = None,
         module: types.ModuleType | BackendOperand | None = None,
+        typeclass_dict: CoreEagerTypeclass[BackendOperand] | None = None,
     ) -> None:
         """Initialize static backend adapter bindings.
 
@@ -382,16 +389,33 @@ class StaticEagerBackendAdapter:
             dtypes (Mapping[str, BackendArg] | None): Explicitly bound backend dtype objects.
             submodules (Mapping[str, BackendModuleProtocol | types.ModuleType] | None): Explicitly bound submodules.
             module (types.ModuleType | BackendOperand | None): Optional live backend module namespace.
+            typeclass_dict (CoreEagerTypeclass[BackendOperand] | None): Optional Haskell-style typeclass dictionary.
         """
         self._backend_name = backend_name
-        self._ops: dict[str, EagerBoundCallable] = (
-            {k: require_callable(v) for k, v in ops.items()} if ops is not None else {}
+        self._typeclass_dict: CoreEagerTypeclass[BackendOperand] | None = typeclass_dict
+        merged_ops: dict[str, EagerBoundCallable] = (
+            build_typeclass_op_table(typeclass_dict) if typeclass_dict is not None else {}
         )
+        if ops is not None:
+            for k, v in ops.items():
+                merged_ops[k] = require_callable(v)
+        if self._typeclass_dict is None and CORE_EAGER_REQUIRED_OPS.issubset(merged_ops.keys()):
+            self._typeclass_dict = build_core_eager_dictionary_from_ops(merged_ops)
+        self._ops: dict[str, EagerBoundCallable] = merged_ops
         self._dtypes: dict[str, BackendArg] = dict(dtypes) if dtypes is not None else {}
         self._submodules: dict[str, BackendModuleProtocol | types.ModuleType] = (
             dict(submodules) if submodules is not None else {}
         )
         self._module = module
+
+    @property
+    def typeclass_dict(self) -> CoreEagerTypeclass[BackendOperand] | None:
+        """Return the statically verified `CoreEagerTypeclass` dictionary when present.
+
+        Returns:
+            CoreEagerTypeclass[BackendOperand] | None: Verified typeclass instance or `None`.
+        """
+        return self._typeclass_dict
 
     @property
     def backend_name(self) -> str:

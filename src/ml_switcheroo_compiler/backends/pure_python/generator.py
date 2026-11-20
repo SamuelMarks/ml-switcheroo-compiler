@@ -144,6 +144,114 @@ class PurePythonGenerator(PythonStringGenerator):
         """
         import math
 
+        from ml_switcheroo_compiler.backends.eager_registry import BackendOperand
+        from ml_switcheroo_compiler.backends.typeclasses import (
+            CoreEagerDictionary,
+            CreationDictionary,
+            ElementwiseBinaryDictionary,
+            ElementwiseUnaryDictionary,
+            LinearAlgebraDictionary,
+            ReductionDictionary,
+            verify_core_eager_typeclass,
+        )
+
+        def _pp_fill(val: float, shape: tuple[int, ...], dtype: str | None = None) -> BackendOperand:
+            """Allocate a `PurePythonTensor` of `shape` filled with scalar `val`.
+
+            Args:
+                val (float): Fill scalar value.
+                shape (tuple[int, ...]): Target tensor dimensions.
+                dtype (str | None): Optional dtype string.
+
+            Returns:
+                BackendOperand: Allocated pure-Python tensor.
+            """
+            count = 1
+            for dim in shape:
+                count *= max(dim, 0)
+            payload = val if not shape else [val for _ in range(count)]
+            res: BackendOperand = PurePythonTensor(payload, shape=shape, dtype=dtype or "float32")
+            return res
+
+        def _pp_ingest(data: BackendOperand, dtype: str | None = None) -> PurePythonTensor:
+            """Convert host `data` into a `PurePythonTensor`.
+
+            Args:
+                data (BackendOperand): Host scalar, list, or `PurePythonTensor`.
+                dtype (str | None): Optional dtype string.
+
+            Returns:
+                PurePythonTensor: Wrapped `PurePythonTensor`.
+            """
+            if isinstance(data, PurePythonTensor):
+                return data
+            if isinstance(data, (int, float)):
+                return PurePythonTensor(data, dtype=dtype or "float32")
+            if isinstance(data, (list, tuple)):
+                flat_nums = [float(str(v)) for v in data]
+                return PurePythonTensor(flat_nums, dtype=dtype or "float32")
+            return PurePythonTensor(0.0, dtype=dtype or "float32")
+
+        def _pp_bin(op_name: str, lhs: BackendOperand, rhs: BackendOperand) -> BackendOperand:
+            """Execute binary PurePython op on `lhs` and `rhs`.
+
+            Args:
+                op_name (str): Operation name.
+                lhs (BackendOperand): Left operand.
+                rhs (BackendOperand): Right operand.
+
+            Returns:
+                BackendOperand: Evaluated `PurePythonTensor`.
+            """
+            a = _pp_ingest(lhs)
+            b = _pp_ingest(rhs)
+            res: BackendOperand = execute_op(op_name, None, a, b)
+            return res
+
+        tc_dict = verify_core_eager_typeclass(
+            CoreEagerDictionary[BackendOperand](
+                creation=CreationDictionary[BackendOperand](
+                    zeros_fn=lambda shape, dtype: _pp_fill(0.0, shape, dtype),
+                    ones_fn=lambda shape, dtype: _pp_fill(1.0, shape, dtype),
+                    array_fn=_pp_ingest,
+                    asarray_fn=_pp_ingest,
+                ),
+                unary=ElementwiseUnaryDictionary[BackendOperand](
+                    abs_fn=lambda x: (
+                        x.apply_elementwise(abs) if isinstance(x, PurePythonTensor) else abs(float(str(x)))
+                    ),
+                    exp_fn=lambda x: x.exp() if isinstance(x, PurePythonTensor) else math.exp(float(str(x))),
+                    log_fn=lambda x: x.log() if isinstance(x, PurePythonTensor) else math.log(float(str(x))),
+                    sqrt_fn=lambda x: x.sqrt() if isinstance(x, PurePythonTensor) else math.sqrt(float(str(x))),
+                    sin_fn=lambda x: x.sin() if isinstance(x, PurePythonTensor) else math.sin(float(str(x))),
+                    cos_fn=lambda x: x.cos() if isinstance(x, PurePythonTensor) else math.cos(float(str(x))),
+                    tanh_fn=lambda x: x.tanh() if isinstance(x, PurePythonTensor) else math.tanh(float(str(x))),
+                ),
+                binary=ElementwiseBinaryDictionary[BackendOperand](
+                    add_fn=lambda lhs, rhs: _pp_bin("add", lhs, rhs),
+                    subtract_fn=lambda lhs, rhs: _pp_bin("subtract", lhs, rhs),
+                    multiply_fn=lambda lhs, rhs: _pp_bin("multiply", lhs, rhs),
+                    divide_fn=lambda lhs, rhs: _pp_bin("divide", lhs, rhs),
+                ),
+                linalg=LinearAlgebraDictionary[BackendOperand](
+                    matmul_fn=lambda lhs, rhs: _pp_bin("multiply", lhs, rhs),
+                    reshape_fn=lambda x, shape: PurePythonTensor(
+                        x.to_flat_list() if isinstance(x, PurePythonTensor) else [0.0],
+                        shape=shape,
+                    ),
+                    transpose_fn=lambda x, axes: x,
+                ),
+                reduction=ReductionDictionary[BackendOperand](
+                    sum_fn=lambda x, axis, keepdims: x.sum() if isinstance(x, PurePythonTensor) else float(str(x)),
+                    mean_fn=lambda x, axis, keepdims: (
+                        sum(float(v) for v in x.to_flat_list()) / max(len(x.to_flat_list()), 1)
+                        if isinstance(x, PurePythonTensor)
+                        else float(str(x))
+                    ),
+                ),
+            )
+        )
+
         return StaticEagerBackendAdapter(
             backend_name="pure_python",
             ops={
@@ -159,4 +267,5 @@ class PurePythonGenerator(PythonStringGenerator):
                 "zeros": cls.zeros,
             },
             module=math,
+            typeclass_dict=tc_dict,
         )

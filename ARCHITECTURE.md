@@ -6,9 +6,9 @@
 
 ## The N-to-M Translation Problem
 
-The Abstract ML Compiler ecosystem is designed to solve the $N \times M$ translation problem in Machine Learning. Instead of writing bespoke translators for every framework (JAX, PyTorch, Keras) to every target (WASM, WebGPU, CUDA, TensorRT), we trace or parse $N$ frontends into a strictly defined Intermediate Representation (IR), which is then consumed by $M$ backends.
+The Abstract ML Compiler ecosystem is designed to solve the $N \times M$ translation problem in Machine Learning. Instead of writing bespoke translators for every framework (JAX, PyTorch, Keras, TensorFlow, MLX) to every target (WASM, WebGPU, CUDA, ROCm, Metal, LLVM/C++, ONNX, StableHLO), we trace or parse $N$ frontends into a strictly defined Intermediate Representation (IR), which is then consumed by $M$ backends.
 
-This achieves a source-to-source and source-to-browser compilation pipeline utilizing strictly controlled, lightweight dependencies (`ml-switcheroo-ir`, `numpy`, `scipy`, `libcst`, `pydantic`, `pyyaml`, and `h5py` for serialization, with zero runtime framework lock-in).
+This achieves a source-to-source and source-to-browser compilation pipeline utilizing strictly controlled, lightweight core dependencies (`ml-switcheroo-ir`, `libcst`, `pydantic`, `pyyaml`, and `h5py`, with zero runtime framework or global `numpy` lock-in; all array and hardware runtimes are optional and strictly isolated inside their respective backend packages).
 
 ## Ecosystem Repository Taxonomy
 
@@ -58,29 +58,32 @@ graph TD
     ZF -->|Depends On| ZJ
     ZF -->|Depends On| ZO
     ZF -->|Depends On| ZOB
-    ZZ -.->|Tests| ZG
     ZP -->|Depends On| COMP
     ZK -->|Depends On| COMP
-    ZT -->|Depends On| COMP
+    ZT -->|Depends On| ZK
     ZM -->|Depends On| COMP
-    ZPX -->|Depends On| COMP
+    ZPX -->|Depends On| ZJ
 
+    ZZ -.->|Tests| ZJ
     ZZ -.->|Tests| ZF
     ZZ -.->|Tests| ZP
     ZZ -.->|Tests| ZK
-    ZZ -.->|Tests| ZJ
+    ZZ -.->|Tests| ZT
+    ZZ -.->|Tests| ZM
+    ZZ -.->|Tests| ZPX
+    ZZ -.->|Tests| ZG
 ```
 
 ### 1. `ml-switcheroo-ir` (Tier 1)
-The universal, canonical dialect. Defines `LogicalNode` and `LogicalGraph`. Contains the schema validator enforcing ONNX and graph specification compliance without requiring heavyweight external dependencies.
+The universal, canonical dialect. Defines `LogicalNode`, `LogicalGraph`, `TensorShape`, `TensorSpec`, `PartitionSpec`, `ZeroTangent`, `NoTangent`, and `topological_sort`, alongside ONNX, MLIR, and WGSL schema catalogs without requiring heavyweight external dependencies.
 
 ### 2. `ml-switcheroo-compiler` (Tier 2)
 The computational heart of the ecosystem. See [Compiler Architecture Deep Dive](#compiler-architecture-deep-dive) below.
 
 ### 3. Frontends (`zero-*`) (Tiers 3 & 4)
-**Crucial Architecture Note regarding `zero-*` repositories:** The existing `zero-*` codebases are independent, lightweight frontend API shells. Every `zero-*` repository depends on `ml-switcheroo-compiler` as its core backend dependency.
+**Crucial Architecture Note regarding `zero-*` repositories:** The `zero-*` codebases are independent, lightweight frontend API shells. Every `zero-*` repository depends directly or transitively on `ml-switcheroo-compiler` as its core execution and compilation backend.
 
-**The "No Math in Frontends" Rule:** All mathematical implementations, array allocations, gradient tracking logic, and computation graph building inside the `zero-*` repos are forbidden and must be replaced with delegations to the compiler. The `zero-*` repos purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), exception mimicry, and syntactic sugar.
+**The "No Math in Frontends" Rule:** All mathematical implementations, array allocations, gradient tracking logic, and computation graph building inside the `zero-*` repos are forbidden and must delegate to the compiler. The `zero-*` repos purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), exception mimicry, and syntactic sugar.
 
 * **`zero-jax`**: Mimics the JAX API (`jnp`, `lax`, `jit`, `grad`, `vmap`). Uses PyTree flattening to route state safely into the compiler tape.
 * **`zero-pytorch`, `zero-keras`, `zero-tensorflow`, `zero-mlx`**: Mimic eager, object-oriented, and stateful semantics. They dynamically lift mutable states (like `nn.Parameter` or `tf.Variable`) into purely functional graph inputs/outputs via the compiler's internal `lift_state` pass.
@@ -97,101 +100,103 @@ The `ml-switcheroo-compiler` repository defines the core architecture mapping fr
 ## 1. API Boundaries & Core Structures
 
 ### The Universal Tensor Hierarchy
-The compiler defines first-class tensor abstractions exported from `ml_switcheroo_compiler`:
-- **`Tensor`**: Serves as the unified multidimensional backend array. Frontends wrap this class (e.g., `zero_torch.tensor.Tensor` holds `ml_switcheroo_compiler.Tensor` as `.data`, and `zero_jax.numpy.ndarray` wraps it). Implements `shape`, `dtype`, `device`, `requires_grad`, and full Python magic methods.
+The compiler defines first-class tensor abstractions exported directly from `ml_switcheroo_compiler`:
+- **`Tensor`**: Serves as the unified multidimensional backend array. Frontends wrap this class (e.g., `zero_torch.tensor.Tensor` holds `ml_switcheroo_compiler.Tensor` as `.data`, and `zero_jax.numpy.ndarray` wraps it). Implements `shape`, `dtype`, `device`, `requires_grad`, and full Python magic methods, and registers into an identity-keyed weak live-tensor table (`O(1)` eviction on garbage collection without `gc.get_objects()` heap scans).
 - **`RaggedTensor`**: Represents non-uniform, nested tensor dimensions with ragged row splits.
-- **`SparseTensor`**: Implements sparse tensor representations (e.g., coordinate list / COO) for memory-efficient sparse linear algebra.
+- **`SparseTensor`**: Implements sparse tensor representations (coordinate list / COO) for memory-efficient sparse linear algebra.
 - **`TensorArray`**: Supports dynamically indexable, growable, and writable sequences of tensors for loop execution and dynamic control flow.
+
+Complementing the root tensor hierarchy, functional data pipeline abstractions live in `ml_switcheroo_compiler.core.dataset`:
 - **`Dataset`**: Core functional pipeline abstractions for batched tensor transforms and streaming data evaluation.
 
-### Configuration & State Management
-A `ml_switcheroo_compiler.config` singleton controls execution flow, tracking options like `eager_mode`, `default_float_dtype`, and `default_device`. Frameworks read this scoped context (also accessible via environment variables like `SWITCHEROO_EAGER_MODE=1`) to determine whether to execute operations eagerly or trace an IR graph.
+### Configuration & Context-Isolated State Management
+The `ml_switcheroo_compiler.core.config.config` singleton controls execution flow (`eager_mode`, `backend`, `default_float_dtype`, `default_int_dtype`, `default_device`, `current_stream`, `seed`). Its backing `ConfigState` is stored in a `contextvars.ContextVar` with lazy per-thread initialization and copy-on-write property updates, ensuring spawned `threading.Thread` workers and concurrent `asyncio` tasks remain isolated. Environment variables (`SWITCHEROO_EAGER_MODE=1`, `SWITCHEROO_BACKEND=numpy`) configure defaults at startup.
 
 ### Error Handling Hierarchy
-Specific error types such as `TracingError`, `CompilationError`, `ShapeMismatchError`, `DTypePromotionError`, `BackendNotSupportedError`, and `UnimplementedMathError` provide distinct diagnostics depending on where execution fails during the pipeline.
+Rooted at `CompilerError` (`SwitcherooError`) in `ml_switcheroo_compiler.core.errors`, specific exception classes—including `TracingError`, `CompilationError`, `EvaluationError`, `ShapeInferenceError`, `ShapeMismatchError`, `DTypePromotionError`, `DTypeValidationError`, `BackendNotSupportedError`, `UnimplementedMathError`, `AutodiffError`, `MissingJVPRuleError`, `FrontendBoundaryViolationError`, `BackendDecouplingError`, `DependencyViolationError`, and `SnapshotGroundingError`—provide structured diagnostics carrying node ID, op type, backend target, and trace context.
 
 ## 2. Core Execution Engine Modes & Pathways
 
-The compiler supports three primary execution and translation pathways:
+The compiler supports four primary execution and translation pathways:
 
 ```mermaid
 flowchart TD
-    FrontendCode[Python Frontend Code / User Script] --> Choice{Execution / Translation Pathway}
+    FrontendCode[Python Frontend Code / User Function] --> Choice{Execution / Translation Pathway}
 
     Choice -->|Direct Source Translation| CSTTranspiler[CST Transpiler / LibCST Engine]
     CSTTranspiler --> OutputCode[Target Framework Code: PyTorch, JAX, MLX, etc.]
 
-    Choice -->|Eager Execution / Tracing| Tracer[ProxyTensor & GraphContext Tape]
-    Tracer --> IR[Unified IR: LogicalGraph / LogicalNode]
+    Choice -->|Eager Mode Dispatch| Dispatcher[Unified Dispatcher & Verified Eager Adapter]
+    Dispatcher --> EagerOutputs[Backend-Native Eager Tensors]
 
-    Choice -->|Immediate Graph Execution| Evaluator[IR Interpreter / Eager Evaluator]
-    Evaluator --> EagerOutputs[Evaluated NumPy / SciPy Tensors]
+    Choice -->|Direct IR Evaluation| Evaluator[IR Interpreter: evaluate_graph]
+    Evaluator --> InterpOutputs[Evaluated Concrete Tensors]
+
+    Choice -->|Graph Tracing / jit / eval_shape| Tracer[ProxyTensor & ContextVar TracerTape]
+    Tracer --> IR[Tier-1 Unified IR: LogicalGraph / LogicalNode]
 
     IR --> PassManager[PassManager Pipeline O0 - O3]
     PassManager --> OptimizedIR[Optimized LogicalGraph]
 
     OptimizedIR --> BackendGenerators[Backend Generators / Hardware Compilers]
-    BackendGenerators --> TargetArtifacts[Python Source / WGSL / WASM / C++ / CUDA / PTX / ONNX]
+    BackendGenerators --> TargetArtifacts[Python Source / WGSL / WASM / C++ / CUDA / ROCm / Metal / ONNX / StableHLO]
 ```
 
-### Eager Mode Engine & Interpreter
-- **NumPy/SciPy Eager Backend**: The immediate-execution path dispatches mathematical operations directly to NumPy and SciPy under `ml_switcheroo_compiler.backends.eager`.
-- **Graph Interpreter (`evaluate_graph`)**: Located in `ml_switcheroo_compiler.interpreter.evaluator`, it traverses a `LogicalGraph` in topological order to execute operations on concrete inputs without generating intermediate source code or invoking an external compiler.
+### Unified Operation Dispatch & Eager Mode
+- **Unified Dispatcher (`ml_switcheroo_compiler.ops.dispatcher`)**: Centralizes execution-mode resolution (`is_eager_execution_active`) and single/multi-output routing (`dispatch_op`, `dispatch_multi_op`, `dispatch_backend_eager_op`, `dispatch_submodule_op`) across eager execution and active graph tracing.
+- **Pluggable Eager Adapters & Reference Ops**: Eager operations execute through the active backend's verified `EagerBackendAdapter` / `CoreEagerDictionary` (`numpy`, `pure_python`, `pytorch`, `jax`, `tensorflow`, `keras`, `mlx`, `dask`, or domain-eager backends), supplemented by pure-Python backend-agnostic reference kernels in `ml_switcheroo_compiler.backends.eager` (with zero global `numpy` or `scipy` imports outside `backends/numpy`).
+- **Graph Interpreter (`evaluate_graph`)**: Located in `ml_switcheroo_compiler.interpreter.evaluator`, traverses a `LogicalGraph` in topological order to evaluate operations on concrete inputs without intermediate source code generation.
 
-### Graph Tracing Engine
-Constructs the Intermediate Representation by intercepting operations on proxy variables (`ml_switcheroo_compiler.tracing.ProxyTensor`). Proxy tensors overload all Python magic methods.
-- Execution occurs within `GraphContext` (Thread-Local Storage) tracking the execution tape.
-- Frame inspection (`inspect.currentframe()`) captures source-code line numbers and AST references (`source_ast_ref`) for precise tracebacks.
+### Graph Tracing Engine & `jit` / `eval_shape`
+Constructs the Intermediate Representation by intercepting operations on proxy variables (`ml_switcheroo_compiler.tracing.ProxyTensor`).
+- **`ContextVar`-Isolated `TracerTape` & `TracingState`**: Managed via `global_tracing_state` (`ml_switcheroo_compiler.tracing.state`), isolating `is_tracing`, `active_graph`, `graph_stack`, `constant_cache`, and `LoopOptions` across OS threads and `asyncio` tasks.
+- **`jit`, `disable_jit`, & Symbolic `eval_shape` (`ml_switcheroo_compiler.grad.jit`)**:
+  - `jit` traces PyTree inputs once per `(static_args, input_specs, backend, device, keep_unused)` cache key, runs `PassManager` optimizations (constant folding, CSE, DCE, and dead-input pruning), composes inline with nested `grad(jit(f))` / `jit(grad(f))`, and respects `ContextVar`-scoped `disable_jit()`.
+  - `eval_shape` performs zero-allocation symbolic shape/dtype propagation over `Tensor`, `TensorSpec`, or `TensorConfig` PyTrees using `ProxyTensor` without allocating concrete buffers.
+- **Foreign Graph Ingestion**: External framework graphs ingest directly into `LogicalGraph` via `ingest_torch_fx` (`backends/pytorch/fx_ingest.py`), `ingest_jaxpr` (`backends/jax/jaxpr_ingest.py`), and `ForeignCall` IR nodes.
 
 ### Automatic Differentiation (AD)
-The tracing engine includes a comprehensive AutoDiff system (`ml_switcheroo_compiler.grad`):
-- Reverse-mode (`grad`, `value_and_grad`) and forward-mode (`jacfwd`, `jvp`) AD engines.
-- VJP and JVP registries for mathematical primitives, registered via `@register_vjp` and `@register_jvp`.
-- Higher-order derivatives (Hessian, HvP, Jacobians).
-- Memory-budgeted checkpointing (`checkpointing.py`) implementing dynamic programming (Knapsack) and binomial rematerialization schedules.
+Located in `ml_switcheroo_compiler.grad` and `ml_switcheroo_compiler.transforms.autodiff`:
+- Reverse-mode (`grad`, `value_and_grad`, `backward`, `vjp`, `ir_grad`) and forward-mode (`jvp`, `jacfwd`) AD engines, plus higher-order derivatives (`jacrev`, `hessian`, `hvp`, `nth_order_grad`).
+- Custom derivative hooks (`custom_jvp`, `custom_vjp`, `RegisterGradient`) backed by a bounded LRU and `ContextVar`-scoped callback registry (`ml_switcheroo_compiler.ir.callback_registry`).
+- Memory-budgeted checkpointing (`checkpoint`, `remat`, `recompute_grad` in `grad/checkpointing.py`) implementing dynamic programming (Knapsack) and binomial rematerialization schedules.
 
 ### Higher-Order Control Flow
-Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly from frontend loops and conditions down to IR blocks without Python runtime unrolling penalties.
+Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap` under `ml_switcheroo_compiler.ops.control_flow`), lowering Python control flow into structured IR subgraphs without runtime loop-unrolling bloat.
 
 ### Concrete Syntax Tree (CST) Source-to-Source Transpiler
 Located in `ml_switcheroo_compiler.backends.cst_transpiler`:
-- Uses `libcst` to perform direct source-to-source transpilation across frameworks without requiring runtime graph tracing.
-- Features `ASTPatternMatcher`, `CSTTransformer`, and `StateLiftingTransformer` for:
-  - Framework import mapping (e.g. `torch.nn` $\leftrightarrow$ `jax.nn` $\leftrightarrow$ `mlx.core.nn`).
-  - Rewriting arguments and keyword differences (e.g., `dim` vs. `axis`, `keepdim` vs. `keepdims`).
-  - Stateful OOP class to functional parameter dictionary (PyTree) lifting and vice-versa.
-  - Parameter and attribute access remapping.
+- Uses `libcst` (`transpile_source`, `ASTPatternMatcher`, `CSTTransformer`, `StateLiftingTransformer`) to perform whitespace- and comment-preserving static transpilation across frameworks without runtime graph tracing:
+  - Framework import and symbol mapping (e.g., `torch.nn` $\leftrightarrow$ `jax.nn` $\leftrightarrow$ `mlx.nn`).
+  - Rewriting positional/keyword differences (e.g., `dim` vs. `axis`, `keepdim` vs. `keepdims`).
+  - Lifting stateful OOP classes into pure functional parameter PyTrees.
 
 ## 3. Unified Intermediate Representation (IR) Schema
 
-### Base Structures
-- **`IRGraph` (`LogicalGraph`)**: Represents the complete computation module, encapsulating inputs, outputs, and internal node mappings (`nodes: dict[str, LogicalNode]`).
-- **`IRNode` (`LogicalNode`)**: Tracks individual operations with fields:
-  - `id`: Unique identifier for the node.
-  - `op_type`: Canonical operation operator string (e.g., `"Add"`, `"Conv"`, `"MatMul"`).
+### Tier-1 `ml-switcheroo-ir` Core Structures
+All shared graph and node models are imported directly from `ml_switcheroo_ir` (never vendored or monkey-patched at runtime, preserving `model_config["extra"] == "forbid"`):
+- **`LogicalGraph` (`IRGraph`)**: Encapsulates module `inputs`, `outputs`, `input_specs`, and `nodes: NodeDict` (`key == node.id` invariant).
+- **`LogicalNode` (`IRNode`)**: Tracks individual operations with fields:
+  - `id`: Unique node identifier.
+  - `op_type`: Canonical operator string (e.g., `"Add"`, `"Conv"`, `"MatMul"`, `"ForeignCall"`).
   - `domain`: Operator domain namespace (e.g., `""`, `"ai.onnx"`).
-  - `inputs`: Ordered list of input node IDs.
-  - `outputs`: Optional list of output node IDs.
-  - `attributes`: Key-value attribute dictionary (`dict[str, AttributeValue]`).
-  - `shape_metadata`: Output tensor shape tuple.
-  - `output_specs`: Formal `list[TensorSpec]` defining shapes, dtypes, and sparsity.
-  - `source_ast_ref`: Source file path, line number, and AST identifier for error localization.
-  - `sharding`: SPMD sharding specification and partition metadata.
-  - `device`: Target device placement metadata.
-  - `stream`: Execution stream or queue identifier.
-  - `subgraphs`: Scoped control flow and functional blocks encapsulated within `dict[str, LogicalGraph]` (e.g., `"body"`, `"cond"`, `"then_branch"`, `"else_branch"`).
-- **`TensorSpec` & `DType`**: Maintain explicit dimensions, dynamic symbols (`SymInt`), precision formats, and sparsity layouts.
-- **`ZeroTangent` / `NoTangent`**: Explicit IR node representations for zero-gradient and non-differentiable execution paths.
+  - `inputs` / `outputs`: Ordered input and versioned output node IDs.
+  - `attributes`: Validated `dict[str, AttributeValue]`.
+  - `shape_metadata` / `shape`: Raw dimension tuple (`shape_metadata`) and `TensorShape` wrapper (`shape`).
+  - `dtype` / `output_specs`: Canonical `ml_switcheroo_ir.DType` and `list[TensorSpec]`.
+  - `source_ast_ref`: Source file path, line number, and AST identifier for traceback localization (`backends/linker.py`).
+  - `sharding`, `device`, `stream`: SPMD `PartitionSpec`, device placement, and execution stream metadata.
+  - `subgraphs`: Scoped control-flow blocks (`dict[str, LogicalGraph]`, e.g., `"body"`, `"cond"`, `"then_branch"`, `"else_branch"`).
+- **`ZeroTangent` / `NoTangent`**: Explicit IR representations for zero-gradient and non-differentiable execution paths.
 
-### Type & Shape System
-Implements standard static types alongside dynamic typing through `ShapeTracker`. A `SymInt` (Symbolic Integer) tracks dynamic dimensions like `batch_size`, and a Symbolic Expression Solver validates shape consistency mathematically before any actual data flows through.
-
-### State Mutation & Aliasing
-Because the backend operates functionally, `ReadVariable`, `AssignVariable`, and `ScatterUpdate` nodes represent mutations. For PyTorch, `nn.Parameter` assignments generate `AssignVariable` nodes, perfectly bridging PyTorch's OOP state mutations into JAX-compatible functional purity.
+### Compiler-Local IR Utilities (`ml_switcheroo_compiler.ir`)
+- **Symbolic Shape Algebra (`ir/shape_system.py`)**: `SymNode`, `SymInt`, `SymVar`, `SymConst`, `Polynomial`, `ShapeTracker`, and `SymbolicConstraintTracker` implement `ml_switcheroo_ir` symbolic protocols (`SymbolicNodeProtocol`, `SymbolicIntWrapperProtocol`) to solve dynamic dimensions mathematically prior to execution.
+- **Narrowing & Cloning (`ir/core.py`)**: Type-safe helpers (`ensure_graph`, `ensure_attrs`, `ensure_attr_val`, `clone_logical_node`) bridging compiler dtypes/devices with `ml_switcheroo_ir` protocols.
+- **State Mutation Functionalization (`ir/state.py`)**: `create_read_variable`, `create_assign_variable`, and `create_scatter_update` bridge OOP parameter mutations into pure functional dataflow.
 
 ## 4. Middle-End Transformations (Pass Manager)
 
-Before lowering to source code or executable backends, an internal `PassManager` applies topological sorting and runs iterative passes on the IR DAG until fixpoint convergence. Passes are configured across optimization levels (`O0` to `O3`) defined in `pass_pipeline.yaml`.
+Before lowering to source code or executable backends, `PassManager` (`ml_switcheroo_compiler.transforms.pass_manager`) validates DAG invariants (`IRValidator`) and runs iterative passes until fixpoint convergence across optimization levels (`O0` to `O3`) configured in `transforms/passes/pass_pipeline.yaml`.
 
 ```mermaid
 flowchart TD
@@ -200,56 +205,60 @@ flowchart TD
     Algebraic --> LowLevel[Stage 3: Fusion, Scheduling & Distribution]
     LowLevel --> OutputIR[Optimized IR to Emitter]
 
-    subgraph Stage 1: Canonicalization Passes
-        PL[Polyfill Lowering]
-        TP[Type Promotion Explicitizer]
-        BE[Broadcast Explicitizer]
-        SL[State Lifting / Lowering]
-        AT[Axis Translation]
-        PL --> TP --> BE --> SL --> AT
+    subgraph Stage 1: Canonicalization & Inference Passes
+        PL[polyfill_lowering_pass]
+        SI[shape_inference_pass / dtype_inference_pass]
+        TP[type_promotion_explicitizer_pass]
+        BE[broadcast_explicitizer_pass]
+        SL[lift_state_pass / StateLoweringPass]
+        AT[axis_translation_pass]
+        PL --> SI --> TP --> BE --> SL --> AT
     end
 
-    subgraph Stage 2: Algebraic Simplifications
-        CF[Constant Folding]
-        DCE[Dead Code Elimination]
-        CSE[Common Subexpression Elimination]
-        BNF[BatchNorm Folding]
-        PS[Parallel Scan Optimization]
-        CF --> DCE --> CSE --> BNF --> PS
+    subgraph Stage 2: Algebraic & Control-Flow Simplifications
+        CF[constant_folding_pass]
+        DCE[dead_code_elimination_pass]
+        CSE[common_subexpression_elimination_pass]
+        CFO[control_flow_optimization_pass]
+        BNF[batch_norm_folding_pass]
+        PS[parallel_scan_pass]
+        CF --> DCE --> CSE --> CFO --> BNF --> PS
     end
 
-    subgraph Stage 3: Low-Level & Edge Passes
-        OF[Operator Fusion]
-        GS[Graph Scheduling]
-        BA[Buffer Allocation]
-        SPMD[SPMD Distributed Sharding]
-        MP[Mixed Precision Casting]
-        LT[Loop Tiling / Unrolling]
-        VEC[Vectorization]
+    subgraph Stage 3: Low-Level, Distributed & Edge Passes
+        OF[operator_fusion_pass]
+        GS[GraphSchedulingPass]
+        BA[BufferAllocationPass]
+        SPMD[spmd_partitioning_pass]
+        MP[mixed_precision_pass / quantization]
+        LT[loop_tiling_pass / loop_unrolling_pass]
+        VEC[vectorization_pass]
         OF --> GS --> BA --> SPMD --> MP --> LT --> VEC
     end
 ```
 
-### Canonicalization Passes
-- **`PolyfillLoweringPass`**: Rewrites composite frontend operations into canonical elementary primitives.
-- **`StateLiftingPass` / `StateLoweringPass`**: Converts mutable state assignments into explicit functional inputs and outputs.
-- **`AxisTranslationPass`**: Injects `Transpose` nodes to reconcile differing tensor layout conventions (such as NCHW vs NHWC).
-- **`TypePromotionExplicitizerPass` & `BroadcastExplicitizerPass`**: Eliminates implicit casting and broadcasting by inserting explicit `Cast` and `BroadcastTo` nodes.
+### Canonicalization & Inference Passes (`transforms/passes/`)
+- **`polyfill_lowering_pass`**: Rewrites composite operations into canonical elementary primitives.
+- **`shape_inference_pass` & `dtype_inference_pass`**: Propagates static/symbolic dimensions and element types across nodes.
+- **`lift_state_pass` / `StateLoweringPass` (`state_lowering_pass`)**: Converts mutable state assignments into explicit functional graph inputs and outputs (and vice-versa).
+- **`axis_translation_pass`**: Injects `Transpose` nodes to reconcile differing tensor layouts (e.g., NCHW vs. NHWC).
+- **`type_promotion_explicitizer_pass` & `broadcast_explicitizer_pass`**: Eliminates implicit casting and broadcasting by inserting explicit `Cast` and `BroadcastTo` nodes.
 
 ### Target-Agnostic Optimizations
-- **`ConstantFoldingPass`**: Pre-computes static subgraphs with eager evaluation.
-- **`DeadCodeEliminationPass` (DCE)**: Prunes unreferenced nodes from the IR graph.
-- **`CommonSubexpressionEliminationPass` (CSE)**: Merges structurally identical operations using structural hashing.
-- **`BatchNormFoldingPass`**: Merges batch normalization weights directly into adjacent convolutional filters.
-- **`ParallelScanPass`**: Optimizes associative prefix scans into logarithmic-depth parallel patterns.
+- **`constant_folding_pass`**: Pre-computes static subgraphs while guarding stateful and opaque custom-AD callback nodes.
+- **`dead_code_elimination_pass` (DCE)**: Prunes unreferenced nodes from the IR graph.
+- **`common_subexpression_elimination_pass` (CSE)**: Merges structurally identical operations via canonical hashing.
+- **`control_flow_optimization_pass`**: Simplifies constant branches and loop invariants.
+- **`batch_norm_folding_pass`**: Fuses batch normalization parameters into adjacent convolutional weights.
+- **`parallel_scan_pass`**: Rewrites associative prefix scans into logarithmic-depth parallel patterns.
 
 ### Low-Level, Hardware & Distributed Passes
-- **`OperatorFusionPass`**: Fuses consecutive elementwise and reduction kernels.
-- **`GraphSchedulingPass`**: Generates memory-optimal topological execution orderings.
-- **`BufferAllocationPass`**: Plans contiguous, reuse-aware linear memory buffer offsets for WebGPU and WASM runtimes.
-- **`SPMDPass`**: Inserts distributed collective operations (`all_reduce`, `all_gather`, `reduce_scatter`) according to device mesh sharding annotations.
-- **`MixedPrecisionPass` & `QuantizationPass`**: Handles FP16/BF16 downcasting and INT8/INT4 quantization.
-- **`LoopTilingPass`, `LoopUnrollingPass`, and `VectorizationPass`**: Hardware-level optimizations generating SIMD-friendly compute strides.
+- **`operator_fusion_pass` (`HorizontalFusionPass`, `VerticalFusionPass`)**: Fuses consecutive elementwise and reduction clusters using cost models.
+- **`GraphSchedulingPass` (`graph_scheduling_pass`)**: Computes memory-aware topological execution schedules.
+- **`BufferAllocationPass` (`buffer_allocation_pass`)**: Plans reuse-aware contiguous linear memory offsets for WebGPU and WASM runtimes.
+- **`spmd_partitioning_pass` & `inject_spmd_communication_pass`**: Partitions sharded graphs and injects collective operations (`all_reduce`, `all_gather`, `reduce_scatter`).
+- **`mixed_precision_pass`, `quantization`, & `rematerialization_pass`**: Handles FP16/BF16 casting, PTQ/QAT INT8/INT4 lowering, and activation checkpointing.
+- **`loop_tiling_pass`, `loop_unrolling_pass`, & `vectorization_pass`**: Hardware-level transformations generating cache- and SIMD-friendly compute strides.
 
 ## 5. Distributed Runtime & WebRTC Mesh
 
@@ -273,101 +282,102 @@ graph LR
     end
 ```
 
-- **Topologies & Sharding**: `DeviceMesh` organizes multi-dimensional hardware topologies. `Distribution` strategies (`DataParallel`, `ModelParallel`), `LayoutMap`, and `ShardingSpec` annotate tensors for SPMD graph partitioning.
-- **Distributed Collectives**: `all_reduce`, `all_gather`, `reduce_scatter`, `broadcast`, and `shard_tensor` execute across MPI, backend-native primitives, or simulated host runners.
-- **WebRTC Edge Mesh**: The compiler includes a WebRTC signaling protocol (`webrtc_signaling.py`) and WebRTC-based collective execution layer (`backends/edge/distributed_webrtc/`), enabling distributed browser-to-browser and edge-to-edge training without central host bottlenecks.
+- **Topologies & Sharding**: `DeviceMesh` organizes multi-dimensional hardware topologies; `DataParallel`, `ModelParallel`, `LayoutMap`, and `PartitionSpec` annotate tensors for SPMD partitioning.
+- **Distributed Collectives**: `all_reduce`, `all_gather`, `reduce_scatter`, `broadcast`, and `shard_tensor` execute across host communicators or backend-native collectives.
+- **WebRTC Edge Mesh**: Includes a WebRTC signaling protocol (`webrtc_signaling.py`) and browser collective layer (`backends/edge/distributed_webrtc/`), enabling peer-to-peer WebAssembly/WebGPU training without central parameter-server bottlenecks.
 
-## 6. Emission Backends & Target Compilers
+## 6. Emission Backends, Capability Typeclasses & Target Compilers
 
-Backends are registered dynamically with the `@register_backend("name")` decorator via `ml_switcheroo_compiler.backends.registry.BackendRegistry`.
+Backends register dynamically via `@register_backend("name")` in `ml_switcheroo_compiler.backends.registry.BackendRegistry`.
 
-### Python Source-to-Source Backends
-- **PyTorch (`pytorch`)**: Generates `torch.nn.Module` classes and functional PyTorch execution scripts.
-- **JAX (`jax`)**: Generates purely functional JAX topologies leveraging PyTrees and `jax.numpy`.
-- **MLX (`mlx`)**: Emits native Apple Silicon MLX functional modules.
-- **Keras (`keras`) & TensorFlow (`tensorflow`)**: Emits modern Keras 3 or TensorFlow graph topologies.
-- **NumPy (`numpy`) & SciPy**: Generates vectorized Python/NumPy baseline scripts.
-- **CuPy (`cupy`)**: Emits CUDA-accelerated CuPy array scripts.
-- **Dask (`dask`)**: Emits distributed Dask Array computation graphs.
-- **Numba (`numba`)**: Emits JIT-compiled `@njit` kernels for accelerated CPU/GPU loops.
-- **Sparse (`sparse`)**: Emits sparse matrix code utilizing coordinate/COO structures.
-- **Data Parallel NumPy (`dpnp`)**: Emits SYCL-accelerated arrays for Intel CPUs/GPUs.
-- **Awkward Array (`awkward`)**: Emits code for nested, jagged data structures.
-- **PyArrow (`pyarrow_compute`)**: Emits execution graphs for columnar Arrow data.
+### Haskell-Style Backend Capability Typeclasses
+Defined in `ml_switcheroo_compiler.backends.typeclasses` and enforced statically by `ml_switcheroo_compiler.backends.typeclass_verifier` (`scripts/verify_typeclasses.py`):
+- **`CapabilityKind`**: Declares closed backend traits (`CODE_EMIT`, `CORE_EAGER`, `DOMAIN_EAGER`, `AOT_COMPILE`, `HARDWARE_KERNEL`, `SERIALIZED_ARTIFACT`).
+- **`CoreEagerTypeclass[TensorT]` & `CoreEagerDictionary[TensorT]`**: Parameterized dictionary-passing protocols (`CreationTypeclass`, `ElementwiseUnaryTypeclass`, `ElementwiseBinaryTypeclass`, `LinearAlgebraTypeclass`, `ReductionTypeclass`) verified under `mypy --strict` and required across all 8 dense `CORE_EAGER` backends (`numpy`, `pure_python`, `pytorch`, `jax`, `tensorflow`, `keras`, `mlx`, `dask`), while specialized runtimes (`cupy`, `numba`, `sparse`, `dpnp`, `awkward`, `pyarrow_compute`) declare `DOMAIN_EAGER`.
+- **`CodeEmitterTypeclass` & `AOTCompilerTypeclass`**: Structural protocols verified alongside curated backend YAML `mappings/*.yaml` schemas.
+
+### Python & Array Backends
+- **PyTorch (`pytorch` / `torch`)**: Emits `torch.nn.Module` classes and functional scripts; supports `CORE_EAGER` execution and `ingest_torch_fx`.
+- **JAX (`jax`)**: Emits functional JAX PyTree topologies (`jax.numpy`); supports `CORE_EAGER` execution and `ingest_jaxpr`.
+- **MLX (`mlx`)**: Emits Apple Silicon MLX modules (`CORE_EAGER`).
+- **Keras (`keras`) & TensorFlow (`tensorflow`)**: Emits Keras 3 and TensorFlow graph topologies (`CORE_EAGER`).
+- **NumPy (`numpy`)**: Isolated NumPy/SciPy vectorized execution and code generation backend (`CORE_EAGER`).
+- **Pure Python (`pure_python`)**: Zero-dependency reference code generator and `CORE_EAGER` execution backend.
+- **CuPy (`cupy`)**: Emits CUDA-accelerated CuPy scripts (`DOMAIN_EAGER`).
+- **Dask (`dask`)**: Emits lazy distributed Dask Array task graphs (`CORE_EAGER`).
+- **Numba (`numba`)**: Emits JIT-compiled `@njit` kernels (`DOMAIN_EAGER`).
+- **Sparse (`sparse` / `sparse_coo`)**: Emits coordinate (COO) sparse tensor code (`DOMAIN_EAGER`).
+- **Data Parallel NumPy (`dpnp`)**: Emits SYCL-accelerated Intel CPU/GPU array code (`DOMAIN_EAGER`).
+- **Awkward Array (`awkward`)**: Emits jagged/nested array operations (`DOMAIN_EAGER`).
+- **PyArrow Compute (`pyarrow_compute`)**: Emits Apache Arrow columnar compute pipelines (`DOMAIN_EAGER`).
 
 ### Hardware Backends & Kernel Code Generation
-- **CPU (LLVM / C++) (`llvm_cpp`)**: Generates vectorized, optimized C++17 implementations.
-- **CUDA / PTX (`cuda`)**: Generates native CUDA `.cu` source code with custom thread block layouts.
-- **ROCm (`rocm`)**: Emits HIP kernels targeted at AMD GPU architectures.
-- **Metal Shading Language (`metal`)**: Generates MSL compute shader source code for Apple Silicon GPUs.
+- **CPU (LLVM / C++) (`llvm_cpp`)**: Generates vectorized C++17 implementations with MLIR registry grounding.
+- **CUDA / PTX (`cuda`)**: Generates native NVIDIA CUDA `.cu` source kernels.
+- **ROCm (`rocm`)**: Emits AMD HIP GPU kernels.
+- **Metal Shading Language (`metal`)**: Generates Apple Silicon MSL compute shaders.
 
 ### Edge & Web Native Backends
-- **WebGPU (`edge_wgsl`)**: Translates IR operations into WGSL compute shaders, workgroup layouts, buffer bindings, and JavaScript orchestrator harnesses.
-- **WebGL 2.0 (`edge_webgl`)**: Fallback execution mapping compute tensors to 2D fragment textures.
-- **WASM SIMD (`wasm`)**: Emits C++ headers using 128-bit hardware intrinsics (`wasm_f32x4_*`), compilable silently with `emcc` into standalone WebAssembly binaries.
-- **ONNX (`onnx`)**: Lowers IR directly into ONNX serialization models without requiring the heavy `onnx` Python package.
-- **StableHLO (`stablehlo`)**: Emits MLIR-compliant StableHLO bytecode and textual representations for OpenXLA integration.
+- **WebGPU (`webgpu` / `edge_wgsl`)**: Translates IR graphs into WGSL compute shaders, buffer bindings, and JS orchestrator harnesses.
+- **WebGL 2.0 (`edge_webgl`)**: Fallback browser compute backend mapping tensors to 2D fragment shaders.
+- **WASM SIMD (`edge_wasm` / `edge_wasm_simd`)**: Emits C++ kernels using 128-bit SIMD intrinsics (`wasm_f32x4_*`) compilable to standalone WebAssembly modules.
+- **ONNX (`edge` / `edge_onnx`)**: Serializes `LogicalGraph` directly into ONNX wire format without requiring the external `onnx` package at emission time.
+- **StableHLO (`edge_stablehlo`)**: Emits MLIR-compliant StableHLO textual and bytecode (`mlir_bytecode.py`) representations for OpenXLA toolchains.
 
-## 7. Diagnostics, Profiling & Export
+## 7. Diagnostics, Profiling, Serialization & Export
 
-### Diagnostics & Anomaly Detection
-Located in `ml_switcheroo_compiler.diagnostics`:
-- **`flop_counter`**: Analyzes `LogicalGraph` structures to calculate exact theoretical FLOPS and MAC operations.
-- **`memory_profiler`**: Analyzes peak working-set memory requirements and buffer life cycles.
-- **`numerical_anomaly`**: Instruments execution to detect NaNs, infinities, and gradient vanishing/exploding.
-- **`shape_debugger`**: Tracks symbolic dynamic shapes and dimension compatibility through the pipeline.
+### Diagnostics & Anomaly Detection (`ml_switcheroo_compiler.diagnostics`)
+- **`flop_counter`**: Computes theoretical FLOP and MAC counts across `LogicalGraph` nodes.
+- **`memory_profiler`**: Estimates peak working-set memory and buffer lifetimes.
+- **`numerical_anomaly`**: Detects NaNs, infinities, and vanishing/exploding gradients.
+- **`shape_debugger` & `summary`**: Tracks symbolic dimension compatibility and prints structured model summaries.
 
-### Export & Ahead-Of-Time (AOT) Compilation
-Located in `ml_switcheroo_compiler.export`:
-- **AOT Engine (`aot.py`)**: Packages optimized models into pre-compiled deployment artifacts.
-- **Model Serialization (`export_api.py`, `pb_utils.py`)**: Supports exporting computation graphs directly to TensorFlow SavedModel Protobuf format and HDF5 weight bundles without external framework runtimes.
+### Serialization & Ahead-Of-Time (AOT) Export (`serialization/` & `export/`)
+- **Weight & Model Formats (`ml_switcheroo_compiler.serialization`)**: First-class loaders/savers for SafeTensors (`SafetensorsWeightFormat`), HDF5 (`h5py`), NumPy `.npz`, Pickle, IR JSON/YAML archives, and SavedModel bundles.
+- **AOT & SavedModel Export (`ml_switcheroo_compiler.export`)**: Packages pre-compiled deployment artifacts (`aot.py`) and TensorFlow SavedModel Protobuf exports (`export_api.py`, `pb_utils.py`).
 
 ---
 
 ## Compilation Pipeline & Data Flow
 
-When a user executes code in any `zero-*` frontend, the framework delegates the logic to the backend pipeline, mapping high-level API calls down to executable WASM/WebGPU binary code or target framework source code.
+When a user executes code in any `zero-*` frontend, the frontend delegates math, tracing, `jit`, and AD to `ml-switcheroo-compiler`, lowering high-level calls into optimized target source code or native edge binaries.
 
 ```mermaid
 sequenceDiagram
     participant User as zero-* Frontend API
     participant Compiler as ml-switcheroo-compiler
     participant IR as ml-switcheroo-ir
-    participant Backend as WebGPU / Python Emit
+    participant Backend as Target Backend / Emitter
 
     User->>Compiler: Execute math (e.g., zero_torch.add)
     activate Compiler
-    Compiler->>Compiler: Intercept via ProxyTensor
-    Compiler->>Compiler: Calculate broadcast shapes (NumPy Rules)
-    Compiler->>Compiler: Record to TracerTape
+    Compiler->>Compiler: Intercept via ProxyTensor / ops.dispatcher
+    Compiler->>Compiler: Infer symbolic/static shapes
+    Compiler->>Compiler: Record to ContextVar TracerTape
     Compiler-->>User: Return new ProxyTensor
     deactivate Compiler
 
     User->>Compiler: Trigger Compilation (.backward() / @jit)
     activate Compiler
-    Compiler->>Compiler: compiler.grad() (Topological Sort & VJPs)
-    Compiler->>Compiler: Optimizations (DCE, CSE, Constant Fold)
-    Compiler->>Compiler: lift_state (Functionalize mutations)
+    Compiler->>Compiler: grad / vjp / jvp & lift_state
     Compiler->>IR: Construct LogicalGraph & LogicalNodes
+    Compiler->>Compiler: PassManager Optimizations (O0 - O3)
     deactivate Compiler
 
-    IR->>Backend: Consume Graph
+    IR->>Backend: Consume Optimized LogicalGraph
     activate Backend
-    Backend->>Backend: Pass Manager Optimizations (O0 - O3)
-    Backend->>Backend: Emitter Generates Code (WGSL/PyTorch/JAX/C++)
+    Backend->>Backend: Emit Target Code / Kernel (WGSL/WASM/PyTorch/JAX/CUDA/C++)
     Backend-->>User: Executable Artifact
     deactivate Backend
 ```
-
-### Trace-to-AST Linking
-To provide clear error messages and allow for framework-specific syntactic rewrites, the compiler dynamically links trace operations to the original Python syntax trees. Leveraging `inspect.currentframe()`, every `LogicalNode` emitted into the IR captures a `source_ast_ref` binding it back to the exact file path, line number, and AST ID in the user's source code.
 
 ---
 
 ## 8. Architectural Boundaries & Decoupling Guarantees
 
-In 2026, the architecture was upgraded to enforce strict backend-focused decoupling:
-1. **Frontend Independence (The "No API Shell" Rule):** The compiler engine (`ml-switcheroo-compiler`) is stripped of all Tier 3/4 framework mimicry. Mock layers for Flax, Orbax, JAX's `lax` namespace, and Keras abstractions were fully purged. The compiler strictly defines universal, backend-agnostic mathematical operations (`ml_switcheroo_compiler.ops`).
-2. **N-to-M Universal Utility:** Any operation or transformation pass added to the compiler must be fundamentally useful to multiple frontends. Foreign operations are represented by a universal `ForeignCall` proxy.
-3. **Pluggable Backend Registry:** The compiler backends are decoupled via `ml_switcheroo_compiler.backends.registry.BackendRegistry`. Backends are registered dynamically using `@register_backend("name")`. This allows adding new target emitters without modifying the core compiler code.
-4. **Parity Rules:** Each backend must natively implement 1:1 behavioral parity for all operations without cross-backend fallback to NumPy or PyTorch.
+The codebase enforces five non-negotiable architectural invariants via automated pre-commit linters and boundary tests:
+1. **Frontend Independence (The "No API Shell" Rule):** `ml-switcheroo-compiler` contains zero Tier 3/4 frontend API shells; core layers expose universal, backend-agnostic operations (`ml_switcheroo_compiler.ops`).
+2. **N-to-M Universal Utility (`scripts/validate_rules.py`):** Every compiler operation and pass reduces to `ml-switcheroo-ir` and targets multiple backends, with opaque external operations represented via `ForeignCall`.
+3. **Single-Backend Dependency Isolation (`scripts/lint_dependencies.py`):** Each `backends/<target>/` package imports at most one external framework root, and upward imports from `zero-*` or `zero-zoo` are strictly forbidden.
+4. **Zero Global NumPy Leaks (`scripts/lint_numpy_leak.py` & `scripts/lint_dynamic_numpy.py`):** `numpy` and `scipy` are isolated exclusively inside `backends/numpy/`; cross-backend fallbacks are prohibited.
+5. **Static Typeclass & Curated YAML Verification (`scripts/verify_typeclasses.py`):** Every `@register_backend` class and curated YAML mapping file is verified statically for protocol conformance (`CodeEmitterTypeclass`, `AOTCompilerTypeclass`, `CoreEagerTypeclass`) and upstream snapshot grounding.

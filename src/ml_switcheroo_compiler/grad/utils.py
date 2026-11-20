@@ -513,14 +513,14 @@ def _get_concrete_val(t: OpValue | PrimalTree) -> OpValue:
 
 
 def _collect_live_tensors() -> list[Tensor]:
-    """Collect all live `Tensor` instances tracked by the garbage collector.
+    """Collect all live `Tensor` instances tracked in the weak tensor registry.
 
     Returns:
-        list[Tensor]: List of active `Tensor` objects in memory.
+        list[Tensor]: List of active `Tensor` objects in memory without GC heap scanning.
     """
-    import gc
+    from ml_switcheroo_compiler.tracing.state import get_live_tensors
 
-    return [obj for obj in gc.get_objects() if issubclass(type(obj), Tensor)]
+    return get_live_tensors()
 
 
 def _get_inputs_dict(

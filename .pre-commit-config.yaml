@@ -143,4 +143,10 @@ repos:
     language: system
     name: Check Snapshot Drift
     pass_filenames: false
+  - entry: python3 scripts/verify_typeclasses.py
+    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
+    id: verify-typeclasses
+    language: system
+    name: Verify Haskell-Style Backend Typeclasses and Curated YAML
+    pass_filenames: false
   repo: local

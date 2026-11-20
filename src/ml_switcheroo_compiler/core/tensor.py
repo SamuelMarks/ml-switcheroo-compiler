@@ -29,7 +29,7 @@ from ml_switcheroo_compiler.core.shape import (
     extract_shape,
     is_traced_data,
 )
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.state import global_tracing_state, register_live_tensor
 
 from .tensor_mixins import (
     TensorIndexingMixin,
@@ -504,6 +504,7 @@ class Tensor(
         self._device: Device = config.device if isinstance(config.device, Device) else Device("cpu")
         self._requires_grad = config.requires_grad
         self.config = config
+        register_live_tensor(self)
 
     def eval(self) -> Tensor:
         """Trigger evaluation of a lazy tensor.

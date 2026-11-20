@@ -6,8 +6,14 @@ linkage while recording ``LogicalNode`` instances into an active ``LogicalGraph`
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import sys
+import threading
 import typing
+import weakref
+from collections.abc import Iterator, Sequence
+from contextvars import ContextVar
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -16,6 +22,7 @@ from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
 if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import AttributeValue, TensorSpec
 
+    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.tracing.autograph import LoopOptions, ShapeInvariantType
 
 
@@ -166,17 +173,280 @@ def _has_node_op_type(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuar
     return isinstance(val, _NodeOpTypeProtocol)
 
 
+_LIVE_TENSORS: dict[int, weakref.ref[Tensor]] = {}
+_TENSOR_REGISTRY_LOCK = threading.Lock()
+_SCOPED_LIVE_TENSORS: ContextVar[dict[int, weakref.ref[Tensor]] | None] = ContextVar(
+    "scoped_live_tensors",
+    default=None,
+)
+
+
+def _bind_weak_tensor(table: dict[int, weakref.ref[Tensor]], tensor: Tensor) -> None:
+    """Insert a weak reference to `tensor` into `table` with an O(1) eviction callback.
+
+    Args:
+        table (dict[int, weakref.ref[Tensor]]): Target identity-keyed weak reference table.
+        tensor (Tensor): Live tensor instance to register weakly.
+    """
+    tid = id(tensor)
+
+    def _evict(_dead_ref: weakref.ref[Tensor]) -> None:
+        """Remove `tid` entry from `table` once `tensor` is garbage-collected.
+
+        Args:
+            _dead_ref (weakref.ref[Tensor]): Expired weak reference.
+        """
+        table.pop(tid, None)
+
+    table[tid] = weakref.ref(tensor, _evict)
+
+
+def register_live_tensor(tensor: Tensor) -> None:
+    """Register `tensor` weakly so imperative autodiff resolves graph inputs in O(1) without GC heap scans.
+
+    Args:
+        tensor (Tensor): Live tensor instance to track weakly.
+    """
+    scoped = _SCOPED_LIVE_TENSORS.get()
+    if scoped is not None:
+        _bind_weak_tensor(scoped, tensor)
+    with _TENSOR_REGISTRY_LOCK:
+        _bind_weak_tensor(_LIVE_TENSORS, tensor)
+
+
+def get_live_tensors() -> list[Tensor]:
+    """Return all currently live `Tensor` instances in the active weak registry scope.
+
+    Returns:
+        list[Tensor]: Snapshot list of strongly reachable `Tensor` instances.
+    """
+    scoped = _SCOPED_LIVE_TENSORS.get()
+    if scoped is not None:
+        refs = list(scoped.values())
+    else:
+        with _TENSOR_REGISTRY_LOCK:
+            refs = list(_LIVE_TENSORS.values())
+    return [obj for ref in refs for obj in (ref(),) if obj is not None]
+
+
+@contextlib.contextmanager
+def live_tensor_scope(initial: Sequence[Tensor] = ()) -> Iterator[dict[int, weakref.ref[Tensor]]]:
+    """Create an isolated `ContextVar` weak-reference scope for deterministic live-tensor resolution.
+
+    Args:
+        initial (Sequence[Tensor]): Optional initial tensors to populate into the scope.
+
+    Yields:
+        dict[int, weakref.ref[Tensor]]: Isolated identity-keyed weak table active within the `with` block.
+    """
+    scoped_table: dict[int, weakref.ref[Tensor]] = {}
+    for item in initial:
+        _bind_weak_tensor(scoped_table, item)
+    token = _SCOPED_LIVE_TENSORS.set(scoped_table)
+    try:
+        yield scoped_table
+    finally:
+        _SCOPED_LIVE_TENSORS.reset(token)
+
+
+@dataclasses.dataclass
+class _TracingContextFrame:
+    """Per-context tracing frame stored in a `ContextVar` for thread and async-task isolation."""
+
+    is_tracing: bool = False
+    active_graph: LogicalGraph | None = None
+    graph_stack: list[LogicalGraph] = dataclasses.field(default_factory=list)
+    constant_cache: dict[int, str] = dataclasses.field(default_factory=dict)
+    current_loop_options: LoopOptions | None = None
+    loop_options_stack: list[LoopOptions | None] = dataclasses.field(default_factory=list)
+
+    def clone(self) -> _TracingContextFrame:
+        """Create a shallow copy-on-write clone of this context frame.
+
+        Returns:
+            _TracingContextFrame: Cloned context frame with independent stack and cache containers.
+        """
+        return _TracingContextFrame(
+            is_tracing=self.is_tracing,
+            active_graph=self.active_graph,
+            graph_stack=list(self.graph_stack),
+            constant_cache=dict(self.constant_cache),
+            current_loop_options=self.current_loop_options,
+            loop_options_stack=list(self.loop_options_stack),
+        )
+
+
 class TracingState:
-    """Thread-safe state for tracing."""
+    """ContextVar-isolated state manager for thread-safe and async-task-safe graph tracing."""
 
     def __init__(self) -> None:
-        """Initialize."""
-        self.is_tracing: bool = False
-        self.active_graph: LogicalGraph | None = None
-        self.graph_stack: list[LogicalGraph] = []
-        self.constant_cache: dict[int, str] = {}
-        self.current_loop_options: LoopOptions | None = None
-        self.loop_options_stack: list[LoopOptions | None] = []
+        """Initialize an isolated `ContextVar` backing store for this `TracingState` instance."""
+        self._ctx_var: ContextVar[_TracingContextFrame | None] = ContextVar(
+            f"tracing_state_{id(self)}",
+            default=None,
+        )
+
+    def _frame(self) -> _TracingContextFrame:
+        """Return the active context frame, lazily initializing per thread or async context.
+
+        Returns:
+            _TracingContextFrame: Current context frame.
+        """
+        frame = self._ctx_var.get()
+        if frame is None:
+            frame = _TracingContextFrame()
+            self._ctx_var.set(frame)
+        return frame
+
+    @property
+    def is_tracing(self) -> bool:
+        """Return whether tracing is active in the current execution context.
+
+        Returns:
+            bool: True when an active trace is recording operations.
+        """
+        return self._frame().is_tracing
+
+    @is_tracing.setter
+    def is_tracing(self, value: bool) -> None:
+        """Set `is_tracing` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (bool): New tracing status flag.
+        """
+        nxt = self._frame().clone()
+        nxt.is_tracing = value
+        self._ctx_var.set(nxt)
+
+    @is_tracing.deleter
+    def is_tracing(self) -> None:
+        """Reset `is_tracing` to `False` when restored via `unittest.mock.patch` cleanup."""
+        self.is_tracing = False
+
+    @property
+    def active_graph(self) -> LogicalGraph | None:
+        """Return the active `LogicalGraph` in the current execution context.
+
+        Returns:
+            LogicalGraph | None: Active graph or `None`.
+        """
+        return self._frame().active_graph
+
+    @active_graph.setter
+    def active_graph(self, value: LogicalGraph | None) -> None:
+        """Set `active_graph` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (LogicalGraph | None): Graph to make active, or `None`.
+        """
+        nxt = self._frame().clone()
+        nxt.active_graph = value
+        self._ctx_var.set(nxt)
+
+    @active_graph.deleter
+    def active_graph(self) -> None:
+        """Reset `active_graph` to `None` when restored via `unittest.mock.patch` cleanup."""
+        self.active_graph = None
+
+    @property
+    def graph_stack(self) -> list[LogicalGraph]:
+        """Return the nested graph stack for the current execution context.
+
+        Returns:
+            list[LogicalGraph]: Enclosing active graphs.
+        """
+        return self._frame().graph_stack
+
+    @graph_stack.setter
+    def graph_stack(self, value: list[LogicalGraph]) -> None:
+        """Replace `graph_stack` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (list[LogicalGraph]): Replacement graph stack.
+        """
+        nxt = self._frame().clone()
+        nxt.graph_stack = list(value)
+        self._ctx_var.set(nxt)
+
+    @graph_stack.deleter
+    def graph_stack(self) -> None:
+        """Reset `graph_stack` to empty list when restored via `unittest.mock.patch` cleanup."""
+        self.graph_stack = []
+
+    @property
+    def constant_cache(self) -> dict[int, str]:
+        """Return the constant deduplication cache for the current execution context.
+
+        Returns:
+            dict[int, str]: Mapping from object identity to constant node ID.
+        """
+        return self._frame().constant_cache
+
+    @constant_cache.setter
+    def constant_cache(self, value: dict[int, str]) -> None:
+        """Replace `constant_cache` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (dict[int, str]): Replacement constant cache mapping.
+        """
+        nxt = self._frame().clone()
+        nxt.constant_cache = dict(value)
+        self._ctx_var.set(nxt)
+
+    @constant_cache.deleter
+    def constant_cache(self) -> None:
+        """Reset `constant_cache` to empty dict when restored via `unittest.mock.patch` cleanup."""
+        self.constant_cache = {}
+
+    @property
+    def current_loop_options(self) -> LoopOptions | None:
+        """Return active loop metadata options in the current execution context.
+
+        Returns:
+            LoopOptions | None: Current loop options or `None`.
+        """
+        return self._frame().current_loop_options
+
+    @current_loop_options.setter
+    def current_loop_options(self, value: LoopOptions | None) -> None:
+        """Set `current_loop_options` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (LoopOptions | None): Loop options to activate, or `None`.
+        """
+        nxt = self._frame().clone()
+        nxt.current_loop_options = value
+        self._ctx_var.set(nxt)
+
+    @current_loop_options.deleter
+    def current_loop_options(self) -> None:
+        """Reset `current_loop_options` to `None` when restored via `unittest.mock.patch` cleanup."""
+        self.current_loop_options = None
+
+    @property
+    def loop_options_stack(self) -> list[LoopOptions | None]:
+        """Return the nested loop options stack for the current execution context.
+
+        Returns:
+            list[LoopOptions | None]: Saved loop options stack.
+        """
+        return self._frame().loop_options_stack
+
+    @loop_options_stack.setter
+    def loop_options_stack(self, value: list[LoopOptions | None]) -> None:
+        """Replace `loop_options_stack` using copy-on-write `ContextVar` state.
+
+        Args:
+            value (list[LoopOptions | None]): Replacement loop options stack.
+        """
+        nxt = self._frame().clone()
+        nxt.loop_options_stack = list(value)
+        self._ctx_var.set(nxt)
+
+    @loop_options_stack.deleter
+    def loop_options_stack(self) -> None:
+        """Reset `loop_options_stack` to empty list when restored via `unittest.mock.patch` cleanup."""
+        self.loop_options_stack = []
 
     def _enrich_ast_and_domain(self, node: LogicalNode) -> None:
         """Enrich a node with AST and domain information.
@@ -276,14 +546,17 @@ class TracingState:
         Returns:
             LogicalGraph: The newly initialized LogicalGraph instance.
         """
-        if self.active_graph is not None:
-            self.graph_stack.append(self.active_graph)
-            self.loop_options_stack.append(self.current_loop_options)
-        self.active_graph = LogicalGraph(name=name)
-        self.constant_cache = {}
-        self.current_loop_options = None
-        self.is_tracing = True
-        return self.active_graph
+        nxt = self._frame().clone()
+        if nxt.active_graph is not None:
+            nxt.graph_stack.append(nxt.active_graph)
+            nxt.loop_options_stack.append(nxt.current_loop_options)
+        new_graph = LogicalGraph(name=name)
+        nxt.active_graph = new_graph
+        nxt.constant_cache = {}
+        nxt.current_loop_options = None
+        nxt.is_tracing = True
+        self._ctx_var.set(nxt)
+        return new_graph
 
     def stop_tracing(self) -> LogicalGraph | None:
         """Deactivate the tracing context and return the captured graph.
@@ -291,16 +564,18 @@ class TracingState:
         Returns:
             LogicalGraph | None: The populated LogicalGraph containing all operations captured during tracing.
         """
-        graph = self.active_graph
-        if self.graph_stack:
-            self.active_graph = self.graph_stack.pop()
-            self.current_loop_options = self.loop_options_stack.pop() if self.loop_options_stack else None
-            self.is_tracing = True
+        nxt = self._frame().clone()
+        graph = nxt.active_graph
+        if nxt.graph_stack:
+            nxt.active_graph = nxt.graph_stack.pop()
+            nxt.current_loop_options = nxt.loop_options_stack.pop() if nxt.loop_options_stack else None
+            nxt.is_tracing = True
         else:
-            self.active_graph = None
-            self.current_loop_options = None
-            self.loop_options_stack.clear()
-            self.is_tracing = False
+            nxt.active_graph = None
+            nxt.current_loop_options = None
+            nxt.loop_options_stack.clear()
+            nxt.is_tracing = False
+        self._ctx_var.set(nxt)
         return graph
 
 

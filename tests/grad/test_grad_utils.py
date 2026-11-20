@@ -299,10 +299,9 @@ def test_grad_utils_find_wrt_tensors_branches() -> None:
     proxy_no_grad = ProxyTensor(id="node_1", shape=(), dtype="float32")
     t_no_grad = Tensor(proxy_no_grad, TensorConfig((), DType.Float32, Device("cpu")))
 
-    # Mock gc.get_objects to return these specific tensors
-    with patch(
-        "gc.get_objects", return_value=[t1, t2, t3, t_unrelated, t_no_id, t_not_in_graph, t_no_grad, "not_a_tensor"]
-    ):
+    from ml_switcheroo_compiler.tracing.state import live_tensor_scope
+
+    with live_tensor_scope([t1, t2, t3, t_unrelated, t_no_id, t_not_in_graph, t_no_grad]):
         wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
         assert any(t is t1 for t in wrt_tensors)
         assert any(t is t2 for t in wrt_tensors)

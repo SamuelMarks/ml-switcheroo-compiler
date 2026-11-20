@@ -193,6 +193,15 @@ def _resolve_folding_backend() -> type | None:
     return backend
 
 
+_NON_FOLDABLE_CALLBACK_OPS: frozenset[str] = frozenset(
+    {
+        "Constant",
+        "ProcessCustomVJPCall",
+        "ProcessCustomJVPCall",
+    }
+)
+
+
 def _try_fold_single_node(
     node: IRNode,
     canonical_inputs: list[str],
@@ -212,7 +221,7 @@ def _try_fold_single_node(
     """
     import logging
 
-    if node.op_type == "Constant" or not _are_all_inputs_constant(canonical_inputs, graph):
+    if node.op_type in _NON_FOLDABLE_CALLBACK_OPS or not _are_all_inputs_constant(canonical_inputs, graph):
         return False
 
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError

@@ -64,10 +64,22 @@ from ml_switcheroo_compiler.backends._base_generator_templates import (
     BaseGeneratorTemplateMixin as BaseGeneratorTemplateMixin,
 )
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter
+from ml_switcheroo_compiler.backends.typeclasses import CapabilityKind
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor as CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
 from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
+
+_DOMAIN_EAGER_CLASS_NAMES: frozenset[str] = frozenset(
+    {
+        "SparseGenerator",
+        "AwkwardGenerator",
+        "PyArrowComputeGenerator",
+        "NumbaGenerator",
+        "CuPyGenerator",
+        "DpnpGenerator",
+    }
+)
 
 
 class BaseGenerator(
@@ -80,6 +92,12 @@ class BaseGenerator(
 ):
     """Abstract base class for backend code generation."""
 
+    DECLARED_CAPABILITIES: typing.ClassVar[frozenset[CapabilityKind]] = frozenset(
+        {
+            CapabilityKind.CODE_EMIT,
+            CapabilityKind.AOT_COMPILE,
+        }
+    )
     input_idx: int
     module: ModuleType
     get_numpy_rng: TypedVariadicCallable[TensorLike]
@@ -156,6 +174,21 @@ class BaseGenerator(
             [d for d in delegates if isinstance(d, VisitorProtocol)] if isinstance(delegates, (list, tuple)) else []
         )
         self.visitors: list[VisitorProtocol] = [self] + delegate_items
+
+    @classmethod
+    def declared_capabilities(cls) -> frozenset[CapabilityKind]:
+        """Return the set of static `CapabilityKind` traits implemented by `cls`.
+
+        Returns:
+            frozenset[CapabilityKind]: Declared static capabilities (`CORE_EAGER` or `DOMAIN_EAGER` when overridden).
+        """
+        caps = set(cls.DECLARED_CAPABILITIES)
+        if cls.get_eager_adapter.__qualname__ != EagerExecutionMixin.get_eager_adapter.__qualname__:
+            if cls.__name__ in _DOMAIN_EAGER_CLASS_NAMES:
+                caps.add(CapabilityKind.DOMAIN_EAGER)
+            else:
+                caps.add(CapabilityKind.CORE_EAGER)
+        return frozenset(caps)
 
     def get_language(self) -> str:
         """Get the target programming language for code emission.

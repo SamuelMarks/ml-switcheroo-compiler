@@ -9,7 +9,7 @@ from collections.abc import Callable, Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import config as config
 from ml_switcheroo_compiler.core.shape import (
     CallableLike,
     OpValue,
@@ -50,7 +50,7 @@ from ml_switcheroo_compiler.core.shape import (
 from ml_switcheroo_compiler.core.shape import (
     TensorOperandProtocol as TensorOperandProtocol,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import ensure_attr_val
 
 # We import dispatcher directly
@@ -181,27 +181,10 @@ class EagerDispatchedCallable(typing.Generic[_F]):
         Returns:
             OpArgValue: Evaluated tensor(s) or symbolic graph result.
         """
-        if config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
+        from ml_switcheroo_compiler.ops.dispatcher import dispatch_backend_eager_op
 
-            backend = get_active_backend()
-            raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
-            data = backend.execute_op(self._op_name, *raw_args, **kwargs)
-            first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
-            device = first_tensor.device if first_tensor is not None else None
-            dtype = first_tensor.dtype if first_tensor is not None else "float32"
-            if isinstance(data, tuple):
-                return tuple(
-                    Tensor(
-                        backend.array(d),
-                        TensorConfig(extract_shape(backend.array(d)), extract_dtype(d, dtype), device),
-                    )
-                    for d in data
-                )
-            return Tensor(
-                backend.array(data),
-                TensorConfig(extract_shape(backend.array(data)), dtype if first_tensor is not None else None, device),
-            )
+        if config.eager_mode:
+            return dispatch_backend_eager_op(self._op_name, args, kwargs)
         _callable_fn_2: OpValue = self._func
         assert is_variadic_callable(_callable_fn_2)
         return _callable_fn_2(*args, **kwargs)

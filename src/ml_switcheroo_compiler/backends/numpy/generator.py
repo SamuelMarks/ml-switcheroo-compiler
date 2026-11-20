@@ -373,7 +373,61 @@ class NumpyGenerator(
         """
         import numpy as np
 
+        from ml_switcheroo_compiler.backends.eager_registry import BackendOperand
         from ml_switcheroo_compiler.backends.protocols import StaticEagerBackendAdapter
+        from ml_switcheroo_compiler.backends.typeclasses import (
+            CoreEagerDictionary,
+            CreationDictionary,
+            ElementwiseBinaryDictionary,
+            ElementwiseUnaryDictionary,
+            LinearAlgebraDictionary,
+            ReductionDictionary,
+            verify_core_eager_typeclass,
+        )
+
+        np_adapter = adapt_backend_module(np, backend_name="numpy")
+        tc_dict = verify_core_eager_typeclass(
+            CoreEagerDictionary[BackendOperand](
+                creation=CreationDictionary[BackendOperand](
+                    zeros_fn=lambda shape, dtype: np_adapter.require_op("zeros")(shape, dtype=dtype),
+                    ones_fn=lambda shape, dtype: np_adapter.require_op("ones")(shape, dtype=dtype),
+                    array_fn=lambda data, dtype: np_adapter.require_op("array")(data, dtype=dtype),
+                    asarray_fn=lambda data, dtype: np_adapter.require_op("asarray")(data, dtype=dtype),
+                ),
+                unary=ElementwiseUnaryDictionary[BackendOperand](
+                    abs_fn=np_adapter.require_op("abs"),
+                    exp_fn=np_adapter.require_op("exp"),
+                    log_fn=np_adapter.require_op("log"),
+                    sqrt_fn=np_adapter.require_op("sqrt"),
+                    sin_fn=np_adapter.require_op("sin"),
+                    cos_fn=np_adapter.require_op("cos"),
+                    tanh_fn=np_adapter.require_op("tanh"),
+                ),
+                binary=ElementwiseBinaryDictionary[BackendOperand](
+                    add_fn=np_adapter.require_op("add"),
+                    subtract_fn=np_adapter.require_op("subtract"),
+                    multiply_fn=np_adapter.require_op("multiply"),
+                    divide_fn=np_adapter.require_op("divide"),
+                ),
+                linalg=LinearAlgebraDictionary[BackendOperand](
+                    matmul_fn=np_adapter.require_op("matmul"),
+                    reshape_fn=lambda x, shape: np_adapter.require_op("reshape")(x, shape),
+                    transpose_fn=lambda x, axes: np_adapter.require_op("transpose")(x, axes),
+                ),
+                reduction=ReductionDictionary[BackendOperand](
+                    sum_fn=lambda x, axis, keepdims: np_adapter.require_op("sum")(
+                        x,
+                        axis=axis,
+                        keepdims=keepdims,
+                    ),
+                    mean_fn=lambda x, axis, keepdims: np_adapter.require_op("mean")(
+                        x,
+                        axis=axis,
+                        keepdims=keepdims,
+                    ),
+                ),
+            )
+        )
 
         return StaticEagerBackendAdapter(
             backend_name="numpy",
@@ -444,4 +498,5 @@ class NumpyGenerator(
                 "random": np.random,
             },
             module=np,
+            typeclass_dict=tc_dict,
         )

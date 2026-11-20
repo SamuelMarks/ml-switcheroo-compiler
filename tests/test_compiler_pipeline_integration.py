@@ -202,7 +202,9 @@ def test_grad_utils_branches() -> None:
     mock_n1 = MagicMock(id="n1")
     t_no_grad = Tensor(mock_n1, TensorConfig((), DType.Float32, device, requires_grad=False))
 
-    with patch("gc.get_objects", return_value=[t_raw_numpy, t_outside_graph, t_no_grad]):
+    from ml_switcheroo_compiler.tracing.state import live_tensor_scope
+
+    with live_tensor_scope([t_raw_numpy, t_outside_graph, t_no_grad]):
         wrt_t, wrt_ids = _find_wrt_tensors(g)
         assert wrt_t == []
         assert wrt_ids == []
@@ -238,7 +240,7 @@ def test_grad_utils_branches() -> None:
     mock_valid = MagicMock(id="n1", concrete_value=2.5)
     t_valid = Tensor(mock_valid, TensorConfig((), DType.Float32, device))
 
-    with patch("gc.get_objects", return_value=[t_outside, t_none_val, t_valid]):
+    with live_tensor_scope([t_outside, t_none_val, t_valid]):
         inp_dict = _get_inputs_dict(g)
         assert "n1" in inp_dict
 
